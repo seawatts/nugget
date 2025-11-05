@@ -76,7 +76,7 @@ export function LoadingLogo() {
           }}
         >
           <Image
-            alt="seawatts Logo"
+            alt="Nugget Logo"
             className="h-32 w-auto"
             height={128}
             priority
@@ -101,7 +101,7 @@ export function LoadingLogo() {
             },
           }}
         >
-          Welcome to seawatts
+          Welcome to Nugget
         </motion.div>
       </motion.div>
     </motion.div>

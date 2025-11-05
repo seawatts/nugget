@@ -1,17 +1,17 @@
 'use client';
 
-import { MetricButton } from '@seawatts/analytics/components';
-import { Badge } from '@seawatts/ui/badge';
+import { MetricButton } from '@nugget/analytics/components';
+import { Badge } from '@nugget/ui/badge';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@seawatts/ui/card';
-import { H1, H2, P } from '@seawatts/ui/custom/typography';
-import { Input } from '@seawatts/ui/input';
-import { MagicCard } from '@seawatts/ui/magicui/magic-card';
+} from '@nugget/ui/card';
+import { H1, H2, P } from '@nugget/ui/custom/typography';
+import { Input } from '@nugget/ui/input';
+import { MagicCard } from '@nugget/ui/magicui/magic-card';
 import { Search, Zap } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useEffect, useMemo, useState } from 'react';
@@ -465,14 +465,14 @@ export function GlossarySection() {
               className="rounded-full"
               metric="glossary_view_documentation_clicked"
               properties={{
-                destination: 'https://docs.seawatts.sh',
+                destination: 'https://docs.nugget.baby',
                 location: 'glossary_section',
                 source: 'marketing_site',
               }}
               size="lg"
             >
               <a
-                href="https://docs.seawatts.sh"
+                href="https://docs.nugget.baby"
                 rel="noopener noreferrer"
                 target="_blank"
               >
@@ -636,8 +636,7 @@ export function GlossarySection() {
             Need help with webhooks?
           </H2>
           <P className="text-muted-foreground mb-6">
-            Start building with Seawatts today and get real-time webhook testing
-            and management.
+            Start your parenting journey with Nugget today and management.
           </P>
           <MetricButton
             asChild
@@ -649,7 +648,7 @@ export function GlossarySection() {
               source: 'marketing_site',
             }}
           >
-            <a href="/app/onboarding">Get Started with Seawatts</a>
+            <a href="/app/onboarding">Get Started with Nugget</a>
           </MetricButton>
         </motion.div>
       </div>

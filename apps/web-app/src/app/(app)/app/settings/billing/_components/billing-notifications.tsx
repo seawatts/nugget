@@ -1,8 +1,8 @@
 'use client';
 
-import { Card, CardContent } from '@seawatts/ui/card';
-import { Icons } from '@seawatts/ui/custom/icons';
-import { P } from '@seawatts/ui/custom/typography';
+import { Card, CardContent } from '@nugget/ui/card';
+import { Icons } from '@nugget/ui/custom/icons';
+import { P } from '@nugget/ui/custom/typography';
 import { useSearchParams } from 'next/navigation';
 
 export function BillingNotifications() {

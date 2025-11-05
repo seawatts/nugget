@@ -1,14 +1,14 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "banner": {
-    "content": "Seawatts is currently in beta."
+    "content": "Nugget is currently in beta."
   },
   "colors": {
     "dark": "#009689",
     "light": "#009689",
     "primary": "#009689"
   },
-  "description": "Seawatts is a simple, secure, and reliable webhook service that allows you to create and manage webhooks for your applications.",
+  "description": "Nugget is a simple, secure, and reliable webhook service that allows you to create and manage webhooks for your applications.",
   "favicon": "/logo/favicon.png",
   "fonts": {
     "family": "Geist",
@@ -18,7 +18,7 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/seawatts-sh/seawatts"
+      "github": "https://github.com/nugget-sh/nugget"
     }
   },
   "icons": {
@@ -34,7 +34,7 @@
     "dark": "/logo/logo-dark.svg",
     "light": "/logo/logo-light.svg"
   },
-  "name": "Seawatts",
+  "name": "Nugget",
   "navbar": {
     "links": [
       {
@@ -42,12 +42,12 @@
         "label": "Support"
       },
       {
-        "href": "https://seawatts.sh/app",
+        "href": "https://nugget.baby/app",
         "label": "Dashboard"
       }
     ],
     "primary": {
-      "href": "https://seawatts.sh/app/webhooks/create?utm_source=docs",
+      "href": "https://nugget.baby/app/webhooks/create?utm_source=docs",
       "label": "Create Webhook URL",
       "type": "button"
     }
@@ -57,12 +57,12 @@
       "anchors": [
         {
           "anchor": "Github",
-          "href": "https://github.com/seawatts-sh",
+          "href": "https://github.com/nugget-sh",
           "icon": "github"
         },
         {
           "anchor": "Changelog",
-          "href": "https://github.com/seawatts-sh/seawatts/releases",
+          "href": "https://github.com/nugget-sh/nugget/releases",
           "icon": "newspaper"
         },
         {

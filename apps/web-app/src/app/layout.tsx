@@ -1,39 +1,41 @@
-import { ReactScan } from '@seawatts/ui/custom/react-scan';
-import { ThemeProvider } from '@seawatts/ui/custom/theme';
-import { cn } from '@seawatts/ui/lib/utils';
-import { Toaster } from '@seawatts/ui/sonner';
+import { ReactScan } from '@nugget/ui/custom/react-scan';
+import { ThemeProvider } from '@nugget/ui/custom/theme';
+import { cn } from '@nugget/ui/lib/utils';
+import { Toaster } from '@nugget/ui/sonner';
 import { GeistMono } from 'geist/font/mono';
 import { GeistSans } from 'geist/font/sans';
 import type { Metadata, Viewport } from 'next';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
-import '@seawatts/ui/globals.css';
+import '@nugget/ui/globals.css';
 
 import { ClerkProvider } from '@clerk/nextjs';
-import { AnalyticsProviders } from '@seawatts/analytics/providers';
-import { TRPCReactProvider } from '@seawatts/api/react';
-import { StripeProvider } from '@seawatts/stripe/guards/client';
+import { AnalyticsProviders } from '@nugget/analytics/providers';
+import { TRPCReactProvider } from '@nugget/api/react';
+import { StripeProvider } from '@nugget/stripe/guards/client';
 import { Suspense } from 'react';
 import { env } from '~/env.server';
 
 export const metadata: Metadata = {
-  description: 'Seawatts is a tool for developers to manage their webhooks',
+  description:
+    "Your complete parenting journey companion - from trying to conceive to tracking your baby's milestones",
   metadataBase: new URL(
     env.VERCEL_ENV === 'production'
-      ? 'https://seawatts.sh'
+      ? 'https://nugget.baby'
       : 'http://localhost:3000',
   ),
   openGraph: {
-    description: 'Seawatts is a tool for developers to manage their webhooks',
-    siteName: 'Seawatts',
-    title: 'Seawatts',
-    url: 'https://seawatts.sh',
+    description:
+      "Track your cycle, follow your pregnancy week by week, and monitor your baby's feeding, sleep, and milestones",
+    siteName: 'Nugget',
+    title: 'Nugget - Your Parenting Journey Companion',
+    url: 'https://nugget.baby',
   },
-  title: 'Seawatts',
+  title: 'Nugget - Your Parenting Journey',
   twitter: {
     card: 'summary_large_image',
-    creator: '@seawatts',
-    site: '@seawatts',
+    creator: '@nugget',
+    site: '@nugget',
   },
 };
 

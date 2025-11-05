@@ -1,5 +1,5 @@
-import { eq } from '@seawatts/db';
-import { CreateUserSchema, Users } from '@seawatts/db/schema';
+import { eq } from '@nugget/db';
+import { CreateUserSchema, Users } from '@nugget/db/schema';
 import type { TRPCRouterRecord } from '@trpc/server';
 import { z } from 'zod';
 

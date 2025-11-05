@@ -1,7 +1,7 @@
 'use client';
 
-import { MetricButton } from '@seawatts/analytics/components';
-import { api } from '@seawatts/api/react';
+import { MetricButton } from '@nugget/analytics/components';
+import { api } from '@nugget/api/react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,8 +12,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@seawatts/ui/alert-dialog';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@seawatts/ui/tooltip';
+} from '@nugget/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@nugget/ui/tooltip';
 import { IconLoader2, IconTrash } from '@tabler/icons-react';
 import posthog from 'posthog-js';
 import { useState } from 'react';

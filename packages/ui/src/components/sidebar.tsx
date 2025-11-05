@@ -1,25 +1,25 @@
 'use client';
 
-import { Slot } from '@radix-ui/react-slot';
-import { Button } from '@seawatts/ui/components/button';
-import { Input } from '@seawatts/ui/components/input';
-import { Separator } from '@seawatts/ui/components/separator';
+import { Button } from '@nugget/ui/components/button';
+import { Input } from '@nugget/ui/components/input';
+import { Separator } from '@nugget/ui/components/separator';
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@seawatts/ui/components/sheet';
-import { Skeleton } from '@seawatts/ui/components/skeleton';
+} from '@nugget/ui/components/sheet';
+import { Skeleton } from '@nugget/ui/components/skeleton';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@seawatts/ui/components/tooltip';
-import { useIsMobile } from '@seawatts/ui/hooks/use-mobile';
-import { cn } from '@seawatts/ui/lib/utils';
+} from '@nugget/ui/components/tooltip';
+import { useIsMobile } from '@nugget/ui/hooks/use-mobile';
+import { cn } from '@nugget/ui/lib/utils';
+import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { PanelLeftIcon } from 'lucide-react';
 import * as React from 'react';

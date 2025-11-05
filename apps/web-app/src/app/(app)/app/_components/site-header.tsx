@@ -1,5 +1,5 @@
-import { Separator } from '@seawatts/ui/separator';
-import { SidebarTrigger } from '@seawatts/ui/sidebar';
+import { Separator } from '@nugget/ui/separator';
+import { SidebarTrigger } from '@nugget/ui/sidebar';
 
 export function SiteHeader() {
   return (

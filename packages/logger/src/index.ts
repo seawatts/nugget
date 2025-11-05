@@ -21,7 +21,7 @@ function getLogLevelFromEnv(): LogLevel | undefined {
 
 // Create and export a default logger instance
 export const defaultLogger = new Logger({
-  defaultNamespace: 'seawatts-startup',
+  defaultNamespace: 'nugget-startup',
   minLogLevel: getLogLevelFromEnv(),
 });
 
@@ -45,8 +45,8 @@ if (typeof process !== 'undefined') {
       defaultLogger.enableNamespace(namespace.trim());
     }
   } else {
-    // Default to enabling 'seawatts-startup:*' if no DEBUG env var is set
-    defaultLogger.enableNamespace('seawatts-startup:*');
+    // Default to enabling 'nugget-startup:*' if no DEBUG env var is set
+    defaultLogger.enableNamespace('nugget-startup:*');
   }
 }
 

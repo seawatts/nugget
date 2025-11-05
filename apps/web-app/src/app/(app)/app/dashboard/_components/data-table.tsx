@@ -19,15 +19,15 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { MetricButton } from '@seawatts/analytics/components';
-import { Badge } from '@seawatts/ui/badge';
+import { MetricButton } from '@nugget/analytics/components';
+import { Badge } from '@nugget/ui/badge';
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@seawatts/ui/chart';
-import { Checkbox } from '@seawatts/ui/checkbox';
+} from '@nugget/ui/chart';
+import { Checkbox } from '@nugget/ui/checkbox';
 import {
   Drawer,
   DrawerClose,
@@ -37,7 +37,7 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from '@seawatts/ui/drawer';
+} from '@nugget/ui/drawer';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -45,18 +45,18 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@seawatts/ui/dropdown-menu';
-import { useIsMobile } from '@seawatts/ui/hooks/use-mobile';
-import { Input } from '@seawatts/ui/input';
-import { Label } from '@seawatts/ui/label';
+} from '@nugget/ui/dropdown-menu';
+import { useIsMobile } from '@nugget/ui/hooks/use-mobile';
+import { Input } from '@nugget/ui/input';
+import { Label } from '@nugget/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@seawatts/ui/select';
-import { Separator } from '@seawatts/ui/separator';
+} from '@nugget/ui/select';
+import { Separator } from '@nugget/ui/separator';
 import {
   Table,
   TableBody,
@@ -64,8 +64,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@seawatts/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@seawatts/ui/tabs';
+} from '@nugget/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@nugget/ui/tabs';
 import {
   IconChevronDown,
   IconChevronLeft,

@@ -1,9 +1,9 @@
 'use client';
 
-import { Button } from '@seawatts/ui/components/button';
-import { Input } from '@seawatts/ui/components/input';
-import { Textarea } from '@seawatts/ui/components/textarea';
-import { cn } from '@seawatts/ui/lib/utils';
+import { Button } from '@nugget/ui/components/button';
+import { Input } from '@nugget/ui/components/input';
+import { Textarea } from '@nugget/ui/components/textarea';
+import { cn } from '@nugget/ui/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type * as React from 'react';
 

@@ -1,27 +1,27 @@
-# SeaWatts - AI-Powered Full-Stack Startup Template
+# Nugget - Your Complete Parenting Journey
 
-> A production-ready monorepo template optimized for AI code generation workflows
+> A comprehensive parenting companion app supporting you from conception to milestones
 
-## Why This Template?
+## Why Nugget?
 
-### 🤖 AI-First Architecture
-- **BAML Integration**: Structured AI templates for consistent LLM interactions
-- **Type-Safe APIs**: End-to-end TypeScript ensures AI generates correct code
-- **Shared Context**: Monorepo structure helps AI understand your entire codebase
-- **Cross-Platform**: Generate code for web, mobile, desktop, and browser extensions
+### 🍼 Complete Journey Support
+- **Trying to Conceive**: Track your cycle, ovulation, and fertility indicators
+- **Pregnancy**: Week-by-week tracking with developmental milestones and preparation checklists
+- **Baby Care**: Log feeding, sleep, diapers, and growth metrics
+- **Milestones**: Celebrate and track developmental achievements with photos and memories
 
-### 🚀 Production Ready
-- **6 Applications**: Web app, mobile (Expo), CLI, Chrome extension, VS Code extension, iOS
-- **12 Shared Packages**: Database, API, UI, AI, analytics, payments, and more
-- **Modern Stack**: Next.js 15, React 19, tRPC v11, Drizzle ORM, Supabase
-- **Developer Experience**: Bun, Turborepo, Biome, comprehensive tooling
+### 🚀 Modern Tech Stack
+- **Cross-Platform**: Web app, iOS, and Android with seamless data sync
+- **Privacy-First**: End-to-end encryption with HIPAA-compliant options
+- **Real-Time Sync**: Your data stays current across all devices
+- **Offline Support**: Track activities even without internet connection
 
 ## Quick Start
 
 ### 1. Clone and Install
 ```bash
-git clone [your-repo-url] my-startup
-cd my-startup
+git clone https://github.com/nugget/nugget my-parenting-app
+cd my-parenting-app
 bun install
 ```
 
@@ -39,49 +39,54 @@ bun dev
 
 # Or start specific apps
 bun dev:next          # Web app only
-bun dev:vscode        # VS Code extension
 ```
 
 ## Architecture Overview
 
 ### Apps
-- **Web App** (`apps/web-app`): Next.js 15 with App Router
-- **Mobile** (`apps/expo`): React Native with Expo SDK 51
-- **CLI** (`apps/cli`): Cross-platform command-line tool
-- **Chrome Extension** (`apps/chrome-extension`): Browser extension
-- **VS Code Extension** (`apps/vscode-extension`): Editor extension
-- **iOS** (`apps/ios`): Native iOS app
+- **Web App** (`apps/web-app`): Next.js 15 with App Router - responsive web experience
+- **Mobile** (`apps/expo`): React Native with Expo SDK 51 - iOS and Android apps
+- **iOS** (`apps/ios`): Native iOS app with widgets and Apple Health integration
 
-### Packages
+### Core Packages
 - **API** (`packages/api`): tRPC v11 router with end-to-end type safety
-- **Database** (`packages/db`): Drizzle ORM with Supabase
-- **UI** (`packages/ui`): shadcn/ui components shared across apps
-- **AI** (`packages/ai`): BAML templates for structured LLM interactions
-- **Analytics** (`packages/analytics`): PostHog integration
-- **Payments** (`packages/stripe`): Stripe integration
-- **Email** (`packages/email`): Resend email service
-- **State** (`packages/zustand`): Global state management
+- **Database** (`packages/db`): Drizzle ORM with Supabase for secure data storage
+- **UI** (`packages/ui`): shadcn/ui components shared across platforms
+- **Analytics** (`packages/analytics`): PostHog integration for insights
+- **Stripe** (`packages/stripe`): Payment processing for premium features
+- **Email** (`packages/email`): Resend email service for notifications
 
-## AI Code Generation Benefits
+## Key Features
 
-### 1. **Contextual Understanding**
-The monorepo structure allows AI to understand:
-- How your API routes connect to database schemas
-- Which UI components are available across platforms
-- How authentication flows through all apps
-- The relationship between packages and their dependencies
+### Trying to Conceive
+- Menstrual cycle tracking with predictions
+- Ovulation window calculations
+- Fertility indicator logging (BBT, cervical mucus, etc.)
+- Symptom and mood tracking
+- Partner sharing for collaborative conception planning
 
-### 2. **Consistent Patterns**
-- Shared TypeScript configurations
-- Unified code formatting with Biome
-- Consistent API patterns with tRPC
-- Reusable UI components across platforms
+### Pregnancy Tracking
+- Week-by-week baby development updates
+- Size comparison visualizations
+- Symptom and weight tracking
+- Appointment reminders
+- Preparation checklists
+- Photo diary
 
-### 3. **Rapid Development**
-- Generate code for multiple platforms simultaneously
-- AI understands your existing patterns and can extend them
-- Type safety ensures generated code works correctly
-- Shared packages mean changes propagate everywhere
+### Baby Care
+- Feeding logs (breastfeeding, bottle, solids)
+- Sleep pattern tracking
+- Diaper change logs
+- Growth charts (weight, height, head circumference)
+- Medication tracking
+- Healthcare provider reports
+
+### Milestone Tracking
+- Developmental milestone checklist
+- Photo and video memories
+- Achievement celebrations
+- Age-appropriate activity suggestions
+- Shareable milestone cards
 
 ## Development Workflow
 
@@ -90,112 +95,89 @@ The monorepo structure allows AI to understand:
 2. **Update Database** schema in `packages/db/src/schema`
 3. **Generate Types** with `bun db:push`
 4. **Create UI** components in `packages/ui`
-5. **Implement** across all apps with full type safety
+5. **Implement** across all platforms with full type safety
 
-### AI-Assisted Development
+### Essential Commands
+
 ```bash
-# Add new UI component
-bun ui-add
+# Development
+bun dev                    # Start all apps
+bun dev:next              # Web app only
+bun test                  # Run tests
+bun typecheck             # Type check everything
 
-# Generate database migration
-bun db:gen-migration
+# Database Operations
+bun db:studio             # Open database studio
+bun db:push               # Push schema changes
+bun db:gen-migration      # Generate migration
+bun db:migrate            # Run migrations
 
-# Type check everything
-bun typecheck
+# Code Quality
+bun format:fix            # Format code
+bun lint:ws               # Lint workspace
 
-# Format code
-bun format:fix
-```
-
-## Essential Commands
-
-### Development
-```bash
-# Install dependencies
-bun install
-
-# Start development for all packages
-bun dev
-
-# Start only the web app
-bun dev:next
-
-# Run tests
-bun test
-
-# Type check everything
-bun typecheck
-
-# Format code
-bun format:fix
-
-# Clean all workspaces
-bun clean:ws
-```
-
-### Database Operations
-```bash
-# Open database studio
-bun db:studio
-
-# Push schema changes
-bun db:push
-
-# Generate migrations
-bun db:gen-migration
-
-# Run migrations
-bun db:migrate
-
-# Seed database
-bun db:seed
-```
-
-### Building & Publishing
-```bash
-# Build all packages
-bun build
-
-# Publish CLI and client packages
-bun publish
-
-# Add UI components
-bun ui-add
+# Building
+bun build                 # Build all packages
 ```
 
 ## Deployment
 
 ### Web App (Vercel)
 ```bash
-# Deploy to Vercel
 vercel --prod
 ```
 
-### Mobile (EAS)
+### Mobile Apps (EAS)
 ```bash
 cd apps/expo
 eas build --platform all
 eas submit --platform all
 ```
 
-### CLI (NPM)
-```bash
-bun publish
-```
+## Technology Stack
 
-## Key Features
+- ✅ **Frontend**: React 19, Next.js 15, React Native, Expo
+- ✅ **Backend**: tRPC v11, Drizzle ORM, Supabase
+- ✅ **UI**: shadcn/ui, TailwindCSS, Framer Motion
+- ✅ **Auth**: Clerk with social login support
+- ✅ **Payments**: Stripe for premium subscriptions
+- ✅ **Analytics**: PostHog for product insights
+- ✅ **Email**: Resend for transactional emails
+- ✅ **Type Safety**: End-to-end TypeScript
 
-- ✅ **End-to-End Type Safety** with tRPC
-- ✅ **AI Integration** with BAML templates
-- ✅ **Cross-Platform** development
-- ✅ **Modern Stack** (Next.js 15, React 19)
-- ✅ **Production Ready** with comprehensive tooling
-- ✅ **Developer Experience** optimized for AI workflows
+## Privacy & Security
+
+Nugget takes your family's privacy seriously:
+
+- 🔒 End-to-end encryption for all personal data
+- 🏥 HIPAA-compliant infrastructure available for healthcare providers
+- 🔐 SOC 2 Type II compliance in progress
+- 👤 You own your data - export or delete anytime
+- 🚫 No data selling or third-party sharing
+- 📱 Biometric authentication support
 
 ## Contributing
 
-This template is designed for rapid startup development with AI assistance. The monorepo structure ensures consistency and enables powerful AI code generation workflows.
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Development Setup
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
+
+## Support
+
+- 📧 Email: support@nugget.baby
+- 💬 Discord: https://discord.gg/nugget
+- 📚 Documentation: https://docs.nugget.baby
+- 🐛 Issues: https://github.com/nugget/nugget/issues
 
 ## License
 
-MIT
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+Built with ❤️ for modern parents everywhere.

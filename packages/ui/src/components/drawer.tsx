@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@seawatts/ui/lib/utils';
+import { cn } from '@nugget/ui/lib/utils';
 import type * as React from 'react';
 import { Drawer as DrawerPrimitive } from 'vaul';
 

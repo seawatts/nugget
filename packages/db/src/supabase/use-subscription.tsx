@@ -1,6 +1,6 @@
 'use client';
 
-import { debug } from '@seawatts/logger';
+import { debug } from '@nugget/logger';
 import type {
   REALTIME_SUBSCRIBE_STATES,
   RealtimeChannel,

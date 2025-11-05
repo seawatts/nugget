@@ -1,6 +1,6 @@
 'use client';
 
-import { MetricLink } from '@seawatts/analytics/components';
+import { MetricLink } from '@nugget/analytics/components';
 import {
   Card,
   CardContent,
@@ -8,9 +8,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@seawatts/ui/card';
-import { Button } from '@seawatts/ui/components/button';
-import { cn } from '@seawatts/ui/lib/utils';
+} from '@nugget/ui/card';
+import { Button } from '@nugget/ui/components/button';
+import { cn } from '@nugget/ui/lib/utils';
 import { motion } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
@@ -61,7 +61,7 @@ export default function OnboardingSuccessPage() {
     );
   }
 
-  const webhookUrl = `${env.NEXT_PUBLIC_WEBHOOK_BASE_URL || env.NEXT_PUBLIC_API_URL || 'https://seawatts.sh'}/${orgName}/${webhookName}`;
+  const webhookUrl = `${env.NEXT_PUBLIC_WEBHOOK_BASE_URL || env.NEXT_PUBLIC_API_URL || 'https://nugget.baby'}/${orgName}/${webhookName}`;
 
   return (
     <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center p-4">

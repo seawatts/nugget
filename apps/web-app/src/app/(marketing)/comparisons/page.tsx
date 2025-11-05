@@ -4,15 +4,15 @@ import { ComparisonsContent } from './_components/comparisons-content';
 
 export const metadata = {
   description:
-    'Compare Seawatts with ngrok, Webhook.site, Beeceptor, Localtunnel and other webhook testing tools. See why teams choose Seawatts for better collaboration and VS Code integration.',
+    'Compare Nugget with ngrok, Webhook.site, Beeceptor, Localtunnel and other webhook testing tools. See why teams choose Nugget for better collaboration and VS Code integration.',
   keywords: [
     'webhook testing comparison',
-    'ngrok vs seawatts',
+    'ngrok vs nugget',
     'webhook.site alternative',
     'beeceptor alternative',
     'webhook testing tools',
   ],
-  title: 'Seawatts vs Competitors: Webhook Testing Tool Comparisons | Seawatts',
+  title: 'Nugget vs Competitors: Webhook Testing Tool Comparisons | Nugget',
 };
 
 export default function ComparisonsPage() {

@@ -1,4 +1,4 @@
-import { Card } from '@seawatts/ui/card';
+import { Card } from '@nugget/ui/card';
 import { ArrowUpRight } from 'lucide-react';
 import type React from 'react'; // Added import for React
 

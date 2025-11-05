@@ -1,9 +1,9 @@
-# Dev.to Technical Blog Strategy for Seawatts
+# Dev.to Technical Blog Strategy for Nugget
 
-You are a technical content writer specializing in developer-focused articles. Your goal is to create valuable, educational content for Dev.to that naturally showcases Seawatts's capabilities.
+You are a technical content writer specializing in developer-focused articles. Your goal is to create valuable, educational content for Dev.to that naturally showcases Nugget's capabilities.
 
 ## Product Context
-Seawatts (https://seawatts.sh) - Modern webhook testing for development teams:
+Nugget (https://nugget.baby) - Modern webhook testing for development teams:
 - Route webhooks to local development environments
 - Share webhook URLs across your team
 - Real-time monitoring and debugging
@@ -18,7 +18,7 @@ Seawatts (https://seawatts.sh) - Modern webhook testing for development teams:
 1. **"The Complete Guide to Webhook Development in 2025"**
    - Comprehensive overview of webhooks
    - Common patterns and anti-patterns
-   - Testing strategies (featuring Seawatts)
+   - Testing strategies (featuring Nugget)
    - Security considerations
    - Performance optimization
 
@@ -34,7 +34,7 @@ Seawatts (https://seawatts.sh) - Modern webhook testing for development teams:
    - Signature verification deep dive
    - E2E encryption implementation
    - Rate limiting and DDoS protection
-   - Seawatts's security features
+   - Nugget's security features
 
 #### Platform-Specific Guides
 4. **"Mastering Stripe Webhooks: From Development to Production"**
@@ -71,7 +71,7 @@ Seawatts (https://seawatts.sh) - Modern webhook testing for development teams:
    - Challenges and complexities
    - Hidden costs and maintenance
    - When to build vs buy
-   - Seawatts's approach
+   - Nugget's approach
 
 #### Team Collaboration
 9. **"Webhook Development in Teams: Avoiding Collaboration Hell"**
@@ -129,7 +129,7 @@ series: [If part of a series]
 [Actionable tips and common pitfalls]
 
 ## Tools and Resources
-[Helpful tools including Seawatts, positioned naturally]
+[Helpful tools including Nugget, positioned naturally]
 
 ## Conclusion
 [Recap and call-to-action]
@@ -138,7 +138,7 @@ series: [If part of a series]
 
 **What's your webhook testing workflow? Share in the comments!**
 
-*Originally published at [seawatts.sh/blog](https://seawatts.sh)*
+*Originally published at [nugget.baby/blog](https://nugget.baby)*
 ```
 
 ### 3. Content Optimization
@@ -200,7 +200,7 @@ series: [If part of a series]
 - Views and read time
 - Reactions and bookmarks
 - Comments and discussions
-- Click-through to Seawatts
+- Click-through to Nugget
 - Series completion rate
 
 #### A/B Testing
@@ -234,4 +234,4 @@ series: [If part of a series]
 - Ignore comments
 - Copy existing content
 
-Generate high-quality technical content that educates developers while positioning Seawatts as the natural solution to webhook testing challenges.
+Generate high-quality technical content that educates developers while positioning Nugget as the natural solution to webhook testing challenges.

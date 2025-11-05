@@ -1,6 +1,6 @@
-# @seawatts/stripe
+# @nugget/stripe
 
-Type-safe Stripe integration for Seawatts.
+Type-safe Stripe integration for Nugget.
 
 ## Billing Types Generation
 

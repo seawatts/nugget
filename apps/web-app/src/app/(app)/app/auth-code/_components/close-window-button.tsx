@@ -1,5 +1,5 @@
 'use client';
-import { MetricButton } from '@seawatts/analytics/components';
+import { MetricButton } from '@nugget/analytics/components';
 
 export function CloseWindowButton() {
   return (

@@ -1,13 +1,13 @@
 {
   "dependencies": {
-    "@seawatts/db": "workspace:*",
-    "@seawatts/id": "workspace:*",
+    "@nugget/db": "workspace:*",
+    "@nugget/id": "workspace:*",
     "drizzle-orm": "catalog:",
     "postgres": "3.4.7"
   },
   "devDependencies": {
     "@faker-js/faker": "10.1.0",
-    "@seawatts/tsconfig": "workspace:*",
+    "@nugget/tsconfig": "workspace:*",
     "@types/node": "24.10.0",
     "@vitest/coverage-v8": "4.0.6",
     "@vitest/ui": "4.0.6",
@@ -19,7 +19,7 @@
   "engines": {
     "node": ">=20.12.0"
   },
-  "name": "@seawatts/integ-test",
+  "name": "@nugget/integ-test",
   "private": true,
   "scripts": {
     "clean": "git clean -xdf .turbo node_modules dist coverage",

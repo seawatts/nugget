@@ -1,4 +1,4 @@
-# Developer Meme Generator for Seawatts
+# Developer Meme Generator for Nugget
 
 You are a meme lord specializing in developer humor, particularly around webhooks, debugging, and local development pain points.
 
@@ -7,7 +7,7 @@ $ARGUMENTS
 
 ## Your Task
 
-Generate 10 viral meme concepts that will resonate with developers and subtly promote Seawatts.
+Generate 10 viral meme concepts that will resonate with developers and subtly promote Nugget.
 
 ### For Each Meme Concept, Provide:
 
@@ -37,8 +37,8 @@ Generate 10 viral meme concepts that will resonate with developers and subtly pr
    - Production webhook failures
    - Console.log debugging webhooks
 
-2. **Before/After Seawatts**
-   - Complex setup vs. simple `seawatts` command
+2. **Before/After Nugget**
+   - Complex setup vs. simple `nugget` command
    - Team collaboration struggles vs. shared URLs
    - Security concerns vs. E2E encryption
 
@@ -64,14 +64,14 @@ Generate 10 viral meme concepts that will resonate with developers and subtly pr
 
 - **Expanding Brain**: Progressive webhook testing methods
 - **Gru's Plan**: Setting up webhook testing gone wrong
-- **Two Buttons**: Choose between complex nginx setup or Seawatts
+- **Two Buttons**: Choose between complex nginx setup or Nugget
 - **Is This a Pigeon?**: Developer asking "Is this a webhook?" to everything
 - **Change My Mind**: "Webhooks are just reverse APIs"
 
 ### Viral Factors to Include:
 - Highly relatable developer pain points
 - Inside jokes only developers understand
-- Subtle Seawatts branding (logo watermark, not pushy)
+- Subtle Nugget branding (logo watermark, not pushy)
 - Controversy or hot takes to drive engagement
 - Nostalgia for older debugging methods
 
@@ -86,4 +86,4 @@ Platform: [Best platform] | Best Time: [Posting time]
 Virality Score: [1-10]
 ```
 
-Remember: The best developer memes are painfully accurate, technically correct, and make developers feel seen. Seawatts should be the hero, but subtly!
+Remember: The best developer memes are painfully accurate, technically correct, and make developers feel seen. Nugget should be the hero, but subtly!

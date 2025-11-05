@@ -1,14 +1,14 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import { db } from '@seawatts/db/client';
-import { Orgs } from '@seawatts/db/schema';
+import { db } from '@nugget/db/client';
+import { Orgs } from '@nugget/db/schema';
 import {
   BILLING_INTERVALS,
   createCheckoutSession,
   getOrCreateCustomer,
   PLAN_TYPES,
-} from '@seawatts/stripe';
+} from '@nugget/stripe';
 import { eq } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -46,7 +46,7 @@ export const createCheckoutSessionAction = action
 
     // Get the origin URL
     const headersList = await headers();
-    const origin = headersList.get('origin') || 'https://seawatts.sh';
+    const origin = headersList.get('origin') || 'https://nugget.baby';
 
     // Create or get Stripe customer
     let customerId = org.stripeCustomerId;

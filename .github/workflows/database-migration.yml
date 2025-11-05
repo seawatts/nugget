@@ -33,7 +33,7 @@ jobs:
         uses: ./tooling/github/setup
 
       - name: Build database package
-        run: bun run build --filter=@seawatts/db...
+        run: bun run build --filter=@nugget/db...
         env:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
 

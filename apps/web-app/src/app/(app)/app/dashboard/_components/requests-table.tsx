@@ -1,4 +1,4 @@
-import { Avatar } from '@seawatts/ui/avatar';
+import { Avatar } from '@nugget/ui/avatar';
 import {
   Table,
   TableBody,
@@ -6,7 +6,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@seawatts/ui/table';
+} from '@nugget/ui/table';
 import { MoreHorizontal } from 'lucide-react';
 import Image from 'next/image';
 

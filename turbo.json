@@ -15,12 +15,12 @@
     "VERCEL_TOKEN"
   ],
   "tasks": {
-    "@seawatts/stripe#build": {
+    "@nugget/stripe#build": {
       "cache": false,
       "env": ["STRIPE_*"]
     },
-    "@seawatts/web-app#build": {
-      "dependsOn": ["@seawatts/stripe#build"],
+    "@nugget/web-app#build": {
+      "dependsOn": ["@nugget/stripe#build"],
       "env": [
         "NEXT_PUBLIC_*",
         "CLERK_*",
@@ -109,6 +109,14 @@
       ],
       "interactive": true
     },
+    "nugget-vscode#dev:extension": {
+      "cache": false,
+      "persistent": true
+    },
+    "nugget-vscode#dev:webview": {
+      "cache": false,
+      "persistent": true
+    },
     "push": {
       "cache": false,
       "env": [
@@ -120,14 +128,6 @@
         "NODE_ENV"
       ],
       "interactive": true
-    },
-    "seawatts-vscode#dev:extension": {
-      "cache": false,
-      "persistent": true
-    },
-    "seawatts-vscode#dev:webview": {
-      "cache": false,
-      "persistent": true
     },
     "seed": {
       "cache": false,

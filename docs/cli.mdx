@@ -1,36 +1,36 @@
 ---
 title: 'CLI Reference'
-description: 'Command line interface for Seawatts'
+description: 'Command line interface for Nugget'
 ---
 
 ## Installation
 
-Install the Seawatts CLI globally using your preferred package manager:
+Install the Nugget CLI globally using your preferred package manager:
 
 <CodeGroup>
 
 ```bash homebrew
-brew install seawatts
+brew install nugget
 ```
 
 ```bash npm
-npm install -g @seawatts/cli
+npm install -g @nugget/cli
 ```
 
 ```bash yarn
-yarn global add @seawatts/cli
+yarn global add @nugget/cli
 ```
 
 ```bash pnpm
-pnpm add -g @seawatts/cli
+pnpm add -g @nugget/cli
 ```
 
 ```bash bun
-bun add -g @seawatts/cli
+bun add -g @nugget/cli
 ```
 
 ```bash deno
-deno install @seawatts/cli
+deno install @nugget/cli
 ```
 
 </CodeGroup>
@@ -39,17 +39,17 @@ deno install @seawatts/cli
 
 1. Initialize your project:
 ```bash
-npx @seawatts/cli init
+npx @nugget/cli init
 ```
 
 2. Start the webhook:
 ```bash
-seawatts listen
+nugget track
 ```
 
 3. Use the generated webhook URL in your provider's settings:
 ```bash
-https://seawatts.sh/wh_your_webhook_id
+https://nugget.baby/wh_your_webhook_id
 ```
 
 ## Core Commands
@@ -57,31 +57,31 @@ https://seawatts.sh/wh_your_webhook_id
 ### Start Webhook
 ```bash
 # Basic usage
-seawatts listen
+nugget track
 
 # With custom client ID
-seawatts listen --client-id dev-1
+nugget track --client-id dev-1
 
 # With debug logging
-seawatts listen --debug
+nugget track --debug
 
 # Redirect to remote URL
-seawatts --redirect https://api.example.com
+nugget --redirect https://api.example.com
 ```
 
 ### Initialize Project
 ```bash
 # Using npx
-npx @seawatts/cli init
+npx @nugget/cli init
 
 # Using bunx
-bunx @seawatts/cli init
+bunx @nugget/cli init
 
 # Using pnpm
-pnpm dlx @seawatts/cli init
+pnpm dlx @nugget/cli init
 
 # Using deno
-deno run --allow-net --allow-read --allow-write npm:@seawatts/cli init
+deno run --allow-net --allow-read --allow-write npm:@nugget/cli init
 ```
 
 ## Command Line Options
@@ -102,7 +102,7 @@ deno run --allow-net --allow-read --allow-write npm:@seawatts/cli init
 ## Configuration
 
 ### Configuration File
-Create an `seawatts.config.yaml` in your project root:
+Create a `nugget.config.yaml` in your project root:
 
 ```yaml
 webhookId: "wh_your_webhook_id"
@@ -163,18 +163,18 @@ The `--ping` option configures connection health monitoring:
 
 ```bash
 # Disable health checks
-seawatts listen --ping false
+nugget track --ping false
 
 # Check specific port
-seawatts listen --ping 3001
+nugget track --ping 3001
 
 # Check specific URL
-seawatts listen --ping https://api.example.com/health
+nugget track --ping https://api.example.com/health
 ```
 
 ## Authentication
 
-Authentication data is stored locally at `~/.seawatts/auth-storage.json`:
+Authentication data is stored locally at `~/.nugget/auth-storage.json`:
 - Authentication state
 - User tokens
 - Organization ID
@@ -182,7 +182,7 @@ Authentication data is stored locally at `~/.seawatts/auth-storage.json`:
 
 To clear auth data:
 ```bash
-rm ~/.seawatts/auth-storage.json
+rm ~/.nugget/auth-storage.json
 ```
 
 ## Exit Codes
@@ -200,28 +200,28 @@ rm ~/.seawatts/auth-storage.json
 ### Basic Development Setup
 ```bash
 # Start webhook on default port
-seawatts listen --webhook-id your_webhook_id
+nugget track --webhook-id your_webhook_id
 ```
 
 ### Team Development
 ```bash
 # Developer 1
-seawatts listen --client-id dev1 --webhook-id team_webhook_id
+nugget track --client-id dev1 --webhook-id team_webhook_id
 
 # Developer 2
-seawatts listen --client-id dev2 --webhook-id team_webhook_id
+nugget track --client-id dev2 --webhook-id team_webhook_id
 ```
 
 ### Production Redirect
 ```bash
 # Redirect to production API
-seawatts --redirect https://api.production.com --webhook-id prod_webhook_id
+nugget --redirect https://api.production.com --webhook-id prod_webhook_id
 ```
 
 ### Custom Health Checks
 ```bash
 # Check specific health endpoint
-seawatts listen --ping https://localhost:3000/health
+nugget track --ping https://localhost:3000/health
 ```
 
 ## Best Practices
@@ -242,15 +242,15 @@ seawatts listen --ping https://localhost:3000/health
    - Ensure the port is available
 
 2. **Authentication Problems**
-   - Clear auth data: `rm ~/.seawatts/auth-storage.json`
-   - Re-run initialization: `npx @seawatts/cli init`
+   - Clear auth data: `rm ~/.nugget/auth-storage.json`
+   - Re-run initialization: `npx @nugget/cli init`
 
 3. **Debug Mode**
-   - Enable debug logging: `seawatts listen --debug`
+   - Enable debug logging: `nugget track --debug`
    - Check the debug panel for detailed information
 
 ## Support
 
-- [Documentation](https://docs.seawatts.sh)
-- [GitHub Issues](https://github.com/seawatts-sh/seawatts/issues)
-- [Discord Community](https://discord.gg/seawatts)
+- [Documentation](https://docs.nugget.baby)
+- [GitHub Issues](https://github.com/nugget/nugget/issues)
+- [Discord Community](https://discord.gg/nugget)

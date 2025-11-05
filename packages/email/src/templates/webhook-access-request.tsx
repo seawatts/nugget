@@ -44,9 +44,9 @@ export const WebhookAccessRequestEmail = ({
         <Container style={container}>
           <Section style={logoContainer}>
             <Img
-              alt="Seawatts"
+              alt="Nugget"
               height="36"
-              src="https://seawatts.sh/logo.png"
+              src="https://nugget.baby/logo.png"
               width="120"
             />
           </Section>
@@ -89,7 +89,7 @@ export const WebhookAccessRequestEmail = ({
 
           <Text style={footerText}>
             You can also manage all access requests in your{' '}
-            <Link href={dashboardUrl}>Seawatts dashboard</Link>.
+            <Link href={dashboardUrl}>Nugget dashboard</Link>.
           </Text>
 
           <Text style={footerText}>

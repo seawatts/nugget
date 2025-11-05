@@ -9,7 +9,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@seawatts/tsconfig": "workspace:*",
+    "@nugget/tsconfig": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "typescript": "catalog:"
@@ -19,7 +19,7 @@
     "./templates": "./src/templates/index.ts"
   },
   "license": "MIT",
-  "name": "@seawatts/email",
+  "name": "@nugget/email",
   "private": true,
   "scripts": {
     "clean": "git clean -xdf dist node_modules .turbo",

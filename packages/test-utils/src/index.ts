@@ -1,7 +1,7 @@
 import { createClerkClient } from '@clerk/backend';
-import { db } from '@seawatts/db/client';
-import { ApiKeys, AuthCodes, Orgs, Users } from '@seawatts/db/schema';
-import { createId } from '@seawatts/id';
+import { db } from '@nugget/db/client';
+import { ApiKeys, AuthCodes, Orgs, Users } from '@nugget/db/schema';
+import { createId } from '@nugget/id';
 import { eq } from 'drizzle-orm';
 import { env } from './env';
 

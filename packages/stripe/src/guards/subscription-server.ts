@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
-import { db } from '@seawatts/db/client';
-import { Orgs } from '@seawatts/db/schema';
+import { db } from '@nugget/db/client';
+import { Orgs } from '@nugget/db/schema';
 import { eq } from 'drizzle-orm';
 
 /**

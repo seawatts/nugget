@@ -15,7 +15,7 @@
     "./destinations/vscode-output": "./src/destinations/vscode-output.ts"
   },
   "license": "MIT",
-  "name": "@seawatts/logger",
+  "name": "@nugget/logger",
   "private": true,
   "scripts": {
     "clean": "git clean -xdf .turbo node_modules dist",

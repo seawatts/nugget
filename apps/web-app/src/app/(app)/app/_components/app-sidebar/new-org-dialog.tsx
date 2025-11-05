@@ -1,15 +1,15 @@
 'use client';
 
 import { useOrganizationList, useUser } from '@clerk/nextjs';
-import { MetricButton, MetricLink } from '@seawatts/analytics/components';
-import { api } from '@seawatts/api/react';
+import { MetricButton, MetricLink } from '@nugget/analytics/components';
+import { api } from '@nugget/api/react';
 import {
   Entitled,
   NotEntitled,
   useIsEntitled,
-} from '@seawatts/stripe/guards/client';
-import { Button } from '@seawatts/ui/components/button';
-import { P } from '@seawatts/ui/custom/typography';
+} from '@nugget/stripe/guards/client';
+import { Button } from '@nugget/ui/components/button';
+import { P } from '@nugget/ui/custom/typography';
 import {
   Dialog,
   DialogClose,
@@ -17,9 +17,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@seawatts/ui/dialog';
-import { Input } from '@seawatts/ui/input';
-import { Label } from '@seawatts/ui/label';
+} from '@nugget/ui/dialog';
+import { Input } from '@nugget/ui/input';
+import { Label } from '@nugget/ui/label';
 import { IconLoader2 } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { env } from '~/env.client';
@@ -64,7 +64,7 @@ export function NewOrgDialog({ open, onOpenChange }: NewOrgDialogProps) {
     const baseUrl =
       env.NEXT_PUBLIC_WEBHOOK_BASE_URL ||
       env.NEXT_PUBLIC_API_URL ||
-      'https://seawatts.sh';
+      'https://nugget.baby';
     if (!name) return `${baseUrl}/{org-name}/{webhook-name}`;
     if (!webhookName) return `${baseUrl}/${name}/{webhook-name}`;
     return `${baseUrl}/${name}/${webhookName}`;
@@ -217,7 +217,7 @@ export function NewOrgDialog({ open, onOpenChange }: NewOrgDialogProps) {
               disabled={isLoading || !isEntitled}
               id="org-name"
               onChange={(e) => setName(e.target.value)}
-              placeholder="Seawatts Inc"
+              placeholder="Nugget Inc"
               required
               value={name}
             />

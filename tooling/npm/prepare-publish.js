@@ -67,34 +67,34 @@ if (!skipInstallUpdate && !isVsCodeExtension) {
   console.log('⏭️  Skipping install script update (--no-install-update)');
 }
 
-// Get all @seawatts/* dependencies from both dependencies and devDependencies
-const seawattsDeps = [
+// Get all @nugget/* dependencies from both dependencies and devDependencies
+const nuggetDeps = [
   ...Object.keys(packageJson.dependencies || {}).filter(
-    (dep) => dep.startsWith('@seawatts/') && dep !== '@seawatts/client',
+    (dep) => dep.startsWith('@nugget/') && dep !== '@nugget/client',
   ),
   ...Object.keys(packageJson.devDependencies || {}).filter(
-    (dep) => dep.startsWith('@seawatts/') && dep !== '@seawatts/client',
+    (dep) => dep.startsWith('@nugget/') && dep !== '@nugget/client',
   ),
 ];
 
 // Remove workspace dependencies from both sections
-for (const dep of seawattsDeps) {
+for (const dep of nuggetDeps) {
   delete packageJson.dependencies?.[dep];
   delete packageJson.devDependencies?.[dep];
 }
 
-// Replace @seawatts/client workspace dependency with actual version
-if (packageJson.dependencies?.['@seawatts/client'] === 'workspace:*') {
-  packageJson.dependencies['@seawatts/client'] = clientPackageJson.version;
+// Replace @nugget/client workspace dependency with actual version
+if (packageJson.dependencies?.['@nugget/client'] === 'workspace:*') {
+  packageJson.dependencies['@nugget/client'] = clientPackageJson.version;
   console.log(
-    `✅ Updated @seawatts/client dependency to version ${clientPackageJson.version}`,
+    `✅ Updated @nugget/client dependency to version ${clientPackageJson.version}`,
   );
 }
 
-if (packageJson.devDependencies?.['@seawatts/client'] === 'workspace:*') {
-  packageJson.devDependencies['@seawatts/client'] = clientPackageJson.version;
+if (packageJson.devDependencies?.['@nugget/client'] === 'workspace:*') {
+  packageJson.devDependencies['@nugget/client'] = clientPackageJson.version;
   console.log(
-    `✅ Updated @seawatts/client devDependency to version ${clientPackageJson.version}`,
+    `✅ Updated @nugget/client devDependency to version ${clientPackageJson.version}`,
   );
 }
 
@@ -145,8 +145,8 @@ if (!isVsCodeExtension) {
 }
 
 console.log(
-  `✅ Removed ${seawattsDeps.length} workspace dependencies from package.json:`,
-  seawattsDeps.join(', '),
+  `✅ Removed ${nuggetDeps.length} workspace dependencies from package.json:`,
+  nuggetDeps.join(', '),
 );
 
 process.exit(0);

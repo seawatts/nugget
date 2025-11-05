@@ -1,16 +1,16 @@
 'use client';
 
-import { MetricButton } from '@seawatts/analytics/components';
-import { Badge } from '@seawatts/ui/badge';
+import { MetricButton } from '@nugget/analytics/components';
+import { Badge } from '@nugget/ui/badge';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@seawatts/ui/card';
-import { H1, H2, P } from '@seawatts/ui/custom/typography';
-import { MagicCard } from '@seawatts/ui/magicui/magic-card';
+} from '@nugget/ui/card';
+import { H1, H2, P } from '@nugget/ui/custom/typography';
+import { MagicCard } from '@nugget/ui/magicui/magic-card';
 import { ExternalLink } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -303,29 +303,29 @@ export function OSSFriendsSection() {
             className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8"
             variants={fadeInUpVariants}
           >
-            Seawatts finds inspiration in open-source projects. Here's a list of
-            our favorite ones that are building amazing developer tools and
-            platforms.
+            Nugget finds inspiration in open-source projects. Here's a list of
+            our favorite ones that are building amazing parenting and family
+            tools.
           </motion.p>
 
           <motion.div variants={fadeInUpVariants}>
             <MetricButton
               asChild
               className="rounded-full"
-              metric="oss_friends_view_seawatts_github_clicked"
+              metric="oss_friends_view_nugget_github_clicked"
               properties={{
-                destination: 'https://github.com/seawatts-sh/seawatts',
+                destination: 'https://github.com/nugget/nugget',
                 location: 'oss_friends_section',
                 source: 'marketing_site',
               }}
               size="lg"
             >
               <a
-                href="https://github.com/seawatts-sh/seawatts"
+                href="https://github.com/nugget/nugget"
                 rel="noopener noreferrer"
                 target="_blank"
               >
-                View Seawatts on GitHub
+                View Nugget on GitHub
               </a>
             </MetricButton>
           </motion.div>

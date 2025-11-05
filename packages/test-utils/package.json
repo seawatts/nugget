@@ -1,21 +1,21 @@
 {
   "dependencies": {
     "@clerk/backend": "2.19.1",
-    "@seawatts/db": "workspace:*",
-    "@seawatts/id": "workspace:*",
+    "@nugget/db": "workspace:*",
+    "@nugget/id": "workspace:*",
     "@t3-oss/env-nextjs": "catalog:",
     "drizzle-orm": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@seawatts/tsconfig": "workspace:*",
+    "@nugget/tsconfig": "workspace:*",
     "typescript": "catalog:"
   },
   "exports": {
     ".": "./src/index.ts"
   },
   "license": "MIT",
-  "name": "@seawatts/test-utils",
+  "name": "@nugget/test-utils",
   "private": true,
   "scripts": {
     "clean": "git clean -xdf .turbo node_modules dist",

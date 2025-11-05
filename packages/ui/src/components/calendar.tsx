@@ -1,7 +1,7 @@
 'use client';
 
-import { Button, buttonVariants } from '@seawatts/ui/components/button';
-import { cn } from '@seawatts/ui/lib/utils';
+import { Button, buttonVariants } from '@nugget/ui/components/button';
+import { cn } from '@nugget/ui/lib/utils';
 import {
   ChevronDownIcon,
   ChevronLeftIcon,

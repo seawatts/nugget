@@ -1,27 +1,27 @@
 'use client';
 
-import { MetricButton } from '@seawatts/analytics/components';
-import { api } from '@seawatts/api/react';
+import { MetricButton } from '@nugget/analytics/components';
+import { api } from '@nugget/api/react';
 import {
   SubscriptionActive,
   SubscriptionPastDue,
   useHasActiveSubscription,
   useHasPastDueSubscription,
-} from '@seawatts/stripe/guards/client';
+} from '@nugget/stripe/guards/client';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@seawatts/ui/card';
-import { Progress } from '@seawatts/ui/progress';
+} from '@nugget/ui/card';
+import { Progress } from '@nugget/ui/progress';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@seawatts/ui/tooltip';
+} from '@nugget/ui/tooltip';
 import { IconCurrencyDollar, IconInfoCircle } from '@tabler/icons-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useMemo } from 'react';

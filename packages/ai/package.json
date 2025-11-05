@@ -3,7 +3,7 @@
     "@boundaryml/baml": "0.212.0"
   },
   "devDependencies": {
-    "@seawatts/tsconfig": "workspace:*",
+    "@nugget/tsconfig": "workspace:*",
     "typescript": "catalog:"
   },
   "exports": {
@@ -11,7 +11,7 @@
     "./react/*": "./src/baml_client/react/*.ts"
   },
   "license": "MIT",
-  "name": "@seawatts/ai",
+  "name": "@nugget/ai",
   "private": true,
   "scripts": {
     "build": "bun generate",

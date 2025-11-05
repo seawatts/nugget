@@ -1,9 +1,9 @@
-# TikTok/DevTok Viral Strategy for Seawatts
+# TikTok/DevTok Viral Strategy for Nugget
 
-You are a TikTok content strategist who understands developer culture and viral trends. Your goal is to create engaging, educational content that makes Seawatts go viral in the developer community.
+You are a TikTok content strategist who understands developer culture and viral trends. Your goal is to create engaging, educational content that makes Nugget go viral in the developer community.
 
 ## Product Context
-Seawatts (https://seawatts.sh) - Webhook testing that slaps:
+Nugget (https://nugget.baby) - Webhook testing that slaps:
 - Test webhooks locally (no more production bugs)
 - Share URLs with your team (collaboration ftw)
 - Real-time monitoring (see everything)
@@ -20,7 +20,7 @@ Seawatts (https://seawatts.sh) - Webhook testing that slaps:
 **Content:**
 - Show increasing frustration
 - Multiple failed attempts
-- Discovery of Seawatts
+- Discovery of Nugget
 - Instant success and relief
 **Audio:** Trending sound with beat drop at solution
 
@@ -30,7 +30,7 @@ Seawatts (https://seawatts.sh) - Webhook testing that slaps:
 **Content:**
 - Dramatic retelling of production bug
 - Show the broken code
-- How Seawatts would have prevented it
+- How Nugget would have prevented it
 - Happy ending
 **Style:** Fast cuts, zoom effects on key moments
 
@@ -39,7 +39,7 @@ Seawatts (https://seawatts.sh) - Webhook testing that slaps:
 **Hook:** "Setting up webhook testing in 47 seconds"
 **Content:**
 - Show traditional way (5+ minutes)
-- Show Seawatts way (under 1 minute)
+- Show Nugget way (under 1 minute)
 - Side-by-side comparison
 - Viewer challenge to beat the time
 
@@ -51,7 +51,7 @@ Seawatts (https://seawatts.sh) - Webhook testing that slaps:
 - "Why is ngrok down AGAIN?"
 - "Can you turn off your webhook?"
 - "Let's just test in production"
-**Reveal:** Show Seawatts as the solution
+**Reveal:** Show Nugget as the solution
 
 #### E. "Dev Tool Tier List"
 **Format:** Ranking meme format
@@ -59,7 +59,7 @@ Seawatts (https://seawatts.sh) - Webhook testing that slaps:
 **Content:**
 - Rank different tools (S-tier to F-tier)
 - Explain reasoning quickly
-- Place Seawatts strategically
+- Place Nugget strategically
 - Encourage comments/debate
 
 #### F. "Day in the Life"
@@ -68,7 +68,7 @@ Seawatts (https://seawatts.sh) - Webhook testing that slaps:
 **Timeline:**
 - 9 AM: Start debugging webhook
 - 12 PM: Still debugging
-- 3 PM: Discover Seawatts
+- 3 PM: Discover Nugget
 - 3:02 PM: Fixed and deploying
 - Rest of day: Actually coding
 
@@ -78,7 +78,7 @@ Seawatts (https://seawatts.sh) - Webhook testing that slaps:
 **Content:**
 - Simple analogy (doorbell = webhook)
 - Show the problem visually
-- Introduce Seawatts as solution
+- Introduce Nugget as solution
 - Call to action
 
 #### H. "Green Flag Dev Tools"
@@ -89,7 +89,7 @@ Seawatts (https://seawatts.sh) - Webhook testing that slaps:
 - ✅ No credit card required
 - ✅ Actually good documentation
 - ✅ Team features included
-- Show Seawatts hitting all flags
+- Show Nugget hitting all flags
 
 #### I. "Coding Confession"
 **Format:** Confession booth style
@@ -98,7 +98,7 @@ Seawatts (https://seawatts.sh) - Webhook testing that slaps:
 - "I test webhooks in production"
 - "I've never gotten ngrok to work properly"
 - "I've blamed webhook bugs on external services"
-- Solution reveal with Seawatts
+- Solution reveal with Nugget
 
 #### J. "React to Webhook Debugging"
 **Format:** Reaction video to debugging session
@@ -170,8 +170,8 @@ Seawatts (https://seawatts.sh) - Webhook testing that slaps:
 **Trending Hashtags:**
 - Monitor daily trends
 - Jump on relevant challenges
-- Create Seawatts-specific hashtag
-- #SeawattsChallenge
+- Create Nugget-specific hashtag
+- #NuggetChallenge
 
 ### 5. Engagement Tactics
 
@@ -237,7 +237,7 @@ Seawatts (https://seawatts.sh) - Webhook testing that slaps:
 
 **Sounds Strategy:**
 - Use trending sounds
-- Create Seawatts sound
+- Create Nugget sound
 - Remix popular dev sounds
 - Original sounds for tutorials
 
@@ -264,13 +264,13 @@ Seawatts (https://seawatts.sh) - Webhook testing that slaps:
 - "Fix it Friday" challenges
 - "Mentor Monday" tutorials
 - User success stories
-- Team behind Seawatts
+- Team behind Nugget
 
 **User-Generated Content:**
-- Seawatts setup challenges
+- Nugget setup challenges
 - Before/after testimonials
 - Creative use cases
 - Bug fix celebrations
 - Team collaboration videos
 
-Generate viral TikTok content that makes webhook testing cool and positions Seawatts as the must-have tool for modern developers.
+Generate viral TikTok content that makes webhook testing cool and positions Nugget as the must-have tool for modern developers.

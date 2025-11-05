@@ -4,8 +4,8 @@
     "components": "@/components",
     "hooks": "@/hooks",
     "lib": "@/lib",
-    "ui": "@seawatts/ui/components",
-    "utils": "@seawatts/ui/lib/utils"
+    "ui": "@nugget/ui/components",
+    "utils": "@nugget/ui/lib/utils"
   },
   "iconLibrary": "lucide",
   "rsc": true,

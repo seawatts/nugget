@@ -1,7 +1,7 @@
 'use client';
 
 import { SignOutButton, useUser } from '@clerk/nextjs';
-import { Icons } from '@seawatts/ui/custom/icons';
+import { Icons } from '@nugget/ui/custom/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,9 +11,9 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from '@seawatts/ui/dropdown-menu';
-import { SidebarMenuButton } from '@seawatts/ui/sidebar';
-import { ToggleGroup, ToggleGroupItem } from '@seawatts/ui/toggle-group';
+} from '@nugget/ui/dropdown-menu';
+import { SidebarMenuButton } from '@nugget/ui/sidebar';
+import { ToggleGroup, ToggleGroupItem } from '@nugget/ui/toggle-group';
 
 import {
   ArrowLeftFromLine,

@@ -1,8 +1,8 @@
 'use client';
 
-import { Icons } from '@seawatts/ui/custom/icons';
-import { cn } from '@seawatts/ui/lib/utils';
-import { AnimatedBeam } from '@seawatts/ui/magicui/animated-beam';
+import { Icons } from '@nugget/ui/custom/icons';
+import { cn } from '@nugget/ui/lib/utils';
+import { AnimatedBeam } from '@nugget/ui/magicui/animated-beam';
 import type React from 'react';
 import { forwardRef, useRef } from 'react';
 import { Icons as MarketingIcons } from './icons';

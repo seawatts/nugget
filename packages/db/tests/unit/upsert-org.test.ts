@@ -59,7 +59,7 @@ mock.module('@clerk/nextjs/server', () => ({
 }));
 
 // Mock Stripe module before it gets imported
-mock.module('@seawatts/stripe', () => ({
+mock.module('@nugget/stripe', () => ({
   BILLING_INTERVALS: { MONTHLY: 'month' },
   createSubscription: mockCreateSubscription,
   getFreePlanPriceId: mockGetFreePlanPriceId,
@@ -68,7 +68,7 @@ mock.module('@seawatts/stripe', () => ({
 }));
 
 // Mock the stripe env module
-mock.module('@seawatts/stripe/src/env.server', () => ({
+mock.module('@nugget/stripe/src/env.server', () => ({
   env: {
     STRIPE_PUBLISHABLE_KEY: 'pk_test_mock',
     STRIPE_SECRET_KEY: 'sk_test_mock',
@@ -76,7 +76,7 @@ mock.module('@seawatts/stripe/src/env.server', () => ({
   },
 }));
 
-mock.module('@seawatts/id', () => ({
+mock.module('@nugget/id', () => ({
   generateRandomName: mockGenerateRandomName,
 }));
 
@@ -210,7 +210,7 @@ mock.module('../../src/schema', () => {
 });
 
 // Import after all mocks are set up
-import { upsertOrg } from '@seawatts/api/services';
+import { upsertOrg } from '@nugget/api/services';
 import type {
   ApiKeyType,
   OrgMembersType,

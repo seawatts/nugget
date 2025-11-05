@@ -14,5 +14,5 @@ module.exports = {
       return withoutHost;
     },
   },
-  siteUrl: process.env.SITE_URL || 'https://seawatts.com',
+  siteUrl: process.env.SITE_URL || 'https://nugget.baby',
 };

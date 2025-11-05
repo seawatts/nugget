@@ -1,6 +1,6 @@
-# @seawatts/email
+# @nugget/email
 
-Email sending package for Seawatts using Resend and React Email.
+Email sending package for Nugget using Resend and React Email.
 
 ## Features
 
@@ -12,7 +12,7 @@ Email sending package for Seawatts using Resend and React Email.
 ## Installation
 
 ```bash
-bun add @seawatts/email
+bun add @nugget/email
 ```
 
 ## Configuration
@@ -21,8 +21,8 @@ Set the following environment variables:
 
 ```env
 RESEND_API_KEY=your-resend-api-key
-EMAIL_FROM=noreply@seawatts.sh
-EMAIL_REPLY_TO=support@seawatts.sh # Optional
+EMAIL_FROM=noreply@nugget.baby
+EMAIL_REPLY_TO=support@nugget.baby # Optional
 ```
 
 ## Usage
@@ -30,13 +30,13 @@ EMAIL_REPLY_TO=support@seawatts.sh # Optional
 ### Basic Email Sending
 
 ```typescript
-import { createEmailClient } from '@seawatts/email';
-import { WebhookAccessRequestEmail } from '@seawatts/email/templates';
+import { createEmailClient } from '@nugget/email';
+import { WebhookAccessRequestEmail } from '@nugget/email/templates';
 
 const emailClient = createEmailClient({
   apiKey: process.env.RESEND_API_KEY!,
-  from: 'noreply@seawatts.sh',
-  replyTo: 'support@seawatts.sh',
+  from: 'noreply@nugget.baby',
+  replyTo: 'support@nugget.baby',
 });
 
 // Send a single email
@@ -49,9 +49,9 @@ await emailClient.send({
     webhookName="Production Webhook"
     webhookId="wh_123"
     message="I need access for testing"
-    approveUrl="https://seawatts.sh/app/approve/123"
-    rejectUrl="https://seawatts.sh/app/reject/123"
-    dashboardUrl="https://seawatts.sh/app/dashboard"
+    approveUrl="https://nugget.baby/app/approve/123"
+    rejectUrl="https://nugget.baby/app/reject/123"
+    dashboardUrl="https://nugget.baby/app/dashboard"
   />,
 });
 ```

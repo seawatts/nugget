@@ -1,6 +1,6 @@
 import { clerkClient } from '@clerk/nextjs/server';
-import { db } from '@seawatts/db/client';
-import { AuthCodes } from '@seawatts/db/schema';
+import { db } from '@nugget/db/client';
+import { AuthCodes } from '@nugget/db/schema';
 import { TRPCError } from '@trpc/server';
 import { and, eq, gte, isNull } from 'drizzle-orm';
 import { z } from 'zod';

@@ -1,7 +1,7 @@
 'use client';
 
-import { Icons } from '@seawatts/ui/custom/icons';
-import { cn } from '@seawatts/ui/lib/utils';
+import { Icons } from '@nugget/ui/custom/icons';
+import { cn } from '@nugget/ui/lib/utils';
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +15,7 @@ import {
   SidebarMenuItem,
   SidebarMenuSkeleton,
   SidebarTrigger,
-} from '@seawatts/ui/sidebar';
+} from '@nugget/ui/sidebar';
 import {
   BookOpen,
   Code,
@@ -131,7 +131,7 @@ export function AppSidebar({
             <SidebarMenuButton asChild>
               <a
                 className="flex items-center justify-between"
-                href="https://docs.seawatts.com"
+                href="https://docs.nugget.baby"
                 rel="noreferrer"
                 target="_blank"
               >
@@ -147,7 +147,7 @@ export function AppSidebar({
             <SidebarMenuButton asChild>
               <a
                 className="flex items-center justify-between"
-                href="https://docs.seawatts.com/ref/overview"
+                href="https://docs.nugget.baby/ref/overview"
                 rel="noreferrer"
                 target="_blank"
               >
@@ -179,7 +179,7 @@ export function AppSidebar({
             <SidebarMenuButton asChild>
               <a
                 className="flex items-center justify-between"
-                href="https://github.com/seawatts-ai/seawatts/blob/canary/CHANGELOG.md"
+                href="https://github.com/nugget/nugget/blob/main/CHANGELOG.md"
                 rel="noreferrer"
                 target="_blank"
               >

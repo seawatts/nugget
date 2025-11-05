@@ -6,8 +6,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@seawatts/ui/components/dialog';
-import { cn } from '@seawatts/ui/lib/utils';
+} from '@nugget/ui/components/dialog';
+import { cn } from '@nugget/ui/lib/utils';
 import { Command as CommandPrimitive } from 'cmdk';
 import { SearchIcon } from 'lucide-react';
 import type * as React from 'react';

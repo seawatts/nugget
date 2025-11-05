@@ -2,7 +2,7 @@
 // These are extracted from the Stripe entities configuration in create-stripe-entities.ts
 
 /**
- * All available entitlements in the Seawatts system
+ * All available entitlements in the Nugget system
  * These are the lookup keys used in Stripe's entitlements system
  */
 export const ENTITLEMENTS = {

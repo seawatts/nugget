@@ -2,7 +2,7 @@
   "dependencies": {
     "@bacons/text-decoder": "0.0.0",
     "@expo/metro-config": "54.0.8",
-    "@seawatts/api": "workspace:*",
+    "@nugget/api": "workspace:*",
     "@shopify/flash-list": "2.2.0",
     "@tanstack/react-query": "catalog:",
     "@trpc/client": "catalog:",
@@ -30,14 +30,14 @@
     "@babel/core": "7.28.5",
     "@babel/preset-env": "7.28.5",
     "@babel/runtime": "7.28.4",
-    "@seawatts/tsconfig": "workspace:*",
+    "@nugget/tsconfig": "workspace:*",
     "@types/babel__core": "7.20.5",
     "@types/react": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:"
   },
   "main": "expo-router/entry",
-  "name": "@seawatts/expo",
+  "name": "@nugget/expo",
   "private": true,
   "scripts": {
     "android": "expo run:android",

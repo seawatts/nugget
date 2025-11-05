@@ -5,7 +5,7 @@
   "exports": {
     ".": "./prepare-publish.js"
   },
-  "name": "@seawatts/npm",
+  "name": "@nugget/npm",
   "private": true,
   "publishConfig": {
     "access": "public"

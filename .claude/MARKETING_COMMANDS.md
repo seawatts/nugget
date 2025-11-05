@@ -1,6 +1,6 @@
-# Seawatts Marketing Slash Commands
+# Nugget Marketing Slash Commands
 
-Welcome to your comprehensive social media marketing toolkit for Seawatts! These Claude Code slash commands provide full agentic loops for creating and publishing viral content across all major platforms.
+Welcome to your comprehensive social media marketing toolkit for Nugget! These Claude Code slash commands provide full agentic loops for creating and publishing viral content across all major platforms.
 
 ## 🚀 Quick Start
 

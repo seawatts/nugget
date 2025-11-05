@@ -1,4 +1,4 @@
-import { SphereMask } from '@seawatts/ui/magicui/sphere-mask';
+import { SphereMask } from '@nugget/ui/magicui/sphere-mask';
 
 import { CTASection } from '../_components/sections/cta-section';
 import { FooterSection } from '../_components/sections/footer-section';
@@ -17,7 +17,7 @@ export default function Page() {
         <SphereMask />
         <section className="container mt-24 flex max-w-5xl flex-col gap-8 text-left px-4">
           <div>
-            <h2 className="mb-1 mt-5 text-xl">Seawatts, LLC.</h2>
+            <h2 className="mb-1 mt-5 text-xl">SEAWATTS, LLC.</h2>
             <h2 className="mb-4">Privacy Policy</h2>
             <p>
               <strong>Effective Date: May 10, 2025</strong>
@@ -25,12 +25,11 @@ export default function Page() {
           </div>
           <p>
             This Privacy Policy applies to Personal Data (defined below)
-            processed by Seawatts LLC (“Seawatts,” “we,” “us,” or “our”) in the
-            course of providing our SaaS based developer tool for building AI
-            functionality into software products, as collected from our website
-            (the “Site”), our web applications (the “Apps”), and our related
-            online service offerings (collectively with the “Site” and the
-            “Apps”, the “Services”).
+            processed by SEAWATTS LLC ("SEAWATTS," "we," "us," or "our") in the
+            course of providing our parenting journey application, as collected
+            from our website (the "Site"), our web applications (the "Apps"),
+            and our related online service offerings (collectively with the
+            "Site" and the "Apps", the "Services").
           </p>
           <p>
             This Privacy Policy explains what Personal Data we collect, how we
@@ -312,7 +311,7 @@ export default function Page() {
           <p>
             <strong>Affiliates:</strong> We may share Personal Data with our
             affiliates, meaning an entity that controls, is controlled by, or is
-            under common control with Seawatts. Our affiliates may use the
+            under common control with ChickenNugget. Our affiliates may use the
             Personal Data we share in a manner consistent with this Privacy
             Policy.
           </p>
@@ -337,7 +336,7 @@ export default function Page() {
           <h4>6. CHILDREN</h4>
           <p>
             Our Service is not directed to children who are under the age of 18.
-            Seawatts does not knowingly collect Personal Data from children
+            ChickenNugget does not knowingly collect Personal Data from children
             under the age of 16. If you have reason to believe that a child
             under the age of 16 has provided Personal Data to us through the
             Service please contact us at chris.watts.t@gmail.com and we will
@@ -347,7 +346,7 @@ export default function Page() {
           <h4>7. LINKS TO OTHER WEBSITES AND THIRD PARTY FUNCTIONALITY</h4>
           <p>
             The Service may contain links to other websites or applications, or
-            other functionality not operated or controlled by Seawatts
+            other functionality not operated or controlled by ChickenNugget
             (“Third-Party Services”). You will generally have discretion and
             control over the Third-Party Services with whom you elect to
             interact and share your Personal Data, except as otherwise provided

@@ -1,7 +1,7 @@
 {
   "devDependencies": {
     "@happy-dom/global-registrator": "20.0.10",
-    "@seawatts/tsconfig": "workspace:*",
+    "@nugget/tsconfig": "workspace:*",
     "@testing-library/jest-dom": "6.9.1",
     "typescript": "catalog:"
   },
@@ -9,7 +9,7 @@
     ".": "./src/index.ts"
   },
   "license": "MIT",
-  "name": "@seawatts/tooling-testing",
+  "name": "@nugget/tooling-testing",
   "private": true,
   "scripts": {
     "clean": "git clean -xdf .turbo node_modules dist",

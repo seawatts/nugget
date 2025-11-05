@@ -1,6 +1,6 @@
-# @seawatts/analytics
+# @nugget/analytics
 
-Analytics package for Seawatts with PostHog integration and Next.js components.
+Analytics package for Nugget with PostHog integration and Next.js components.
 
 ## Components
 
@@ -11,7 +11,7 @@ A Link component that extends Next.js Link with automatic PostHog analytics trac
 #### Usage
 
 ```tsx
-import { MetricLink } from '@seawatts/analytics/components';
+import { MetricLink } from '@nugget/analytics/components';
 
 // Basic usage
 <MetricLink href="/dashboard" metric="navigation_dashboard_clicked">
@@ -56,17 +56,17 @@ When a user clicks on a MetricLink, it automatically calls `posthog.capture(metr
 
 The package includes PostHog client and server-side integrations for various environments:
 
-- **Client**: `@seawatts/analytics/posthog/client`
-- **Server**: `@seawatts/analytics/posthog/server`
-- **Chrome Extension**: `@seawatts/analytics/posthog/chrome-extension`
-- **VS Code Extension**: `@seawatts/analytics/posthog/vscode`
+- **Client**: `@nugget/analytics/posthog/client`
+- **Server**: `@nugget/analytics/posthog/server`
+- **Chrome Extension**: `@nugget/analytics/posthog/chrome-extension`
+- **VS Code Extension**: `@nugget/analytics/posthog/vscode`
 
 ## Analytics Providers
 
 Use the `AnalyticsProviders` component to wrap your app with analytics services:
 
 ```tsx
-import { AnalyticsProviders } from '@seawatts/analytics';
+import { AnalyticsProviders } from '@nugget/analytics';
 
 export default function RootLayout({ children }) {
   return (

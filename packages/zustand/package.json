@@ -3,14 +3,14 @@
     "zustand": "catalog:"
   },
   "devDependencies": {
-    "@seawatts/tsconfig": "workspace:*",
+    "@nugget/tsconfig": "workspace:*",
     "typescript": "catalog:"
   },
   "exports": {
     ".": "./src/index.ts"
   },
   "license": "MIT",
-  "name": "@seawatts/zustand",
+  "name": "@nugget/zustand",
   "private": true,
   "scripts": {
     "clean": "git clean -xdf .turbo node_modules dist",

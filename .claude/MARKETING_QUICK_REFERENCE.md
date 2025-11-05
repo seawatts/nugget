@@ -1,4 +1,4 @@
-# 🚀 Seawatts Marketing Commands - Quick Reference
+# 🚀 Nuget Marketing Commands - Quick Reference
 
 ## Core Commands
 

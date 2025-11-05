@@ -1,7 +1,7 @@
 'use client';
 
-import { MetricButton } from '@seawatts/analytics/components';
-import { Icons } from '@seawatts/ui/custom/icons';
+import { MetricButton } from '@nugget/analytics/components';
+import { Icons } from '@nugget/ui/custom/icons';
 import { useAction } from 'next-safe-action/hooks';
 import posthog from 'posthog-js';
 import { useCallback, useState } from 'react';

@@ -1,4 +1,4 @@
-import { debug } from '@seawatts/logger';
+import { debug } from '@nugget/logger';
 import type {
   REALTIME_SUBSCRIBE_STATES,
   RealtimeChannel,
@@ -9,7 +9,7 @@ import type {
 import { REALTIME_POSTGRES_CHANGES_LISTEN_EVENT } from '@supabase/supabase-js';
 import type { TableName, Tables } from './types';
 
-const log = debug('seawatts:lib:channel');
+const log = debug('nugget:lib:channel');
 
 type SubscriptionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 

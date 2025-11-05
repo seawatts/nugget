@@ -1,8 +1,8 @@
-import { debug } from '@seawatts/logger';
-import { createSelectors } from '@seawatts/zustand';
+import { debug } from '@nugget/logger';
+import { createSelectors } from '@nugget/zustand';
 import { createStore } from 'zustand';
 
-const log = debug('seawatts:lib:network-store');
+const log = debug('nugget:lib:network-store');
 
 export type NetworkStatus = 'online' | 'offline' | 'checking';
 
@@ -44,7 +44,7 @@ const store = createStore<NetworkStore>()((set, get) => {
       }
 
       // Then try to resolve our domain
-      await lookup('seawatts.sh');
+      await lookup('nugget.baby');
       return true;
     } catch (error) {
       log('Network check failed:', error);

@@ -1,17 +1,17 @@
 'use client';
 
 import { useOrganization, useOrganizationList } from '@clerk/nextjs';
-import { MetricButton } from '@seawatts/analytics/components';
+import { MetricButton } from '@nugget/analytics/components';
 import {
   Command,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
-} from '@seawatts/ui/command';
-import { Icons } from '@seawatts/ui/custom/icons';
-import { cn } from '@seawatts/ui/lib/utils';
-import { Popover, PopoverContent, PopoverTrigger } from '@seawatts/ui/popover';
+} from '@nugget/ui/command';
+import { Icons } from '@nugget/ui/custom/icons';
+import { cn } from '@nugget/ui/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@nugget/ui/popover';
 import { ChevronsUpDown } from 'lucide-react';
 import posthog from 'posthog-js';
 import React from 'react';

@@ -1,6 +1,6 @@
-# Seawatts Integration Tests
+# Nugget Integration Tests
 
-This package contains comprehensive integration tests for the Seawatts platform, testing the interaction between the web application, CLI, and VSCode extension.
+This package contains comprehensive integration tests for the Nugget platform, testing the interaction between the web application, CLI, and VSCode extension.
 
 ## Overview
 
@@ -148,7 +148,7 @@ The package is integrated with Turborepo. Run tests as part of the monorepo:
 
 ```bash
 # From root directory
-turbo run test --filter=@seawatts/integ-test
+turbo run test --filter=@nugget/integ-test
 ```
 
 ## Test Structure

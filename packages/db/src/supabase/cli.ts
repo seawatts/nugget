@@ -1,9 +1,9 @@
-import { debug } from '@seawatts/logger';
+import { debug } from '@nugget/logger';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { env } from '../env.client';
 import type { Database } from './types';
 
-const log = debug('seawatts:lib:supabase:realtime-client');
+const log = debug('nugget:lib:supabase:realtime-client');
 
 export function createClient(props: { authToken: string; url?: string }) {
   const { authToken, url } = props;

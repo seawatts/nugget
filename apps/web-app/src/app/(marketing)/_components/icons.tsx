@@ -1,4 +1,4 @@
-import { cn } from '@seawatts/ui/lib/utils';
+import { cn } from '@nugget/ui/lib/utils';
 import Image from 'next/image';
 
 export const Icons = {
@@ -1318,7 +1318,7 @@ export const Icons = {
   ),
   logo: ({ className }: { className?: string }) => (
     <Image
-      alt="Seawatts Logo"
+      alt="Nugget Logo"
       className={cn('size-4', className)}
       height={24}
       src="/logo.svg"

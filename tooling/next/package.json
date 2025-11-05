@@ -5,14 +5,14 @@
     "next": "catalog:"
   },
   "devDependencies": {
-    "@seawatts/tsconfig": "workspace:*",
+    "@nugget/tsconfig": "workspace:*",
     "typescript": "catalog:"
   },
   "exports": {
     "./base": "./base.mjs"
   },
   "license": "MIT",
-  "name": "@seawatts/next-config",
+  "name": "@nugget/next-config",
   "private": true,
   "scripts": {
     "clean": "git clean -xdf .turbo node_modules",

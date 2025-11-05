@@ -7,17 +7,17 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@seawatts/ui/card';
-import { type ChartConfig, ChartContainer } from '@seawatts/ui/chart';
-import { useIsMobile } from '@seawatts/ui/hooks/use-mobile';
+} from '@nugget/ui/card';
+import { type ChartConfig, ChartContainer } from '@nugget/ui/chart';
+import { useIsMobile } from '@nugget/ui/hooks/use-mobile';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@seawatts/ui/select';
-import { ToggleGroup, ToggleGroupItem } from '@seawatts/ui/toggle-group';
+} from '@nugget/ui/select';
+import { ToggleGroup, ToggleGroupItem } from '@nugget/ui/toggle-group';
 import { format } from 'date-fns';
 import * as React from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';

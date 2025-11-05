@@ -1,8 +1,8 @@
 {
   "dependencies": {
     "@clerk/nextjs": "catalog:",
-    "@seawatts/analytics": "workspace:*",
-    "@seawatts/db": "workspace:*",
+    "@nugget/analytics": "workspace:*",
+    "@nugget/db": "workspace:*",
     "@t3-oss/env-core": "catalog:",
     "drizzle-orm": "catalog:",
     "next": "catalog:",
@@ -13,7 +13,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@seawatts/tsconfig": "workspace:*",
+    "@nugget/tsconfig": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "typescript": "catalog:"
@@ -24,7 +24,7 @@
     "./guards/server": "./src/guards/server.ts"
   },
   "license": "MIT",
-  "name": "@seawatts/stripe",
+  "name": "@nugget/stripe",
   "private": true,
   "scripts": {
     "build": "bun run populate-ids",

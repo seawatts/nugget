@@ -3,16 +3,16 @@ import {
   type Organization,
   type User,
 } from '@clerk/nextjs/server';
-import { db } from '@seawatts/db/client';
-import { ApiKeys, OrgMembers, Orgs, Users } from '@seawatts/db/schema';
-import { generateRandomName, generateUniqueOrgName } from '@seawatts/id';
+import { db } from '@nugget/db/client';
+import { ApiKeys, OrgMembers, Orgs, Users } from '@nugget/db/schema';
+import { generateRandomName, generateUniqueOrgName } from '@nugget/id';
 import {
   BILLING_INTERVALS,
   createSubscription,
   getFreePlanPriceId,
   PLAN_TYPES,
   upsertStripeCustomer,
-} from '@seawatts/stripe';
+} from '@nugget/stripe';
 import { eq } from 'drizzle-orm';
 import type Stripe from 'stripe';
 

@@ -1,19 +1,19 @@
 'use client';
 
-import { MetricButton } from '@seawatts/analytics/components';
-import { api } from '@seawatts/api/react';
-import { useHasActiveSubscription } from '@seawatts/stripe/guards/client';
-import { Badge } from '@seawatts/ui/badge';
+import { MetricButton } from '@nugget/analytics/components';
+import { api } from '@nugget/api/react';
+import { useHasActiveSubscription } from '@nugget/stripe/guards/client';
+import { Badge } from '@nugget/ui/badge';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@seawatts/ui/card';
-import { Icons } from '@seawatts/ui/custom/icons';
-import { P } from '@seawatts/ui/custom/typography';
-import { Skeleton } from '@seawatts/ui/skeleton';
+} from '@nugget/ui/card';
+import { Icons } from '@nugget/ui/custom/icons';
+import { P } from '@nugget/ui/custom/typography';
+import { Skeleton } from '@nugget/ui/skeleton';
 
 export function InvoicesSection() {
   const hasActiveSubscription = useHasActiveSubscription();

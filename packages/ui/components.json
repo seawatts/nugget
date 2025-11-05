@@ -1,12 +1,12 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
   "aliases": {
-    "components": "@seawatts/ui/components",
-    "hooks": "@seawatts/ui/hooks",
-    "lib": "@seawatts/ui/lib",
-    "magicui": "@seawatts/ui/magicui",
-    "ui": "@seawatts/ui/components",
-    "utils": "@seawatts/ui/lib/utils"
+    "components": "@nugget/ui/components",
+    "hooks": "@nugget/ui/hooks",
+    "lib": "@nugget/ui/lib",
+    "magicui": "@nugget/ui/magicui",
+    "ui": "@nugget/ui/components",
+    "utils": "@nugget/ui/lib/utils"
   },
   "iconLibrary": "lucide",
   "rsc": true,

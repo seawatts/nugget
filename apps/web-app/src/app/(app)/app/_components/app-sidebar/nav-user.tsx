@@ -1,9 +1,9 @@
 'use client';
 
 import { useAuth, useOrganizationList, useUser } from '@clerk/nextjs';
-import { MetricLink } from '@seawatts/analytics/components';
-import { api } from '@seawatts/api/react';
-import { Avatar, AvatarFallback, AvatarImage } from '@seawatts/ui/avatar';
+import { MetricLink } from '@nugget/analytics/components';
+import { api } from '@nugget/api/react';
+import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,13 +11,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@seawatts/ui/dropdown-menu';
+} from '@nugget/ui/dropdown-menu';
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from '@seawatts/ui/sidebar';
-import { ToggleGroup, ToggleGroupItem } from '@seawatts/ui/toggle-group';
+} from '@nugget/ui/sidebar';
+import { ToggleGroup, ToggleGroupItem } from '@nugget/ui/toggle-group';
 import {
   IconBuilding,
   IconCheck,

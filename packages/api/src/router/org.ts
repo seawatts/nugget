@@ -1,4 +1,4 @@
-import { ApiKeys, OrgMembers, Orgs } from '@seawatts/db/schema';
+import { ApiKeys, OrgMembers, Orgs } from '@nugget/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { createOrg } from '../services';

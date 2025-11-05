@@ -1,4 +1,4 @@
-import { cn } from '@seawatts/ui/lib/utils';
+import { cn } from '@nugget/ui/lib/utils';
 import type * as React from 'react';
 
 function Card({ className, ...props }: React.ComponentProps<'div'>) {

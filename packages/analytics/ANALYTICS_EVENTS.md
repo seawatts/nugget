@@ -1,11 +1,11 @@
 # Analytics Events Documentation
 
-This document outlines all the PostHog analytics events being tracked in the Seawatts web application.
+This document outlines all the PostHog analytics events being tracked in the Nugget web application.
 
 ## Navigation Events
 
 ### Main Navigation
-- **`navigation_logo_clicked`** - When user clicks the Seawatts AI logo
+- **`navigation_logo_clicked`** - When user clicks the Nugget logo
   - Properties: None
   - Location: App sidebar logo
 
@@ -138,7 +138,7 @@ All events follow a consistent pattern:
 
 ### Using MetricLink for Navigation
 ```tsx
-import { MetricLink } from '@seawatts/analytics';
+import { MetricLink } from '@nugget/analytics';
 
 <MetricLink
   href="/app/dashboard"

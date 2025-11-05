@@ -1,13 +1,13 @@
 'use client';
 
-import { MetricButton } from '@seawatts/analytics/components';
+import { MetricButton } from '@nugget/analytics/components';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@seawatts/ui/card';
+} from '@nugget/ui/card';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { deleteTeamAction } from '../actions';

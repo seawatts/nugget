@@ -7,13 +7,13 @@
  * The pieces you will need to use are documented accordingly near the end
  */
 
-import { debug } from '@seawatts/logger';
+import { debug } from '@nugget/logger';
 import { initTRPC, TRPCError } from '@trpc/server';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
 import type { Context } from './context';
 
-const log = debug('seawatts:trpc');
+const log = debug('nugget:trpc');
 
 /**
  * 2. INITIALIZATION

@@ -2,7 +2,7 @@
   "dependencies": {
     "mint": "4.2.186"
   },
-  "name": "@seawatts/docs",
+  "name": "@nugget/docs",
   "private": true,
   "scripts": {
     "dev": "mint dev"

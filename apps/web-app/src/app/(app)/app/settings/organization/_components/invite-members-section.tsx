@@ -1,25 +1,25 @@
 'use client';
 
 import { useOrganization, useUser } from '@clerk/nextjs';
-import { MetricButton, MetricLink } from '@seawatts/analytics/components';
+import { MetricButton, MetricLink } from '@nugget/analytics/components';
 import {
   Entitled,
   NotEntitled,
   useIsEntitled,
-} from '@seawatts/stripe/guards/client';
-import { Badge } from '@seawatts/ui/badge';
-import { Button } from '@seawatts/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@seawatts/ui/card';
-import { Input } from '@seawatts/ui/input';
-import { Label } from '@seawatts/ui/label';
+} from '@nugget/stripe/guards/client';
+import { Badge } from '@nugget/ui/badge';
+import { Button } from '@nugget/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@nugget/ui/card';
+import { Input } from '@nugget/ui/input';
+import { Label } from '@nugget/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@seawatts/ui/select';
-import { toast } from '@seawatts/ui/sonner';
+} from '@nugget/ui/select';
+import { toast } from '@nugget/ui/sonner';
 import { useState } from 'react';
 
 export function InviteMembersSection() {

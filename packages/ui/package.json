@@ -60,7 +60,7 @@
     "vaul": "1.1.2"
   },
   "devDependencies": {
-    "@seawatts/tsconfig": "workspace:*",
+    "@nugget/tsconfig": "workspace:*",
     "@tailwindcss/postcss": "4.1.16",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
@@ -77,7 +77,7 @@
     "./postcss.config": "./postcss.config.mjs"
   },
   "license": "MIT",
-  "name": "@seawatts/ui",
+  "name": "@nugget/ui",
   "private": true,
   "scripts": {
     "clean": "git clean -xdf .turbo node_modules dist",

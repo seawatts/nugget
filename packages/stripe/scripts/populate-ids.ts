@@ -8,18 +8,18 @@ import { PRICE_LOOKUP_KEYS } from './billing-ids.template';
 
 // Define the mapping of lookup keys to their corresponding product names
 const LOOKUP_KEY_MAPPINGS = {
-  seawatts_dedicated_support_2025_01_monthly: {
+  nugget_dedicated_support_2025_01_monthly: {
     name: 'DEDICATED_SUPPORT',
     type: 'product',
   },
-  seawatts_dedicated_support_2025_01_yearly: {
+  nugget_dedicated_support_2025_01_yearly: {
     name: 'DEDICATED_SUPPORT',
     type: 'product',
   },
   // Product mappings
-  seawatts_free_2025_01_monthly: { name: 'FREE_PLAN', type: 'product' },
-  seawatts_team_2025_01_monthly: { name: 'TEAM_PLAN', type: 'product' },
-  seawatts_team_2025_01_yearly: { name: 'TEAM_PLAN', type: 'product' },
+  nugget_free_2025_01_monthly: { name: 'FREE_PLAN', type: 'product' },
+  nugget_team_2025_01_monthly: { name: 'TEAM_PLAN', type: 'product' },
+  nugget_team_2025_01_yearly: { name: 'TEAM_PLAN', type: 'product' },
 } as const;
 
 async function fetchStripeIds(stripe: Stripe) {

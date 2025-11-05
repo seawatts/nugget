@@ -1,15 +1,15 @@
 'use client';
 
-import { api } from '@seawatts/api/react';
+import { api } from '@nugget/api/react';
 import {
   Card,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@seawatts/ui/card';
-import { CopyButton } from '@seawatts/ui/custom/copy-button';
-import { Skeleton } from '@seawatts/ui/skeleton';
+} from '@nugget/ui/card';
+import { CopyButton } from '@nugget/ui/custom/copy-button';
+import { Skeleton } from '@nugget/ui/skeleton';
 import { env } from '~/env.client';
 import { maskApiKey } from '~/lib/mask-api-key';
 
@@ -24,10 +24,10 @@ export function SectionCards() {
   const webhook: { id: string; name: string } | null = null;
   const apiKey = apiKeys.data?.[0];
   const maskedApiKey = apiKey ? maskApiKey(apiKey.key) : '';
-  const webhookUrl = `${env.NEXT_PUBLIC_WEBHOOK_BASE_URL || env.NEXT_PUBLIC_API_URL || 'https://seawatts.sh'}/${org.data?.name}/webhook-name`;
+  const webhookUrl = `${env.NEXT_PUBLIC_WEBHOOK_BASE_URL || env.NEXT_PUBLIC_API_URL || 'https://nugget.baby'}/${org.data?.name}/webhook-name`;
   const webhookConfigComments = `
-# seawatts Webhook Configuration
-# For more information, visit: https://docs.seawatts.sh/configuration
+# Nugget Webhook Configuration
+# For more information, visit: https://docs.nugget.baby/configuration
 #
 # Schema:
 #   webhookId: string                    # Unique identifier for your webhook
@@ -106,7 +106,7 @@ delivery:
               />
             </div>
             <div className="text-muted-foreground text-xs mt-1">
-              Put this in your seawatts.yaml file
+              Put this in your nugget.yaml file
             </div>
           </div>
         </CardFooter>
@@ -225,12 +225,12 @@ delivery:
           <div className="flex flex-col gap-1 w-full">
             <div className="flex items-center gap-2">
               <span className="font-mono bg-muted px-2 py-1 rounded text-xs select-all">
-                env seawatts_API_KEY=
-                {maskedApiKey} npx -y @seawatts/mcp
+                env NUGGET_API_KEY=
+                {maskedApiKey} npx -y @nugget/mcp
               </span>
               <CopyButton
                 size="sm"
-                text={`env seawatts_API_KEY=${apiKey?.key} npx -y @seawatts/mcp`}
+                text={`env NUGGET_API_KEY=${apiKey?.key} npx -y @nugget/mcp`}
                 variant="outline"
               />
             </div>

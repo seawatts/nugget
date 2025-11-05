@@ -1,14 +1,14 @@
 'use client';
 
-import { Badge } from '@seawatts/ui/badge';
+import { Badge } from '@nugget/ui/badge';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@seawatts/ui/card';
-import { MagicCard } from '@seawatts/ui/magicui/magic-card';
+} from '@nugget/ui/card';
+import { MagicCard } from '@nugget/ui/magicui/magic-card';
 import { motion } from 'motion/react';
 
 interface Competitor {
@@ -20,7 +20,7 @@ interface Competitor {
   name: string;
   pricing: string;
   strengths: string[];
-  seawattsAdvantages: string[];
+  nuggetAdvantages: string[];
   weaknesses: string[];
   website: string;
 }
@@ -111,10 +111,10 @@ export function CompetitorCard({ competitor, index }: CompetitorCardProps) {
 
             <div>
               <h4 className="font-semibold mb-3 text-primary">
-                Why Teams Choose Seawatts:
+                Why Teams Choose Nugget:
               </h4>
               <ul className="space-y-2">
-                {competitor.seawattsAdvantages.map((advantage) => (
+                {competitor.nuggetAdvantages.map((advantage) => (
                   <li
                     className="flex items-center gap-2 text-sm"
                     key={advantage}

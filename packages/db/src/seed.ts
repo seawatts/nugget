@@ -22,8 +22,8 @@ await db.delete(ApiKeys);
 
 const userId = 'user_30oVYOGDYUTdXqB6HImz3XbRyTs';
 const orgId = 'org_30oVYhhebEP3q4dSFlxo8DyAxhr';
-const orgName = 'seawatts';
-const apiKeyId = 'ak_seawatts';
+const orgName = 'nugget';
+const apiKeyId = 'ak_nugget';
 const stripeCustomerId = 'cus_Snv28tYxHudPzx';
 const stripeSubscriptionId = 'sub_1RsJCH4hM6DbRRtOGcENjqIO';
 

@@ -2,15 +2,15 @@
 
 import { useOrganization, useOrganizationList, useUser } from '@clerk/nextjs';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { api } from '@seawatts/api/react';
+import { api } from '@nugget/api/react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@seawatts/ui/card';
-import { Button } from '@seawatts/ui/components/button';
+} from '@nugget/ui/card';
+import { Button } from '@nugget/ui/components/button';
 import {
   Form,
   FormControl,
@@ -19,11 +19,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@seawatts/ui/components/form';
-import { Input } from '@seawatts/ui/components/input';
-import { Icons } from '@seawatts/ui/custom/icons';
-import { cn } from '@seawatts/ui/lib/utils';
-import { toast } from '@seawatts/ui/sonner';
+} from '@nugget/ui/components/form';
+import { Input } from '@nugget/ui/components/input';
+import { Icons } from '@nugget/ui/custom/icons';
+import { cn } from '@nugget/ui/lib/utils';
+import { toast } from '@nugget/ui/sonner';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -242,11 +242,11 @@ export function OnboardingForm({
   // Live URL preview
   const webhookUrl = (() => {
     // For local development, use NEXT_PUBLIC_API_URL (localhost:3000)
-    // For production, use NEXT_PUBLIC_WEBHOOK_BASE_URL or fallback to seawatts.sh
+    // For production, use NEXT_PUBLIC_WEBHOOK_BASE_URL or fallback to nugget.baby
     const baseUrl =
       env.NEXT_PUBLIC_WEBHOOK_BASE_URL ||
       env.NEXT_PUBLIC_API_URL ||
-      'https://seawatts.sh';
+      'https://nugget.baby';
     if (!orgName) return `${baseUrl}/{org-name}/{webhook-name}`;
     if (!webhookName) return `${baseUrl}/${orgName}/{webhook-name}`;
     return `${baseUrl}/${orgName}/${webhookName}`;
@@ -439,7 +439,7 @@ export function OnboardingForm({
     <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center p-4">
       <Card className="w-full max-w-2xl">
         <CardHeader>
-          <CardTitle className="text-2xl">Welcome to seawatts! 🎉</CardTitle>
+          <CardTitle className="text-2xl">Welcome to Nugget! 🎉</CardTitle>
           <CardDescription>
             Let's set up your webhook endpoint. Choose names for your
             organization and webhook.

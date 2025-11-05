@@ -10,7 +10,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@seawatts/ui/alert-dialog';
+} from '@nugget/ui/alert-dialog';
 
 interface RemoveMemberDialogProps {
   isOpen: boolean;

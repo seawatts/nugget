@@ -58,12 +58,12 @@ runs:
         draft: false
         prerelease: false
         files: |
-          dist/seawatts-linux-x64/seawatts-linux-x64
-          dist/seawatts-linux-arm64/seawatts-linux-arm64
-          dist/seawatts-linux-x64-musl/seawatts-linux-x64-musl
-          dist/seawatts-linux-arm64-musl/seawatts-linux-arm64-musl
-          dist/seawatts-darwin-x64/seawatts-darwin-x64
-          dist/seawatts-darwin-arm64/seawatts-darwin-arm64
-          dist/seawatts-win32-x64/seawatts-win32-x64.exe
+          dist/nugget-linux-x64/nugget-linux-x64
+          dist/nugget-linux-arm64/nugget-linux-arm64
+          dist/nugget-linux-x64-musl/nugget-linux-x64-musl
+          dist/nugget-linux-arm64-musl/nugget-linux-arm64-musl
+          dist/nugget-darwin-x64/nugget-darwin-x64
+          dist/nugget-darwin-arm64/nugget-darwin-arm64
+          dist/nugget-win32-x64/nugget-win32-x64.exe
       env:
         GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}

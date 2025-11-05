@@ -1,9 +1,9 @@
 {
   "dependencies": {
     "@clerk/nextjs": "catalog:",
-    "@seawatts/id": "workspace:*",
-    "@seawatts/logger": "workspace:*",
-    "@seawatts/zustand": "workspace:*",
+    "@nugget/id": "workspace:*",
+    "@nugget/logger": "workspace:*",
+    "@nugget/zustand": "workspace:*",
     "@supabase/ssr": "0.7.0",
     "@supabase/supabase-js": "catalog:",
     "@t3-oss/env-core": "catalog:",
@@ -21,7 +21,7 @@
     "zustand": "catalog:"
   },
   "devDependencies": {
-    "@seawatts/tsconfig": "workspace:*",
+    "@nugget/tsconfig": "workspace:*",
     "@t3-oss/env-core": "catalog:",
     "@t3-oss/env-nextjs": "catalog:",
     "@types/lodash-es": "4.17.12",
@@ -47,7 +47,7 @@
     "./supabase/types": "./src/supabase/types.generated.ts"
   },
   "license": "MIT",
-  "name": "@seawatts/db",
+  "name": "@nugget/db",
   "private": true,
   "scripts": {
     "build.skip": "bun run gen-supabase-types",

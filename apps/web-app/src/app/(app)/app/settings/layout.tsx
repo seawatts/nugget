@@ -1,7 +1,7 @@
 'use client';
 
-import { MetricLink } from '@seawatts/analytics';
-import { Tabs, TabsList, TabsTrigger } from '@seawatts/ui/tabs';
+import { MetricLink } from '@nugget/analytics';
+import { Tabs, TabsList, TabsTrigger } from '@nugget/ui/tabs';
 import { usePathname } from 'next/navigation';
 
 const settingsTabs = [

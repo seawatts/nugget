@@ -1,13 +1,13 @@
 'use client';
 
-import { HydrationBoundary } from '@seawatts/api/server';
+import { HydrationBoundary } from '@nugget/api/server';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@seawatts/ui/select';
+} from '@nugget/ui/select';
 import { Suspense, useState } from 'react';
 import { AuthCodeLoginButton } from './auth-code-login-button';
 

@@ -26,7 +26,7 @@
   },
   "commitlint": {
     "extends": [
-      "@seawatts/commitlint-config"
+      "@nugget/commitlint-config"
     ]
   },
   "devDependencies": {
@@ -34,7 +34,7 @@
     "@changesets/changelog-github": "0.5.1",
     "@changesets/cli": "2.29.7",
     "@commitlint/cli": "20.1.0",
-    "@seawatts/commitlint-config": "workspace:*",
+    "@nugget/commitlint-config": "workspace:*",
     "@testing-library/react": "16.3.0",
     "@types/bun": "1.2.23",
     "checkly": "6.8.2",
@@ -47,7 +47,7 @@
   "engines": {
     "node": ">=20.12.0"
   },
-  "name": "@seawatts/root",
+  "name": "@nugget/root",
   "overrides": {
     "@types/vscode": "1.96.0"
   },
@@ -64,15 +64,15 @@
     "cleanup:orgs:dry-run": "bun run scripts/cleanup-orgs.ts --dry-run",
     "cleanup:webhooks": "bun run scripts/cleanup-webhooks.ts",
     "cleanup:webhooks:dry-run": "bun run scripts/cleanup-webhooks.ts --dry-run",
-    "db:gen-migration": "turbo -F @seawatts/db gen-migration",
-    "db:migrate": "turbo -F @seawatts/db migrate",
-    "db:push": "turbo -F @seawatts/db push",
-    "db:seed": "turbo -F @seawatts/db seed",
-    "db:studio": "turbo -F @seawatts/db studio",
+    "db:gen-migration": "turbo -F @nugget/db gen-migration",
+    "db:migrate": "turbo -F @nugget/db migrate",
+    "db:push": "turbo -F @nugget/db push",
+    "db:seed": "turbo -F @nugget/db seed",
+    "db:studio": "turbo -F @nugget/db studio",
     "dev": "turbo watch dev dev:extension dev:webview",
-    "dev:next": "turbo watch dev -F @seawatts/web-app...",
-    "dev:vscode": "turbo watch dev dev:extension dev:webview -F seawatts-vscode... -F @seawatts/web-app...",
-    "docs": "turbo run dev --filter=@seawatts/docs...",
+    "dev:next": "turbo watch dev -F @nugget/web-app...",
+    "dev:vscode": "turbo watch dev dev:extension dev:webview -F nugget-vscode... -F @nugget/web-app...",
+    "docs": "turbo run dev --filter=@nugget/docs...",
     "ensure:user-resources": "bun run scripts/ensure-user-resources.ts",
     "ensure:user-resources:dry-run": "bun run scripts/ensure-user-resources.ts --dry-run",
     "format": "biome check",
@@ -83,11 +83,11 @@
     "postinstall": "bun lint:ws",
     "publish": "turbo run build --filter=./apps/cli... --filter=./packages/client... --filter=./apps/vscode-extension... && changeset publish",
     "test": "bun test",
-    "test:integ": "turbo run test --filter=@seawatts/integ-test",
-    "test:integ:ci": "turbo run test:ci --filter=@seawatts/integ-test",
-    "test:integ:watch": "turbo run test:watch --filter=@seawatts/integ-test",
+    "test:integ": "turbo run test --filter=@nugget/integ-test",
+    "test:integ:ci": "turbo run test:ci --filter=@nugget/integ-test",
+    "test:integ:watch": "turbo run test:watch --filter=@nugget/integ-test",
     "typecheck": "turbo run typecheck",
-    "typecheck:ci": "turbo run build --filter @seawatts/stripe && turbo run typecheck",
+    "typecheck:ci": "turbo run build --filter @nugget/stripe && turbo run typecheck",
     "ui-add": "turbo run ui-add",
     "version": "changeset version && bun biome check --write",
     "with-env": "infisical run --"

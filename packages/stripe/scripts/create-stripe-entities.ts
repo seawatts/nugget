@@ -52,7 +52,7 @@ interface PlanConfig {
   entitlements?: Entitlement[];
 }
 
-// Plan configurations based on Seawatts's pricing
+// Plan configurations based on Nugget's pricing
 const PLANS: PlanConfig[] = [
   {
     baseFeeCents: 0,
@@ -101,7 +101,7 @@ const PLANS: PlanConfig[] = [
     id: 'free',
     includedWebhookEvents: 50,
     lookup_keys: {
-      monthly: 'seawatts_free_2025_01_monthly',
+      monthly: 'nugget_free_2025_01_monthly',
     },
     name: 'Free Plan',
     pricingModel: 'flat',
@@ -176,8 +176,8 @@ const PLANS: PlanConfig[] = [
     id: 'team',
     includedWebhookEvents: -1,
     lookup_keys: {
-      monthly: 'seawatts_team_2025_01_monthly',
-      yearly: 'seawatts_team_2025_01_yearly',
+      monthly: 'nugget_team_2025_01_monthly',
+      yearly: 'nugget_team_2025_01_yearly',
     },
     name: 'Team Plan',
     pricePerUserCents: 10 * CONSTANTS.CENTS_MULTIPLIER,
@@ -217,8 +217,8 @@ const ADDONS: AddonConfig[] = [
     ],
     id: 'dedicated_support',
     lookup_keys: {
-      monthly: 'seawatts_dedicated_support_2025_01_monthly',
-      yearly: 'seawatts_dedicated_support_2025_01_yearly',
+      monthly: 'nugget_dedicated_support_2025_01_monthly',
+      yearly: 'nugget_dedicated_support_2025_01_yearly',
     },
     name: 'Dedicated Support',
   },
@@ -436,7 +436,7 @@ async function findOrCreateProduct(
   });
 
   const existingProduct = existingProducts.data.find(
-    (p) => p.name === `Seawatts ${plan.name}`,
+    (p) => p.name === `Nugget ${plan.name}`,
   );
 
   if (existingProduct) {
@@ -468,7 +468,7 @@ async function findOrCreateProduct(
     marketing_features: plan.features.map((feature) => ({
       name: feature,
     })),
-    name: `Seawatts ${plan.name}`,
+    name: `Nugget ${plan.name}`,
   });
 
   // Attach entitlements to new product
@@ -496,7 +496,7 @@ async function findOrCreateAddonProduct(
   });
 
   const existingProduct = existingProducts.data.find(
-    (p) => p.name === `Seawatts ${addon.name}`,
+    (p) => p.name === `Nugget ${addon.name}`,
   );
 
   if (existingProduct) {
@@ -528,7 +528,7 @@ async function findOrCreateAddonProduct(
     metadata: {
       features: JSON.stringify(addon.features),
     },
-    name: `Seawatts ${addon.name}`,
+    name: `Nugget ${addon.name}`,
   });
 
   // Attach entitlements to new product
@@ -686,7 +686,7 @@ async function main() {
     }
 
     console.log(
-      'Successfully created or updated all Seawatts products, prices, and addons!',
+      'Successfully created or updated all Nugget products, prices, and addons!',
     );
   } catch (error) {
     console.error('Error creating or updating products and prices:', error);

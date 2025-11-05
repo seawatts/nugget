@@ -7,7 +7,7 @@ export interface Competitor {
   name: string;
   pricing: string;
   strengths: string[];
-  seawattsAdvantages: string[];
+  nuggetAdvantages: string[];
   weaknesses: string[];
   website: string;
 }
@@ -22,7 +22,7 @@ export interface ComparisonRow {
   ngrok: boolean;
   smee: boolean;
   svix: boolean;
-  seawatts: boolean;
+  nugget: boolean;
   webhookSite: boolean;
 }
 
@@ -34,8 +34,7 @@ export const competitors: Competitor[] = [
     logo: '🚇',
     marketShare: 'High',
     name: 'ngrok',
-    pricing: 'From $25/month',
-    seawattsAdvantages: [
+    nuggetAdvantages: [
       'One shared URL for entire team',
       'Config file in your repo',
       'VS Code integration',
@@ -44,6 +43,7 @@ export const competitors: Competitor[] = [
       'Team collaboration features',
       'Webhook-specific design',
     ],
+    pricing: 'From $25/month',
     strengths: [
       'Easy to use',
       'Popular',
@@ -67,8 +67,7 @@ export const competitors: Competitor[] = [
     logo: '🌐',
     marketShare: 'Medium',
     name: 'Webhook.site',
-    pricing: 'From $18/month',
-    seawattsAdvantages: [
+    nuggetAdvantages: [
       'One shared URL for entire team',
       'Config file in your repo',
       'VS Code integration',
@@ -77,6 +76,7 @@ export const competitors: Competitor[] = [
       'Team collaboration',
       'Custom transformations',
     ],
+    pricing: 'From $18/month',
     strengths: [
       'Simple interface',
       'Quick setup',
@@ -100,8 +100,7 @@ export const competitors: Competitor[] = [
     logo: '🐝',
     marketShare: 'Medium',
     name: 'Beeceptor',
-    pricing: 'From $25/month',
-    seawattsAdvantages: [
+    nuggetAdvantages: [
       'One shared URL for entire team',
       'Config file in your repo',
       'Webhook-focused design',
@@ -110,6 +109,7 @@ export const competitors: Competitor[] = [
       'Local development routing',
       'Team collaboration',
     ],
+    pricing: 'From $25/month',
     strengths: [
       'API mocking',
       'Multiple protocols',
@@ -132,8 +132,7 @@ export const competitors: Competitor[] = [
     logo: '🔗',
     marketShare: 'Low',
     name: 'Localtunnel',
-    pricing: 'Free',
-    seawattsAdvantages: [
+    nuggetAdvantages: [
       'One shared URL for entire team',
       'Config file in your repo',
       'Active maintenance',
@@ -142,6 +141,7 @@ export const competitors: Competitor[] = [
       'VS Code integration',
       'Professional support',
     ],
+    pricing: 'Free',
     strengths: ['Free', 'Simple', 'Open source'],
     weaknesses: [
       'Unmaintained',
@@ -160,8 +160,7 @@ export const competitors: Competitor[] = [
     logo: '🔌',
     marketShare: 'Medium',
     name: 'Smee.io',
-    pricing: 'Free',
-    seawattsAdvantages: [
+    nuggetAdvantages: [
       'Professional features',
       'Team collaboration',
       'VS Code integration',
@@ -170,6 +169,7 @@ export const competitors: Competitor[] = [
       'Advanced monitoring',
       'Multiple provider support',
     ],
+    pricing: 'Free',
     strengths: [
       'Free',
       'GitHub integration',
@@ -193,8 +193,7 @@ export const competitors: Competitor[] = [
     logo: '☁️',
     marketShare: 'High',
     name: 'Cloudflare Tunnel',
-    pricing: 'From $25/month',
-    seawattsAdvantages: [
+    nuggetAdvantages: [
       'Built for webhooks',
       'Simple setup',
       'Team collaboration',
@@ -203,6 +202,7 @@ export const competitors: Competitor[] = [
       'Request inspection',
       'Better pricing for teams',
     ],
+    pricing: 'From $25/month',
     strengths: [
       'Enterprise security',
       'Global network',
@@ -227,8 +227,7 @@ export const competitors: Competitor[] = [
     logo: '🎣',
     marketShare: 'Medium',
     name: 'Hookdeck',
-    pricing: 'From $39/month',
-    seawattsAdvantages: [
+    nuggetAdvantages: [
       'Development-focused',
       'Simple setup',
       'VS Code integration',
@@ -237,6 +236,7 @@ export const competitors: Competitor[] = [
       'Local development routing',
       'Better pricing',
     ],
+    pricing: 'From $39/month',
     strengths: [
       'Production-ready',
       'Advanced routing',
@@ -260,8 +260,7 @@ export const competitors: Competitor[] = [
     logo: '🚀',
     marketShare: 'High',
     name: 'Svix',
-    pricing: 'From $490/month',
-    seawattsAdvantages: [
+    nuggetAdvantages: [
       'Built for development',
       'Simple team setup',
       'VS Code integration',
@@ -270,6 +269,7 @@ export const competitors: Competitor[] = [
       'Better pricing',
       'Request inspection',
     ],
+    pricing: 'From $490/month',
     strengths: [
       'Enterprise-grade',
       'Sending & receiving',
@@ -299,7 +299,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: false,
     ngrok: false,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: false,
     webhookSite: false,
@@ -312,7 +312,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: false,
     ngrok: false,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: false,
     webhookSite: false,
@@ -325,7 +325,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: false,
     ngrok: false,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: false,
     webhookSite: false,
@@ -338,7 +338,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: false,
     ngrok: true,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: true,
     webhookSite: false,
@@ -351,7 +351,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: true,
     ngrok: true,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: true,
     webhookSite: true,
@@ -364,7 +364,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: true,
     ngrok: false,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: false,
     webhookSite: false,
@@ -377,7 +377,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: true,
     mcpServer: true,
     ngrok: true,
-    seawatts: true,
+    nugget: true,
     smee: true,
     svix: true,
     webhookSite: true,
@@ -390,7 +390,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: true,
     ngrok: true,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: true,
     webhookSite: false,
@@ -403,7 +403,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: false,
     ngrok: false,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: false,
     webhookSite: false,
@@ -416,7 +416,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: false,
     ngrok: false,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: false,
     webhookSite: false,
@@ -429,7 +429,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: true,
     ngrok: true,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: true,
     webhookSite: true,
@@ -442,7 +442,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: false,
     ngrok: false,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: true,
     webhookSite: false,
@@ -455,7 +455,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: false,
     ngrok: false,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: false,
     webhookSite: false,
@@ -468,7 +468,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: false,
     ngrok: false,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: false,
     webhookSite: false,
@@ -481,7 +481,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: false,
     ngrok: true,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: true,
     webhookSite: false,
@@ -494,7 +494,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: false,
     ngrok: false,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: true,
     webhookSite: false,
@@ -507,7 +507,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: false,
     ngrok: false,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: true,
     webhookSite: false,
@@ -520,7 +520,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: false,
     ngrok: true,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: true,
     webhookSite: false,
@@ -533,7 +533,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: false,
     ngrok: true,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: true,
     webhookSite: false,
@@ -546,7 +546,7 @@ export const comparisonMatrix: ComparisonRow[] = [
     localtunnel: false,
     mcpServer: false,
     ngrok: true,
-    seawatts: true,
+    nugget: true,
     smee: false,
     svix: true,
     webhookSite: false,

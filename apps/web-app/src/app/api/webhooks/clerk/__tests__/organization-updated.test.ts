@@ -1,6 +1,6 @@
 import type { OrganizationWebhookEvent } from '@clerk/nextjs/server';
-import { db } from '@seawatts/db/client';
-import { Orgs, Users } from '@seawatts/db/schema';
+import { db } from '@nugget/db/client';
+import { Orgs, Users } from '@nugget/db/schema';
 import { eq } from 'drizzle-orm';
 import { handleOrganizationUpdated } from '../organization-updated';
 

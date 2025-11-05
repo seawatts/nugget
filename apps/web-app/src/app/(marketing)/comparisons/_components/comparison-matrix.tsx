@@ -1,6 +1,6 @@
 'use client';
 
-import { MagicCard } from '@seawatts/ui/magicui/magic-card';
+import { MagicCard } from '@nugget/ui/magicui/magic-card';
 import { XCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -13,7 +13,7 @@ interface ComparisonRow {
   ngrok: boolean;
   smee: boolean;
   svix: boolean;
-  seawatts: boolean;
+  nugget: boolean;
   webhookSite: boolean;
 }
 
@@ -91,7 +91,7 @@ export function ComparisonMatrix({ comparisonMatrix }: ComparisonMatrixProps) {
                   Feature
                 </th>
                 <th className="text-center p-4 font-medium text-secondary">
-                  Seawatts
+                  Nugget
                 </th>
                 <th className="text-center p-4 font-medium text-muted-foreground">
                   ngrok
@@ -127,7 +127,7 @@ export function ComparisonMatrix({ comparisonMatrix }: ComparisonMatrixProps) {
                 >
                   <td className="p-4 font-medium text-nowrap">{row.feature}</td>
                   <td className="p-4 text-center">
-                    {row.seawatts ? (
+                    {row.nugget ? (
                       <CheckmarkIcon />
                     ) : (
                       <XCircle className="w-5 h-5 text-destructive mx-auto" />

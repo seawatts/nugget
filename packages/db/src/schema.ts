@@ -1,4 +1,4 @@
-import { createId } from '@seawatts/id';
+import { createId } from '@nugget/id';
 import { relations, sql } from 'drizzle-orm';
 import {
   boolean,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useOrganization } from '@clerk/nextjs';
-import { MetricLink } from '@seawatts/analytics';
+import { MetricLink } from '@nugget/analytics';
 import {
   createContext,
   type ReactNode,

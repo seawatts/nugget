@@ -27,7 +27,7 @@ Seawatts consists of several key components working together to provide seamless
 ## Data Flow
 
 1. **Webhook Reception**
-   - Provider sends webhook to `https://seawatts.sh/t_123&e=ENDPOINT`
+   - Provider sends webhook to `https://nugget.baby/t_123&e=ENDPOINT`
    - API validates the API key and processes the request
    - Event is stored in the database
 

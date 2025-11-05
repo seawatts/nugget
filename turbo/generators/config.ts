@@ -15,9 +15,9 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
         if (
           'name' in answers &&
           typeof answers.name === 'string' &&
-          answers.name.startsWith('@seawatts/')
+          answers.name.startsWith('@nugget/')
         ) {
-          answers.name = answers.name.replace('@seawatts/', '');
+          answers.name = answers.name.replace('@nugget/', '');
         }
         return 'Config sanitized';
       },
@@ -71,11 +71,11 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
         return 'Package not scaffolded';
       },
     ],
-    description: 'Generate a new package for the Seawatts Monorepo',
+    description: 'Generate a new package for the Nugget Monorepo',
     prompts: [
       {
         message:
-          'What is the name of the package? (You can skip the `@seawatts/` prefix)',
+          'What is the name of the package? (You can skip the `@nugget/` prefix)',
         name: 'name',
         type: 'input',
       },

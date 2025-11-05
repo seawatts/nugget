@@ -1,8 +1,8 @@
 'use client';
 
+import { useMediaQuery } from '@nugget/ui/hooks/use-media-query';
+import { FlickeringGrid } from '@nugget/ui/magicui/flickering-grid';
 import { ChevronRightIcon } from '@radix-ui/react-icons';
-import { useMediaQuery } from '@seawatts/ui/hooks/use-media-query';
-import { FlickeringGrid } from '@seawatts/ui/magicui/flickering-grid';
 import Link from 'next/link';
 import { Icons } from '~/app/(marketing)/_components/icons';
 import { siteConfig } from '~/app/(marketing)/_lib/config';
@@ -15,7 +15,7 @@ export function FooterSection() {
         <div className="flex flex-col items-start justify-start gap-y-5 max-w-xs mx-0">
           <Link className="flex items-center gap-2" href="/">
             <Icons.logo className="size-12" />
-            <p className="text-xl font-semibold text-primary">Seawatts</p>
+            <p className="text-xl font-semibold text-primary">Nugget</p>
           </Link>
           <p className="tracking-tight text-muted-foreground font-medium">
             {siteConfig.hero.description}
@@ -59,7 +59,7 @@ export function FooterSection() {
         <div className="absolute inset-0 mx-6">
           <FlickeringGrid
             className="h-full w-full"
-            // text={tablet ? 'Seawatts' : 'Streamline your workflow'}
+            // text={tablet ? 'Nugget' : 'Your Parenting Journey'}
             // fontSize={tablet ? 70 : 90}
             color="#6B7280"
             flickerChance={0.1}
@@ -67,7 +67,7 @@ export function FooterSection() {
             gridGap={tablet ? 2 : 3}
             maxOpacity={0.3}
             squareSize={2}
-            text={'Seawatts'}
+            text={'Nugget'}
           />
         </div>
       </div>

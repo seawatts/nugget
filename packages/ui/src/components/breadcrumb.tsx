@@ -1,5 +1,5 @@
+import { cn } from '@nugget/ui/lib/utils';
 import { Slot } from '@radix-ui/react-slot';
-import { cn } from '@seawatts/ui/lib/utils';
 import { ChevronRight, MoreHorizontal } from 'lucide-react';
 import type * as React from 'react';
 

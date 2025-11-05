@@ -1,6 +1,6 @@
-# Contributing to Seawatts
+# Contributing to Nugget
 
-First off, thank you for considering contributing to Seawatts! It's people like you that make Seawatts such a great tool.
+First off, thank you for considering contributing to Nugget! It's people like you that make Nugget such a great tool.
 
 ## Code of Conduct
 
@@ -11,7 +11,7 @@ By participating in this project, you are expected to uphold our Code of Conduct
 This is a monorepo using [Turborepo](https://turbo.build/) and bun workspaces. The project is organized into several main components:
 
 ```
-seawatts/
+nugget/
 ├── apps/                   # Application packages
 │   ├── cli/               # Command-line interface
 │   ├── web-app/           # Main web application
@@ -46,8 +46,8 @@ seawatts/
 
 2. Clone the repository:
    ```bash
-   git clone https://github.com/seawatts-sh/seawatts.git
-   cd seawatts
+   git clone https://github.com/nugget-sh/nugget.git
+   cd nugget
    ```
 
 3. Install dependencies:
@@ -103,7 +103,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 
 * A clear and descriptive title
 * A detailed description of the proposed functionality
-* Explain why this enhancement would be useful to most Seawatts users
+* Explain why this enhancement would be useful to most Nugget users
 * List any additional context or screenshots
 
 ### Pull Requests
@@ -195,9 +195,9 @@ Configuration is in `lefthook.yml`
 
 Don't hesitate to ask questions by:
 * Opening an issue
-* Joining our [Discord community](https://discord.gg/seawatts)
-* Checking our [documentation](https://docs.seawatts.sh)
+* Joining our [Discord community](https://discord.gg/nugget)
+* Checking our [documentation](https://docs.nugget.baby)
 
 ## License
 
-By contributing to Seawatts, you agree that your contributions will be licensed under its MIT License.
+By contributing to Nugget, you agree that your contributions will be licensed under its MIT License.

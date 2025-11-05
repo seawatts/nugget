@@ -1,11 +1,11 @@
 import { useSession } from '@clerk/nextjs';
-import { debug } from '@seawatts/logger';
+import { debug } from '@nugget/logger';
 import { createBrowserClient } from '@supabase/ssr';
 import { useEffect, useMemo } from 'react';
 import { env } from '../env.client';
 import type { Database } from './types';
 
-const log = debug('seawatts:lib:supabase:client');
+const log = debug('nugget:lib:supabase:client');
 
 export const useClient = () => {
   const { session } = useSession();

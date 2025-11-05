@@ -1,6 +1,6 @@
 'use client';
 
-import { MetricLink } from '@seawatts/analytics';
+import { MetricLink } from '@nugget/analytics';
 import type { ReactNode } from 'react';
 import { useSubscription } from './subscription-hooks';
 

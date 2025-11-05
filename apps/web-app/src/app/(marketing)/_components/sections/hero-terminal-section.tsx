@@ -5,12 +5,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@seawatts/ui/components/table';
+} from '@nugget/ui/components/table';
 import {
   AnimatedSpan,
   Terminal,
   TypingAnimation,
-} from '@seawatts/ui/magicui/terminal';
+} from '@nugget/ui/magicui/terminal';
 import { Clock, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -163,8 +163,8 @@ export function HeroTerminalSection() {
   return (
     <div className="w-full relative px-2 lg:px-24 mt-10">
       <Terminal className="w-full max-w-full min-h-[500px]">
-        <TypingAnimation delay={1000}>$ seawatts listen</TypingAnimation>
-        <AnimatedSpan delay={2500}>https://seawatts.sh/wh_AH21J</AnimatedSpan>
+        <TypingAnimation delay={1000}>$ nugget listen</TypingAnimation>
+        <AnimatedSpan delay={2500}>https://nugget.baby/wh_AH21J</AnimatedSpan>
         <AnimatedSpan delay={2500}>
           <span className="text-muted-foreground">Press r to replay event</span>
         </AnimatedSpan>

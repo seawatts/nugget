@@ -1,16 +1,16 @@
 'use client';
 
-import { MetricButton } from '@seawatts/analytics/components';
+import { MetricButton } from '@nugget/analytics/components';
 
 // TODO: Re-enable when client utils are re-implemented
-// import { extractEventName } from '@seawatts/client/utils/extract-event-name';
-// import { getSourceDisplayText } from '@seawatts/client/utils/source-display';
+// import { extractEventName } from '@nugget/client/utils/extract-event-name';
+// import { getSourceDisplayText } from '@nugget/client/utils/source-display';
 const extractEventName = (_event: unknown) => 'Event';
 const getSourceDisplayText = (source: string) => source;
 
-import { Badge } from '@seawatts/ui/badge';
-import { TimezoneDisplay } from '@seawatts/ui/custom/timezone-display';
-import { Skeleton } from '@seawatts/ui/skeleton';
+import { Badge } from '@nugget/ui/badge';
+import { TimezoneDisplay } from '@nugget/ui/custom/timezone-display';
+import { Skeleton } from '@nugget/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -18,8 +18,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@seawatts/ui/table';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@seawatts/ui/tooltip';
+} from '@nugget/ui/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@nugget/ui/tooltip';
 import { Eye, Play } from 'lucide-react';
 import posthog from 'posthog-js';
 

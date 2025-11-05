@@ -10,8 +10,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@seawatts/ui/alert-dialog';
-import { toast } from '@seawatts/ui/sonner';
+} from '@nugget/ui/alert-dialog';
+import { toast } from '@nugget/ui/sonner';
 
 interface LeaveOrganizationDialogProps {
   isOpen: boolean;

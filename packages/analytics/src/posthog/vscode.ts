@@ -1,8 +1,8 @@
-import { debug } from '@seawatts/logger';
+import { debug } from '@nugget/logger';
 import { PostHog } from 'posthog-node';
 import { env } from '../env.client';
 
-const log = debug('seawatts:vscode:posthog');
+const log = debug('nugget:vscode:posthog');
 
 // We'll initialize PostHog with configuration from the extension
 let posthog: PostHog | null = null;

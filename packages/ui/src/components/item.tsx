@@ -1,6 +1,6 @@
+import { Separator } from '@nugget/ui/components/separator';
+import { cn } from '@nugget/ui/lib/utils';
 import { Slot } from '@radix-ui/react-slot';
-import { Separator } from '@seawatts/ui/components/separator';
-import { cn } from '@seawatts/ui/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type * as React from 'react';
 

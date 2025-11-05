@@ -2,8 +2,8 @@
   "dependencies": {
     "@clerk/chrome-extension": "2.7.10",
     "@clerk/nextjs": "catalog:",
-    "@seawatts/logger": "workspace:*",
-    "@seawatts/ui": "workspace:*",
+    "@nugget/logger": "workspace:*",
+    "@nugget/ui": "workspace:*",
     "@t3-oss/env-nextjs": "catalog:",
     "@vercel/analytics": "1.5.0",
     "@vercel/speed-insights": "1.2.0",
@@ -15,7 +15,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@seawatts/tsconfig": "workspace:*",
+    "@nugget/tsconfig": "workspace:*",
     "@types/aws-lambda": "8.10.157",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
@@ -31,7 +31,7 @@
     "./posthog/vscode": "./src/posthog/vscode.ts"
   },
   "license": "MIT",
-  "name": "@seawatts/analytics",
+  "name": "@nugget/analytics",
   "private": true,
   "scripts": {
     "clean": "git clean -xdf .turbo node_modules dist",

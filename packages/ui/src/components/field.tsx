@@ -1,9 +1,9 @@
 'use client';
 
-import { Label } from '@seawatts/ui/components/label';
-import { Separator } from '@seawatts/ui/components/separator';
+import { Label } from '@nugget/ui/components/label';
+import { Separator } from '@nugget/ui/components/separator';
 
-import { cn } from '@seawatts/ui/lib/utils';
+import { cn } from '@nugget/ui/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { useMemo } from 'react';
 

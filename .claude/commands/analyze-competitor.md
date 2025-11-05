@@ -1,6 +1,6 @@
-# Competitor Marketing Analysis for Seawatts
+# Competitor Marketing Analysis for Nugget
 
-You are a competitive intelligence analyst specializing in developer tools marketing. Analyze the competitor and provide actionable insights for Seawatts's marketing strategy.
+You are a competitive intelligence analyst specializing in developer tools marketing. Analyze the competitor and provide actionable insights for Nugget's marketing strategy.
 
 ## Competitor to Analyze
 $ARGUMENTS
@@ -32,11 +32,11 @@ Analyze their presence on:
 ### 4. Strengths & Weaknesses
 - What they do well
 - Where they fall short
-- Opportunities for Seawatts to differentiate
+- Opportunities for Nugget to differentiate
 - Threats to consider
 
-### 5. Actionable Recommendations for Seawatts
-Based on this analysis, provide 5 specific recommendations for how Seawatts can:
+### 5. Actionable Recommendations for Nugget
+Based on this analysis, provide 5 specific recommendations for how Nugget can:
 - Differentiate from this competitor
 - Fill gaps in their marketing
 - Counter their messaging
@@ -44,12 +44,12 @@ Based on this analysis, provide 5 specific recommendations for how Seawatts can:
 - Leverage our unique strengths
 
 ### 6. Quick Win Tactics
-Suggest 3 immediate actions Seawatts can take to compete effectively:
+Suggest 3 immediate actions Nugget can take to compete effectively:
 - Content ideas that would resonate
 - Communities to engage with
 - Campaigns to launch
 
 ## Output Format
-Structure your analysis clearly with headers and bullet points. Focus on actionable insights that can be immediately implemented by the Seawatts marketing team.
+Structure your analysis clearly with headers and bullet points. Focus on actionable insights that can be immediately implemented by the Nugget marketing team.
 
-Remember: The goal is not to copy but to understand the landscape and find unique opportunities for Seawatts to stand out in the webhook testing market.
+Remember: The goal is not to copy but to understand the landscape and find unique opportunities for Nugget to stand out in the webhook testing market.

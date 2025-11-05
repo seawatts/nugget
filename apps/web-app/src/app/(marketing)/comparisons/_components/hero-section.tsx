@@ -34,20 +34,20 @@ export function HeroSection() {
             className="text-4xl md:text-6xl lg:text-7xl font-medium tracking-tighter text-balance text-center text-primary"
             variants={fadeInUpVariants}
           >
-            How Seawatts Compares
+            How Nugget Compares
           </motion.h1>
           <motion.p
             className="text-xl md:text-2xl text-primary font-semibold text-balance"
             variants={fadeInUpVariants}
           >
-            See why teams choose Seawatts over other webhook testing tools
+            See why teams choose Nugget over other webhook testing tools
           </motion.p>
           <motion.p
             className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed tracking-tight text-balance"
             variants={fadeInUpVariants}
           >
-            Compare Seawatts with popular webhook testing tools. See why teams
-            choose Seawatts for better collaboration and VS Code integration.
+            Compare Nugget with popular webhook testing tools. See why teams
+            choose Nugget for better collaboration and VS Code integration.
           </motion.p>
         </motion.div>
       </div>

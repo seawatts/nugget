@@ -1,7 +1,7 @@
 'use client';
 
-import { MetricButton, MetricLink } from '@seawatts/analytics/components';
-import { MagicCard } from '@seawatts/ui/magicui/magic-card';
+import { MetricButton, MetricLink } from '@nugget/analytics/components';
+import { MagicCard } from '@nugget/ui/magicui/magic-card';
 import { motion } from 'motion/react';
 
 export function CTASection() {
@@ -69,7 +69,7 @@ export function CTASection() {
                   variant="outline"
                 >
                   <MetricLink
-                    href="https://cal.com/seawatts/30min"
+                    href="https://cal.com/nugget/30min"
                     metric="comparisons_cta_schedule_demo_clicked"
                     properties={{
                       location: 'comparisons_cta',

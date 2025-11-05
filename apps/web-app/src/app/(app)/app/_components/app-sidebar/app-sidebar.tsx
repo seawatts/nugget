@@ -1,6 +1,6 @@
 'use client';
 
-import { MetricLink } from '@seawatts/analytics';
+import { MetricLink } from '@nugget/analytics';
 import {
   Sidebar,
   SidebarContent,
@@ -9,7 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from '@seawatts/ui/sidebar';
+} from '@nugget/ui/sidebar';
 import {
   IconBrandGithub,
   IconCamera,
@@ -137,12 +137,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       {
         icon: IconBrandGithub,
         title: 'GitHub',
-        url: 'https://github.com/seawatts-sh/seawatts',
+        url: 'https://github.com/nugget/nugget',
       },
       {
         icon: IconCodeDots,
         title: 'Docs',
-        url: 'https://docs.seawatts.sh',
+        url: 'https://docs.nugget.baby',
       },
       // {
       //   icon: IconSearch,
@@ -171,7 +171,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 metric="navigation_logo_clicked"
               >
                 <Icons.logo className="size-10" />
-                <span className="text-base font-semibold">seawatts AI</span>
+                <span className="text-base font-semibold">Nugget AI</span>
               </MetricLink>
             </SidebarMenuButton>
           </SidebarMenuItem>

@@ -8,7 +8,7 @@
   "packageRules": [
     {
       "enabled": false,
-      "matchPackagePatterns": ["^@seawatts/"]
+      "matchPackagePatterns": ["^@nugget/"]
     }
   ],
   "rangeStrategy": "bump",
