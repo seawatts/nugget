@@ -157,7 +157,7 @@ export function Navbar({ navs }: { navs?: NavItem[] }) {
               </div>
               <GitHubStarsButtonWrapper
                 className="rounded-full"
-                repo="nugget-sh/nugget"
+                repo="seawatts/nugget"
               />
               <ThemeToggle className="rounded-full" mode="toggle" />
               <button

@@ -314,14 +314,14 @@ export function OSSFriendsSection() {
               className="rounded-full"
               metric="oss_friends_view_nugget_github_clicked"
               properties={{
-                destination: 'https://github.com/nugget/nugget',
+                destination: 'https://github.com/seawatts/nugget',
                 location: 'oss_friends_section',
                 source: 'marketing_site',
               }}
               size="lg"
             >
               <a
-                href="https://github.com/nugget/nugget"
+                href="https://github.com/seawatts/nugget"
                 rel="noopener noreferrer"
                 target="_blank"
               >

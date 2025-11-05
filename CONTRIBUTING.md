@@ -46,7 +46,7 @@ nugget/
 
 2. Clone the repository:
    ```bash
-   git clone https://github.com/nugget-sh/nugget.git
+   git clone https://github.com/seawatts/nugget.git
    cd nugget
    ```
 

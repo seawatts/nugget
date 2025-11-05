@@ -387,7 +387,7 @@ delivery:
           , or{' '}
           <a
             className="underline hover:no-underline"
-            href="https://github.com/nugget/nugget/issues"
+            href="https://github.com/seawatts/nugget/issues"
             rel="noopener noreferrer"
             target="_blank"
           >

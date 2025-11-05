@@ -39,7 +39,7 @@ const config = defineConfig({
   /* A human friendly name for your project */
   projectName: 'Nugget',
   /* An optional URL to your Git repo */
-  repoUrl: 'https://github.com/nugget/nugget',
+  repoUrl: 'https://github.com/seawatts/nugget',
 });
 
 export default config;

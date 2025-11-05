@@ -18,7 +18,7 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/nugget-sh/nugget"
+      "github": "https://github.com/seawatts/nugget"
     }
   },
   "icons": {
@@ -57,12 +57,12 @@
       "anchors": [
         {
           "anchor": "Github",
-          "href": "https://github.com/nugget-sh",
+          "href": "https://github.com/seawatts",
           "icon": "github"
         },
         {
           "anchor": "Changelog",
-          "href": "https://github.com/nugget-sh/nugget/releases",
+          "href": "https://github.com/seawatts/nugget/releases",
           "icon": "newspaper"
         },
         {

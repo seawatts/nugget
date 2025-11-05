@@ -179,7 +179,7 @@ export function AppSidebar({
             <SidebarMenuButton asChild>
               <a
                 className="flex items-center justify-between"
-                href="https://github.com/nugget/nugget/blob/main/CHANGELOG.md"
+                href="https://github.com/seawatts/nugget/blob/main/CHANGELOG.md"
                 rel="noreferrer"
                 target="_blank"
               >

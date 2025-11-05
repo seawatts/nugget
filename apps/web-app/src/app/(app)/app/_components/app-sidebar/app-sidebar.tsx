@@ -137,7 +137,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       {
         icon: IconBrandGithub,
         title: 'GitHub',
-        url: 'https://github.com/nugget/nugget',
+        url: 'https://github.com/seawatts/nugget',
       },
       {
         icon: IconCodeDots,

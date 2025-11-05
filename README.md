@@ -20,7 +20,7 @@
 
 ### 1. Clone and Install
 ```bash
-git clone https://github.com/nugget/nugget my-parenting-app
+git clone https://github.com/seawatts/nugget my-parenting-app
 cd my-parenting-app
 bun install
 ```
@@ -172,7 +172,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 - 📧 Email: support@nugget.baby
 - 💬 Discord: https://discord.gg/nugget
 - 📚 Documentation: https://docs.nugget.baby
-- 🐛 Issues: https://github.com/nugget/nugget/issues
+- 🐛 Issues: https://github.com/seawatts/nugget/issues
 
 ## License
 
