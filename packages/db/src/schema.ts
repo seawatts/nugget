@@ -433,3 +433,6 @@ export const ShortUrlsRelations = relations(ShortUrls, ({ one }) => ({
     references: [Users.id],
   }),
 }));
+
+// Export baby tracking schema
+export * from './schema/baby-tracking';
