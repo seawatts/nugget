@@ -1,6 +1,6 @@
 import { createClerkClient } from '@clerk/backend';
 import { db } from '@nugget/db/client';
-import { ApiKeys, AuthCodes, Orgs, Users } from '@nugget/db/schema';
+import { Orgs, Users } from '@nugget/db/schema';
 import { createId } from '@nugget/id';
 import { eq } from 'drizzle-orm';
 import { env } from './env';
@@ -20,27 +20,9 @@ export interface TestOrg {
   ownerId: string;
 }
 
-export interface TestApiKey {
-  id: string;
-  key: string;
-  name: string;
-  orgId: string;
-  userId: string;
-}
-
-export interface TestAuthCode {
-  id: string;
-  userId: string;
-  orgId: string;
-  expiresAt: Date;
-  sessionId: string;
-}
-
 export interface TestSetup {
   user: TestUser;
   org: TestOrg;
-  apiKey: TestApiKey;
-  authCode?: TestAuthCode;
   cleanup: () => Promise<void>;
 }
 
@@ -143,94 +125,16 @@ export async function createTestOrg(
 }
 
 /**
- * Creates a test auth code in the database with a real Clerk session
- */
-export async function createTestAuthCode(
-  userId: string,
-  orgId: string,
-  expiresInMinutes = 30,
-): Promise<TestAuthCode> {
-  const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
-
-  // Create a real Clerk session for the user
-  const session = await clerkClient.sessions.createSession({
-    userId,
-  });
-
-  const [authCode] = await db
-    .insert(AuthCodes)
-    .values({
-      expiresAt,
-      orgId,
-      sessionId: session.id,
-      userId,
-    })
-    .returning();
-
-  if (!authCode) {
-    throw new Error('Failed to create auth code in database');
-  }
-
-  return {
-    expiresAt: authCode.expiresAt,
-    id: authCode.id,
-    orgId: authCode.orgId,
-    sessionId: authCode.sessionId,
-    userId: authCode.userId,
-  };
-}
-
-/**
- * Creates a test API key in the database
- */
-export async function createTestApiKey(
-  orgId: string,
-  userId: string,
-  name = 'Test API Key',
-): Promise<TestApiKey> {
-  const [apiKey] = await db
-    .insert(ApiKeys)
-    .values({
-      name,
-      orgId,
-      userId,
-    })
-    .returning();
-
-  if (!apiKey) {
-    throw new Error('Failed to create API key in database');
-  }
-
-  return {
-    id: apiKey.id,
-    key: apiKey.key,
-    name: apiKey.name,
-    orgId: apiKey.orgId,
-    userId: apiKey.userId,
-  };
-}
-
-/**
- * Creates a complete test setup with user, org, API key, webhook, and optional auth code
+ * Creates a complete test setup with user and org
  */
 export async function createTestSetup(
   options: {
     userEmail?: string;
     userName?: { firstName?: string; lastName?: string };
     orgName?: string;
-    apiKeyName?: string;
-    createAuthCode?: boolean;
-    authCodeExpiresInMinutes?: number;
   } = {},
 ): Promise<TestSetup> {
-  const {
-    userEmail,
-    userName,
-    orgName,
-    apiKeyName = 'Test API Key',
-    createAuthCode = false,
-    authCodeExpiresInMinutes = 30,
-  } = options;
+  const { userEmail, userName, orgName } = options;
 
   // Create test user
   const user = await createTestUser(
@@ -242,37 +146,9 @@ export async function createTestSetup(
   // Create test organization
   const org = await createTestOrg(user.id, orgName);
 
-  // Create test API key
-  const apiKey = await createTestApiKey(org.id, user.id, apiKeyName);
-
-  let authCode: TestAuthCode | undefined;
-
-  if (createAuthCode) {
-    authCode = await createTestAuthCode(
-      user.id,
-      org.id,
-      authCodeExpiresInMinutes,
-    );
-  }
-
   // Create cleanup function
   const cleanup = async () => {
     try {
-      // Clean up auth code if it exists
-      if (authCode) {
-        // Clean up Clerk session if auth code exists
-        try {
-          await clerkClient.sessions.revokeSession(authCode.sessionId);
-        } catch (error) {
-          console.warn('Failed to revoke Clerk session:', error);
-        }
-
-        await db.delete(AuthCodes).where(eq(AuthCodes.id, authCode.id));
-      }
-
-      // Clean up API key from database
-      await db.delete(ApiKeys).where(eq(ApiKeys.id, apiKey.id));
-
       // Clean up organization from database
       await db.delete(Orgs).where(eq(Orgs.id, org.id));
 
@@ -298,87 +174,8 @@ export async function createTestSetup(
   };
 
   return {
-    apiKey,
-    authCode,
     cleanup,
     org,
     user,
-  };
-}
-
-/**
- * Utility to create an expired auth code for testing
- */
-export async function createExpiredAuthCode(
-  userId: string,
-  orgId: string,
-): Promise<TestAuthCode> {
-  const expiresAt = new Date(Date.now() - 1000); // Expired 1 second ago
-
-  // Create a real Clerk session for the user
-  const session = await clerkClient.sessions.createSession({
-    userId,
-  });
-
-  const [authCode] = await db
-    .insert(AuthCodes)
-    .values({
-      expiresAt,
-      id: `test-expired-auth-code-${Date.now()}`,
-      orgId,
-      sessionId: session.id,
-      userId,
-    })
-    .returning();
-
-  if (!authCode) {
-    throw new Error('Failed to create expired auth code in database');
-  }
-
-  return {
-    expiresAt: authCode.expiresAt,
-    id: authCode.id,
-    orgId: authCode.orgId,
-    sessionId: authCode.sessionId,
-    userId: authCode.userId,
-  };
-}
-
-/**
- * Utility to create a used auth code for testing
- */
-export async function createUsedAuthCode(
-  userId: string,
-  orgId: string,
-): Promise<TestAuthCode> {
-  const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
-
-  // Create a real Clerk session for the user
-  const session = await clerkClient.sessions.createSession({
-    userId,
-  });
-
-  const [authCode] = await db
-    .insert(AuthCodes)
-    .values({
-      expiresAt,
-      id: `test-used-auth-code-${Date.now()}`,
-      orgId,
-      sessionId: session.id,
-      usedAt: new Date(), // Mark as used
-      userId,
-    })
-    .returning();
-
-  if (!authCode) {
-    throw new Error('Failed to create used auth code in database');
-  }
-
-  return {
-    expiresAt: authCode.expiresAt,
-    id: authCode.id,
-    orgId: authCode.orgId,
-    sessionId: authCode.sessionId,
-    userId: authCode.userId,
   };
 }

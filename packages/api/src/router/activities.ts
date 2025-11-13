@@ -1,0 +1,335 @@
+import {
+  Activities,
+  ActivityTypeType,
+  Babies,
+  FeedingSourceType,
+  insertActivitySchema,
+  updateActivitySchema,
+} from '@nugget/db/schema';
+import { and, desc, eq, gte } from 'drizzle-orm';
+import { z } from 'zod';
+import { createTRPCRouter, protectedProcedure } from '../trpc';
+
+export const activitiesRouter = createTRPCRouter({
+  // Create a new activity (feeding, etc.)
+  create: protectedProcedure
+    .input(
+      insertActivitySchema
+        .omit({
+          createdAt: true,
+          id: true,
+          updatedAt: true,
+          userId: true,
+        })
+        .extend({
+          babyId: z.string(),
+        }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.auth.orgId || !ctx.auth.userId) {
+        throw new Error('Authentication required');
+      }
+
+      // Verify baby belongs to family
+      const baby = await ctx.db.query.Babies.findFirst({
+        where: and(
+          eq(Babies.id, input.babyId),
+          eq(Babies.familyId, ctx.auth.orgId),
+        ),
+      });
+
+      if (!baby) {
+        throw new Error('Baby not found');
+      }
+
+      const [activity] = await ctx.db
+        .insert(Activities)
+        .values({
+          ...input,
+          userId: ctx.auth.userId,
+        })
+        .returning();
+
+      if (!activity) {
+        throw new Error('Failed to create activity');
+      }
+
+      return activity;
+    }),
+
+  // Create multiple scheduled feedings at once
+  createScheduledBatch: protectedProcedure
+    .input(
+      z.object({
+        babyId: z.string(),
+        feedings: z.array(
+          z.object({
+            amount: z.number().optional(),
+            feedingSource: z
+              .enum(Object.keys(FeedingSourceType) as [string, ...string[]])
+              .optional(),
+            startTime: z.date(),
+          }),
+        ),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.auth.orgId || !ctx.auth.userId) {
+        throw new Error('Authentication required');
+      }
+
+      // Verify baby belongs to family
+      const baby = await ctx.db.query.Babies.findFirst({
+        where: and(
+          eq(Babies.id, input.babyId),
+          eq(Babies.familyId, ctx.auth.orgId),
+        ),
+      });
+
+      if (!baby) {
+        throw new Error('Baby not found');
+      }
+
+      const activities = await ctx.db
+        .insert(Activities)
+        .values(
+          input.feedings.map((feeding) => ({
+            amount: feeding.amount,
+            babyId: input.babyId,
+            feedingSource: feeding.feedingSource as
+              | (typeof FeedingSourceType)[keyof typeof FeedingSourceType]
+              | undefined,
+            isScheduled: true,
+            startTime: feeding.startTime,
+            type: 'feeding' as const,
+            userId: ctx.auth.userId,
+          })),
+        )
+        .returning();
+
+      return activities;
+    }),
+
+  // Delete an activity
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.auth.orgId) {
+        throw new Error('Family ID is required');
+      }
+
+      // Verify activity belongs to a baby in the family
+      const activity = await ctx.db.query.Activities.findFirst({
+        where: eq(Activities.id, input.id),
+        with: {
+          baby: true,
+        },
+      });
+
+      if (!activity || activity.baby.familyId !== ctx.auth.orgId) {
+        throw new Error('Activity not found');
+      }
+
+      const [deletedActivity] = await ctx.db
+        .delete(Activities)
+        .where(eq(Activities.id, input.id))
+        .returning();
+
+      if (!deletedActivity) {
+        throw new Error('Failed to delete activity');
+      }
+
+      return { success: true };
+    }),
+
+  // Delete all scheduled feedings for a baby
+  deleteAllScheduled: protectedProcedure
+    .input(z.object({ babyId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.auth.orgId) {
+        throw new Error('Family ID is required');
+      }
+
+      // Verify baby belongs to family
+      const baby = await ctx.db.query.Babies.findFirst({
+        where: and(
+          eq(Babies.id, input.babyId),
+          eq(Babies.familyId, ctx.auth.orgId),
+        ),
+      });
+
+      if (!baby) {
+        throw new Error('Baby not found');
+      }
+
+      await ctx.db
+        .delete(Activities)
+        .where(
+          and(
+            eq(Activities.babyId, input.babyId),
+            eq(Activities.type, 'feeding'),
+            eq(Activities.isScheduled, true),
+          ),
+        );
+
+      return { success: true };
+    }),
+
+  // Get last feeding activity for a baby
+  getLastFeeding: protectedProcedure
+    .input(z.object({ babyId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.auth.orgId) {
+        throw new Error('Family ID is required');
+      }
+
+      // Verify baby belongs to family
+      const baby = await ctx.db.query.Babies.findFirst({
+        where: and(
+          eq(Babies.id, input.babyId),
+          eq(Babies.familyId, ctx.auth.orgId),
+        ),
+      });
+
+      if (!baby) {
+        throw new Error('Baby not found');
+      }
+
+      return ctx.db.query.Activities.findFirst({
+        orderBy: [desc(Activities.startTime)],
+        where: and(
+          eq(Activities.babyId, input.babyId),
+          eq(Activities.type, 'feeding'),
+          eq(Activities.isScheduled, false),
+        ),
+      });
+    }),
+
+  // Get scheduled feedings for a baby
+  getScheduled: protectedProcedure
+    .input(z.object({ babyId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.auth.orgId) {
+        throw new Error('Family ID is required');
+      }
+
+      // Verify baby belongs to family
+      const baby = await ctx.db.query.Babies.findFirst({
+        where: and(
+          eq(Babies.id, input.babyId),
+          eq(Babies.familyId, ctx.auth.orgId),
+        ),
+      });
+
+      if (!baby) {
+        throw new Error('Baby not found');
+      }
+
+      const now = new Date();
+      return ctx.db.query.Activities.findMany({
+        orderBy: [Activities.startTime],
+        where: and(
+          eq(Activities.babyId, input.babyId),
+          eq(Activities.type, 'feeding'),
+          eq(Activities.isScheduled, true),
+          gte(Activities.startTime, now),
+        ),
+      });
+    }),
+  // List activities for a baby with optional filtering
+  list: protectedProcedure
+    .input(
+      z.object({
+        babyId: z.string(),
+        isScheduled: z.boolean().optional(),
+        limit: z.number().min(1).max(100).default(50),
+        type: z
+          .enum(Object.keys(ActivityTypeType) as [string, ...string[]])
+          .optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      if (!ctx.auth.orgId) {
+        throw new Error('Family ID is required');
+      }
+
+      const { babyId, limit, type, isScheduled } = input;
+
+      // Verify baby belongs to family
+      const baby = await ctx.db.query.Babies.findFirst({
+        where: and(eq(Babies.id, babyId), eq(Babies.familyId, ctx.auth.orgId)),
+      });
+
+      if (!baby) {
+        throw new Error('Baby not found');
+      }
+
+      const conditions = [eq(Activities.babyId, babyId)];
+      if (type) {
+        conditions.push(
+          eq(
+            Activities.type,
+            type as (typeof ActivityTypeType)[keyof typeof ActivityTypeType],
+          ),
+        );
+      }
+      if (typeof isScheduled === 'boolean') {
+        conditions.push(eq(Activities.isScheduled, isScheduled));
+      }
+
+      return ctx.db.query.Activities.findMany({
+        limit,
+        orderBy: [desc(Activities.startTime)],
+        where: and(...conditions),
+        with: {
+          familyMember: {
+            with: {
+              user: true,
+            },
+          },
+        },
+      });
+    }),
+
+  // Update an activity
+  update: protectedProcedure
+    .input(
+      updateActivitySchema.required({ id: true }).omit({
+        babyId: true,
+        createdAt: true,
+        updatedAt: true,
+        userId: true,
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.auth.orgId) {
+        throw new Error('Family ID is required');
+      }
+
+      const { id, ...data } = input;
+
+      // Verify activity belongs to a baby in the family
+      const activity = await ctx.db.query.Activities.findFirst({
+        where: eq(Activities.id, id),
+        with: {
+          baby: true,
+        },
+      });
+
+      if (!activity || activity.baby.familyId !== ctx.auth.orgId) {
+        throw new Error('Activity not found');
+      }
+
+      const [updatedActivity] = await ctx.db
+        .update(Activities)
+        .set(data)
+        .where(eq(Activities.id, id))
+        .returning();
+
+      if (!updatedActivity) {
+        throw new Error('Failed to update activity');
+      }
+
+      return updatedActivity;
+    }),
+});

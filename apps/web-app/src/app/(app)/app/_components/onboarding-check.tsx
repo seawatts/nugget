@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import type React from 'react';
 import { useEffect, useState } from 'react';
+import { checkOnboarding } from '../onboarding/actions';
 
 export function OnboardingCheck({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -10,21 +11,42 @@ export function OnboardingCheck({ children }: { children: React.ReactNode }) {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    if (pathname === '/onboarding' || pathname === '/onboarding/setup') {
+    // Skip check for onboarding pages
+    if (
+      pathname === '/app/onboarding' ||
+      pathname === '/app/onboarding/setup'
+    ) {
       setIsChecking(false);
       return;
     }
 
     // Check if user has completed onboarding
-    const onboardingData = localStorage.getItem('onboardingData');
+    async function checkOnboardingStatus() {
+      try {
+        const result = await checkOnboarding();
 
-    if (!onboardingData) {
-      router.push('/onboarding');
-      // Don't set isChecking to false - keep showing loading until redirect completes
-    } else {
-      // Onboarding completed, allow access
-      setIsChecking(false);
+        if (result?.data?.completed) {
+          // Onboarding completed, allow access
+          setIsChecking(false);
+        } else {
+          // Not completed, redirect to onboarding
+          router.push('/app/onboarding');
+          // Keep showing loading until redirect completes
+        }
+      } catch (error) {
+        console.error('Failed to check onboarding status:', error);
+        // Fallback to localStorage check
+        const onboardingData = localStorage.getItem('onboardingData');
+
+        if (!onboardingData) {
+          router.push('/app/onboarding');
+        } else {
+          setIsChecking(false);
+        }
+      }
     }
+
+    void checkOnboardingStatus();
   }, [pathname, router]);
 
   if (isChecking) {

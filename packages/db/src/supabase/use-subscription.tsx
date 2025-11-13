@@ -86,7 +86,7 @@ function determineEvents<T extends TableName>(
 }
 
 async function handleSubscriptionEvent<T extends TableName>(
-  payload: RealtimePostgresChangesPayload<Tables<T>>,
+  payload: RealtimePostgresChangesPayload<Record<string, unknown>>,
   callbacks: Set<SubscriptionCallbacks<T>>,
 ) {
   try {
@@ -94,13 +94,16 @@ async function handleSubscriptionEvent<T extends TableName>(
       switch (payload.eventType) {
         case 'INSERT': {
           if (callback.onInsert) {
-            await callback.onInsert(payload.new);
+            await callback.onInsert(payload.new as Tables<T>);
           }
           break;
         }
         case 'UPDATE': {
           if (callback.onUpdate) {
-            await callback.onUpdate(payload.new, payload.old as Tables<T>);
+            await callback.onUpdate(
+              payload.new as Tables<T>,
+              payload.old as Tables<T>,
+            );
           }
           break;
         }
@@ -298,7 +301,7 @@ export function SubscriptionProvider({
         log('Creating channel for:', { event, table: config.table });
         const channel = clientRef.current
           .channel(config.channelName ?? `${String(config.table)}-changes`)
-          .on<Tables<T>>(
+          .on(
             'postgres_changes',
             {
               event: event as '*',
@@ -306,7 +309,9 @@ export function SubscriptionProvider({
               schema: 'public',
               table: String(config.table),
             },
-            (payload) => {
+            (
+              payload: RealtimePostgresChangesPayload<Record<string, unknown>>,
+            ) => {
               log('Received payload:', {
                 table: config.table,
                 type: payload.eventType,

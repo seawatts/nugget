@@ -8,9 +8,6 @@ export async function cleanupTestData(
   // Delete all data in reverse order of dependencies
   // Use try-catch to handle potential constraint issues
   try {
-    await db.delete(schema.AuthCodes);
-    await db.delete(schema.ApiKeyUsage);
-    await db.delete(schema.ApiKeys);
     await db.delete(schema.OrgMembers);
     await db.delete(schema.Orgs);
     await db.delete(schema.Users);
@@ -20,7 +17,7 @@ export async function cleanupTestData(
     try {
       // Use TRUNCATE CASCADE for more thorough cleanup
       await db.execute(
-        sql`TRUNCATE TABLE "authCodes", "apiKeyUsage", "apiKeys", "orgMembers", "orgs", "user" RESTART IDENTITY CASCADE`,
+        sql`TRUNCATE TABLE "orgMembers", "orgs", "user" RESTART IDENTITY CASCADE`,
       );
     } catch (truncateError) {
       console.error('Failed to cleanup test data:', truncateError);

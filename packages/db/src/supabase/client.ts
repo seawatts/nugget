@@ -14,7 +14,7 @@ export const useClient = () => {
     () =>
       createBrowserClient<Database>(
         env.NEXT_PUBLIC_SUPABASE_URL,
-        env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
         {
           async accessToken() {
             return session?.getToken({ template: 'supabase' }) ?? null;
@@ -57,7 +57,7 @@ export function createClient(props: { authToken?: string; url?: string }) {
 
   const client = createBrowserClient<Database>(
     supabaseUrl,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     {
       async accessToken() {
         return authToken ?? null;

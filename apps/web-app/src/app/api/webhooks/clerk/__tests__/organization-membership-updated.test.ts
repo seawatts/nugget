@@ -23,8 +23,8 @@ describe('handleOrganizationMembershipUpdated', () => {
       name: 'Test Org',
     });
     await db.insert(OrgMembers).values({
-      orgId,
-      role: 'user',
+      familyId: orgId,
+      role: 'partner',
       userId,
     });
 
@@ -76,7 +76,7 @@ describe('handleOrganizationMembershipUpdated', () => {
       where: eq(OrgMembers.userId, userId),
     });
     expect(member).toBeDefined();
-    expect(member?.role).toBe('admin');
+    expect(member?.role).toBe('primary');
     await db.delete(OrgMembers).where(eq(OrgMembers.userId, userId));
     await db.delete(Orgs).where(eq(Orgs.clerkOrgId, orgId));
     await db.delete(Users).where(eq(Users.clerkId, userId));

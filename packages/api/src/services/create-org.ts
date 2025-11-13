@@ -4,7 +4,7 @@ import {
   type User,
 } from '@clerk/nextjs/server';
 import { db } from '@nugget/db/client';
-import { ApiKeys, Orgs, Users } from '@nugget/db/schema';
+import { Orgs, Users } from '@nugget/db/schema';
 import { generateRandomName } from '@nugget/id';
 import {
   BILLING_INTERVALS,
@@ -28,11 +28,6 @@ type CreateOrgResult = {
     id: string;
     name: string;
     stripeCustomerId: string;
-  };
-  apiKey: {
-    id: string;
-    key: string;
-    name: string;
   };
 };
 
@@ -91,48 +86,6 @@ async function ensureUserExists({
   }
 
   return dbUser;
-}
-
-// Helper function to create default API key
-async function ensureDefaultApiKey({
-  orgId,
-  userId,
-  tx,
-}: {
-  orgId: string;
-  userId: string;
-  tx: Transaction;
-}) {
-  const existingApiKey = await tx.query.ApiKeys.findFirst({
-    where: eq(ApiKeys.orgId, orgId),
-  });
-
-  if (existingApiKey) {
-    return existingApiKey;
-  }
-
-  const [apiKey] = await tx
-    .insert(ApiKeys)
-    .values({
-      name: 'Default',
-      orgId,
-      userId,
-    })
-    .onConflictDoUpdate({
-      set: {
-        updatedAt: new Date(),
-      },
-      target: ApiKeys.key,
-    })
-    .returning();
-
-  if (!apiKey) {
-    throw new Error(
-      `Failed to create API key for orgId: ${orgId}, userId: ${userId}`,
-    );
-  }
-
-  return apiKey;
 }
 
 // Helper function to create org in database
@@ -369,19 +322,7 @@ export async function createOrg({
         finalCheckOrg.id,
       );
 
-      // Get or create API key for existing org
-      const apiKey = await ensureDefaultApiKey({
-        orgId: finalCheckOrg.id,
-        tx,
-        userId,
-      });
-
       return {
-        apiKey: {
-          id: apiKey.id,
-          key: apiKey.key,
-          name: apiKey.name,
-        },
         org: {
           id: finalCheckOrg.clerkOrgId,
           name: finalCheckOrg.name,
@@ -464,19 +405,7 @@ export async function createOrg({
       tx,
     });
 
-    // Create default API key
-    const apiKey = await ensureDefaultApiKey({
-      orgId: org.id,
-      tx,
-      userId,
-    });
-
     return {
-      apiKey: {
-        id: apiKey.id,
-        key: apiKey.key,
-        name: apiKey.name,
-      },
       org: {
         id: org.clerkOrgId,
         name: org.name,

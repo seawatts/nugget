@@ -92,9 +92,6 @@ const mockTransaction = mock((callback) =>
 );
 
 const mockQuery = {
-  ApiKeys: {
-    findFirst: mock(() => Promise.resolve(null as Partial<ApiKeyType> | null)),
-  },
   OrgMembers: {
     findFirst: mock(() =>
       Promise.resolve(null as Partial<OrgMembersType> | null),
@@ -127,17 +124,6 @@ const mockOrgInsertResult = mock(() =>
 );
 
 const mockMemberInsertResult = mock(() => Promise.resolve());
-const mockApiKeyInsertResult = mock(() =>
-  Promise.resolve([
-    {
-      id: 'key_123',
-      key: 'sk_test_123',
-      name: 'Default',
-      orgId: 'org_db_123',
-      userId: 'user_123',
-    },
-  ]),
-);
 
 // Create insert mock that returns different chains based on the table
 const mockInsert = mock((table) => {
@@ -158,16 +144,6 @@ const mockInsert = mock((table) => {
     return {
       values: mock(() => ({
         onConflictDoUpdate: mockMemberInsertResult,
-      })),
-    };
-  }
-  if (tableName.includes('ApiKey')) {
-    return {
-      values: mock(() => ({
-        onConflictDoUpdate: mock(() => ({
-          returning: mockApiKeyInsertResult,
-        })),
-        returning: mockApiKeyInsertResult,
       })),
     };
   }
@@ -202,7 +178,6 @@ mock.module('../../src/client', () => ({
 mock.module('../../src/schema', () => {
   const createTable = (name: string) => ({ name });
   return {
-    ApiKeys: createTable('ApiKeys'),
     OrgMembers: createTable('OrgMembers'),
     Orgs: createTable('Orgs'),
     Users: createTable('Users'),
@@ -211,12 +186,7 @@ mock.module('../../src/schema', () => {
 
 // Import after all mocks are set up
 import { upsertOrg } from '@nugget/api/services';
-import type {
-  ApiKeyType,
-  OrgMembersType,
-  OrgType,
-  UserType,
-} from '../../src/schema';
+import type { OrgMembersType, OrgType, UserType } from '../../src/schema';
 
 describe('upsertOrg', () => {
   beforeEach(() => {
@@ -229,7 +199,6 @@ describe('upsertOrg', () => {
     mockGetFreePlanPriceId.mockClear();
     mockGenerateRandomName.mockClear();
     mockTransaction.mockClear();
-    mockQuery.ApiKeys.findFirst.mockClear();
     mockQuery.OrgMembers.findFirst.mockClear();
     mockQuery.Orgs.findFirst.mockClear();
     mockQuery.Users.findFirst.mockClear();
@@ -237,7 +206,6 @@ describe('upsertOrg', () => {
     mockUpdate.mockClear();
     mockOrgInsertResult.mockClear();
     mockMemberInsertResult.mockClear();
-    mockApiKeyInsertResult.mockClear();
 
     // Setup default mock implementations
     mockClerkClient.users.getUser.mockResolvedValue({
@@ -255,7 +223,6 @@ describe('upsertOrg', () => {
 
     mockQuery.OrgMembers.findFirst.mockResolvedValue(null);
     mockQuery.Orgs.findFirst.mockResolvedValue(null);
-    mockQuery.ApiKeys.findFirst.mockResolvedValue(null);
 
     mockClerkClient.organizations.createOrganization.mockResolvedValue({
       id: 'org_db_123',
@@ -282,16 +249,6 @@ describe('upsertOrg', () => {
         id: 'org_db_123',
         name: 'Test Organization',
         stripeCustomerId: null,
-      },
-    ]);
-
-    mockApiKeyInsertResult.mockResolvedValue([
-      {
-        id: 'key_123',
-        key: 'sk_test_123',
-        name: 'Default',
-        orgId: 'org_db_123',
-        userId: 'user_123',
       },
     ]);
   });
@@ -342,7 +299,7 @@ describe('upsertOrg', () => {
     it('should handle existing user membership and return existing org', async () => {
       // Mock that user is already a member of an org
       mockQuery.OrgMembers.findFirst.mockResolvedValueOnce({
-        orgId: 'existing_org_123',
+        familyId: 'existing_org_123',
         userId: 'user_123',
       });
 
@@ -353,14 +310,6 @@ describe('upsertOrg', () => {
         id: 'existing_org_123',
         name: 'Existing Organization',
         stripeCustomerId: 'cus_existing',
-      });
-
-      // Mock existing API key
-      mockQuery.ApiKeys.findFirst.mockResolvedValueOnce({
-        id: 'existing_key_123',
-        key: 'sk_test_existing',
-        name: 'Default',
-        orgId: 'existing_org_123',
       });
 
       const result = await upsertOrg({

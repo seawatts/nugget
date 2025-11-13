@@ -32,15 +32,15 @@ export async function handleOrganizationMembershipCreated(event: WebhookEvent) {
   const [member] = await db
     .insert(OrgMembers)
     .values({
-      orgId: org.id,
-      role: membershipData.role === 'admin' ? 'admin' : 'user',
+      familyId: org.id,
+      role: membershipData.role === 'admin' ? 'primary' : 'partner',
       userId: user.id,
     })
     .onConflictDoUpdate({
       set: {
-        role: membershipData.role === 'admin' ? 'admin' : 'user',
+        role: membershipData.role === 'admin' ? 'primary' : 'partner',
       },
-      target: [OrgMembers.userId, OrgMembers.orgId],
+      target: [OrgMembers.userId, OrgMembers.familyId],
     })
     .returning();
 

@@ -32,9 +32,9 @@ export async function handleOrganizationMembershipUpdated(event: WebhookEvent) {
   const [member] = await db
     .update(OrgMembers)
     .set({
-      role: membershipData.role === 'admin' ? 'admin' : 'user',
+      role: membershipData.role === 'admin' ? 'primary' : 'partner',
     })
-    .where(and(eq(OrgMembers.userId, user.id), eq(OrgMembers.orgId, org.id)))
+    .where(and(eq(OrgMembers.userId, user.id), eq(OrgMembers.familyId, org.id)))
     .returning();
 
   if (!member) {

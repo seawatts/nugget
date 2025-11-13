@@ -230,10 +230,14 @@ export function BottomNav() {
   const [showDrawer, setShowDrawer] = useState(false);
   const [journeyStage, setJourneyStage] = useState<string | null>(null);
 
+  const isOnboarding = pathname?.startsWith('/app/onboarding');
+
   useEffect(() => {
     const userData = getUserJourneyStage();
     setJourneyStage(userData?.journeyStage || 'born'); // Default to "born" if not set
   }, []);
+
+  if (isOnboarding) return null;
 
   const filteredNavGroups = navGroups.filter((group) => {
     if (!journeyStage) return true;
@@ -351,7 +355,7 @@ export function BottomNav() {
                                 : 'bg-muted/50 border-transparent hover:bg-muted hover:border-border',
                             )}
                           >
-                            <Icon className="h-5 w-5 flex-shrink-0" />
+                            <Icon className="h-5 w-5 shrink-0" />
                             <span className="text-sm font-medium text-balance">
                               {item.label}
                             </span>

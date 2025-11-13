@@ -21,7 +21,7 @@ export function createClient(props: { authToken: string; url?: string }) {
 
   const client = createSupabaseClient<Database>(
     supabaseUrl,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     {
       async accessToken() {
         if (!authToken) {

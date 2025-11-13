@@ -11,5 +11,12 @@
   },
   "exclude": ["node_modules"],
   "extends": ["@nugget/tsconfig/base.json"],
-  "include": ["src", "*.ts", "*.js", ".expo/types/**/*.ts", "expo-env.d.ts"]
+  "include": [
+    "src",
+    "*.ts",
+    "*.js",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+    // "metro.config.js1"
+  ]
 }

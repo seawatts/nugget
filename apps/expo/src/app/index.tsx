@@ -1,134 +1,60 @@
-import { FlashList } from '@shopify/flash-list';
-import { Link, Stack } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Stack, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { RouterOutputs } from '~/utils/api';
-import { api } from '~/utils/api';
+const ONBOARDING_STORAGE_KEY = 'onboardingData';
 
-function UserCard(props: {
-  user: RouterOutputs['user']['all'][number];
-  onDelete: () => void;
-}) {
-  return (
-    <View className="flex flex-row rounded-lg bg-muted p-4">
-      <View className="grow">
-        <Link
-          asChild
-          href={{
-            params: { id: props.user.id },
-            pathname: '/user/[id]',
-          }}
-        >
-          <Pressable className="">
-            <Text className="text-xl font-semibold text-primary">
-              {props.user.id}
-            </Text>
-            <Text className="mt-2 text-foreground">{props.user.id}</Text>
-          </Pressable>
-        </Link>
-      </View>
-      <Pressable onPress={props.onDelete}>
-        <Text className="font-bold uppercase text-primary">Delete</Text>
-      </Pressable>
-    </View>
-  );
-}
+export default function Bootstrap() {
+  const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
 
-function CreateUser() {
-  const utils = api.useUtils();
+  useEffect(() => {
+    let isMounted = true;
 
-  const [firstName, setFirstName] = useState('');
+    const hydrate = async () => {
+      try {
+        const stored = await AsyncStorage.getItem(ONBOARDING_STORAGE_KEY);
+        const parsed = stored ? JSON.parse(stored) : null;
 
-  const { mutate, error } = api.user.create.useMutation({
-    async onSuccess() {
-      setFirstName('');
-      await utils.user.all.invalidate();
-    },
-  });
+        if (!isMounted) {
+          return;
+        }
+
+        if (!parsed?.completedAt) {
+          router.replace('/onboarding');
+        } else {
+          router.replace('/(tabs)');
+        }
+      } catch (error) {
+        console.warn('Failed to read onboarding state', error);
+        if (!isMounted) return;
+        router.replace('/onboarding');
+      } finally {
+        if (isMounted) {
+          setIsChecking(false);
+        }
+      }
+    };
+
+    void hydrate();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
 
   return (
-    <View className="mt-4 flex gap-2">
-      <TextInput
-        className="items-center rounded-md border border-input bg-background px-3 text-lg leading-[1.25] text-foreground"
-        onChangeText={setFirstName}
-        placeholder="Name"
-        value={firstName}
-      />
-      {error?.data?.zodError?.fieldErrors.title && (
-        <Text className="mb-2 text-destructive">
-          {error.data.zodError.fieldErrors.title}
+    <SafeAreaView className="flex-1 items-center justify-center bg-background px-6">
+      <Stack.Screen options={{ headerShown: false }} />
+      <View className="items-center justify-center">
+        <ActivityIndicator color="#f472b6" size="large" />
+        <Text className="mt-4 text-sm text-muted-foreground">
+          {isChecking
+            ? 'Preparing your experience...'
+            : 'Redirecting to your dashboard'}
         </Text>
-      )}
-      <Pressable
-        className="flex items-center rounded bg-primary p-2"
-        onPress={() => {
-          mutate({
-            clerkId: 'test',
-            email: 'test@test.com',
-            firstName,
-            lastName: 'test',
-
-            online: true,
-          });
-        }}
-      >
-        <Text className="text-foreground">Create</Text>
-      </Pressable>
-      {error?.data?.code === 'UNAUTHORIZED' && (
-        <Text className="mt-2 text-destructive">
-          You need to be logged in to create a post
-        </Text>
-      )}
-    </View>
-  );
-}
-
-export default function Index() {
-  const utils = api.useUtils();
-
-  const userQuery = api.user.all.useQuery();
-
-  const deleteUserMutation = api.user.delete.useMutation({
-    onSettled: () => utils.user.all.invalidate().then(),
-  });
-
-  return (
-    <SafeAreaView className="bg-background">
-      {/* Changes page title visible on the header */}
-      <Stack.Screen options={{ title: 'Home Page' }} />
-      <View className="h-full w-full bg-background p-4">
-        <Text className="pb-2 text-center text-5xl font-bold text-foreground">
-          Create <Text className="text-primary">T3</Text> Turbo
-        </Text>
-
-        <Pressable
-          className="flex items-center rounded-lg bg-primary p-2"
-          onPress={() => void utils.user.all.invalidate()}
-        >
-          <Text className="text-foreground"> Refresh posts</Text>
-        </Pressable>
-
-        <View className="py-2">
-          <Text className="font-semibold italic text-primary">
-            Press on a post
-          </Text>
-        </View>
-
-        <FlashList
-          data={userQuery.data}
-          estimatedItemSize={20}
-          ItemSeparatorComponent={() => <View className="h-2" />}
-          renderItem={(p) => (
-            <UserCard
-              onDelete={() => deleteUserMutation.mutate(p.item.id)}
-              user={p.item}
-            />
-          )}
-        />
-
-        <CreateUser />
       </View>
     </SafeAreaView>
   );

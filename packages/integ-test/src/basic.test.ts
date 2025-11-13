@@ -29,15 +29,4 @@ describe('Basic Integration Tests', () => {
     expect(setup.org).toBeDefined();
     expect(setup.org.createdByUserId).toBe(setup.user.id);
   });
-
-  it('should create an API key', async () => {
-    const user = await factories.createUser();
-    const org = await factories.createOrg();
-    const apiKey = await factories.createApiKey(user.id, org.id);
-
-    expect(apiKey).toBeDefined();
-    expect(apiKey.id).toMatch(/^ak_/);
-    expect(apiKey.userId).toBe(user.id);
-    expect(apiKey.orgId).toBe(org.id);
-  });
 });

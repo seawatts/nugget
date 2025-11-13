@@ -98,6 +98,18 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["apps/expo/**/*.js", "apps/expo/**/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noCommonJs": "off"
+          }
+        }
+      }
+    }
+  ],
   "vcs": {
     "clientKind": "git",
     "defaultBranch": "main",

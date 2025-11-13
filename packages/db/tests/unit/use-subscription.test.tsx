@@ -37,7 +37,8 @@ mock.module('../../src/supabase/client', () => ({
 describe.skip('useSubscription Unit Tests', () => {
   const mockToken = 'test-token';
   const mockUrl = 'https://test.supabase.co';
-  const mockTable: TableName = 'events';
+  // @ts-expect-error - Test is skipped, table type is outdated
+  const mockTable: TableName = 'users';
   const mockCallback = mock(() => {});
 
   beforeEach(() => {

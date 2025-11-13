@@ -2,10 +2,14 @@ import { sql } from 'drizzle-orm';
 import { db } from '../src/client';
 
 const tablesToEnableRealtime = [
-  'events',
-  'requests',
-  'webhooks',
-  'connections',
+  'babies',
+  'activities',
+  'familyMembers',
+  'growthRecords',
+  'medicalRecords',
+  'milestones',
+  'supplyInventory',
+  'supplyTransactions',
 ] as const;
 
 // RLS policies for realtime authorization
@@ -20,7 +24,7 @@ const realtimePolicies = [
         WHERE e."webhookId" = split_part(realtime.topic(), '-', 2)
         AND e."webhookId" IN (
           SELECT w.id FROM public.webhooks w
-          WHERE w."orgId" = (SELECT requesting_org_id())
+          WHERE w."familyId" = (SELECT requesting_family_id())
         )
       )
     `,
@@ -39,7 +43,7 @@ const realtimePolicies = [
         WHERE r."webhookId" = split_part(realtime.topic(), '-', 2)
         AND r."webhookId" IN (
           SELECT w.id FROM public.webhooks w
-          WHERE w."orgId" = (SELECT requesting_org_id())
+          WHERE w."familyId" = (SELECT requesting_family_id())
         )
       )
     `,

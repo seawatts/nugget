@@ -54,20 +54,23 @@ function determineEvents<T extends TableName>(
 }
 
 async function handleChannelEvent<T extends TableName>(
-  payload: RealtimePostgresChangesPayload<Tables<T>>,
+  payload: RealtimePostgresChangesPayload<Record<string, unknown>>,
   callbacks: ChannelCallbacks<T>,
 ) {
   try {
     switch (payload.eventType) {
       case 'INSERT': {
         if (callbacks.onInsert) {
-          await callbacks.onInsert(payload.new);
+          await callbacks.onInsert(payload.new as Tables<T>);
         }
         break;
       }
       case 'UPDATE': {
         if (callbacks.onUpdate) {
-          await callbacks.onUpdate(payload.new, payload.old as Tables<T>);
+          await callbacks.onUpdate(
+            payload.new as Tables<T>,
+            payload.old as Tables<T>,
+          );
         }
         break;
       }
@@ -106,7 +109,7 @@ export function createChannel<T extends TableName>(
         schema: 'public',
         table: String(props.table),
       },
-      (payload: RealtimePostgresChangesPayload<Tables<T>>) => {
+      (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
         log('Received payload:', {
           table: props.table,
           type: payload.eventType,

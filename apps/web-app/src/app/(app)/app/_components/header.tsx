@@ -1,9 +1,17 @@
+'use client';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
 import { AlertTriangle, Mail, Settings } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export function Header() {
+  const pathname = usePathname();
+  const isOnboarding = pathname?.startsWith('/app/onboarding');
+
+  if (isOnboarding) return null;
+
   return (
     <header className="flex items-center justify-between px-4 py-6">
       <div className="flex items-center gap-3">

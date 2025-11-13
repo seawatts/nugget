@@ -4,7 +4,7 @@ import {
   type User,
 } from '@clerk/nextjs/server';
 import { db } from '@nugget/db/client';
-import { ApiKeys, OrgMembers, Orgs, Users } from '@nugget/db/schema';
+import { OrgMembers, Orgs, Users } from '@nugget/db/schema';
 import { generateRandomName, generateUniqueOrgName } from '@nugget/id';
 import {
   BILLING_INTERVALS,
@@ -30,11 +30,6 @@ type UpsertOrgResult = {
     name: string;
     stripeCustomerId: string;
   };
-  apiKey: {
-    id: string;
-    key: string;
-    name: string;
-  };
 };
 
 // Helper function to create or update org membership
@@ -50,57 +45,16 @@ async function ensureOrgMembership({
   await tx
     .insert(OrgMembers)
     .values({
-      orgId,
-      role: 'admin',
+      familyId: orgId,
+      role: 'primary',
       userId,
     })
     .onConflictDoUpdate({
       set: {
         updatedAt: new Date(),
       },
-      target: [OrgMembers.orgId, OrgMembers.userId],
+      target: [OrgMembers.familyId, OrgMembers.userId],
     });
-}
-
-async function ensureDefaultApiKey({
-  orgId,
-  userId,
-  tx,
-}: {
-  orgId: string;
-  userId: string;
-  tx: Transaction;
-}) {
-  const existingApiKey = await tx.query.ApiKeys.findFirst({
-    where: eq(ApiKeys.orgId, orgId),
-  });
-
-  if (existingApiKey) {
-    return existingApiKey;
-  }
-
-  const [apiKey] = await tx
-    .insert(ApiKeys)
-    .values({
-      name: 'Default',
-      orgId,
-      userId,
-    })
-    .onConflictDoUpdate({
-      set: {
-        updatedAt: new Date(),
-      },
-      target: ApiKeys.key,
-    })
-    .returning();
-
-  if (!apiKey) {
-    throw new Error(
-      `Failed to create API key for orgId: ${orgId}, userId: ${userId}`,
-    );
-  }
-
-  return apiKey;
 }
 
 async function upsertOrgInDatabase({
@@ -299,18 +253,10 @@ async function buildOrgResult({
   tx: Transaction;
   userId: string;
 }): Promise<UpsertOrgResult> {
-  // Run membership and API key creation in parallel
-  const [_, apiKey] = await Promise.all([
-    ensureOrgMembership({ orgId: org.id, tx, userId }),
-    ensureDefaultApiKey({ orgId: org.id, tx, userId }),
-  ]);
+  // Ensure org membership
+  await ensureOrgMembership({ orgId: org.id, tx, userId });
 
   return {
-    apiKey: {
-      id: apiKey.id,
-      key: apiKey.key,
-      name: apiKey.name,
-    },
     org: {
       id: org.clerkOrgId,
       name: org.name,
@@ -361,18 +307,11 @@ async function findExistingOrg({
   // Check 1: User already has an org membership
   if (existingMembership && !orgId) {
     const existingOrg = await tx.query.Orgs.findFirst({
-      where: eq(Orgs.id, existingMembership.orgId),
+      where: eq(Orgs.id, existingMembership.familyId),
     });
 
     if (existingOrg) {
-      // Run API key check
-      const apiKey = await tx.query.ApiKeys.findFirst({
-        where: eq(ApiKeys.orgId, existingOrg.id),
-      });
-
-      if (apiKey) {
-        return { org: existingOrg, reason: 'existing_membership' };
-      }
+      return { org: existingOrg, reason: 'existing_membership' };
     }
   }
 

@@ -35,11 +35,11 @@ const createRequestingUserIdFunction = async () => {
   console.log('requesting_user_id function created successfully');
 };
 
-// Create the requesting_org_id function for consistency
-const createRequestingOrgIdFunction = async () => {
-  console.log('Creating requesting_org_id function...');
+// Create the requesting_family_id function for consistency
+const createRequestingFamilyIdFunction = async () => {
+  console.log('Creating requesting_family_id function...');
   await db.execute(sql`
-    CREATE OR REPLACE FUNCTION requesting_org_id()
+    CREATE OR REPLACE FUNCTION requesting_family_id()
     RETURNS text
     LANGUAGE sql
     STABLE
@@ -52,19 +52,19 @@ const createRequestingOrgIdFunction = async () => {
       )::text;
     $$;
   `);
-  console.log('requesting_org_id function created successfully');
+  console.log('requesting_family_id function created successfully');
 };
 
 // Common policy conditions using the requesting_user_id function
 const policyConditions = {
-  orgOwnership: (columnName = 'orgId') =>
-    `(SELECT requesting_org_id()) = ("${columnName}")::text`,
+  familyOwnership: (columnName = 'familyId') =>
+    `(SELECT requesting_family_id()) = ("${columnName}")::text`,
   userOwnership: (columnName = 'userId') =>
     `(SELECT requesting_user_id()) = ("${columnName}")::text`,
   webhookOwnership: `EXISTS (
     SELECT 1 FROM webhooks
     WHERE webhooks.id = requests."webhookId"
-    AND webhooks."orgId" = (SELECT requesting_org_id())
+    AND webhooks."familyId" = (SELECT requesting_family_id())
   )`,
 } as const;
 
@@ -85,14 +85,14 @@ const createUserOwnershipPolicy = (
       : undefined,
 });
 
-// Helper to create a policy for org ownership
-const createOrgOwnershipPolicy = (
+// Helper to create a policy for family ownership
+const createFamilyOwnershipPolicy = (
   operation: PolicyOperation,
   columnName: string,
 ): Policy => ({
-  name: `Users can ${operation.toLowerCase()} their organization's records`,
+  name: `Users can ${operation.toLowerCase()} their family's records`,
   operation,
-  using: policyConditions.orgOwnership(columnName),
+  using: policyConditions.familyOwnership(columnName),
 });
 
 const createPolicy = async (tableName: string, policy: Policy) => {
@@ -131,157 +131,76 @@ const enableRLS = async (tableName: string) => {
 };
 
 const policyConfigs: Record<string, PolicyConfig> = {
-  apiKeys: {
-    policies: [
-      createUserOwnershipPolicy('ALL', 'userId'),
-      createOrgOwnershipPolicy('ALL', 'orgId'),
-    ],
-    tableName: 'apiKeys',
+  activities: {
+    policies: [createUserOwnershipPolicy('ALL', 'userId')],
+    tableName: 'activities',
   },
-  apiKeyUsage: {
-    policies: [
-      createUserOwnershipPolicy('ALL', 'userId'),
-      createOrgOwnershipPolicy('ALL', 'orgId'),
-    ],
-    tableName: 'apiKeyUsage',
+  babies: {
+    policies: [createUserOwnershipPolicy('ALL', 'userId')],
+    tableName: 'babies',
   },
-  authCodes: {
+  families: {
     policies: [
-      createUserOwnershipPolicy('ALL', 'userId'),
-      createOrgOwnershipPolicy('ALL', 'orgId'),
-    ],
-    tableName: 'authCodes',
-  },
-  connections: {
-    policies: [
-      createUserOwnershipPolicy('ALL', 'userId'),
-      createOrgOwnershipPolicy('ALL', 'orgId'),
-    ],
-    tableName: 'connections',
-  },
-  events: {
-    policies: [
-      createUserOwnershipPolicy('ALL', 'userId'),
-      createOrgOwnershipPolicy('ALL', 'orgId'),
-    ],
-    tableName: 'events',
-  },
-  forwardingDestinations: {
-    policies: [
-      createUserOwnershipPolicy('ALL', 'userId'),
-      createUserOwnershipPolicy('DELETE', 'userId'),
-      createOrgOwnershipPolicy('ALL', 'orgId'),
-    ],
-    tableName: 'forwardingDestinations',
-  },
-  forwardingExecutions: {
-    policies: [
-      createUserOwnershipPolicy('ALL', 'userId'),
-      createOrgOwnershipPolicy('ALL', 'orgId'),
-    ],
-    tableName: 'forwardingExecutions',
-  },
-  forwardingRules: {
-    policies: [
-      createUserOwnershipPolicy('ALL', 'userId'),
-      createOrgOwnershipPolicy('ALL', 'orgId'),
-    ],
-    tableName: 'forwardingRules',
-  },
-  orgMembers: {
-    policies: [
-      createUserOwnershipPolicy('ALL', 'userId'),
-      createOrgOwnershipPolicy('ALL', 'orgId'),
-    ],
-    tableName: 'orgMembers',
-  },
-  orgs: {
-    policies: [
-      // Users can access orgs they created
+      // Users can access families they created
       {
-        name: 'Users can select orgs they created',
+        name: 'Users can select families they created',
         operation: 'SELECT',
         using: policyConditions.userOwnership('createdByUserId'),
       },
       {
-        name: 'Users can insert orgs',
+        name: 'Users can insert families',
         operation: 'INSERT',
         withCheck: policyConditions.userOwnership('createdByUserId'),
       },
       {
-        name: 'Users can update orgs they created',
+        name: 'Users can update families they created',
         operation: 'UPDATE',
         using: policyConditions.userOwnership('createdByUserId'),
         withCheck: policyConditions.userOwnership('createdByUserId'),
       },
     ],
-    tableName: 'orgs',
+    tableName: 'families',
   },
-  requests: {
+  familyMembers: {
     policies: [
       createUserOwnershipPolicy('ALL', 'userId'),
-      createOrgOwnershipPolicy('ALL', 'orgId'),
-      {
-        name: 'Users can access requests for their webhooks',
-        operation: 'SELECT',
-        using: policyConditions.webhookOwnership,
-      },
-      {
-        name: 'Users can delete requests for their webhooks',
-        operation: 'DELETE',
-        using: policyConditions.webhookOwnership,
-      },
-      {
-        name: 'Users can update requests for their webhooks',
-        operation: 'UPDATE',
-        using: policyConditions.webhookOwnership,
-      },
+      createFamilyOwnershipPolicy('ALL', 'familyId'),
     ],
-    tableName: 'requests',
+    tableName: 'familyMembers',
   },
-  user: {
+  growthRecords: {
+    policies: [createUserOwnershipPolicy('ALL', 'userId')],
+    tableName: 'growthRecords',
+  },
+  medicalRecords: {
+    policies: [createUserOwnershipPolicy('ALL', 'userId')],
+    tableName: 'medicalRecords',
+  },
+  milestones: {
+    policies: [createUserOwnershipPolicy('ALL', 'userId')],
+    tableName: 'milestones',
+  },
+  shortUrls: {
+    policies: [
+      createUserOwnershipPolicy('ALL', 'userId'),
+      createFamilyOwnershipPolicy('ALL', 'familyId'),
+    ],
+    tableName: 'shortUrls',
+  },
+  supplyInventory: {
+    policies: [createUserOwnershipPolicy('ALL', 'userId')],
+    tableName: 'supplyInventory',
+  },
+  supplyTransactions: {
+    policies: [createUserOwnershipPolicy('ALL', 'userId')],
+    tableName: 'supplyTransactions',
+  },
+  users: {
     policies: [
       createUserOwnershipPolicy('SELECT', 'id'),
       createUserOwnershipPolicy('UPDATE', 'id'),
     ],
-    tableName: 'user',
-  },
-  webhookAccessRequests: {
-    policies: [
-      // Users can access requests they made (as requester)
-      {
-        name: 'Users can select their own access requests',
-        operation: 'SELECT',
-        using: policyConditions.userOwnership('requesterId'),
-      },
-      {
-        name: 'Users can insert their own access requests',
-        operation: 'INSERT',
-        withCheck: policyConditions.userOwnership('requesterId'),
-      },
-      {
-        name: 'Users can update their own access requests',
-        operation: 'UPDATE',
-        using: policyConditions.userOwnership('requesterId'),
-        withCheck: policyConditions.userOwnership('requesterId'),
-      },
-      // Users can respond to requests (as responder)
-      {
-        name: 'Users can update requests they are responding to',
-        operation: 'UPDATE',
-        using: policyConditions.userOwnership('responderId'),
-        withCheck: policyConditions.userOwnership('responderId'),
-      },
-      createOrgOwnershipPolicy('ALL', 'orgId'),
-    ],
-    tableName: 'webhookAccessRequests',
-  },
-  webhooks: {
-    policies: [
-      createUserOwnershipPolicy('ALL', 'userId'),
-      createOrgOwnershipPolicy('ALL', 'orgId'),
-    ],
-    tableName: 'webhooks',
+    tableName: 'users',
   },
 };
 
@@ -330,9 +249,9 @@ async function dropTablePolicies(config: PolicyConfig) {
 async function setupAllPolicies() {
   return withErrorHandling(
     async () => {
-      // First create the requesting_user_id and requesting_org_id functions
+      // First create the requesting_user_id and requesting_family_id functions
       await createRequestingUserIdFunction();
-      await createRequestingOrgIdFunction();
+      await createRequestingFamilyIdFunction();
 
       // Process tables sequentially to avoid deadlocks
       for (const config of Object.values(policyConfigs)) {

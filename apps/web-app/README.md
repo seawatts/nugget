@@ -67,7 +67,7 @@ Create a `.env.local` file with the following variables:
 # Database
 DATABASE_URL=
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 
 # Authentication
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=

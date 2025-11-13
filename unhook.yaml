@@ -21,12 +21,16 @@
 #       destination: string              # Name of the destination from 'destination' array
 
 # Test Curl:
-# curl -X POST https://nugget.baby/my-org/my-webhook?source=test -H "Content-Type: application/json" -d '{"type": "test.command", "data": { "message": "Hello, world!" }}'
+# curl -X POST https://unhook.sh/seawatts/nugget?source=test -H "Content-Type: application/json" -d '{"type": "test.command", "data": { "message": "Hello, world!" }}'
 
-webhookUrl: https://nugget.baby/my-org/my-webhook
+webhookUrl: https://unhook.sh/seawatts/nugget
 destination:
-  - name: local
-    url: http://localhost:3000/api/webhooks
+  - name: clerk
+    url: http://localhost:3000/api/webhooks/clerk
+  - name: stripe
+    url: http://localhost:3000/api/webhooks/stripe
 delivery:
-  - source: '*'
-    destination: local
+  - source: 'clerk'
+    destination: clerk
+  - source: 'stripe'
+    destination: stripe

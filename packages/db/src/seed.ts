@@ -3,68 +3,103 @@ import { seed } from 'drizzle-seed';
 
 import { db } from './client';
 import {
-  ApiKeys,
-  ApiKeyUsage,
-  AuthCodes,
+  Activities,
+  Babies,
+  GrowthRecords,
+  MedicalRecords,
+  Milestones,
   OrgMembers,
   Orgs,
+  ShortUrls,
   Users,
 } from './schema';
 
 // Reset all tables
 
-await db.delete(Users);
-await db.delete(Orgs);
+await db.delete(GrowthRecords);
+await db.delete(Milestones);
+await db.delete(MedicalRecords);
+await db.delete(Activities);
+await db.delete(Babies);
+await db.delete(ShortUrls);
 await db.delete(OrgMembers);
-await db.delete(AuthCodes);
-await db.delete(ApiKeyUsage);
-await db.delete(ApiKeys);
+await db.delete(Orgs);
+await db.delete(Users);
 
 const userId = 'user_30oVYOGDYUTdXqB6HImz3XbRyTs';
 const orgId = 'org_30oVYhhebEP3q4dSFlxo8DyAxhr';
 const orgName = 'nugget';
-const apiKeyId = 'ak_nugget';
 const stripeCustomerId = 'cus_Snv28tYxHudPzx';
 const stripeSubscriptionId = 'sub_1RsJCH4hM6DbRRtOGcENjqIO';
 
 await seed(db, {
-  ApiKeys,
-  ApiKeyUsage,
+  Activities,
+  Babies,
+  GrowthRecords,
+  MedicalRecords,
+  Milestones,
   OrgMembers,
   Orgs,
+  ShortUrls,
   Users,
 }).refine((funcs) => ({
-  ApiKeys: {
+  Activities: {
     columns: {
-      id: funcs.default({ defaultValue: apiKeyId }),
-      key: funcs.default({
-        defaultValue: 'usk-live-300nYp2JItCuoiHhaioQv82QHwo',
+      startTime: funcs.date({
+        maxDate: new Date(),
+        minDate: subDays(new Date(), 30),
       }),
-      orgId: funcs.default({ defaultValue: orgId }),
+      type: funcs.valuesFromArray({
+        values: ['sleep', 'feeding', 'bottle', 'diaper', 'bath'],
+      }),
+      userId: funcs.default({ defaultValue: userId }),
+    },
+    count: 10,
+  },
+  Babies: {
+    columns: {
+      name: funcs.default({ defaultValue: 'Baby Test' }),
+      userId: funcs.default({ defaultValue: userId }),
     },
     count: 1,
   },
-  ApiKeyUsage: {
+  GrowthRecords: {
     columns: {
-      apiKeyId: funcs.default({
-        defaultValue: apiKeyId,
-      }),
-      createdAt: funcs.date({
+      date: funcs.date({
         maxDate: new Date(),
-        minDate: subDays(new Date(), 5),
+        minDate: subDays(new Date(), 365),
       }),
-      metadata: funcs.default({
-        defaultValue: {},
-      }),
-      orgId: funcs.default({ defaultValue: orgId }),
-      type: funcs.valuesFromArray({
-        values: ['mcp-server'],
-      }),
-      userId: funcs.default({
-        defaultValue: userId,
-      }),
+      userId: funcs.default({ defaultValue: userId }),
     },
-    count: 10,
+    count: 5,
+  },
+  MedicalRecords: {
+    columns: {
+      date: funcs.date({
+        maxDate: new Date(),
+        minDate: subDays(new Date(), 365),
+      }),
+      title: funcs.default({ defaultValue: 'Medical Record' }),
+      type: funcs.valuesFromArray({
+        values: ['vaccination', 'appointment', 'medication', 'illness'],
+      }),
+      userId: funcs.default({ defaultValue: userId }),
+    },
+    count: 5,
+  },
+  Milestones: {
+    columns: {
+      achievedDate: funcs.date({
+        maxDate: new Date(),
+        minDate: subDays(new Date(), 365),
+      }),
+      title: funcs.default({ defaultValue: 'Milestone' }),
+      type: funcs.valuesFromArray({
+        values: ['physical', 'cognitive', 'social', 'language', 'self_care'],
+      }),
+      userId: funcs.default({ defaultValue: userId }),
+    },
+    count: 5,
   },
   OrgMembers: {
     columns: {
@@ -91,6 +126,15 @@ await seed(db, {
       }),
     },
     count: 1,
+  },
+  ShortUrls: {
+    columns: {
+      code: funcs.default({ defaultValue: 'test-code' }),
+      orgId: funcs.default({ defaultValue: orgId }),
+      redirectUrl: funcs.default({ defaultValue: 'https://example.com' }),
+      userId: funcs.default({ defaultValue: userId }),
+    },
+    count: 3,
   },
   Users: {
     columns: {

@@ -57,13 +57,13 @@ export class TestFactories {
 
   async createOrgMember(
     userId: string,
-    orgId: string,
-    role: 'user' | 'admin' | 'superAdmin' = 'user',
+    familyId: string,
+    role: 'primary' | 'partner' | 'caregiver' = 'primary',
   ): Promise<schema.OrgMembersType> {
     const member = {
       createdAt: new Date(),
+      familyId,
       id: createId({ prefix: 'member' }),
-      orgId,
       role,
       userId,
     };
@@ -74,32 +74,6 @@ export class TestFactories {
       .returning();
     if (!created) {
       throw new Error('Failed to create org member');
-    }
-    return created;
-  }
-
-  async createApiKey(
-    userId: string,
-    orgId: string,
-    overrides?: Partial<schema.ApiKeyType>,
-  ): Promise<schema.ApiKeyType> {
-    const apiKey = {
-      createdAt: new Date(),
-      id: createId({ prefix: 'ak' }),
-      isActive: true,
-      key: faker.string.alphanumeric(64),
-      name: faker.lorem.words(2),
-      orgId,
-      userId,
-      ...overrides,
-    };
-
-    const [created] = await this.db
-      .insert(schema.ApiKeys)
-      .values(apiKey)
-      .returning();
-    if (!created) {
-      throw new Error('Failed to create API key');
     }
     return created;
   }
@@ -118,7 +92,7 @@ export class TestFactories {
     });
 
     // Add user as org member
-    await this.createOrgMember(user.id, org.id, 'admin');
+    await this.createOrgMember(user.id, org.id, 'primary');
 
     return { org, user };
   }

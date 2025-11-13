@@ -1,4 +1,4 @@
-import { ApiKeys, OrgMembers, Orgs } from '@nugget/db/schema';
+import { OrgMembers, Orgs } from '@nugget/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { createOrg } from '../services';
@@ -17,7 +17,7 @@ export const orgRouter = createTRPCRouter({
       const existingOrgWithAccess = await ctx.db.query.Orgs.findFirst({
         where: eq(Orgs.name, input.name),
         with: {
-          orgMembers: {
+          familyMembers: {
             where: eq(OrgMembers.userId, ctx.auth.userId),
           },
         },
@@ -26,7 +26,7 @@ export const orgRouter = createTRPCRouter({
       // If user has access to an org with this name, it's available to them
       if (
         existingOrgWithAccess &&
-        existingOrgWithAccess.orgMembers.length > 0
+        existingOrgWithAccess.familyMembers.length > 0
       ) {
         return {
           available: true,
@@ -113,15 +113,7 @@ export const orgRouter = createTRPCRouter({
         });
 
         if (existingOrg) {
-          const apiKey = await ctx.db.query.ApiKeys.findFirst({
-            where: eq(ApiKeys.orgId, existingOrg.id),
-          });
           return {
-            apiKey: {
-              id: apiKey?.id,
-              key: apiKey?.key,
-              name: apiKey?.name,
-            },
             org: {
               id: existingOrg.id,
               name: existingOrg.name,

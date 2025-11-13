@@ -55,7 +55,7 @@
     "create-supabase-policies": "tsx scripts/create-supabase-policies.ts",
     "dev": "tsx ./scripts/watch.ts",
     "enable-supabase-realtime": "tsx scripts/enable-supabase-realtime.ts",
-    "gen-migration": "drizzle-kit generate",
+    "gen-migration": "drizzle-kit generate && bun scripts/prepend-rls-functions.ts",
     "gen-supabase-types": "tsx ./scripts/generate-supabase-types.ts",
     "migrate": "drizzle-kit migrate && bun gen-supabase-types && bun create-supabase-policies && bun enable-supabase-realtime",
     "push": "drizzle-kit push && bun gen-supabase-types && bun create-supabase-policies && bun enable-supabase-realtime",

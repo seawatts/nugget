@@ -70,8 +70,8 @@ describe('handleOrganizationMembershipCreated', () => {
       where: eq(OrgMembers.userId, userId),
     });
     expect(member).toBeDefined();
-    expect(member?.orgId).toBe(orgId);
-    expect(member?.role).toBe('admin');
+    expect(member?.familyId).toBe(orgId);
+    expect(member?.role).toBe('primary');
     await db.delete(OrgMembers).where(eq(OrgMembers.userId, userId));
     await db.delete(Orgs).where(eq(Orgs.clerkOrgId, orgId));
     await db.delete(Users).where(eq(Users.clerkId, userId));
