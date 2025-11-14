@@ -113,7 +113,7 @@ export function ActivityTimelineFilters({
   };
 
   const totalFilters = selectedUserIds.length + selectedActivityTypes.length;
-  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const isDesktop = useMediaQuery({ query: '(min-width: 768px)' });
 
   const filterContent = (
     <div className="flex flex-col gap-4">
