@@ -5,7 +5,6 @@ import type { Activities } from '@nugget/db/schema';
 import { createId } from '@nugget/id';
 import { toast } from '@nugget/ui/sonner';
 import {
-  Activity,
   Baby,
   Bath,
   Droplet,
@@ -33,7 +32,7 @@ const activities = [
     color: 'bg-[oklch(0.75_0.15_195)]',
     fullWidth: true,
     icon: Moon,
-    id: 'sleep',
+    id: 'sleep' as const,
     label: 'Sleep',
     textColor: 'text-[oklch(0.18_0.02_250)]',
   },
@@ -41,7 +40,7 @@ const activities = [
     color: 'bg-[oklch(0.68_0.18_35)]',
     fullWidth: false,
     icon: Droplet,
-    id: 'nursing',
+    id: 'nursing' as const,
     label: 'Nursing',
     textColor: 'text-white',
   },
@@ -49,7 +48,7 @@ const activities = [
     color: 'bg-[oklch(0.68_0.18_35)]',
     fullWidth: false,
     icon: Milk,
-    id: 'bottle',
+    id: 'bottle' as const,
     label: 'Bottle',
     textColor: 'text-white',
   },
@@ -57,7 +56,7 @@ const activities = [
     color: 'bg-[oklch(0.72_0.16_330)]',
     fullWidth: true,
     icon: UtensilsCrossed,
-    id: 'solids',
+    id: 'solids' as const,
     label: 'Solids',
     textColor: 'text-white',
   },
@@ -65,7 +64,7 @@ const activities = [
     color: 'bg-[oklch(0.78_0.14_60)]',
     fullWidth: false,
     icon: Baby,
-    id: 'diaper',
+    id: 'diaper' as const,
     label: 'Diaper',
     textColor: 'text-[oklch(0.18_0.02_250)]',
   },
@@ -73,7 +72,7 @@ const activities = [
     color: 'bg-[oklch(0.78_0.14_60)]',
     fullWidth: false,
     icon: Toilet,
-    id: 'potty',
+    id: 'potty' as const,
     label: 'Potty',
     textColor: 'text-[oklch(0.18_0.02_250)]',
   },
@@ -81,23 +80,15 @@ const activities = [
     color: 'bg-[oklch(0.65_0.18_280)]',
     fullWidth: true,
     icon: Droplets,
-    id: 'pumping',
+    id: 'pumping' as const,
     label: 'Pumping',
     textColor: 'text-white',
   },
   {
     color: 'bg-[oklch(0.70_0.16_150)]',
     fullWidth: false,
-    icon: Activity,
-    id: 'activity',
-    label: 'Activity',
-    textColor: 'text-white',
-  },
-  {
-    color: 'bg-[oklch(0.70_0.16_150)]',
-    fullWidth: false,
     icon: Timer,
-    id: 'tummy-time',
+    id: 'tummy_time' as const,
     label: 'Tummy Time',
     textColor: 'text-white',
   },
@@ -105,7 +96,7 @@ const activities = [
     color: 'bg-[oklch(0.68_0.18_10)]',
     fullWidth: false,
     icon: Pill,
-    id: 'medicine',
+    id: 'medicine' as const,
     label: 'Medicine',
     textColor: 'text-white',
   },
@@ -113,7 +104,7 @@ const activities = [
     color: 'bg-[oklch(0.68_0.18_10)]',
     fullWidth: false,
     icon: Thermometer,
-    id: 'temperature',
+    id: 'temperature' as const,
     label: 'Temperature',
     textColor: 'text-white',
   },
@@ -121,7 +112,7 @@ const activities = [
     color: 'bg-[oklch(0.62_0.18_260)]',
     fullWidth: false,
     icon: Scale,
-    id: 'growth',
+    id: 'growth' as const,
     label: 'Growth',
     textColor: 'text-white',
   },
@@ -129,13 +120,25 @@ const activities = [
     color: 'bg-[oklch(0.62_0.18_260)]',
     fullWidth: false,
     icon: Bath,
-    id: 'bath',
+    id: 'bath' as const,
     label: 'Bath',
     textColor: 'text-white',
   },
 ];
 
-export function ActivityCards() {
+interface ActivityCardsProps {
+  compact?: boolean;
+  onOptimisticActivity?: (activity: typeof Activities.$inferSelect) => void;
+  onActivityCreated?: () => void;
+  onActivityUpdated?: () => void;
+}
+
+export function ActivityCards({
+  compact = false,
+  onOptimisticActivity,
+  onActivityCreated,
+  onActivityUpdated,
+}: ActivityCardsProps = {}) {
   const { user } = useUser();
   const [openDrawer, setOpenDrawer] = useState<string | null>(null);
   const [editingActivity, setEditingActivity] = useState<
@@ -164,29 +167,20 @@ export function ActivityCards() {
 
   const getVisibleActivities = () => {
     if (babyAgeDays === null) {
-      return activities;
-    }
-
-    if (babyAgeDays <= 3) {
+      // Default to newborn activities
       return activities.filter((a) =>
         ['sleep', 'nursing', 'bottle', 'diaper'].includes(a.id),
       );
     }
 
+    // 0-7 days: Sleep, Nursing, Bottle, Diaper (4 buttons)
     if (babyAgeDays <= 7) {
       return activities.filter((a) =>
-        [
-          'sleep',
-          'nursing',
-          'bottle',
-          'diaper',
-          'pumping',
-          'medicine',
-          'temperature',
-        ].includes(a.id),
+        ['sleep', 'nursing', 'bottle', 'diaper'].includes(a.id),
       );
     }
 
+    // 8-30 days: Sleep, Nursing, Bottle, Diaper, Pumping, Medicine (6 buttons)
     if (babyAgeDays <= 30) {
       return activities.filter((a) =>
         [
@@ -196,31 +190,11 @@ export function ActivityCards() {
           'diaper',
           'pumping',
           'medicine',
-          'temperature',
-          'growth',
-          'bath',
         ].includes(a.id),
       );
     }
 
-    if (babyAgeDays <= 60) {
-      return activities.filter((a) =>
-        [
-          'sleep',
-          'nursing',
-          'bottle',
-          'diaper',
-          'pumping',
-          'tummy-time',
-          'activity',
-          'medicine',
-          'temperature',
-          'growth',
-          'bath',
-        ].includes(a.id),
-      );
-    }
-
+    // 31-120 days: Sleep, Nursing, Bottle, Diaper, Pumping, Activity (6 buttons)
     if (babyAgeDays <= 120) {
       return activities.filter((a) =>
         [
@@ -229,41 +203,52 @@ export function ActivityCards() {
           'bottle',
           'diaper',
           'pumping',
-          'tummy-time',
           'activity',
-          'medicine',
-          'temperature',
-          'growth',
-          'bath',
         ].includes(a.id),
       );
     }
 
+    // 121-365 days: Sleep, Nursing, Bottle, Solids, Diaper, Activity (6 buttons)
     if (babyAgeDays <= 365) {
       return activities.filter((a) =>
-        [
-          'sleep',
-          'nursing',
-          'bottle',
-          'solids',
-          'diaper',
-          'pumping',
-          'tummy-time',
-          'activity',
-          'medicine',
-          'temperature',
-          'growth',
-          'bath',
-        ].includes(a.id),
+        ['sleep', 'nursing', 'bottle', 'solids', 'diaper', 'activity'].includes(
+          a.id,
+        ),
       );
     }
 
-    return activities;
+    // 365+ days: Sleep, Bottle, Solids, Diaper, Potty (5 buttons)
+    return activities.filter((a) =>
+      ['sleep', 'bottle', 'solids', 'diaper', 'potty'].includes(a.id),
+    );
   };
 
   const visibleActivities = getVisibleActivities();
 
-  const handleQuickCreate = async (activityId: string) => {
+  // In compact mode, show only the top 4 most important activities
+  const displayActivities = compact
+    ? visibleActivities.slice(0, 4)
+    : visibleActivities;
+
+  const handleQuickCreate = async (
+    activityId:
+      | 'sleep'
+      | 'feeding'
+      | 'bottle'
+      | 'nursing'
+      | 'pumping'
+      | 'diaper'
+      | 'wet'
+      | 'dirty'
+      | 'both'
+      | 'solids'
+      | 'bath'
+      | 'medicine'
+      | 'temperature'
+      | 'tummy_time'
+      | 'growth'
+      | 'potty',
+  ) => {
     setLoadingActivity(activityId);
 
     // Get baby data from localStorage for optimistic update
@@ -300,12 +285,18 @@ export function ActivityCards() {
     // Add to optimistic state
     setOptimisticActivities((prev) => [...prev, optimisticActivity]);
 
+    // Notify parent component for timeline update
+    onOptimisticActivity?.(optimisticActivity);
+
     startTransition(async () => {
       try {
         const result = await createActivityAction({ activityType: activityId });
 
         if (result?.data?.activity) {
           const activity = result.data.activity;
+
+          // Notify parent that activity was created successfully
+          onActivityCreated?.();
 
           // Show success toast with edit action
           toast.success(formatActivityForToast(activityId, optimisticData), {
@@ -345,10 +336,79 @@ export function ActivityCards() {
     setEditingActivity(null);
   };
 
+  const handleActivityUpdated = (
+    updatedActivity: typeof Activities.$inferSelect,
+  ) => {
+    // Update optimistic activities if present
+    setOptimisticActivities((prev) => {
+      const existingIndex = prev.findIndex((a) => a.id === updatedActivity.id);
+      if (existingIndex !== -1) {
+        const updated = [...prev];
+        updated[existingIndex] = updatedActivity;
+        return updated;
+      }
+      return [...prev, updatedActivity];
+    });
+
+    // Notify parent component of optimistic update
+    onOptimisticActivity?.(updatedActivity);
+  };
+
+  const handleActivitySaved = () => {
+    // Called after server action completes successfully
+    // Triggers refresh to get latest data from server
+    onActivityUpdated?.();
+  };
+
+  if (compact) {
+    // Compact mode: smaller buttons in a single row
+    return (
+      <>
+        <div className="grid grid-cols-4 gap-2">
+          {displayActivities.map((activity) => {
+            const Icon = activity.icon;
+            return (
+              <button
+                className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg ${activity.color} ${activity.textColor} transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed`}
+                disabled={loadingActivity === activity.id}
+                key={activity.id}
+                onClick={() => handleQuickCreate(activity.id)}
+                type="button"
+              >
+                {loadingActivity === activity.id ? (
+                  <div className="size-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <Icon className="size-5" />
+                )}
+                <span className="text-xs font-medium leading-none">
+                  {activity.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {activities.map((activity) => (
+          <ActivityDrawer
+            activity={activity}
+            existingActivity={
+              openDrawer === activity.id ? editingActivity : null
+            }
+            isOpen={openDrawer === activity.id}
+            key={activity.id}
+            onActivitySaved={handleActivitySaved}
+            onActivityUpdated={handleActivityUpdated}
+            onClose={handleDrawerClose}
+          />
+        ))}
+      </>
+    );
+  }
+
   return (
     <>
       <div className="grid grid-cols-2 gap-3">
-        {visibleActivities.map((activity) => {
+        {displayActivities.map((activity) => {
           return (
             <ActivityCard
               activity={activity}
@@ -366,6 +426,8 @@ export function ActivityCards() {
           existingActivity={openDrawer === activity.id ? editingActivity : null}
           isOpen={openDrawer === activity.id}
           key={activity.id}
+          onActivitySaved={handleActivitySaved}
+          onActivityUpdated={handleActivityUpdated}
           onClose={handleDrawerClose}
         />
       ))}

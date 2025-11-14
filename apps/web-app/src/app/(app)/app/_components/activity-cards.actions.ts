@@ -11,7 +11,24 @@ import { getDefaultActivityData } from './activity-utils';
 const action = createSafeActionClient();
 
 const createActivityInputSchema = z.object({
-  activityType: z.string(),
+  activityType: z.enum([
+    'sleep',
+    'feeding',
+    'bottle',
+    'nursing',
+    'pumping',
+    'diaper',
+    'wet',
+    'dirty',
+    'both',
+    'solids',
+    'bath',
+    'medicine',
+    'temperature',
+    'tummy_time',
+    'growth',
+    'potty',
+  ]),
 });
 
 /**
