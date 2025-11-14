@@ -1,9 +1,5 @@
-import { ActivityCards } from '~/app/(app)/app/_components/activity-cards';
+import { DashboardContainer } from '~/app/(app)/app/_components/dashboard-container';
 
 export default function Home() {
-  return (
-    <main className="px-4 pt-4">
-      <ActivityCards />
-    </main>
-  );
+  return <DashboardContainer />;
 }

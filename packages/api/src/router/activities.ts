@@ -6,7 +6,7 @@ import {
   insertActivitySchema,
   updateActivitySchema,
 } from '@nugget/db/schema';
-import { and, desc, eq, gte } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
@@ -240,12 +240,14 @@ export const activitiesRouter = createTRPCRouter({
   list: protectedProcedure
     .input(
       z.object({
+        activityTypes: z.array(z.string()).optional(),
         babyId: z.string(),
         isScheduled: z.boolean().optional(),
         limit: z.number().min(1).max(100).default(50),
         type: z
           .enum(Object.keys(ActivityTypeType) as [string, ...string[]])
           .optional(),
+        userIds: z.array(z.string()).optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -253,7 +255,8 @@ export const activitiesRouter = createTRPCRouter({
         throw new Error('Family ID is required');
       }
 
-      const { babyId, limit, type, isScheduled } = input;
+      const { babyId, limit, type, isScheduled, userIds, activityTypes } =
+        input;
 
       // Verify baby belongs to family
       const baby = await ctx.db.query.Babies.findFirst({
@@ -275,6 +278,19 @@ export const activitiesRouter = createTRPCRouter({
       }
       if (typeof isScheduled === 'boolean') {
         conditions.push(eq(Activities.isScheduled, isScheduled));
+      }
+      if (userIds && userIds.length > 0) {
+        conditions.push(inArray(Activities.userId, userIds));
+      }
+      if (activityTypes && activityTypes.length > 0) {
+        conditions.push(
+          inArray(
+            Activities.type,
+            activityTypes as Array<
+              (typeof ActivityTypeType)[keyof typeof ActivityTypeType]
+            >,
+          ),
+        );
       }
 
       return ctx.db.query.Activities.findMany({

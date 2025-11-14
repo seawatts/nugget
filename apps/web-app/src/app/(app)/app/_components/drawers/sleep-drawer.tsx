@@ -1,20 +1,32 @@
 'use client';
 
 import { Button } from '@nugget/ui/button';
+import { Textarea } from '@nugget/ui/textarea';
 import { Moon, Play, Square } from 'lucide-react';
 import { useState } from 'react';
 
 interface SleepDrawerContentProps {
   startTime: Date;
   setStartTime: (date: Date) => void;
+  duration: number;
+  setDuration: (duration: number) => void;
+  sleepType: 'nap' | 'night';
+  setSleepType: (type: 'nap' | 'night') => void;
+  notes: string;
+  setNotes: (notes: string) => void;
 }
 
 export function SleepDrawerContent({
   startTime,
   setStartTime,
+  duration,
+  setDuration,
+  sleepType,
+  setSleepType,
+  notes,
+  setNotes,
 }: SleepDrawerContentProps) {
   const [isTracking, setIsTracking] = useState(false);
-  const [duration, setDuration] = useState(0);
 
   const handleStartStop = () => {
     if (!isTracking) {
@@ -101,15 +113,42 @@ export function SleepDrawerContent({
       <div className="space-y-3">
         <p className="text-sm font-medium text-muted-foreground">Sleep Type</p>
         <div className="grid grid-cols-2 gap-3">
-          <Button className="h-12 bg-transparent" variant="outline">
+          <Button
+            className={`h-12 ${
+              sleepType === 'nap'
+                ? 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]'
+                : 'bg-transparent'
+            }`}
+            onClick={() => setSleepType('nap')}
+            variant={sleepType === 'nap' ? 'default' : 'outline'}
+          >
             <Moon className="mr-2 h-4 w-4" />
             Nap
           </Button>
-          <Button className="h-12 bg-transparent" variant="outline">
+          <Button
+            className={`h-12 ${
+              sleepType === 'night'
+                ? 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]'
+                : 'bg-transparent'
+            }`}
+            onClick={() => setSleepType('night')}
+            variant={sleepType === 'night' ? 'default' : 'outline'}
+          >
             <Moon className="mr-2 h-4 w-4" />
             Night Sleep
           </Button>
         </div>
+      </div>
+
+      {/* Notes */}
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-muted-foreground">Notes</p>
+        <Textarea
+          className="min-h-[100px] resize-none"
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Add any notes about this sleep session..."
+          value={notes}
+        />
       </div>
     </div>
   );

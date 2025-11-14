@@ -17,17 +17,17 @@
 // } from 'lucide-react';
 // import { useEffect, useRef, useState } from 'react';
 
-interface TimelineEvent {
-  id: string;
-  type: 'sleep' | 'nursing' | 'bottle' | 'diaper' | 'solids' | 'activity';
-  timestamp: Date;
-  isScheduled: boolean;
-  assignedTo?: string;
-  duration?: number;
-  notes?: string;
-  amount?: number;
-  diaperType?: 'pee' | 'poop' | 'both';
-}
+// interface TimelineEvent {
+//   id: string;
+//   type: 'sleep' | 'nursing' | 'bottle' | 'diaper' | 'solids' | 'activity';
+//   timestamp: Date;
+//   isScheduled: boolean;
+//   assignedTo?: string;
+//   duration?: number;
+//   notes?: string;
+//   amount?: number;
+//   diaperType?: 'pee' | 'poop' | 'both';
+// }
 
 export default function TimelineV2Page() {
   return <div />;
