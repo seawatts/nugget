@@ -8,6 +8,7 @@ import {
   Families,
   FamilyMembers,
   SupplyInventory,
+  Users,
 } from '@nugget/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -16,6 +17,56 @@ import { z } from 'zod';
 
 // Create the action client
 const action = createSafeActionClient();
+
+// Upsert user in database - ensures user exists before onboarding completion
+export const upsertUserAction = action.action(async () => {
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error('Unauthorized');
+  }
+
+  const client = await clerkClient();
+  const user = await client.users.getUser(userId);
+
+  const emailAddress = user.primaryEmailAddress?.emailAddress;
+  if (!emailAddress) {
+    throw new Error('User email not found');
+  }
+
+  const [dbUser] = await db
+    .insert(Users)
+    .values({
+      avatarUrl: user.imageUrl ?? null,
+      clerkId: userId,
+      email: emailAddress,
+      firstName: user.firstName ?? null,
+      id: userId,
+      lastLoggedInAt: new Date(),
+      lastName: user.lastName ?? null,
+    })
+    .onConflictDoUpdate({
+      set: {
+        avatarUrl: user.imageUrl ?? null,
+        email: emailAddress,
+        firstName: user.firstName ?? null,
+        lastLoggedInAt: new Date(),
+        lastName: user.lastName ?? null,
+        updatedAt: new Date(),
+      },
+      target: Users.clerkId,
+    })
+    .returning();
+
+  if (!dbUser) {
+    throw new Error('Failed to upsert user');
+  }
+
+  return {
+    success: true,
+    user: dbUser,
+  };
+});
 
 // Check if user has completed onboarding
 export const checkOnboarding = action.action(async () => {
@@ -31,7 +82,6 @@ export const checkOnboarding = action.action(async () => {
       completed: false,
       journeyStage: null,
       ttcMethod: null,
-      userRole: null,
     };
   }
 
@@ -39,23 +89,28 @@ export const checkOnboarding = action.action(async () => {
     where: eq(FamilyMembers.userId, userId),
   });
 
+  // Get journey stage from the first baby if it exists
+  const baby = await db.query.Babies.findFirst({
+    where: eq(Babies.userId, userId),
+  });
+
   return {
     completed: Boolean(familyMember?.onboardingCompletedAt),
-    journeyStage: familyMember?.journeyStage,
-    ttcMethod: familyMember?.ttcMethod,
-    userRole: familyMember?.userRole,
+    journeyStage: baby?.journeyStage,
+    ttcMethod: baby?.ttcMethod,
   };
 });
 
 // Complete onboarding action
 const completeOnboardingSchema = z.object({
-  babyName: z.string().optional(),
   birthDate: z.string().optional(),
   dueDate: z.string().optional(),
+  firstName: z.string().optional(),
   journeyStage: z.enum(['ttc', 'pregnant', 'born']),
+  lastName: z.string().optional(),
   lastPeriodDate: z.string().optional(),
+  middleName: z.string().optional(),
   ttcMethod: z.enum(['natural', 'ivf', 'other']).optional(),
-  userRole: z.enum(['primary', 'partner']),
 });
 
 export const completeOnboardingAction = action
@@ -86,9 +141,9 @@ export const completeOnboardingAction = action
         const client = await clerkClient();
         const user = await client.users.getUser(userId);
 
-        // Generate family name: use baby name if provided (born stage), otherwise use user's first name
-        const familyName = parsedInput.babyName
-          ? `${parsedInput.babyName}'s Family`
+        // Generate family name: use baby's first name if provided (born stage), otherwise use user's first name
+        const familyName = parsedInput.firstName
+          ? `${parsedInput.firstName}'s Family`
           : `${user.firstName || 'My'}'s Family`;
 
         // Create the organization
@@ -135,11 +190,8 @@ export const completeOnboardingAction = action
         const [updated] = await tx
           .update(FamilyMembers)
           .set({
-            journeyStage: parsedInput.journeyStage,
             onboardingCompletedAt: new Date(),
-            ttcMethod: parsedInput.ttcMethod || null,
             updatedAt: new Date(),
-            userRole: parsedInput.userRole,
           })
           .where(eq(FamilyMembers.id, existingMember.id))
           .returning();
@@ -150,11 +202,8 @@ export const completeOnboardingAction = action
           .insert(FamilyMembers)
           .values({
             familyId: family.id,
-            journeyStage: parsedInput.journeyStage,
             onboardingCompletedAt: new Date(),
-            ttcMethod: parsedInput.ttcMethod || null,
             userId,
-            userRole: parsedInput.userRole,
           })
           .returning();
         familyMember = created;
@@ -164,26 +213,53 @@ export const completeOnboardingAction = action
         throw new Error('Failed to update family member');
       }
 
-      // 3. For "born" stage, create baby record
+      // 3. Create or update baby record for all journey stages
       let baby = null;
-      if (parsedInput.journeyStage === 'born' && parsedInput.birthDate) {
+      const existingBaby = await tx.query.Babies.findFirst({
+        where: eq(Babies.userId, userId),
+      });
+
+      const babyValues = {
+        birthDate: parsedInput.birthDate
+          ? new Date(parsedInput.birthDate)
+          : null,
+        dueDate: parsedInput.dueDate ? new Date(parsedInput.dueDate) : null,
+        familyId: family.id,
+        firstName: parsedInput.firstName || 'Baby',
+        journeyStage: parsedInput.journeyStage,
+        lastName: parsedInput.lastName || null,
+        middleName: parsedInput.middleName || null,
+        ttcMethod: parsedInput.ttcMethod || null,
+        userId,
+      };
+
+      if (existingBaby) {
+        // Update existing baby
+        const [updatedBaby] = await tx
+          .update(Babies)
+          .set(babyValues)
+          .where(eq(Babies.id, existingBaby.id))
+          .returning();
+        baby = updatedBaby;
+      } else {
+        // Create new baby
         const [createdBaby] = await tx
           .insert(Babies)
-          .values({
-            birthDate: new Date(parsedInput.birthDate),
-            familyId: family.id,
-            name: parsedInput.babyName || 'Baby',
-            userId,
-          })
+          .values(babyValues)
           .returning();
-
-        if (!createdBaby) {
-          throw new Error('Failed to create baby');
-        }
-
         baby = createdBaby;
+      }
 
-        // 4. Create initial supply inventory for the baby
+      if (!baby) {
+        throw new Error('Failed to create or update baby');
+      }
+
+      // 4. Create initial supply inventory for the baby if it doesn't exist
+      const existingInventory = await tx.query.SupplyInventory.findFirst({
+        where: eq(SupplyInventory.babyId, baby.id),
+      });
+
+      if (!existingInventory) {
         await tx.insert(SupplyInventory).values({
           babyId: baby.id,
           donorMl: 0,

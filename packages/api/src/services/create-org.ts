@@ -282,6 +282,9 @@ export async function createOrg({
         );
       }
     } catch (error: unknown) {
+      // Log the full error for debugging
+      console.error('Clerk organization creation error:', error);
+
       // Handle case where organization with same slug already exists
       if (error && typeof error === 'object' && 'message' in error) {
         const errorMessage = (error as { message: string }).message;
@@ -291,6 +294,16 @@ export async function createOrg({
         ) {
           throw new Error(
             `Organization slug "${slug}" is already taken. Please try again.`,
+          );
+        }
+
+        // Handle forbidden errors with more helpful message
+        if (
+          errorMessage.toLowerCase().includes('forbidden') ||
+          errorMessage.toLowerCase().includes('permission')
+        ) {
+          throw new Error(
+            `Permission denied to create organization. This may be due to: 1) Clerk plan limits (check organization limit per user), 2) Organization creation is disabled in Clerk settings, or 3) User has reached their organization limit. Please check your Clerk Dashboard settings or contact support. Original error: ${errorMessage}`,
           );
         }
       }

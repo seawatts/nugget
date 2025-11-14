@@ -1,5 +1,6 @@
 'use client';
 
+import { getFullBabyName } from '@nugget/utils';
 import { AlertCircle, Baby, Calendar, CheckCircle2, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -10,6 +11,10 @@ interface OnboardingData {
   dueDate?: string;
   lastPeriodDate?: string;
   birthDate?: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+  // Legacy field for backward compatibility
   babyName?: string;
   userRole?: string;
 }
@@ -234,7 +239,14 @@ export function SweetSpotBanner() {
   }
 
   if (onboardingData.stage === 'baby') {
-    const babyName = onboardingData.babyName || 'Baby';
+    // Support both new structured names and legacy babyName field
+    const babyName = onboardingData.firstName
+      ? getFullBabyName({
+          firstName: onboardingData.firstName,
+          lastName: onboardingData.lastName,
+          middleName: onboardingData.middleName,
+        })
+      : onboardingData.babyName || 'Baby';
     const isNewborn = babyAgeWeeks !== null && babyAgeWeeks < 4;
 
     return (

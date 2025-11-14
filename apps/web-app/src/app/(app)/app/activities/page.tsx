@@ -17,8 +17,6 @@ import {
   Users,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { BottomNav } from '~/app/(app)/app/_components/bottom-nav';
-import { Header } from '~/app/(app)/app/_components/header';
 
 export default function ActivitiesPage() {
   const [activeTab, setActiveTab] = useState('suggestions');
@@ -372,299 +370,293 @@ export default function ActivitiesPage() {
     activities[getAgeGroup() as keyof typeof activities] || [];
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <Header />
+    <main className="px-4 pt-4 pb-8">
+      {/* Age Banner */}
+      <div className="mb-6 p-4 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl border border-primary/30">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-primary/20 rounded-xl">
+            <Baby className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Activities for</p>
+            <p className="text-lg font-semibold">
+              {babyAge} months old ({getAgeGroup()})
+            </p>
+          </div>
+        </div>
+      </div>
 
-      <main className="px-4 pt-20 pb-8">
-        {/* Age Banner */}
-        <div className="mb-6 p-4 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl border border-primary/30">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-primary/20 rounded-xl">
-              <Baby className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Activities for</p>
-              <p className="text-lg font-semibold">
-                {babyAge} months old ({getAgeGroup()})
+      {/* Tabs */}
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        {[
+          { icon: Sparkles, id: 'suggestions', label: 'Daily Activities' },
+          { icon: Palette, id: 'sensory', label: 'Sensory Play' },
+          { icon: Baby, id: 'toys', label: 'Toy Guide' },
+          { icon: Users, id: 'playdates', label: 'Playdates' },
+          { icon: Music, id: 'classes', label: 'Classes' },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <Button
+              className="flex-shrink-0"
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              variant={activeTab === tab.id ? 'default' : 'outline'}
+            >
+              <Icon className="h-4 w-4 mr-2" />
+              {tab.label}
+            </Button>
+          );
+        })}
+      </div>
+
+      {/* Daily Activities Tab */}
+      {activeTab === 'suggestions' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Recommended Activities</h2>
+            <span className="text-sm text-muted-foreground">
+              {currentActivities.length} activities
+            </span>
+          </div>
+
+          {currentActivities.map((activity) => (
+            <Card
+              className="p-4 cursor-pointer hover:border-primary transition-colors"
+              key={activity.id}
+              onClick={() =>
+                setSelectedActivity(
+                  selectedActivity === activity.id ? null : activity.id,
+                )
+              }
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg mb-1">
+                    {activity.title}
+                  </h3>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                    <Clock className="h-4 w-4" />
+                    <span>{activity.duration}</span>
+                  </div>
+                </div>
+                <ChevronRight
+                  className={`h-5 w-5 text-muted-foreground transition-transform ${
+                    selectedActivity === activity.id ? 'rotate-90' : ''
+                  }`}
+                />
+              </div>
+
+              <p className="text-sm text-muted-foreground mb-3">
+                {activity.description}
               </p>
-            </div>
-          </div>
-        </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {[
-            { icon: Sparkles, id: 'suggestions', label: 'Daily Activities' },
-            { icon: Palette, id: 'sensory', label: 'Sensory Play' },
-            { icon: Baby, id: 'toys', label: 'Toy Guide' },
-            { icon: Users, id: 'playdates', label: 'Playdates' },
-            { icon: Music, id: 'classes', label: 'Classes' },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <Button
-                className="flex-shrink-0"
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                variant={activeTab === tab.id ? 'default' : 'outline'}
-              >
-                <Icon className="h-4 w-4 mr-2" />
-                {tab.label}
-              </Button>
-            );
-          })}
-        </div>
-
-        {/* Daily Activities Tab */}
-        {activeTab === 'suggestions' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Recommended Activities</h2>
-              <span className="text-sm text-muted-foreground">
-                {currentActivities.length} activities
-              </span>
-            </div>
-
-            {currentActivities.map((activity) => (
-              <Card
-                className="p-4 cursor-pointer hover:border-primary transition-colors"
-                key={activity.id}
-                onClick={() =>
-                  setSelectedActivity(
-                    selectedActivity === activity.id ? null : activity.id,
-                  )
-                }
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg mb-1">
-                      {activity.title}
-                    </h3>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <Clock className="h-4 w-4" />
-                      <span>{activity.duration}</span>
-                    </div>
-                  </div>
-                  <ChevronRight
-                    className={`h-5 w-5 text-muted-foreground transition-transform ${
-                      selectedActivity === activity.id ? 'rotate-90' : ''
-                    }`}
-                  />
-                </div>
-
-                <p className="text-sm text-muted-foreground mb-3">
-                  {activity.description}
-                </p>
-
-                {selectedActivity === activity.id && (
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <p className="text-sm font-medium mb-2">Benefits:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {activity.benefits.map((benefit) => (
-                        <span
-                          className="px-3 py-1 bg-primary/10 text-primary text-xs rounded-full"
-                          key={benefit}
-                        >
-                          {benefit}
-                        </span>
-                      ))}
-                    </div>
-                    <Button className="w-full mt-4">Mark as Done Today</Button>
-                  </div>
-                )}
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Sensory Play Tab */}
-        {activeTab === 'sensory' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold mb-4">Sensory Play Ideas</h2>
-            {sensoryIdeas.map((idea) => (
-              <Card className="p-4" key={idea.title}>
-                <div className="flex items-start gap-3">
-                  <div className="p-3 bg-accent/20 rounded-xl">
-                    <Palette className="h-5 w-5 text-accent" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold mb-1">{idea.title}</h3>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {idea.description}
-                    </p>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Baby className="h-3 w-3" />
-                        {idea.ageRange}
+              {selectedActivity === activity.id && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <p className="text-sm font-medium mb-2">Benefits:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {activity.benefits.map((benefit) => (
+                      <span
+                        className="px-3 py-1 bg-primary/10 text-primary text-xs rounded-full"
+                        key={benefit}
+                      >
+                        {benefit}
                       </span>
-                      <span>Materials: {idea.materials.join(', ')}</span>
-                    </div>
+                    ))}
                   </div>
+                  <Button className="w-full mt-4">Mark as Done Today</Button>
                 </div>
-              </Card>
-            ))}
-          </div>
-        )}
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
 
-        {/* Toy Recommendations Tab */}
-        {activeTab === 'toys' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold mb-4">Age-Appropriate Toys</h2>
-            {toyRecommendations.map((category) => (
-              <div key={category.category}>
-                <h3 className="font-semibold text-lg mb-3">
-                  {category.category}
-                </h3>
-                <div className="space-y-3">
-                  {category.toys.map((toy) => (
-                    <Card className="p-4" key={toy.name}>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium mb-1">{toy.name}</h4>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {toy.benefit}
-                          </p>
-                          <span className="text-sm font-medium text-primary">
-                            {toy.price}
-                          </span>
-                        </div>
-                        <Star className="h-5 w-5 text-secondary fill-secondary" />
-                      </div>
-                    </Card>
-                  ))}
+      {/* Sensory Play Tab */}
+      {activeTab === 'sensory' && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold mb-4">Sensory Play Ideas</h2>
+          {sensoryIdeas.map((idea) => (
+            <Card className="p-4" key={idea.title}>
+              <div className="flex items-start gap-3">
+                <div className="p-3 bg-accent/20 rounded-xl">
+                  <Palette className="h-5 w-5 text-accent" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">{idea.title}</h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {idea.description}
+                  </p>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Baby className="h-3 w-3" />
+                      {idea.ageRange}
+                    </span>
+                    <span>Materials: {idea.materials.join(', ')}</span>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            </Card>
+          ))}
+        </div>
+      )}
 
-        {/* Playdates Tab */}
-        {activeTab === 'playdates' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Upcoming Playdates</h2>
-              <Button size="sm">
-                <Calendar className="h-4 w-4 mr-2" />
-                Schedule New
-              </Button>
-            </div>
-
-            {playdates.map((playdate) => (
-              <Card className="p-4" key={playdate.id}>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="font-semibold mb-1">
-                      {playdate.status === 'hosting'
-                        ? "You're hosting!"
-                        : `Hosted by ${playdate.host}`}
-                    </h3>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                      <Clock className="h-4 w-4" />
-                      <span>{playdate.date}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      <span>{playdate.location}</span>
-                    </div>
-                  </div>
-                  {playdate.status === 'confirmed' ? (
-                    <CheckCircle2 className="h-5 w-5 text-primary" />
-                  ) : playdate.status === 'hosting' ? (
-                    <Star className="h-5 w-5 text-secondary fill-secondary" />
-                  ) : (
-                    <Circle className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between pt-3 border-t border-border">
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="text-muted-foreground">
-                      <Users className="h-4 w-4 inline mr-1" />
-                      {playdate.attendees} families
-                    </span>
-                    <span className="text-muted-foreground">
-                      Ages: {playdate.ageRange}
-                    </span>
-                  </div>
-                  {playdate.status === 'pending' && (
-                    <Button size="sm" variant="outline">
-                      RSVP
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Classes Tab */}
-        {activeTab === 'classes' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Local Classes</h2>
-              <Button size="sm" variant="outline">
-                <MapPin className="h-4 w-4 mr-2" />
-                Filter
-              </Button>
-            </div>
-
-            {classes.map((classItem) => (
-              <Card className="p-4" key={classItem.id}>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold">{classItem.name}</h3>
-                      {classItem.enrolled && (
-                        <span className="px-2 py-0.5 bg-primary/20 text-primary text-xs rounded-full">
-                          Enrolled
+      {/* Toy Recommendations Tab */}
+      {activeTab === 'toys' && (
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold mb-4">Age-Appropriate Toys</h2>
+          {toyRecommendations.map((category) => (
+            <div key={category.category}>
+              <h3 className="font-semibold text-lg mb-3">
+                {category.category}
+              </h3>
+              <div className="space-y-3">
+                {category.toys.map((toy) => (
+                  <Card className="p-4" key={toy.name}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-medium mb-1">{toy.name}</h4>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {toy.benefit}
+                        </p>
+                        <span className="text-sm font-medium text-primary">
+                          {toy.price}
                         </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {classItem.type}
-                    </p>
-                    <div className="space-y-1 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        <span>{classItem.schedule}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        <span>{classItem.location}</span>
-                      </div>
+                      <Star className="h-5 w-5 text-secondary fill-secondary" />
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 text-secondary fill-secondary" />
-                    <span className="text-sm font-medium">
-                      {classItem.rating}
-                    </span>
-                  </div>
-                </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-                <div className="flex items-center justify-between pt-3 border-t border-border">
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">
-                      Ages: {classItem.ageRange}
-                    </span>
-                    <span className="mx-2">•</span>
-                    <span className="font-medium text-primary">
-                      {classItem.price}
-                    </span>
-                  </div>
-                  {!classItem.enrolled && (
-                    <Button size="sm" variant="outline">
-                      Enroll
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            ))}
+      {/* Playdates Tab */}
+      {activeTab === 'playdates' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Upcoming Playdates</h2>
+            <Button size="sm">
+              <Calendar className="h-4 w-4 mr-2" />
+              Schedule New
+            </Button>
           </div>
-        )}
-      </main>
 
-      <BottomNav />
-    </div>
+          {playdates.map((playdate) => (
+            <Card className="p-4" key={playdate.id}>
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <h3 className="font-semibold mb-1">
+                    {playdate.status === 'hosting'
+                      ? "You're hosting!"
+                      : `Hosted by ${playdate.host}`}
+                  </h3>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <Clock className="h-4 w-4" />
+                    <span>{playdate.date}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    <span>{playdate.location}</span>
+                  </div>
+                </div>
+                {playdate.status === 'confirmed' ? (
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                ) : playdate.status === 'hosting' ? (
+                  <Star className="h-5 w-5 text-secondary fill-secondary" />
+                ) : (
+                  <Circle className="h-5 w-5 text-muted-foreground" />
+                )}
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="text-muted-foreground">
+                    <Users className="h-4 w-4 inline mr-1" />
+                    {playdate.attendees} families
+                  </span>
+                  <span className="text-muted-foreground">
+                    Ages: {playdate.ageRange}
+                  </span>
+                </div>
+                {playdate.status === 'pending' && (
+                  <Button size="sm" variant="outline">
+                    RSVP
+                  </Button>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Classes Tab */}
+      {activeTab === 'classes' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Local Classes</h2>
+            <Button size="sm" variant="outline">
+              <MapPin className="h-4 w-4 mr-2" />
+              Filter
+            </Button>
+          </div>
+
+          {classes.map((classItem) => (
+            <Card className="p-4" key={classItem.id}>
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold">{classItem.name}</h3>
+                    {classItem.enrolled && (
+                      <span className="px-2 py-0.5 bg-primary/20 text-primary text-xs rounded-full">
+                        Enrolled
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {classItem.type}
+                  </p>
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      <span>{classItem.schedule}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      <span>{classItem.location}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Star className="h-4 w-4 text-secondary fill-secondary" />
+                  <span className="text-sm font-medium">
+                    {classItem.rating}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <div className="text-sm">
+                  <span className="text-muted-foreground">
+                    Ages: {classItem.ageRange}
+                  </span>
+                  <span className="mx-2">•</span>
+                  <span className="font-medium text-primary">
+                    {classItem.price}
+                  </span>
+                </div>
+                {!classItem.enrolled && (
+                  <Button size="sm" variant="outline">
+                    Enroll
+                  </Button>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </main>
   );
 }

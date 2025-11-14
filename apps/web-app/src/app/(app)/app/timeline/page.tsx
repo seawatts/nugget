@@ -22,8 +22,6 @@ import {
   Utensils,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { BottomNav } from '~/app/(app)/app/_components/bottom-nav';
-import { Header } from '~/app/(app)/app/_components/header';
 
 interface TimelineEvent {
   id: string;
@@ -518,9 +516,7 @@ export default function TimelinePage() {
   }, [lastScrollY]);
 
   return (
-    <div className="min-h-screen bg-background pb-32">
-      <Header />
-
+    <>
       <main className="px-4 pt-4 h-[calc(100vh-8rem)] flex flex-col">
         <div
           className={cn(
@@ -935,7 +931,6 @@ export default function TimelinePage() {
           </div>
         )}
       </main>
-
       {showColumnConfig && (
         <button
           aria-label="Close column configuration"
@@ -1015,8 +1010,6 @@ export default function TimelinePage() {
           </div>
         </button>
       )}
-
-      <BottomNav />
-    </div>
+    </>
   );
 }

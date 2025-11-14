@@ -54,7 +54,7 @@ const navGroups = [
   {
     items: [
       {
-        href: '/ttc',
+        href: '/app/ttc',
         icon: HeartHandshake,
         id: 'ttc',
         label: 'Trying to Conceive',
@@ -65,30 +65,40 @@ const navGroups = [
   },
   {
     items: [
-      { href: '/', icon: Home, id: 'home', label: 'Home' },
+      { href: '/app', icon: Home, id: 'home', label: 'Home' },
       {
-        href: '/timeline',
+        href: '/app/timeline',
         icon: CalendarDays,
         id: 'timeline',
         label: 'Timeline',
       },
-      { href: '/reports', icon: BarChart3, id: 'reports', label: 'Reports' },
-      { href: '/sleep-plans', icon: FileText, id: 'plans', label: 'Plans' },
-      { href: '/insights', icon: Lightbulb, id: 'insights', label: 'Insights' },
       {
-        href: '/milestones',
+        href: '/app/reports',
+        icon: BarChart3,
+        id: 'reports',
+        label: 'Reports',
+      },
+      { href: '/app/sleep-plans', icon: FileText, id: 'plans', label: 'Plans' },
+      {
+        href: '/app/insights',
+        icon: Lightbulb,
+        id: 'insights',
+        label: 'Insights',
+      },
+      {
+        href: '/app/milestones',
         icon: TrendingUp,
         id: 'milestones',
         label: 'Milestones',
       },
       {
-        href: '/activities',
+        href: '/app/activities',
         icon: Blocks,
         id: 'activities',
         label: 'Activities',
       },
       {
-        href: '/feed-calculator',
+        href: '/app/feed-calculator',
         icon: Calculator,
         id: 'feed-calc',
         label: 'Feed Calculator',
@@ -99,16 +109,21 @@ const navGroups = [
   },
   {
     items: [
-      { href: '/pregnancy', icon: Baby, id: 'pregnancy', label: 'Pregnancy' },
-      { href: '/names', icon: Sparkles, id: 'names', label: 'Baby Names' },
       {
-        href: '/hospital-prep',
+        href: '/app/pregnancy',
+        icon: Baby,
+        id: 'pregnancy',
+        label: 'Pregnancy',
+      },
+      { href: '/app/names', icon: Sparkles, id: 'names', label: 'Baby Names' },
+      {
+        href: '/app/hospital-prep',
         icon: Briefcase,
         id: 'hospital',
         label: 'Hospital Prep',
       },
       {
-        href: '/nursery-prep',
+        href: '/app/nursery-prep',
         icon: HomeIcon,
         id: 'nursery',
         label: 'Nursery Setup',
@@ -120,30 +135,30 @@ const navGroups = [
   {
     items: [
       {
-        href: '/learning',
+        href: '/app/learning',
         icon: GraduationCap,
         id: 'learning',
         label: 'Learning Hub',
       },
       {
-        href: '/partner-support',
+        href: '/app/partner-support',
         icon: Users,
         id: 'partner',
         label: 'Partner Support',
       },
       {
-        href: '/postpartum',
+        href: '/app/postpartum',
         icon: Heart,
         id: 'postpartum',
         label: 'Postpartum Care',
       },
       {
-        href: '/nutrition',
+        href: '/app/nutrition',
         icon: Utensils,
         id: 'nutrition',
         label: 'Nutrition',
       },
-      { href: '/chat', icon: MessageCircle, id: 'chat', label: 'AI Chat' },
+      { href: '/app/chat', icon: MessageCircle, id: 'chat', label: 'AI Chat' },
     ],
     showFor: ['ttc', 'pregnant', 'born'],
     title: 'Learning & Support',
@@ -151,31 +166,31 @@ const navGroups = [
   {
     items: [
       {
-        href: '/medical',
+        href: '/app/medical',
         icon: FileHeart,
         id: 'medical',
         label: 'Medical Records',
       },
       {
-        href: '/providers',
+        href: '/app/providers',
         icon: Stethoscope,
         id: 'providers',
         label: 'Providers',
       }, // Added Providers page
       {
-        href: '/products',
+        href: '/app/products',
         icon: ShoppingBag,
         id: 'products',
         label: 'Products',
       }, // Added Products page
       {
-        href: '/budget',
+        href: '/app/budget',
         icon: DollarSign,
         id: 'budget',
         label: 'Budget & Finance',
       },
       {
-        href: '/calendar',
+        href: '/app/calendar',
         icon: CalendarDays,
         id: 'calendar',
         label: 'Family Calendar',
@@ -187,34 +202,49 @@ const navGroups = [
   {
     items: [
       {
-        href: '/memories',
+        href: '/app/memories',
         icon: Camera,
         id: 'memories',
         label: 'Memory Journal',
       },
       {
-        href: '/community',
+        href: '/app/community',
         icon: UsersRound,
         id: 'community',
         label: 'Community',
       },
       {
-        href: '/caregiver-guide',
+        href: '/app/caregiver-guide',
         icon: FileText,
         id: 'caregiver',
         label: 'Caregiver Guide',
       },
-      { href: '/invite', icon: UserPlus, id: 'invite', label: 'Invite Others' },
-      { href: '/help', icon: BookOpen, id: 'help', label: 'Help & Resources' },
       {
-        href: '/emergency',
+        href: '/app/invite',
+        icon: UserPlus,
+        id: 'invite',
+        label: 'Invite Others',
+      },
+      {
+        href: '/app/help',
+        icon: BookOpen,
+        id: 'help',
+        label: 'Help & Resources',
+      },
+      {
+        href: '/app/emergency',
         icon: AlertTriangle,
         id: 'emergency',
         label: 'Emergency Help',
       },
-      { href: '/settings', icon: Settings, id: 'settings', label: 'Settings' },
       {
-        href: '/admin/rules',
+        href: '/app/settings',
+        icon: Settings,
+        id: 'settings',
+        label: 'Settings',
+      },
+      {
+        href: '/app/admin/rules',
         icon: Settings,
         id: 'admin',
         label: 'Admin Rules',
@@ -247,53 +277,83 @@ export function BottomNav() {
   const getMainNavItems = () => {
     if (journeyStage === 'ttc') {
       return [
-        { href: '/ttc', icon: HeartHandshake, id: 'ttc', label: 'TTC' },
-        { href: '/pregnancy', icon: Baby, id: 'pregnancy', label: 'Pregnancy' },
-        { href: '/names', icon: Sparkles, id: 'names', label: 'Names' },
+        { href: '/app/ttc', icon: HeartHandshake, id: 'ttc', label: 'TTC' },
         {
-          href: '/learning',
+          href: '/app/pregnancy',
+          icon: Baby,
+          id: 'pregnancy',
+          label: 'Pregnancy',
+        },
+        { href: '/app/names', icon: Sparkles, id: 'names', label: 'Names' },
+        {
+          href: '/app/learning',
           icon: GraduationCap,
           id: 'learning',
           label: 'Learning',
         },
-        { href: '/chat', icon: MessageCircle, id: 'chat', label: 'AI Chat' },
+        {
+          href: '/app/chat',
+          icon: MessageCircle,
+          id: 'chat',
+          label: 'AI Chat',
+        },
       ];
     }
     if (journeyStage === 'pregnant') {
       return [
-        { href: '/pregnancy', icon: Baby, id: 'pregnancy', label: 'Pregnancy' },
         {
-          href: '/hospital-prep',
+          href: '/app/pregnancy',
+          icon: Baby,
+          id: 'pregnancy',
+          label: 'Pregnancy',
+        },
+        {
+          href: '/app/hospital-prep',
           icon: Briefcase,
           id: 'hospital',
           label: 'Hospital',
         },
         {
-          href: '/nursery-prep',
+          href: '/app/nursery-prep',
           icon: HomeIcon,
           id: 'nursery',
           label: 'Nursery',
         },
         {
-          href: '/learning',
+          href: '/app/learning',
           icon: GraduationCap,
           id: 'learning',
           label: 'Learning',
         },
-        { href: '/chat', icon: MessageCircle, id: 'chat', label: 'AI Chat' },
+        {
+          href: '/app/chat',
+          icon: MessageCircle,
+          id: 'chat',
+          label: 'AI Chat',
+        },
       ];
     }
     return [
-      { href: '/', icon: Home, id: 'home', label: 'Home' },
+      { href: '/app', icon: Home, id: 'home', label: 'Home' },
       {
-        href: '/timeline',
+        href: '/app/timeline',
         icon: CalendarDays,
         id: 'timeline',
         label: 'Timeline',
       },
-      { href: '/reports', icon: BarChart3, id: 'reports', label: 'Reports' },
-      { href: '/insights', icon: Lightbulb, id: 'insights', label: 'Insights' },
-      { href: '/chat', icon: MessageCircle, id: 'chat', label: 'AI Chat' },
+      {
+        href: '/app/reports',
+        icon: BarChart3,
+        id: 'reports',
+        label: 'Reports',
+      },
+      {
+        href: '/app/insights',
+        icon: Lightbulb,
+        id: 'insights',
+        label: 'Insights',
+      },
+      { href: '/app/chat', icon: MessageCircle, id: 'chat', label: 'AI Chat' },
     ];
   };
 

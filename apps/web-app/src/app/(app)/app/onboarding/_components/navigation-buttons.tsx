@@ -40,7 +40,15 @@ export function NavigationButtons({
         <Button
           className="flex-1"
           disabled={!canProceed || isPending}
-          onClick={onComplete}
+          onClick={() => {
+            console.log('Get Started button clicked', {
+              canProceed,
+              currentStep,
+              isPending,
+              totalSteps,
+            });
+            onComplete();
+          }}
         >
           {isPending ? 'Saving...' : 'Get Started'}
           <CheckCircle2 className="h-4 w-4 ml-2" />

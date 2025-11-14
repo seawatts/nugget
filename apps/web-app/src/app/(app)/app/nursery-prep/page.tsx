@@ -13,8 +13,6 @@ import {
   Star,
 } from 'lucide-react';
 import { useState } from 'react';
-import { BottomNav } from '~/app/(app)/app/_components/bottom-nav';
-import { Header } from '~/app/(app)/app/_components/header';
 
 export default function NurseryPrepPage() {
   const [selectedTab, setSelectedTab] = useState<
@@ -326,287 +324,273 @@ export default function NurseryPrepPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <Header />
-
-      <main className="px-4 pt-4 space-y-4">
-        {/* Header Card */}
-        <Card className="bg-gradient-to-br from-secondary/20 to-secondary/5 border-secondary/20 p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-full bg-secondary/20 flex items-center justify-center flex-shrink-0">
-              <Home className="h-6 w-6 text-secondary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-balance mb-2">
-                Home & Nursery Prep
-              </h1>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Everything you need to prepare your home for baby's arrival
-              </p>
-            </div>
+    <main className="px-4 pt-4 space-y-4">
+      {/* Header Card */}
+      <Card className="bg-gradient-to-br from-secondary/20 to-secondary/5 border-secondary/20 p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-full bg-secondary/20 flex items-center justify-center flex-shrink-0">
+            <Home className="h-6 w-6 text-secondary" />
           </div>
-        </Card>
-
-        {/* Tabs */}
-        <div className="flex gap-2 border-b border-border overflow-x-auto">
-          <button
-            className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-              selectedTab === 'registry'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-muted-foreground'
-            }`}
-            onClick={() => setSelectedTab('registry')}
-            type="button"
-          >
-            Registry
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-              selectedTab === 'nursery'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-muted-foreground'
-            }`}
-            onClick={() => setSelectedTab('nursery')}
-            type="button"
-          >
-            Nursery Setup
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-              selectedTab === 'safety'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-muted-foreground'
-            }`}
-            onClick={() => setSelectedTab('safety')}
-            type="button"
-          >
-            Safety
-          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-balance mb-2">
+              Home & Nursery Prep
+            </h1>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Everything you need to prepare your home for baby's arrival
+            </p>
+          </div>
         </div>
+      </Card>
 
-        {/* Registry Tab */}
-        {selectedTab === 'registry' && (
-          <div className="space-y-4">
-            {/* Progress Card */}
-            <Card className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    Essential Items
-                  </p>
-                  <p className="text-2xl font-bold">{essentialProgress}%</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">
-                    Remaining Cost
-                  </p>
-                  <p className="text-2xl font-bold">${totalCost}</p>
-                </div>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2">
-                <div
-                  className="bg-primary h-2 rounded-full transition-all"
-                  style={{ width: `${essentialProgress}%` }}
-                />
-              </div>
-            </Card>
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-border overflow-x-auto">
+        <button
+          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+            selectedTab === 'registry'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground'
+          }`}
+          onClick={() => setSelectedTab('registry')}
+          type="button"
+        >
+          Registry
+        </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+            selectedTab === 'nursery'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground'
+          }`}
+          onClick={() => setSelectedTab('nursery')}
+          type="button"
+        >
+          Nursery Setup
+        </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+            selectedTab === 'safety'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground'
+          }`}
+          onClick={() => setSelectedTab('safety')}
+          type="button"
+        >
+          Safety
+        </button>
+      </div>
 
-            {/* Filter Buttons */}
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setSelectedCategory('all')}
-                size="sm"
-                variant={selectedCategory === 'all' ? 'default' : 'outline'}
-              >
-                All Items
-              </Button>
-              <Button
-                onClick={() => setSelectedCategory('essential')}
-                size="sm"
-                variant={
-                  selectedCategory === 'essential' ? 'default' : 'outline'
-                }
-              >
-                <Star className="h-3 w-3 mr-1" />
-                Essential
-              </Button>
-              <Button
-                onClick={() => setSelectedCategory('nice-to-have')}
-                size="sm"
-                variant={
-                  selectedCategory === 'nice-to-have' ? 'default' : 'outline'
-                }
-              >
-                Nice to Have
-              </Button>
+      {/* Registry Tab */}
+      {selectedTab === 'registry' && (
+        <div className="space-y-4">
+          {/* Progress Card */}
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm text-muted-foreground">Essential Items</p>
+                <p className="text-2xl font-bold">{essentialProgress}%</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Remaining Cost</p>
+                <p className="text-2xl font-bold">${totalCost}</p>
+              </div>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2">
+              <div
+                className="bg-primary h-2 rounded-full transition-all"
+                style={{ width: `${essentialProgress}%` }}
+              />
+            </div>
+          </Card>
+
+          {/* Filter Buttons */}
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setSelectedCategory('all')}
+              size="sm"
+              variant={selectedCategory === 'all' ? 'default' : 'outline'}
+            >
+              All Items
+            </Button>
+            <Button
+              onClick={() => setSelectedCategory('essential')}
+              size="sm"
+              variant={selectedCategory === 'essential' ? 'default' : 'outline'}
+            >
+              <Star className="h-3 w-3 mr-1" />
+              Essential
+            </Button>
+            <Button
+              onClick={() => setSelectedCategory('nice-to-have')}
+              size="sm"
+              variant={
+                selectedCategory === 'nice-to-have' ? 'default' : 'outline'
+              }
+            >
+              Nice to Have
+            </Button>
+          </div>
+
+          {/* Registry Items */}
+          <div className="space-y-2">
+            {filteredItems.map((item) => (
+              <Card className="p-4" key={item.name}>
+                <div className="flex items-start gap-3">
+                  {item.checked ? (
+                    <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  ) : (
+                    <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p
+                          className={`text-sm font-medium ${item.checked ? 'line-through text-muted-foreground' : ''}`}
+                        >
+                          {item.name}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge className="text-xs" variant="outline">
+                            {item.category}
+                          </Badge>
+                          {item.priority === 'essential' && (
+                            <Badge
+                              className="text-xs bg-primary/10 text-primary border-primary/20"
+                              variant="secondary"
+                            >
+                              <Star className="h-2.5 w-2.5 mr-1" />
+                              Essential
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p
+                          className={`text-sm font-semibold ${item.checked ? 'text-muted-foreground' : ''}`}
+                        >
+                          ${item.price}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Nursery Setup Tab */}
+      {selectedTab === 'nursery' && (
+        <div className="space-y-4">
+          <Card className="p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <Sparkles className="h-5 w-5 text-secondary" />
+              <h3 className="font-semibold">Setup Steps</h3>
             </div>
 
-            {/* Registry Items */}
-            <div className="space-y-2">
-              {filteredItems.map((item) => (
-                <Card className="p-4" key={item.name}>
+            <div className="space-y-3">
+              {nurserySetupSteps.map((step) => (
+                <div
+                  className={`p-4 rounded-lg ${
+                    step.completed
+                      ? 'bg-primary/5 border border-primary/20'
+                      : 'bg-muted/50'
+                  }`}
+                  key={step.title}
+                >
                   <div className="flex items-start gap-3">
+                    {step.completed ? (
+                      <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-muted-foreground flex-shrink-0 mt-0.5" />
+                    )}
+                    <div className="flex-1">
+                      <p
+                        className={`font-medium text-sm mb-1 ${step.completed ? 'text-muted-foreground' : ''}`}
+                      >
+                        {step.title}
+                      </p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {step.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-secondary/5 border-secondary/20">
+            <div className="flex gap-3">
+              <Sparkles className="h-5 w-5 text-secondary flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium mb-1">Design Tip</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Keep the nursery simple and functional. You can always add
+                  decorative elements later. Focus on safety and comfort first!
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Safety Tab */}
+      {selectedTab === 'safety' && (
+        <div className="space-y-4">
+          {safetyChecklist.map((section) => (
+            <Card className="p-4" key={section.category}>
+              <h3 className="font-semibold mb-4">{section.category}</h3>
+              <div className="space-y-2">
+                {section.items.map((item) => (
+                  <div
+                    className={`flex items-start gap-3 p-3 rounded-lg ${
+                      item.critical && !item.checked
+                        ? 'bg-destructive/5 border border-destructive/20'
+                        : 'bg-muted/30'
+                    }`}
+                    key={`${section.category}-${item.item}`}
+                  >
                     {item.checked ? (
                       <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                     ) : (
                       <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                     )}
                     <div className="flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p
-                            className={`text-sm font-medium ${item.checked ? 'line-through text-muted-foreground' : ''}`}
-                          >
-                            {item.name}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge className="text-xs" variant="outline">
-                              {item.category}
-                            </Badge>
-                            {item.priority === 'essential' && (
-                              <Badge
-                                className="text-xs bg-primary/10 text-primary border-primary/20"
-                                variant="secondary"
-                              >
-                                <Star className="h-2.5 w-2.5 mr-1" />
-                                Essential
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p
-                            className={`text-sm font-semibold ${item.checked ? 'text-muted-foreground' : ''}`}
-                          >
-                            ${item.price}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Nursery Setup Tab */}
-        {selectedTab === 'nursery' && (
-          <div className="space-y-4">
-            <Card className="p-4">
-              <div className="flex items-center gap-3 mb-4">
-                <Sparkles className="h-5 w-5 text-secondary" />
-                <h3 className="font-semibold">Setup Steps</h3>
-              </div>
-
-              <div className="space-y-3">
-                {nurserySetupSteps.map((step) => (
-                  <div
-                    className={`p-4 rounded-lg ${
-                      step.completed
-                        ? 'bg-primary/5 border border-primary/20'
-                        : 'bg-muted/50'
-                    }`}
-                    key={step.title}
-                  >
-                    <div className="flex items-start gap-3">
-                      {step.completed ? (
-                        <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      ) : (
-                        <div className="w-5 h-5 rounded-full border-2 border-muted-foreground flex-shrink-0 mt-0.5" />
-                      )}
-                      <div className="flex-1">
+                      <div className="flex items-center gap-2">
                         <p
-                          className={`font-medium text-sm mb-1 ${step.completed ? 'text-muted-foreground' : ''}`}
+                          className={`text-sm ${item.checked ? 'line-through text-muted-foreground' : ''}`}
                         >
-                          {step.title}
+                          {item.item}
                         </p>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {step.description}
-                        </p>
+                        {item.critical && !item.checked && (
+                          <Badge className="text-xs" variant="destructive">
+                            <AlertTriangle className="h-2.5 w-2.5 mr-1" />
+                            Critical
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             </Card>
+          ))}
 
-            <Card className="p-4 bg-secondary/5 border-secondary/20">
-              <div className="flex gap-3">
-                <Sparkles className="h-5 w-5 text-secondary flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium mb-1">Design Tip</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Keep the nursery simple and functional. You can always add
-                    decorative elements later. Focus on safety and comfort
-                    first!
-                  </p>
-                </div>
+          <Card className="p-4 bg-destructive/5 border-destructive/20">
+            <div className="flex gap-3">
+              <Shield className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium mb-1">Safety First</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Complete all critical safety items before baby arrives. These
+                  are non-negotiable for your baby's wellbeing and safety.
+                </p>
               </div>
-            </Card>
-          </div>
-        )}
-
-        {/* Safety Tab */}
-        {selectedTab === 'safety' && (
-          <div className="space-y-4">
-            {safetyChecklist.map((section) => (
-              <Card className="p-4" key={section.category}>
-                <h3 className="font-semibold mb-4">{section.category}</h3>
-                <div className="space-y-2">
-                  {section.items.map((item) => (
-                    <div
-                      className={`flex items-start gap-3 p-3 rounded-lg ${
-                        item.critical && !item.checked
-                          ? 'bg-destructive/5 border border-destructive/20'
-                          : 'bg-muted/30'
-                      }`}
-                      key={`${section.category}-${item.item}`}
-                    >
-                      {item.checked ? (
-                        <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      ) : (
-                        <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                      )}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p
-                            className={`text-sm ${item.checked ? 'line-through text-muted-foreground' : ''}`}
-                          >
-                            {item.item}
-                          </p>
-                          {item.critical && !item.checked && (
-                            <Badge className="text-xs" variant="destructive">
-                              <AlertTriangle className="h-2.5 w-2.5 mr-1" />
-                              Critical
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            ))}
-
-            <Card className="p-4 bg-destructive/5 border-destructive/20">
-              <div className="flex gap-3">
-                <Shield className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium mb-1">Safety First</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Complete all critical safety items before baby arrives.
-                    These are non-negotiable for your baby's wellbeing and
-                    safety.
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </div>
-        )}
-      </main>
-
-      <BottomNav />
-    </div>
+            </div>
+          </Card>
+        </div>
+      )}
+    </main>
   );
 }

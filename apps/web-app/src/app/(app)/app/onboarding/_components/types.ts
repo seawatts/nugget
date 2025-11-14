@@ -1,6 +1,5 @@
 export type JourneyStage = 'ttc' | 'pregnant' | 'born';
 export type TTCMethod = 'natural' | 'ivf' | 'other';
-export type UserRole = 'primary' | 'partner';
 
 export interface OnboardingData {
   journeyStage: JourneyStage | null;
@@ -9,6 +8,5 @@ export interface OnboardingData {
   dueDate: string;
   dueDateManuallySet: boolean;
   birthDate: string;
-  babyName: string;
-  userRole: UserRole | null;
+  fullName: string;
 }

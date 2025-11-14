@@ -11,30 +11,21 @@ export default clerkMiddleware(async (auth, request) => {
   // Protect private routes - everything else is public by default
   if (isPrivateRoute(request)) {
     const authResponse = await auth.protect();
-    if (
-      authResponse.userId &&
-      !authResponse.orgId &&
-      !request.nextUrl.pathname.startsWith('/app/onboarding')
-    ) {
-      console.log('Redirecting to onboarding', {
-        isOnboarding: request.nextUrl.pathname.startsWith('/app/onboarding'),
+
+    // Skip org check for onboarding page itself
+    const isOnboardingPage =
+      request.nextUrl.pathname.startsWith('/app/onboarding');
+
+    // All app routes require org except onboarding
+    if (authResponse.userId && !authResponse.orgId && !isOnboardingPage) {
+      console.log('Redirecting to onboarding - org required', {
         orgId: authResponse.orgId,
         pathname: request.nextUrl.pathname,
-        url: request.nextUrl,
         userId: authResponse.userId,
       });
       const url = request.nextUrl.clone();
       url.pathname = '/app/onboarding';
-      const redirectTo = request.nextUrl.searchParams.get('redirectTo');
-      const source = request.nextUrl.searchParams.get('source');
-
-      if (redirectTo) {
-        url.searchParams.set('redirectTo', redirectTo);
-      }
-
-      if (source) {
-        url.searchParams.set('source', source);
-      }
+      url.searchParams.set('redirectTo', request.nextUrl.pathname);
 
       return NextResponse.redirect(url);
     }

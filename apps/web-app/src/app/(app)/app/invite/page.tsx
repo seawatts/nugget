@@ -15,8 +15,6 @@ import {
   Users,
 } from 'lucide-react';
 import { useState } from 'react';
-import { BottomNav } from '~/app/(app)/app/_components/bottom-nav';
-import { Header } from '~/app/(app)/app/_components/header';
 
 type InviteType = 'partner' | 'caregiver' | 'family' | 'doctor';
 
@@ -119,188 +117,182 @@ export default function InvitePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <Header />
+    <main className="px-6 pt-4 pb-8">
+      <div className="max-w-2xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold text-balance">Invite Others</h1>
+          <p className="text-muted-foreground text-balance">
+            Share your baby's journey with family, caregivers, and healthcare
+            providers
+          </p>
+        </div>
 
-      <main className="px-6 pt-24 pb-8">
-        <div className="max-w-2xl mx-auto space-y-6">
-          {/* Header */}
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-balance">Invite Others</h1>
-            <p className="text-muted-foreground text-balance">
-              Share your baby's journey with family, caregivers, and healthcare
-              providers
-            </p>
-          </div>
-
-          {/* Invite Type Selection */}
-          {!selectedType ? (
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold">
-                Who would you like to invite?
-              </h2>
-              <div className="grid gap-4">
-                {inviteOptions.map((option) => {
-                  const Icon = option.icon;
-                  return (
-                    <Card
-                      className="p-6 cursor-pointer hover:border-primary transition-all"
-                      key={option.type}
-                      onClick={() => setSelectedType(option.type)}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className={`p-3 rounded-2xl ${option.color}`}>
-                          <Icon className="h-6 w-6" />
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <h3 className="font-semibold">{option.title}</h3>
-                          <p className="text-sm text-muted-foreground text-balance">
-                            {option.description}
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {/* Selected Type Header */}
-              <Card className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className={`p-3 rounded-2xl ${selectedOption?.color}`}>
-                    {selectedOption && (
-                      <selectedOption.icon className="h-6 w-6" />
-                    )}
-                  </div>
-                  <div className="flex-1 space-y-3">
-                    <div>
-                      <h3 className="font-semibold text-lg">
-                        {selectedOption?.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground text-balance">
-                        {selectedOption?.description}
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Access Permissions:</p>
-                      <ul className="space-y-1">
-                        {selectedOption?.permissions.map((permission) => (
-                          <li
-                            className="text-sm text-muted-foreground flex items-center gap-2"
-                            key={permission}
-                          >
-                            <Check className="h-4 w-4 text-primary" />
-                            {permission}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Email Invite */}
-              <Card className="p-6 space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-primary/20">
-                    <Mail className="h-5 w-5 text-primary" />
-                  </div>
-                  <h3 className="font-semibold">Send Email Invite</h3>
-                </div>
-                <div className="space-y-3">
-                  <Input
-                    className="h-12"
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter email address"
-                    type="email"
-                    value={email}
-                  />
-                  <Button
-                    className="w-full h-12"
-                    disabled={!email || emailSent}
-                    onClick={sendEmailInvite}
-                    size="lg"
+        {/* Invite Type Selection */}
+        {!selectedType ? (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">
+              Who would you like to invite?
+            </h2>
+            <div className="grid gap-4">
+              {inviteOptions.map((option) => {
+                const Icon = option.icon;
+                return (
+                  <Card
+                    className="p-6 cursor-pointer hover:border-primary transition-all"
+                    key={option.type}
+                    onClick={() => setSelectedType(option.type)}
                   >
-                    {emailSent ? (
-                      <>
-                        <Check className="h-5 w-5 mr-2" />
-                        Invite Sent!
-                      </>
-                    ) : (
-                      <>
-                        <Mail className="h-5 w-5 mr-2" />
-                        Send Email Invite
-                      </>
-                    )}
-                  </Button>
+                    <div className="flex items-start gap-4">
+                      <div className={`p-3 rounded-2xl ${option.color}`}>
+                        <Icon className="h-6 w-6" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <h3 className="font-semibold">{option.title}</h3>
+                        <p className="text-sm text-muted-foreground text-balance">
+                          {option.description}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Selected Type Header */}
+            <Card className="p-6">
+              <div className="flex items-start gap-4">
+                <div className={`p-3 rounded-2xl ${selectedOption?.color}`}>
+                  {selectedOption && (
+                    <selectedOption.icon className="h-6 w-6" />
+                  )}
                 </div>
-              </Card>
-
-              {/* Share Link */}
-              <Card className="p-6 space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-secondary/20">
-                    <Link2 className="h-5 w-5 text-secondary" />
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h3 className="font-semibold text-lg">
+                      {selectedOption?.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground text-balance">
+                      {selectedOption?.description}
+                    </p>
                   </div>
-                  <h3 className="font-semibold">Share Invite Link</h3>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Access Permissions:</p>
+                    <ul className="space-y-1">
+                      {selectedOption?.permissions.map((permission) => (
+                        <li
+                          className="text-sm text-muted-foreground flex items-center gap-2"
+                          key={permission}
+                        >
+                          <Check className="h-4 w-4 text-primary" />
+                          {permission}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-                {!showLink ? (
+              </div>
+            </Card>
+
+            {/* Email Invite */}
+            <Card className="p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-primary/20">
+                  <Mail className="h-5 w-5 text-primary" />
+                </div>
+                <h3 className="font-semibold">Send Email Invite</h3>
+              </div>
+              <div className="space-y-3">
+                <Input
+                  className="h-12"
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter email address"
+                  type="email"
+                  value={email}
+                />
+                <Button
+                  className="w-full h-12"
+                  disabled={!email || emailSent}
+                  onClick={sendEmailInvite}
+                  size="lg"
+                >
+                  {emailSent ? (
+                    <>
+                      <Check className="h-5 w-5 mr-2" />
+                      Invite Sent!
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="h-5 w-5 mr-2" />
+                      Send Email Invite
+                    </>
+                  )}
+                </Button>
+              </div>
+            </Card>
+
+            {/* Share Link */}
+            <Card className="p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-secondary/20">
+                  <Link2 className="h-5 w-5 text-secondary" />
+                </div>
+                <h3 className="font-semibold">Share Invite Link</h3>
+              </div>
+              {!showLink ? (
+                <Button
+                  className="w-full h-12 bg-transparent"
+                  onClick={generateInviteLink}
+                  size="lg"
+                  variant="outline"
+                >
+                  <Link2 className="h-5 w-5 mr-2" />
+                  Generate Shareable Link
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="p-4 bg-muted rounded-xl break-all text-sm font-mono">
+                    {inviteLink}
+                  </div>
                   <Button
                     className="w-full h-12 bg-transparent"
-                    onClick={generateInviteLink}
+                    onClick={copyToClipboard}
                     size="lg"
                     variant="outline"
                   >
-                    <Link2 className="h-5 w-5 mr-2" />
-                    Generate Shareable Link
+                    {copied ? (
+                      <>
+                        <Check className="h-5 w-5 mr-2" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-5 w-5 mr-2" />
+                        Copy Link
+                      </>
+                    )}
                   </Button>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="p-4 bg-muted rounded-xl break-all text-sm font-mono">
-                      {inviteLink}
-                    </div>
-                    <Button
-                      className="w-full h-12 bg-transparent"
-                      onClick={copyToClipboard}
-                      size="lg"
-                      variant="outline"
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="h-5 w-5 mr-2" />
-                          Copied!
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-5 w-5 mr-2" />
-                          Copy Link
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
-              </Card>
+                </div>
+              )}
+            </Card>
 
-              {/* Back Button */}
-              <Button
-                className="w-full"
-                onClick={() => {
-                  setSelectedType(null);
-                  setShowLink(false);
-                  setEmail('');
-                }}
-                variant="ghost"
-              >
-                Choose Different Type
-              </Button>
-            </div>
-          )}
-        </div>
-      </main>
-
-      <BottomNav />
-    </div>
+            {/* Back Button */}
+            <Button
+              className="w-full"
+              onClick={() => {
+                setSelectedType(null);
+                setShowLink(false);
+                setEmail('');
+              }}
+              variant="ghost"
+            >
+              Choose Different Type
+            </Button>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }

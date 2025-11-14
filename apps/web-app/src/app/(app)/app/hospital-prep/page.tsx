@@ -19,8 +19,6 @@ import {
   User,
 } from 'lucide-react';
 import { useState } from 'react';
-import { BottomNav } from '~/app/(app)/app/_components/bottom-nav';
-import { Header } from '~/app/(app)/app/_components/header';
 
 export default function HospitalPrepPage() {
   const [selectedTab, setSelectedTab] = useState<
@@ -164,71 +162,67 @@ export default function HospitalPrepPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <Header />
-
-      <main className="px-4 pt-4 space-y-4">
-        {/* Header Card */}
-        <Card className="bg-gradient-to-br from-accent/20 to-accent/5 border-accent/20 p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
-              <Briefcase className="h-6 w-6 text-accent" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-balance mb-2">
-                Hospital Preparation
-              </h1>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Get ready for the big day with our comprehensive checklist and
-                birth plan builder
-              </p>
-            </div>
+    <main className="px-4 pt-4 space-y-4">
+      {/* Header Card */}
+      <Card className="bg-gradient-to-br from-accent/20 to-accent/5 border-accent/20 p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+            <Briefcase className="h-6 w-6 text-accent" />
           </div>
-        </Card>
-
-        {/* Tabs */}
-        <div className="flex gap-2 border-b border-border overflow-x-auto">
-          <button
-            className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-              selectedTab === 'bags'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-muted-foreground'
-            }`}
-            onClick={() => setSelectedTab('bags')}
-            type="button"
-          >
-            Hospital Bags
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-              selectedTab === 'birth-plan'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-muted-foreground'
-            }`}
-            onClick={() => setSelectedTab('birth-plan')}
-            type="button"
-          >
-            Birth Plan
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-              selectedTab === 'when-to-go'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-muted-foreground'
-            }`}
-            onClick={() => setSelectedTab('when-to-go')}
-            type="button"
-          >
-            When to Go
-          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-balance mb-2">
+              Hospital Preparation
+            </h1>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Get ready for the big day with our comprehensive checklist and
+              birth plan builder
+            </p>
+          </div>
         </div>
+      </Card>
 
-        {/* Hospital Bags Tab */}
-        {selectedTab === 'bags' && (
-          <div className="space-y-4">
-            {(
-              Object.keys(hospitalBags) as Array<keyof typeof hospitalBags>
-            ).map((bagType) => {
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-border overflow-x-auto">
+        <button
+          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+            selectedTab === 'bags'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground'
+          }`}
+          onClick={() => setSelectedTab('bags')}
+          type="button"
+        >
+          Hospital Bags
+        </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+            selectedTab === 'birth-plan'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground'
+          }`}
+          onClick={() => setSelectedTab('birth-plan')}
+          type="button"
+        >
+          Birth Plan
+        </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+            selectedTab === 'when-to-go'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground'
+          }`}
+          onClick={() => setSelectedTab('when-to-go')}
+          type="button"
+        >
+          When to Go
+        </button>
+      </div>
+
+      {/* Hospital Bags Tab */}
+      {selectedTab === 'bags' && (
+        <div className="space-y-4">
+          {(Object.keys(hospitalBags) as Array<keyof typeof hospitalBags>).map(
+            (bagType) => {
               const bag = hospitalBags[bagType];
               const Icon = bag.icon;
               const progress = getBagProgress(bagType);
@@ -295,194 +289,190 @@ export default function HospitalPrepPage() {
                   )}
                 </Card>
               );
-            })}
-          </div>
-        )}
+            },
+          )}
+        </div>
+      )}
 
-        {/* Birth Plan Tab */}
-        {selectedTab === 'birth-plan' && (
-          <div className="space-y-4">
-            <Card className="p-4">
-              <div className="flex items-center gap-3 mb-4">
-                <FileText className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold">Your Birth Plan</h3>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Customize your preferences for labor and delivery. Remember,
-                flexibility is key!
-              </p>
+      {/* Birth Plan Tab */}
+      {selectedTab === 'birth-plan' && (
+        <div className="space-y-4">
+          <Card className="p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <FileText className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold">Your Birth Plan</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Customize your preferences for labor and delivery. Remember,
+              flexibility is key!
+            </p>
 
-              <div className="space-y-6">
-                <div>
-                  <h4 className="text-sm font-medium mb-3">
-                    Labor Preferences
-                  </h4>
-                  <div className="space-y-2">
-                    {birthPlanOptions.labor.map((item) => (
-                      <div
-                        className="flex items-center gap-3 p-3 rounded-lg bg-muted/30"
-                        key={`labor-${item.option}`}
-                      >
-                        {item.selected ? (
-                          <CheckCircle2 className="h-5 w-5 text-primary" />
-                        ) : (
-                          <Circle className="h-5 w-5 text-muted-foreground" />
-                        )}
-                        <span className="text-sm">{item.option}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-medium mb-3">Pain Management</h4>
-                  <div className="space-y-2">
-                    {birthPlanOptions.pain.map((item) => (
-                      <div
-                        className="flex items-center gap-3 p-3 rounded-lg bg-muted/30"
-                        key={`pain-${item.option}`}
-                      >
-                        {item.selected ? (
-                          <CheckCircle2 className="h-5 w-5 text-primary" />
-                        ) : (
-                          <Circle className="h-5 w-5 text-muted-foreground" />
-                        )}
-                        <span className="text-sm">{item.option}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-medium mb-3">
-                    Delivery Preferences
-                  </h4>
-                  <div className="space-y-2">
-                    {birthPlanOptions.delivery.map((item) => (
-                      <div
-                        className="flex items-center gap-3 p-3 rounded-lg bg-muted/30"
-                        key={`delivery-${item.option}`}
-                      >
-                        {item.selected ? (
-                          <CheckCircle2 className="h-5 w-5 text-primary" />
-                        ) : (
-                          <Circle className="h-5 w-5 text-muted-foreground" />
-                        )}
-                        <span className="text-sm">{item.option}</span>
-                      </div>
-                    ))}
-                  </div>
+            <div className="space-y-6">
+              <div>
+                <h4 className="text-sm font-medium mb-3">Labor Preferences</h4>
+                <div className="space-y-2">
+                  {birthPlanOptions.labor.map((item) => (
+                    <div
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/30"
+                      key={`labor-${item.option}`}
+                    >
+                      {item.selected ? (
+                        <CheckCircle2 className="h-5 w-5 text-primary" />
+                      ) : (
+                        <Circle className="h-5 w-5 text-muted-foreground" />
+                      )}
+                      <span className="text-sm">{item.option}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <Button className="w-full mt-6">Download Birth Plan PDF</Button>
-            </Card>
-
-            <Card className="p-4 bg-primary/5 border-primary/20">
-              <div className="flex gap-3">
-                <Heart className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium mb-1">Remember</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Birth plans are guidelines, not guarantees. Stay flexible
-                    and trust your medical team to make the best decisions for
-                    you and your baby.
-                  </p>
+              <div>
+                <h4 className="text-sm font-medium mb-3">Pain Management</h4>
+                <div className="space-y-2">
+                  {birthPlanOptions.pain.map((item) => (
+                    <div
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/30"
+                      key={`pain-${item.option}`}
+                    >
+                      {item.selected ? (
+                        <CheckCircle2 className="h-5 w-5 text-primary" />
+                      ) : (
+                        <Circle className="h-5 w-5 text-muted-foreground" />
+                      )}
+                      <span className="text-sm">{item.option}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </Card>
-          </div>
-        )}
 
-        {/* When to Go Tab */}
-        {selectedTab === 'when-to-go' && (
-          <div className="space-y-4">
-            <Card className="p-4">
-              <h3 className="font-semibold mb-4">Signs It's Time to Go</h3>
-              <div className="space-y-3">
-                {whenToGoSigns.map((sign) => (
-                  <div
-                    className={`p-4 rounded-lg ${
-                      sign.urgent
-                        ? 'bg-destructive/10 border border-destructive/20'
-                        : 'bg-muted/50'
-                    }`}
-                    key={sign.title}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          sign.urgent ? 'bg-destructive/20' : 'bg-primary/20'
-                        }`}
-                      >
-                        <Clock
-                          className={`h-4 w-4 ${sign.urgent ? 'text-destructive' : 'text-primary'}`}
-                        />
+              <div>
+                <h4 className="text-sm font-medium mb-3">
+                  Delivery Preferences
+                </h4>
+                <div className="space-y-2">
+                  {birthPlanOptions.delivery.map((item) => (
+                    <div
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/30"
+                      key={`delivery-${item.option}`}
+                    >
+                      {item.selected ? (
+                        <CheckCircle2 className="h-5 w-5 text-primary" />
+                      ) : (
+                        <Circle className="h-5 w-5 text-muted-foreground" />
+                      )}
+                      <span className="text-sm">{item.option}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <Button className="w-full mt-6">Download Birth Plan PDF</Button>
+          </Card>
+
+          <Card className="p-4 bg-primary/5 border-primary/20">
+            <div className="flex gap-3">
+              <Heart className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium mb-1">Remember</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Birth plans are guidelines, not guarantees. Stay flexible and
+                  trust your medical team to make the best decisions for you and
+                  your baby.
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* When to Go Tab */}
+      {selectedTab === 'when-to-go' && (
+        <div className="space-y-4">
+          <Card className="p-4">
+            <h3 className="font-semibold mb-4">Signs It's Time to Go</h3>
+            <div className="space-y-3">
+              {whenToGoSigns.map((sign) => (
+                <div
+                  className={`p-4 rounded-lg ${
+                    sign.urgent
+                      ? 'bg-destructive/10 border border-destructive/20'
+                      : 'bg-muted/50'
+                  }`}
+                  key={sign.title}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        sign.urgent ? 'bg-destructive/20' : 'bg-primary/20'
+                      }`}
+                    >
+                      <Clock
+                        className={`h-4 w-4 ${sign.urgent ? 'text-destructive' : 'text-primary'}`}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium text-sm">{sign.title}</p>
+                        {sign.urgent && (
+                          <Badge className="text-xs" variant="destructive">
+                            Urgent
+                          </Badge>
+                        )}
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium text-sm">{sign.title}</p>
-                          {sign.urgent && (
-                            <Badge className="text-xs" variant="destructive">
-                              Urgent
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {sign.description}
-                        </p>
-                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {sign.description}
+                      </p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card className="p-4">
-              <h3 className="font-semibold mb-4">Hospital Contact Info</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                  <MapPin className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">Women's Hospital</p>
-                    <p className="text-xs text-muted-foreground">
-                      123 Medical Center Dr
-                    </p>
-                  </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                  <Phone className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">Labor & Delivery</p>
-                    <p className="text-xs text-muted-foreground">
-                      (555) 123-4567
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <Button className="w-full mt-4 bg-transparent" variant="outline">
-                Edit Hospital Info
-              </Button>
-            </Card>
+              ))}
+            </div>
+          </Card>
 
-            <Card className="p-4 bg-accent/5 border-accent/20">
-              <div className="flex gap-3">
-                <Pill className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
+          <Card className="p-4">
+            <h3 className="font-semibold mb-4">Hospital Contact Info</h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <MapPin className="h-5 w-5 text-primary" />
                 <div>
-                  <p className="text-sm font-medium mb-1">Pro Tip</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Call your hospital ahead of time to understand their
-                    admission process and parking situation. This will reduce
-                    stress when the time comes!
+                  <p className="text-sm font-medium">Women's Hospital</p>
+                  <p className="text-xs text-muted-foreground">
+                    123 Medical Center Dr
                   </p>
                 </div>
               </div>
-            </Card>
-          </div>
-        )}
-      </main>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <Phone className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm font-medium">Labor & Delivery</p>
+                  <p className="text-xs text-muted-foreground">
+                    (555) 123-4567
+                  </p>
+                </div>
+              </div>
+            </div>
+            <Button className="w-full mt-4 bg-transparent" variant="outline">
+              Edit Hospital Info
+            </Button>
+          </Card>
 
-      <BottomNav />
-    </div>
+          <Card className="p-4 bg-accent/5 border-accent/20">
+            <div className="flex gap-3">
+              <Pill className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium mb-1">Pro Tip</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Call your hospital ahead of time to understand their admission
+                  process and parking situation. This will reduce stress when
+                  the time comes!
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+    </main>
   );
 }

@@ -20,8 +20,6 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useState } from 'react';
-import { BottomNav } from '~/app/(app)/app/_components/bottom-nav';
-import { Header } from '~/app/(app)/app/_components/header';
 
 const ageRanges = [
   { id: '0-3', label: '0-3 Months', months: [0, 3] },
@@ -472,202 +470,194 @@ export default function MilestonesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <Header />
-
-      <main className="px-4 pt-4 space-y-4">
-        {/* Header Card */}
-        <Card className="bg-gradient-to-br from-primary/20 to-primary/5 border-primary/20 p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <TrendingUp className="h-6 w-6 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold text-balance mb-2">
-                Developmental Milestones
-              </h1>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Track your baby's progress across key developmental areas
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-muted-foreground">
-                      Overall Progress
-                    </span>
-                    <span className="font-medium text-primary">
-                      {calculateProgress()}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div
-                      className="bg-primary h-2 rounded-full transition-all"
-                      style={{ width: `${calculateProgress()}%` }}
-                    />
-                  </div>
+    <main className="px-4 pt-4 space-y-4">
+      {/* Header Card */}
+      <Card className="bg-gradient-to-br from-primary/20 to-primary/5 border-primary/20 p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+            <TrendingUp className="h-6 w-6 text-primary" />
+          </div>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-balance mb-2">
+              Developmental Milestones
+            </h1>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+              Track your baby's progress across key developmental areas
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-muted-foreground">
+                    Overall Progress
+                  </span>
+                  <span className="font-medium text-primary">
+                    {calculateProgress()}%
+                  </span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div
+                    className="bg-primary h-2 rounded-full transition-all"
+                    style={{ width: `${calculateProgress()}%` }}
+                  />
                 </div>
               </div>
             </div>
           </div>
-        </Card>
-
-        {/* Age Range Selector */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {ageRanges.map((range) => (
-            <Button
-              className="whitespace-nowrap"
-              key={range.id}
-              onClick={() => setSelectedAge(range.id)}
-              size="sm"
-              variant={selectedAge === range.id ? 'default' : 'outline'}
-            >
-              {range.label}
-            </Button>
-          ))}
         </div>
+      </Card>
 
-        {/* Milestone Categories */}
-        <div className="space-y-3">
-          {categories.map((category) => {
-            const Icon = category.icon;
-            const isExpanded = expandedSections.includes(category.id);
-            const categoryMilestones =
-              currentMilestones[category.id as keyof typeof currentMilestones];
+      {/* Age Range Selector */}
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {ageRanges.map((range) => (
+          <Button
+            className="whitespace-nowrap"
+            key={range.id}
+            onClick={() => setSelectedAge(range.id)}
+            size="sm"
+            variant={selectedAge === range.id ? 'default' : 'outline'}
+          >
+            {range.label}
+          </Button>
+        ))}
+      </div>
 
-            return (
-              <Card className="overflow-hidden" key={category.id}>
-                <button
-                  className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
-                  onClick={() => toggleSection(category.id)}
-                  type="button"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-full bg-${category.color}/10 flex items-center justify-center`}
-                    >
-                      <Icon className={`h-5 w-5 text-${category.color}`} />
-                    </div>
-                    <div className="text-left">
-                      <h3 className="font-semibold">{category.label}</h3>
-                      <p className="text-xs text-muted-foreground">
-                        {getCategoryProgress(category.id)} completed
-                      </p>
-                    </div>
+      {/* Milestone Categories */}
+      <div className="space-y-3">
+        {categories.map((category) => {
+          const Icon = category.icon;
+          const isExpanded = expandedSections.includes(category.id);
+          const categoryMilestones =
+            currentMilestones[category.id as keyof typeof currentMilestones];
+
+          return (
+            <Card className="overflow-hidden" key={category.id}>
+              <button
+                className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                onClick={() => toggleSection(category.id)}
+                type="button"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-10 h-10 rounded-full bg-${category.color}/10 flex items-center justify-center`}
+                  >
+                    <Icon className={`h-5 w-5 text-${category.color}`} />
                   </div>
-                  {isExpanded ? (
-                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </button>
-
-                {isExpanded && (
-                  <div className="px-4 pb-4 space-y-2">
-                    {categoryMilestones.map((milestone) => {
-                      const checkboxId = `milestone-${category.id}-${milestone.id}`;
-                      return (
-                        <div
-                          className={cn(
-                            'flex items-start gap-3 p-3 rounded-lg transition-colors',
-                            milestone.completed
-                              ? 'bg-primary/5'
-                              : 'bg-muted/30',
-                          )}
-                          key={milestone.id}
-                        >
-                          <Checkbox
-                            checked={milestone.completed}
-                            className="mt-0.5"
-                            id={checkboxId}
-                            onCheckedChange={() =>
-                              toggleMilestone(category.id, milestone.id)
-                            }
-                          />
-                          <Label
-                            className={cn(
-                              'text-sm flex-1 cursor-pointer',
-                              milestone.completed
-                                ? 'text-muted-foreground line-through'
-                                : 'text-foreground',
-                            )}
-                            htmlFor={checkboxId}
-                          >
-                            {milestone.text}
-                          </Label>
-                          {milestone.completed && (
-                            <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                          )}
-                        </div>
-                      );
-                    })}
+                  <div className="text-left">
+                    <h3 className="font-semibold">{category.label}</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {getCategoryProgress(category.id)} completed
+                    </p>
                   </div>
+                </div>
+                {isExpanded ? (
+                  <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
                 )}
-              </Card>
-            );
-          })}
+              </button>
+
+              {isExpanded && (
+                <div className="px-4 pb-4 space-y-2">
+                  {categoryMilestones.map((milestone) => {
+                    const checkboxId = `milestone-${category.id}-${milestone.id}`;
+                    return (
+                      <div
+                        className={cn(
+                          'flex items-start gap-3 p-3 rounded-lg transition-colors',
+                          milestone.completed ? 'bg-primary/5' : 'bg-muted/30',
+                        )}
+                        key={milestone.id}
+                      >
+                        <Checkbox
+                          checked={milestone.completed}
+                          className="mt-0.5"
+                          id={checkboxId}
+                          onCheckedChange={() =>
+                            toggleMilestone(category.id, milestone.id)
+                          }
+                        />
+                        <Label
+                          className={cn(
+                            'text-sm flex-1 cursor-pointer',
+                            milestone.completed
+                              ? 'text-muted-foreground line-through'
+                              : 'text-foreground',
+                          )}
+                          htmlFor={checkboxId}
+                        >
+                          {milestone.text}
+                        </Label>
+                        {milestone.completed && (
+                          <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Red Flags */}
+      <Card className="p-4 border-destructive/50 bg-destructive/5">
+        <div className="flex gap-3 mb-3">
+          <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-destructive mb-1">
+              When to Be Concerned
+            </h3>
+            <p className="text-sm text-muted-foreground mb-3">
+              Contact your pediatrician if your baby shows any of these signs:
+            </p>
+            <div className="space-y-2">
+              {currentRedFlags.map((flag) => (
+                <div
+                  className="flex items-start gap-2 text-sm"
+                  key={`red-flag-${flag}`}
+                >
+                  <Circle className="h-1.5 w-1.5 fill-destructive text-destructive mt-1.5 flex-shrink-0" />
+                  <span className="text-foreground">{flag}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
+      </Card>
 
-        {/* Red Flags */}
-        <Card className="p-4 border-destructive/50 bg-destructive/5">
-          <div className="flex gap-3 mb-3">
-            <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-destructive mb-1">
-                When to Be Concerned
-              </h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                Contact your pediatrician if your baby shows any of these signs:
-              </p>
-              <div className="space-y-2">
-                {currentRedFlags.map((flag) => (
-                  <div
-                    className="flex items-start gap-2 text-sm"
-                    key={`red-flag-${flag}`}
-                  >
-                    <Circle className="h-1.5 w-1.5 fill-destructive text-destructive mt-1.5 flex-shrink-0" />
-                    <span className="text-foreground">{flag}</span>
-                  </div>
-                ))}
-              </div>
+      {/* Development Tips */}
+      <Card className="p-4 bg-accent/5 border-accent/20">
+        <div className="flex gap-3">
+          <Lightbulb className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-accent mb-1">
+              Tips to Encourage Development
+            </h3>
+            <div className="space-y-2 mt-3">
+              {currentTips.map((tip) => (
+                <div
+                  className="flex items-start gap-2 text-sm"
+                  key={`development-tip-${tip}`}
+                >
+                  <Circle className="h-1.5 w-1.5 fill-accent text-accent mt-1.5 flex-shrink-0" />
+                  <span className="text-foreground">{tip}</span>
+                </div>
+              ))}
             </div>
           </div>
-        </Card>
+        </div>
+      </Card>
 
-        {/* Development Tips */}
-        <Card className="p-4 bg-accent/5 border-accent/20">
-          <div className="flex gap-3">
-            <Lightbulb className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-accent mb-1">
-                Tips to Encourage Development
-              </h3>
-              <div className="space-y-2 mt-3">
-                {currentTips.map((tip) => (
-                  <div
-                    className="flex items-start gap-2 text-sm"
-                    key={`development-tip-${tip}`}
-                  >
-                    <Circle className="h-1.5 w-1.5 fill-accent text-accent mt-1.5 flex-shrink-0" />
-                    <span className="text-foreground">{tip}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Info Note */}
-        <Card className="p-4 bg-muted/30">
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            <strong className="text-foreground">Remember:</strong> Every baby
-            develops at their own pace. These milestones are general guidelines.
-            If you have concerns about your baby's development, always consult
-            with your pediatrician.
-          </p>
-        </Card>
-      </main>
-
-      <BottomNav />
-    </div>
+      {/* Info Note */}
+      <Card className="p-4 bg-muted/30">
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          <strong className="text-foreground">Remember:</strong> Every baby
+          develops at their own pace. These milestones are general guidelines.
+          If you have concerns about your baby's development, always consult
+          with your pediatrician.
+        </p>
+      </Card>
+    </main>
   );
 }

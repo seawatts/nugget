@@ -18,8 +18,6 @@ import {
   Thermometer,
 } from 'lucide-react';
 import Link from 'next/link';
-import { BottomNav } from '~/app/(app)/app/_components/bottom-nav';
-import { Header } from '~/app/(app)/app/_components/header';
 
 const resourceCategories = [
   {
@@ -162,117 +160,111 @@ const resourceCategories = [
 
 export default function HelpPage() {
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <Header />
+    <main className="px-6 py-6 space-y-6">
+      {/* Page Header */}
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold text-balance">Help & Resources</h1>
+        <p className="text-muted-foreground text-balance">
+          Quick access to important information, guides, and support resources
+        </p>
+      </div>
 
-      <main className="px-6 py-6 space-y-6">
-        {/* Page Header */}
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-balance">Help & Resources</h1>
-          <p className="text-muted-foreground text-balance">
-            Quick access to important information, guides, and support resources
-          </p>
-        </div>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 gap-3">
+        <Link href="/emergency">
+          <div className="bg-destructive/10 border border-destructive/20 rounded-2xl p-4 flex flex-col items-center gap-2 hover:bg-destructive/20 transition-colors">
+            <AlertTriangle className="h-8 w-8 text-destructive" />
+            <span className="text-sm font-semibold text-destructive text-center">
+              Emergency Help
+            </span>
+          </div>
+        </Link>
+        <Link href="/chat">
+          <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex flex-col items-center gap-2 hover:bg-primary/20 transition-colors">
+            <Brain className="h-8 w-8 text-primary" />
+            <span className="text-sm font-semibold text-primary text-center">
+              Ask AI
+            </span>
+          </div>
+        </Link>
+      </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-3">
-          <Link href="/emergency">
-            <div className="bg-destructive/10 border border-destructive/20 rounded-2xl p-4 flex flex-col items-center gap-2 hover:bg-destructive/20 transition-colors">
-              <AlertTriangle className="h-8 w-8 text-destructive" />
-              <span className="text-sm font-semibold text-destructive text-center">
-                Emergency Help
-              </span>
-            </div>
-          </Link>
-          <Link href="/chat">
-            <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex flex-col items-center gap-2 hover:bg-primary/20 transition-colors">
-              <Brain className="h-8 w-8 text-primary" />
-              <span className="text-sm font-semibold text-primary text-center">
-                Ask AI
-              </span>
-            </div>
-          </Link>
-        </div>
-
-        {/* Resource Categories */}
-        <div className="space-y-6">
-          {resourceCategories.map((category) => {
-            const CategoryIcon = category.icon;
-            return (
-              <div className="space-y-3" key={category.title}>
-                {/* Category Header */}
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-xl ${category.color}`}>
-                    <CategoryIcon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="font-semibold text-balance">
-                      {category.title}
-                    </h2>
-                    <p className="text-xs text-muted-foreground text-balance">
-                      {category.description}
-                    </p>
-                  </div>
+      {/* Resource Categories */}
+      <div className="space-y-6">
+        {resourceCategories.map((category) => {
+          const CategoryIcon = category.icon;
+          return (
+            <div className="space-y-3" key={category.title}>
+              {/* Category Header */}
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-xl ${category.color}`}>
+                  <CategoryIcon className="h-5 w-5" />
                 </div>
-
-                {/* Resource Links */}
-                <div className="space-y-2">
-                  {category.resources.map((resource) => {
-                    const ResourceIcon = resource.icon;
-                    return (
-                      <Link href={resource.href} key={resource.title}>
-                        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors group">
-                          <div className="p-2 rounded-lg bg-muted group-hover:bg-muted/70 transition-colors">
-                            <ResourceIcon className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-sm text-balance">
-                              {resource.title}
-                            </h3>
-                            <p className="text-xs text-muted-foreground text-balance">
-                              {resource.description}
-                            </p>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        </div>
-                      </Link>
-                    );
-                  })}
+                <div>
+                  <h2 className="font-semibold text-balance">
+                    {category.title}
+                  </h2>
+                  <p className="text-xs text-muted-foreground text-balance">
+                    {category.description}
+                  </p>
                 </div>
               </div>
-            );
-          })}
-        </div>
 
-        {/* Additional Help */}
-        <div className="bg-muted/50 rounded-2xl p-6 space-y-3">
-          <h3 className="font-semibold">Need More Help?</h3>
-          <p className="text-sm text-muted-foreground text-balance">
-            Can't find what you're looking for? Try our AI chat for personalized
-            guidance or check your emergency contacts in settings.
-          </p>
-          <div className="flex gap-2">
-            <Link className="flex-1" href="/chat">
-              <button
-                className="w-full bg-primary text-primary-foreground rounded-xl py-2.5 text-sm font-medium hover:bg-primary/90 transition-colors"
-                type="button"
-              >
-                Chat with AI
-              </button>
-            </Link>
-            <Link className="flex-1" href="/settings?tab=contacts">
-              <button
-                className="w-full bg-card border border-border text-foreground rounded-xl py-2.5 text-sm font-medium hover:bg-muted transition-colors"
-                type="button"
-              >
-                View Contacts
-              </button>
-            </Link>
-          </div>
-        </div>
-      </main>
+              {/* Resource Links */}
+              <div className="space-y-2">
+                {category.resources.map((resource) => {
+                  const ResourceIcon = resource.icon;
+                  return (
+                    <Link href={resource.href} key={resource.title}>
+                      <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors group">
+                        <div className="p-2 rounded-lg bg-muted group-hover:bg-muted/70 transition-colors">
+                          <ResourceIcon className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-sm text-balance">
+                            {resource.title}
+                          </h3>
+                          <p className="text-xs text-muted-foreground text-balance">
+                            {resource.description}
+                          </p>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-      <BottomNav />
-    </div>
+      {/* Additional Help */}
+      <div className="bg-muted/50 rounded-2xl p-6 space-y-3">
+        <h3 className="font-semibold">Need More Help?</h3>
+        <p className="text-sm text-muted-foreground text-balance">
+          Can't find what you're looking for? Try our AI chat for personalized
+          guidance or check your emergency contacts in settings.
+        </p>
+        <div className="flex gap-2">
+          <Link className="flex-1" href="/chat">
+            <button
+              className="w-full bg-primary text-primary-foreground rounded-xl py-2.5 text-sm font-medium hover:bg-primary/90 transition-colors"
+              type="button"
+            >
+              Chat with AI
+            </button>
+          </Link>
+          <Link className="flex-1" href="/settings?tab=contacts">
+            <button
+              className="w-full bg-card border border-border text-foreground rounded-xl py-2.5 text-sm font-medium hover:bg-muted transition-colors"
+              type="button"
+            >
+              View Contacts
+            </button>
+          </Link>
+        </div>
+      </div>
+    </main>
   );
 }

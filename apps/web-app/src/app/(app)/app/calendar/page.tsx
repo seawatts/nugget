@@ -11,8 +11,6 @@ import {
   User,
 } from 'lucide-react';
 import { useState } from 'react';
-import { BottomNav } from '~/app/(app)/app/_components/bottom-nav';
-import { Header } from '~/app/(app)/app/_components/header';
 
 type View = 'day' | 'week' | 'month' | 'list';
 
@@ -49,80 +47,74 @@ export default function FamilyCalendarPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <Header />
+    <main className="px-4 pt-4 pb-8">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Page Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-balance">Family Calendar</h1>
+          <p className="text-muted-foreground mt-1">
+            Coordinate schedules and appointments
+          </p>
+        </div>
 
-      <main className="px-4 pt-20 pb-8">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Page Header */}
-          <div>
-            <h1 className="text-3xl font-bold text-balance">Family Calendar</h1>
-            <p className="text-muted-foreground mt-1">
-              Coordinate schedules and appointments
-            </p>
-          </div>
+        {/* View Selector */}
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          {viewOptions.map((option) => (
+            <Button
+              className="whitespace-nowrap"
+              key={option.id}
+              onClick={() => setView(option.id)}
+              variant={view === option.id ? 'default' : 'outline'}
+            >
+              {option.label}
+            </Button>
+          ))}
+        </div>
 
-          {/* View Selector */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {viewOptions.map((option) => (
+        {/* Date Navigation */}
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <Button
+              onClick={() => navigateDate('prev')}
+              size="icon"
+              variant="ghost"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <div className="text-center">
+              <p className="font-semibold">{formatDate(currentDate)}</p>
               <Button
-                className="whitespace-nowrap"
-                key={option.id}
-                onClick={() => setView(option.id)}
-                variant={view === option.id ? 'default' : 'outline'}
-              >
-                {option.label}
-              </Button>
-            ))}
-          </div>
-
-          {/* Date Navigation */}
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <Button
-                onClick={() => navigateDate('prev')}
-                size="icon"
+                className="text-xs"
+                onClick={() => setCurrentDate(new Date())}
+                size="sm"
                 variant="ghost"
               >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-              <div className="text-center">
-                <p className="font-semibold">{formatDate(currentDate)}</p>
-                <Button
-                  className="text-xs"
-                  onClick={() => setCurrentDate(new Date())}
-                  size="sm"
-                  variant="ghost"
-                >
-                  Today
-                </Button>
-              </div>
-              <Button
-                onClick={() => navigateDate('next')}
-                size="icon"
-                variant="ghost"
-              >
-                <ChevronRight className="h-5 w-5" />
+                Today
               </Button>
             </div>
-          </Card>
+            <Button
+              onClick={() => navigateDate('next')}
+              size="icon"
+              variant="ghost"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </div>
+        </Card>
 
-          {/* View Content */}
-          {view === 'day' && <DayView />}
-          {view === 'week' && <WeekView />}
-          {view === 'month' && <MonthView />}
-          {view === 'list' && <ListView />}
+        {/* View Content */}
+        {view === 'day' && <DayView />}
+        {view === 'week' && <WeekView />}
+        {view === 'month' && <MonthView />}
+        {view === 'list' && <ListView />}
 
-          {/* Add Event Button */}
-          <Button className="w-full" size="lg">
-            <Plus className="h-5 w-5 mr-2" />
-            Add Event
-          </Button>
-        </div>
-      </main>
-
-      <BottomNav />
-    </div>
+        {/* Add Event Button */}
+        <Button className="w-full" size="lg">
+          <Plus className="h-5 w-5 mr-2" />
+          Add Event
+        </Button>
+      </div>
+    </main>
   );
 }
 

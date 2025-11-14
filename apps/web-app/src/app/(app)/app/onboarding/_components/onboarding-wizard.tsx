@@ -1,19 +1,22 @@
 'use client';
 
+import { useOrganizationList } from '@clerk/nextjs';
+import { parseBabyName } from '@nugget/utils';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
-import { completeOnboardingAction } from '../actions';
+import { useEffect, useState, useTransition } from 'react';
+import { completeOnboardingAction, upsertUserAction } from '../actions';
+import { InviteCaregiversStep } from './invite-caregivers-step';
 import { JourneyStageStep } from './journey-stage-step';
 import { NavigationButtons } from './navigation-buttons';
 import { StageDetailsStep } from './stage-details-step';
 import { StepIndicator } from './step-indicator';
-import type { JourneyStage, TTCMethod, UserRole } from './types';
-import { UserRoleStep } from './user-role-step';
+import type { JourneyStage, TTCMethod } from './types';
 
 const TOTAL_STEPS = 3;
 
 export function OnboardingWizard() {
   const router = useRouter();
+  const { setActive } = useOrganizationList();
   const [isPending, startTransition] = useTransition();
   const [step, setStep] = useState(1);
   const [journeyStage, setJourneyStage] = useState<JourneyStage | null>(null);
@@ -22,9 +25,20 @@ export function OnboardingWizard() {
   const [dueDate, setDueDate] = useState('');
   const [dueDateManuallySet, setDueDateManuallySet] = useState(false);
   const [birthDate, setBirthDate] = useState('');
-  const [babyName, setBabyName] = useState('');
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [fullName, setFullName] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Upsert user when component mounts to ensure user exists in database
+  useEffect(() => {
+    startTransition(async () => {
+      try {
+        await upsertUserAction();
+      } catch (error) {
+        console.error('Failed to upsert user:', error);
+        // Don't show error to user - this is a background operation
+      }
+    });
+  }, []);
 
   const calculateDueDate = (lmpDate: string) => {
     if (!lmpDate) return '';
@@ -49,60 +63,129 @@ export function OnboardingWizard() {
   };
 
   const handleComplete = () => {
-    if (!journeyStage || !userRole) return;
+    try {
+      console.log('handleComplete called', {
+        birthDate,
+        fullName,
+        isPending,
+        journeyStage,
+        step,
+      });
 
-    setError(null);
-
-    // Save to localStorage as backup
-    const onboardingData = {
-      babyName,
-      birthDate,
-      completedAt: new Date().toISOString(),
-      dueDate,
-      journeyStage,
-      lastPeriodDate,
-      ttcMethod,
-      userRole,
-    };
-    localStorage.setItem('onboardingData', JSON.stringify(onboardingData));
-
-    // Submit to server
-    startTransition(async () => {
-      try {
-        const result = await completeOnboardingAction({
-          babyName: babyName || undefined,
-          birthDate: birthDate || undefined,
-          dueDate: dueDate || undefined,
-          journeyStage,
-          lastPeriodDate: lastPeriodDate || undefined,
-          ttcMethod: ttcMethod || undefined,
-          userRole,
-        });
-
-        if (result?.serverError) {
-          setError(result.serverError);
-          return;
-        }
-
-        if (result?.data?.success) {
-          router.push('/app/onboarding/setup');
-        }
-      } catch (error) {
-        console.error('Failed to complete onboarding:', error);
-        setError('Failed to save onboarding data. Please try again.');
+      if (!journeyStage) {
+        console.error('No journey stage selected');
+        setError('Please select your journey stage');
+        return;
       }
-    });
+
+      setError(null);
+
+      // Parse the full name into parts
+      const { firstName, middleName, lastName } = parseBabyName(fullName);
+
+      console.log('Parsed name:', { firstName, lastName, middleName });
+
+      // Save to localStorage as backup
+      const onboardingData = {
+        birthDate,
+        completedAt: new Date().toISOString(),
+        dueDate,
+        firstName,
+        fullName,
+        journeyStage,
+        lastName,
+        lastPeriodDate,
+        middleName,
+        ttcMethod,
+      };
+      localStorage.setItem('onboardingData', JSON.stringify(onboardingData));
+
+      // Submit to server
+      startTransition(async () => {
+        try {
+          console.log('Submitting onboarding data:', {
+            birthDate: birthDate || undefined,
+            dueDate: dueDate || undefined,
+            firstName: firstName || undefined,
+            journeyStage,
+            lastName: lastName || undefined,
+            lastPeriodDate: lastPeriodDate || undefined,
+            middleName: middleName || undefined,
+            ttcMethod: ttcMethod || undefined,
+          });
+
+          const result = await completeOnboardingAction({
+            birthDate: birthDate || undefined,
+            dueDate: dueDate || undefined,
+            firstName: firstName || undefined,
+            journeyStage,
+            lastName: lastName || undefined,
+            lastPeriodDate: lastPeriodDate || undefined,
+            middleName: middleName || undefined,
+            ttcMethod: ttcMethod || undefined,
+          });
+
+          console.log('Onboarding action result:', result);
+
+          if (result?.serverError) {
+            console.error('Server error:', result.serverError);
+            setError(result.serverError);
+            return;
+          }
+
+          if (result?.validationErrors) {
+            console.error('Validation errors:', result.validationErrors);
+            setError('Please check your input and try again.');
+            return;
+          }
+
+          if (result?.data?.success && result.data.family) {
+            console.log('Onboarding completed successfully');
+
+            // Set the active organization in the session
+            if (result.data.family && setActive) {
+              await setActive({ organization: result.data.family.id });
+            }
+
+            // Now navigate to the app
+            router.push('/app');
+          } else {
+            console.error('Unexpected result:', result);
+            setError('Something went wrong. Please try again.');
+          }
+        } catch (error) {
+          console.error('Failed to complete onboarding (async):', error);
+          setError('Failed to save onboarding data. Please try again.');
+        }
+      });
+    } catch (error) {
+      console.error('Failed to complete onboarding (sync):', error);
+      setError('An unexpected error occurred. Please try again.');
+    }
   };
 
   const canProceed = () => {
-    if (step === 1) return journeyStage !== null;
-    if (step === 2) {
-      if (journeyStage === 'ttc') return ttcMethod !== null;
-      if (journeyStage === 'pregnant') return dueDate !== '';
-      if (journeyStage === 'born') return birthDate !== '';
+    let result = false;
+    if (step === 1) {
+      result = journeyStage !== null;
+    } else if (step === 2) {
+      if (journeyStage === 'ttc') result = ttcMethod !== null;
+      else if (journeyStage === 'pregnant') result = dueDate !== '';
+      else if (journeyStage === 'born') result = birthDate !== '';
+    } else if (step === 3) {
+      result = true; // Step 3 is optional
     }
-    if (step === 3) return userRole !== null;
-    return false;
+
+    console.log('canProceed check:', {
+      birthDate,
+      dueDate,
+      journeyStage,
+      result,
+      step,
+      ttcMethod,
+    });
+
+    return result;
   };
 
   return (
@@ -118,24 +201,22 @@ export function OnboardingWizard() {
 
           {step === 2 && (
             <StageDetailsStep
-              babyName={babyName}
               birthDate={birthDate}
               dueDate={dueDate}
               dueDateManuallySet={dueDateManuallySet}
+              fullName={fullName}
               journeyStage={journeyStage}
               lastPeriodDate={lastPeriodDate}
-              onBabyNameChange={setBabyName}
               onBirthDateChange={setBirthDate}
               onDueDateChange={handleDueDateChange}
+              onFullNameChange={setFullName}
               onLastPeriodChange={handleLastPeriodChange}
               onTTCMethodSelect={setTTCMethod}
               ttcMethod={ttcMethod}
             />
           )}
 
-          {step === 3 && (
-            <UserRoleStep onSelect={setUserRole} selectedRole={userRole} />
-          )}
+          {step === 3 && <InviteCaregiversStep />}
 
           {error && (
             <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/20">

@@ -83,9 +83,9 @@
       "values": ["primary", "partner", "caregiver"]
     }
   },
-  "id": "c33ac2b6-673f-44f0-a54f-cb00b4dfd5ab",
+  "id": "d109ad1a-850a-4ebe-8912-35f1a0d52dae",
   "policies": {},
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "prevId": "c33ac2b6-673f-44f0-a54f-cb00b4dfd5ab",
   "roles": {},
   "schemas": {},
   "sequences": {},
@@ -284,6 +284,13 @@
           "primaryKey": true,
           "type": "varchar(128)"
         },
+        "journeyStage": {
+          "name": "journeyStage",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "journeyStage",
+          "typeSchema": "public"
+        },
         "lastName": {
           "name": "lastName",
           "notNull": false,
@@ -321,6 +328,13 @@
           "notNull": false,
           "primaryKey": false,
           "type": "integer"
+        },
+        "ttcMethod": {
+          "name": "ttcMethod",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "ttcMethod",
+          "typeSchema": "public"
         },
         "updatedAt": {
           "default": "now()",
@@ -469,13 +483,6 @@
           "primaryKey": true,
           "type": "varchar(128)"
         },
-        "journeyStage": {
-          "name": "journeyStage",
-          "notNull": false,
-          "primaryKey": false,
-          "type": "journeyStage",
-          "typeSchema": "public"
-        },
         "onboardingCompletedAt": {
           "name": "onboardingCompletedAt",
           "notNull": false,
@@ -488,13 +495,6 @@
           "notNull": true,
           "primaryKey": false,
           "type": "userRole",
-          "typeSchema": "public"
-        },
-        "ttcMethod": {
-          "name": "ttcMethod",
-          "notNull": false,
-          "primaryKey": false,
-          "type": "ttcMethod",
           "typeSchema": "public"
         },
         "updatedAt": {

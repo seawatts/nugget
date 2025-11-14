@@ -16,8 +16,6 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useState } from 'react';
-import { BottomNav } from '~/app/(app)/app/_components/bottom-nav';
-import { Header } from '~/app/(app)/app/_components/header';
 
 type Tab = 'overview' | 'expenses' | 'planning' | 'savings';
 
@@ -32,49 +30,41 @@ export default function BudgetPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <Header />
-
-      <main className="px-4 pt-20 pb-8">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Page Header */}
-          <div>
-            <h1 className="text-3xl font-bold text-balance">
-              Budget & Finance
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Track expenses and plan for your baby's future
-            </p>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <Button
-                  className="flex items-center gap-2 whitespace-nowrap"
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  variant={activeTab === tab.id ? 'default' : 'outline'}
-                >
-                  <Icon className="h-4 w-4" />
-                  {tab.label}
-                </Button>
-              );
-            })}
-          </div>
-
-          {/* Tab Content */}
-          {activeTab === 'overview' && <OverviewTab />}
-          {activeTab === 'expenses' && <ExpensesTab />}
-          {activeTab === 'planning' && <PlanningTab />}
-          {activeTab === 'savings' && <SavingsTab />}
+    <main className="px-4 pt-4 pb-8">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Page Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-balance">Budget & Finance</h1>
+          <p className="text-muted-foreground mt-1">
+            Track expenses and plan for your baby's future
+          </p>
         </div>
-      </main>
 
-      <BottomNav />
-    </div>
+        {/* Tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <Button
+                className="flex items-center gap-2 whitespace-nowrap"
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                variant={activeTab === tab.id ? 'default' : 'outline'}
+              >
+                <Icon className="h-4 w-4" />
+                {tab.label}
+              </Button>
+            );
+          })}
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'overview' && <OverviewTab />}
+        {activeTab === 'expenses' && <ExpensesTab />}
+        {activeTab === 'planning' && <PlanningTab />}
+        {activeTab === 'savings' && <SavingsTab />}
+      </div>
+    </main>
   );
 }
 

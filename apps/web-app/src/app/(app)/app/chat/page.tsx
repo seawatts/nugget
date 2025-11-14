@@ -5,8 +5,6 @@ import { Button } from '@nugget/ui/button';
 import { Send, Sparkles } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BottomNav } from '~/app/(app)/app/_components/bottom-nav';
-import { Header } from '~/app/(app)/app/_components/header';
 
 export default function ChatPage() {
   const { messages, sendMessage, status } = useChat();
@@ -37,10 +35,8 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <Header />
-
-      <main className="flex-1 overflow-y-auto px-4 pt-20 pb-32">
+    <>
+      <main className="flex-1 overflow-y-auto px-4 pt-4 pb-32 flex flex-col h-screen bg-background">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-6 text-center px-6">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -156,8 +152,6 @@ export default function ChatPage() {
           </div>
         </form>
       </div>
-
-      <BottomNav />
-    </div>
+    </>
   );
 }

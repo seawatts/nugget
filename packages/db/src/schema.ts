@@ -181,13 +181,11 @@ export const FamilyMembers = pgTable(
       .$defaultFn(() => createId({ prefix: 'member' }))
       .notNull()
       .primaryKey(),
-    journeyStage: journeyStageEnum('journeyStage'),
     onboardingCompletedAt: timestamp('onboardingCompletedAt', {
       mode: 'date',
       withTimezone: true,
     }),
     role: userRoleEnum('role').default('primary').notNull(),
-    ttcMethod: ttcMethodEnum('ttcMethod'),
     updatedAt: timestamp('updatedAt', {
       mode: 'date',
       withTimezone: true,
@@ -344,15 +342,19 @@ export const Babies = pgTable('babies', {
     .notNull()
     .default(requestingFamilyId()),
   feedIntervalHours: integer('feedIntervalHours').default(2.5), // Hours between feeds
+  firstName: text('firstName').notNull(),
   gender: text('gender'),
   id: varchar('id', { length: 128 })
     .primaryKey()
     .$defaultFn(() => createId()),
+  journeyStage: journeyStageEnum('journeyStage'),
+  lastName: text('lastName'),
   metadata: json('metadata').$type<Record<string, unknown>>(),
+  middleName: text('middleName'),
   mlPerPump: integer('mlPerPump').default(24), // ML per pump session
-  name: text('name').notNull(),
   photoUrl: text('photoUrl'),
   pumpsPerDay: integer('pumpsPerDay').default(6), // Number of pumps per day
+  ttcMethod: ttcMethodEnum('ttcMethod'),
   updatedAt: timestamp('updatedAt', { mode: 'date' })
     .notNull()
     .defaultNow()

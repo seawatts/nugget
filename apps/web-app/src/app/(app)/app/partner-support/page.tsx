@@ -18,8 +18,6 @@ import {
   Users,
 } from 'lucide-react';
 import { useState } from 'react';
-import { BottomNav } from '~/app/(app)/app/_components/bottom-nav';
-import { Header } from '~/app/(app)/app/_components/header';
 
 export default function PartnerSupportPage() {
   const [selectedTab, setSelectedTab] = useState<
@@ -186,299 +184,291 @@ export default function PartnerSupportPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <Header />
-
-      <main className="px-4 pt-4 space-y-4">
-        {/* Header Card */}
-        <Card className="bg-gradient-to-br from-secondary/20 to-secondary/5 border-secondary/20 p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-full bg-secondary/20 flex items-center justify-center flex-shrink-0">
-              <Users className="h-6 w-6 text-secondary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-balance mb-2">
-                Partner Support
-              </h1>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Resources and guidance for partners to support mom and bond with
-                baby
-              </p>
-            </div>
+    <main className="px-4 pt-4 space-y-4">
+      {/* Header Card */}
+      <Card className="bg-gradient-to-br from-secondary/20 to-secondary/5 border-secondary/20 p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-full bg-secondary/20 flex items-center justify-center flex-shrink-0">
+            <Users className="h-6 w-6 text-secondary" />
           </div>
-        </Card>
-
-        {/* Tabs */}
-        <div className="flex gap-2 border-b border-border overflow-x-auto">
-          <button
-            className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-              selectedTab === 'tasks'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-muted-foreground'
-            }`}
-            onClick={() => setSelectedTab('tasks')}
-            type="button"
-          >
-            Daily Tasks
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-              selectedTab === 'tips'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-muted-foreground'
-            }`}
-            onClick={() => setSelectedTab('tips')}
-            type="button"
-          >
-            Support Tips
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-              selectedTab === 'bonding'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-muted-foreground'
-            }`}
-            onClick={() => setSelectedTab('bonding')}
-            type="button"
-          >
-            Bonding
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-              selectedTab === 'wellness'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-muted-foreground'
-            }`}
-            onClick={() => setSelectedTab('wellness')}
-            type="button"
-          >
-            Wellness
-          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-balance mb-2">
+              Partner Support
+            </h1>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Resources and guidance for partners to support mom and bond with
+              baby
+            </p>
+          </div>
         </div>
+      </Card>
 
-        {/* Daily Tasks Tab */}
-        {selectedTab === 'tasks' && (
-          <div className="space-y-4">
-            <Card className="p-4 bg-secondary/5 border-secondary/20">
-              <div className="flex gap-3">
-                <Calendar className="h-5 w-5 text-secondary flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium mb-1">
-                    Your Daily Contribution
-                  </p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Small actions make a big difference. Check off tasks as you
-                    complete them to support your family.
-                  </p>
-                </div>
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-border overflow-x-auto">
+        <button
+          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+            selectedTab === 'tasks'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground'
+          }`}
+          onClick={() => setSelectedTab('tasks')}
+          type="button"
+        >
+          Daily Tasks
+        </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+            selectedTab === 'tips'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground'
+          }`}
+          onClick={() => setSelectedTab('tips')}
+          type="button"
+        >
+          Support Tips
+        </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+            selectedTab === 'bonding'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground'
+          }`}
+          onClick={() => setSelectedTab('bonding')}
+          type="button"
+        >
+          Bonding
+        </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+            selectedTab === 'wellness'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground'
+          }`}
+          onClick={() => setSelectedTab('wellness')}
+          type="button"
+        >
+          Wellness
+        </button>
+      </div>
+
+      {/* Daily Tasks Tab */}
+      {selectedTab === 'tasks' && (
+        <div className="space-y-4">
+          <Card className="p-4 bg-secondary/5 border-secondary/20">
+            <div className="flex gap-3">
+              <Calendar className="h-5 w-5 text-secondary flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium mb-1">
+                  Your Daily Contribution
+                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Small actions make a big difference. Check off tasks as you
+                  complete them to support your family.
+                </p>
               </div>
-            </Card>
+            </div>
+          </Card>
 
-            {dailyTasks.map((section) => {
-              const Icon = section.icon;
-              const completed = section.tasks.filter((t) => t.checked).length;
-              const total = section.tasks.length;
+          {dailyTasks.map((section) => {
+            const Icon = section.icon;
+            const completed = section.tasks.filter((t) => t.checked).length;
+            const total = section.tasks.length;
 
-              return (
-                <Card className="p-4" key={section.category}>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Icon className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{section.category}</h3>
-                      <p className="text-xs text-muted-foreground">
-                        {completed} of {total} completed
-                      </p>
-                    </div>
-                    <Badge variant="secondary">
-                      {Math.round((completed / total) * 100)}%
-                    </Badge>
+            return (
+              <Card className="p-4" key={section.category}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Icon className="h-5 w-5 text-primary" />
                   </div>
-
-                  <div className="space-y-2">
-                    {section.tasks.map((item) => (
-                      <div
-                        className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                        key={`${section.category}-${item.task}`}
-                      >
-                        {item.checked ? (
-                          <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
-                        ) : (
-                          <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                        )}
-                        <div className="flex-1">
-                          <p
-                            className={`text-sm ${item.checked ? 'line-through text-muted-foreground' : ''}`}
-                          >
-                            {item.task}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {item.time}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="flex-1">
+                    <h3 className="font-semibold">{section.category}</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {completed} of {total} completed
+                    </p>
                   </div>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                  <Badge variant="secondary">
+                    {Math.round((completed / total) * 100)}%
+                  </Badge>
+                </div>
 
-        {/* Support Tips Tab */}
-        {selectedTab === 'tips' && (
-          <div className="space-y-4">
-            {supportTips.map((section) => {
-              const Icon = section.icon;
-              return (
-                <Card className="p-4" key={section.title}>
-                  <div className="flex items-center gap-3 mb-4">
+                <div className="space-y-2">
+                  {section.tasks.map((item) => (
                     <div
-                      className={`w-10 h-10 rounded-full bg-${section.color}/10 flex items-center justify-center`}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                      key={`${section.category}-${item.task}`}
                     >
-                      <Icon className={`h-5 w-5 text-${section.color}`} />
-                    </div>
-                    <h3 className="font-semibold">{section.title}</h3>
-                  </div>
-
-                  <div className="space-y-2">
-                    {section.tips.map((tip) => (
-                      <div
-                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/30"
-                        key={`${section.title}-${tip}`}
-                      >
-                        <div
-                          className={`w-1.5 h-1.5 rounded-full bg-${section.color} mt-2 flex-shrink-0`}
-                        />
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {tip}
+                      {item.checked ? (
+                        <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+                      ) : (
+                        <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      )}
+                      <div className="flex-1">
+                        <p
+                          className={`text-sm ${item.checked ? 'line-through text-muted-foreground' : ''}`}
+                        >
+                          {item.task}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.time}
                         </p>
                       </div>
-                    ))}
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Bonding Tab */}
-        {selectedTab === 'bonding' && (
-          <div className="space-y-4">
-            <Card className="p-4 bg-accent/5 border-accent/20">
-              <div className="flex gap-3">
-                <Heart className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium mb-1">Building Your Bond</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Bonding with your baby takes time and consistency. These
-                    activities help create a strong connection while supporting
-                    baby's development.
-                  </p>
-                </div>
-              </div>
-            </Card>
-
-            {bondingActivities.map((activity) => (
-              <Card
-                className="p-4 hover:bg-muted/50 transition-colors"
-                key={activity.activity}
-              >
-                <div className="mb-3">
-                  <h3 className="font-semibold mb-1">{activity.activity}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {activity.description}
-                  </p>
-                </div>
-
-                <div className="flex gap-4 mb-3 text-xs">
-                  <div>
-                    <span className="text-muted-foreground">Duration: </span>
-                    <span className="font-medium">{activity.duration}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Frequency: </span>
-                    <span className="font-medium">{activity.frequency}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-xs font-medium mb-2">Benefits:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {activity.benefits.map((benefit) => (
-                      <Badge
-                        className="text-xs"
-                        key={`${activity.activity}-${benefit}`}
-                        variant="secondary"
-                      >
-                        {benefit}
-                      </Badge>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
               </Card>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
+      )}
 
-        {/* Wellness Tab */}
-        {selectedTab === 'wellness' && (
-          <div className="space-y-4">
-            <Card className="p-4 bg-primary/5 border-primary/20">
-              <div className="flex gap-3">
-                <Heart className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+      {/* Support Tips Tab */}
+      {selectedTab === 'tips' && (
+        <div className="space-y-4">
+          {supportTips.map((section) => {
+            const Icon = section.icon;
+            return (
+              <Card className="p-4" key={section.title}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div
+                    className={`w-10 h-10 rounded-full bg-${section.color}/10 flex items-center justify-center`}
+                  >
+                    <Icon className={`h-5 w-5 text-${section.color}`} />
+                  </div>
+                  <h3 className="font-semibold">{section.title}</h3>
+                </div>
+
+                <div className="space-y-2">
+                  {section.tips.map((tip) => (
+                    <div
+                      className="flex items-start gap-3 p-3 rounded-lg bg-muted/30"
+                      key={`${section.title}-${tip}`}
+                    >
+                      <div
+                        className={`w-1.5 h-1.5 rounded-full bg-${section.color} mt-2 flex-shrink-0`}
+                      />
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {tip}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Bonding Tab */}
+      {selectedTab === 'bonding' && (
+        <div className="space-y-4">
+          <Card className="p-4 bg-accent/5 border-accent/20">
+            <div className="flex gap-3">
+              <Heart className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium mb-1">Building Your Bond</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Bonding with your baby takes time and consistency. These
+                  activities help create a strong connection while supporting
+                  baby's development.
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          {bondingActivities.map((activity) => (
+            <Card
+              className="p-4 hover:bg-muted/50 transition-colors"
+              key={activity.activity}
+            >
+              <div className="mb-3">
+                <h3 className="font-semibold mb-1">{activity.activity}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {activity.description}
+                </p>
+              </div>
+
+              <div className="flex gap-4 mb-3 text-xs">
                 <div>
-                  <p className="text-sm font-medium mb-1">
-                    Take Care of Yourself Too
-                  </p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    You can't pour from an empty cup. Your mental and physical
-                    health matters for your family's wellbeing.
-                  </p>
+                  <span className="text-muted-foreground">Duration: </span>
+                  <span className="font-medium">{activity.duration}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Frequency: </span>
+                  <span className="font-medium">{activity.frequency}</span>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium mb-2">Benefits:</p>
+                <div className="flex flex-wrap gap-2">
+                  {activity.benefits.map((benefit) => (
+                    <Badge
+                      className="text-xs"
+                      key={`${activity.activity}-${benefit}`}
+                      variant="secondary"
+                    >
+                      {benefit}
+                    </Badge>
+                  ))}
                 </div>
               </div>
             </Card>
+          ))}
+        </div>
+      )}
 
-            {wellnessResources.map((section) => {
-              const Icon = section.icon;
-              return (
-                <Card className="p-4" key={section.category}>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Icon className="h-5 w-5 text-primary" />
-                    </div>
-                    <h3 className="font-semibold">{section.category}</h3>
+      {/* Wellness Tab */}
+      {selectedTab === 'wellness' && (
+        <div className="space-y-4">
+          <Card className="p-4 bg-primary/5 border-primary/20">
+            <div className="flex gap-3">
+              <Heart className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium mb-1">
+                  Take Care of Yourself Too
+                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  You can't pour from an empty cup. Your mental and physical
+                  health matters for your family's wellbeing.
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          {wellnessResources.map((section) => {
+            const Icon = section.icon;
+            return (
+              <Card className="p-4" key={section.category}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Icon className="h-5 w-5 text-primary" />
                   </div>
+                  <h3 className="font-semibold">{section.category}</h3>
+                </div>
 
-                  <div className="space-y-2">
-                    {section.resources.map((resource) => (
-                      <button
-                        className="w-full flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors text-left"
-                        key={`${section.category}-${resource.title}`}
-                        type="button"
-                      >
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">
-                            {resource.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {resource.type}
-                            {resource.contact && ` • ${resource.contact}`}
-                          </p>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      </button>
-                    ))}
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </main>
-
-      <BottomNav />
-    </div>
+                <div className="space-y-2">
+                  {section.resources.map((resource) => (
+                    <button
+                      className="w-full flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors text-left"
+                      key={`${section.category}-${resource.title}`}
+                      type="button"
+                    >
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{resource.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {resource.type}
+                          {resource.contact && ` • ${resource.contact}`}
+                        </p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </main>
   );
 }

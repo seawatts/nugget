@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@nugget/ui/button';
+import { getFullBabyName } from '@nugget/utils';
 import {
   AlertCircle,
   Clock,
@@ -16,7 +17,12 @@ import { useEffect, useState } from 'react';
 type CaregiverGuide = {
   allergies: string;
   babyAge: string;
-  babyName: string;
+  // Legacy field
+  babyName?: string;
+  // New structured name fields
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
   bedtime: string;
   careDate: string;
   caregiverName: string;
@@ -165,7 +171,16 @@ export default function CaregiverViewPage() {
 
         {/* Baby Info */}
         <div className="bg-card rounded-2xl p-6 border border-border">
-          <h2 className="text-xl font-bold mb-4">About {guideData.babyName}</h2>
+          <h2 className="text-xl font-bold mb-4">
+            About{' '}
+            {guideData.firstName
+              ? getFullBabyName({
+                  firstName: guideData.firstName,
+                  lastName: guideData.lastName,
+                  middleName: guideData.middleName,
+                })
+              : guideData.babyName}
+          </h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">Age</p>

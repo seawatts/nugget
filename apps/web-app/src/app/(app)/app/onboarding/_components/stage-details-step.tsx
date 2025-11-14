@@ -10,12 +10,12 @@ interface StageDetailsStepProps {
   dueDate: string;
   dueDateManuallySet: boolean;
   birthDate: string;
-  babyName: string;
+  fullName: string;
   onTTCMethodSelect: (method: TTCMethod) => void;
   onLastPeriodChange: (date: string) => void;
   onDueDateChange: (date: string) => void;
   onBirthDateChange: (date: string) => void;
-  onBabyNameChange: (name: string) => void;
+  onFullNameChange: (name: string) => void;
 }
 
 export function StageDetailsStep({
@@ -25,12 +25,12 @@ export function StageDetailsStep({
   dueDate,
   dueDateManuallySet,
   birthDate,
-  babyName,
+  fullName,
   onTTCMethodSelect,
   onLastPeriodChange,
   onDueDateChange,
   onBirthDateChange,
-  onBabyNameChange,
+  onFullNameChange,
 }: StageDetailsStepProps) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -53,10 +53,10 @@ export function StageDetailsStep({
 
       {journeyStage === 'born' && (
         <BabyDetailsForm
-          babyName={babyName}
           birthDate={birthDate}
-          onBabyNameChange={onBabyNameChange}
+          fullName={fullName}
           onBirthDateChange={onBirthDateChange}
+          onFullNameChange={onFullNameChange}
         />
       )}
     </div>

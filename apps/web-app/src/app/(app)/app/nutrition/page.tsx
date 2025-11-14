@@ -15,8 +15,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { BottomNav } from '~/app/(app)/app/_components/bottom-nav';
-import { Header } from '~/app/(app)/app/_components/header';
 
 type JourneyStage = 'ttc' | 'pregnant' | 'born';
 
@@ -1027,138 +1025,130 @@ export default function NutritionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <Header />
-
-      <main className="px-4 pt-20 pb-8">
-        <div className="max-w-2xl mx-auto space-y-6">
-          {/* Page Header */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-secondary/20 flex items-center justify-center">
-              <Utensils className="h-6 w-6 text-secondary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Meal Planning & Nutrition</h1>
-              <p className="text-sm text-muted-foreground">
-                {journeyData?.journeyStage === 'ttc' &&
-                  'Nutrition for conception'}
-                {journeyData?.journeyStage === 'pregnant' &&
-                  `Trimester ${getTrimester(weeksPregnant)} nutrition guide`}
-                {journeyData?.journeyStage === 'born' &&
-                  `Feeding guide for ${babyAgeMonths} months`}
-              </p>
-            </div>
+    <main className="px-4 pt-4 pb-8">
+      <div className="max-w-2xl mx-auto space-y-6">
+        {/* Page Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 rounded-2xl bg-secondary/20 flex items-center justify-center">
+            <Utensils className="h-6 w-6 text-secondary" />
           </div>
-
-          {journeyData?.journeyStage === 'born' && babyAgeMonths >= 4 && (
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              <button
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                  activeTab === 'overview'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
-                }`}
-                onClick={() => setActiveTab('overview')}
-                type="button"
-              >
-                Overview
-              </button>
-              <button
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                  activeTab === 'recipes'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
-                }`}
-                onClick={() => setActiveTab('recipes')}
-                type="button"
-              >
-                Recipes
-              </button>
-              <button
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                  activeTab === 'inventory'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
-                }`}
-                onClick={() => setActiveTab('inventory')}
-                type="button"
-              >
-                Milk Inventory
-              </button>
-              <button
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                  activeTab === 'allergens'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
-                }`}
-                onClick={() => setActiveTab('allergens')}
-                type="button"
-              >
-                Allergens
-              </button>
-              <button
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                  activeTab === 'reactions'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
-                }`}
-                onClick={() => setActiveTab('reactions')}
-                type="button"
-              >
-                Reactions
-              </button>
-            </div>
-          )}
-
-          {/* Quick Links */}
-          {activeTab === 'overview' && (
-            <div className="grid grid-cols-2 gap-3">
-              <Link href="/learning">
-                <div className="bg-card border border-border rounded-2xl p-4 hover:bg-muted/50 transition-colors">
-                  <BookOpen className="h-5 w-5 text-primary mb-2" />
-                  <p className="font-medium text-sm">Learning Hub</p>
-                  <p className="text-xs text-muted-foreground">
-                    Feeding guides
-                  </p>
-                </div>
-              </Link>
-              <Link href="/chat">
-                <div className="bg-card border border-border rounded-2xl p-4 hover:bg-muted/50 transition-colors">
-                  <ChefHat className="h-5 w-5 text-secondary mb-2" />
-                  <p className="font-medium text-sm">Ask AI</p>
-                  <p className="text-xs text-muted-foreground">Recipe ideas</p>
-                </div>
-              </Link>
-            </div>
-          )}
-
-          {activeTab === 'overview' && (
-            <>
-              {journeyData?.journeyStage === 'ttc' && renderTTCContent()}
+          <div>
+            <h1 className="text-2xl font-bold">Meal Planning & Nutrition</h1>
+            <p className="text-sm text-muted-foreground">
+              {journeyData?.journeyStage === 'ttc' &&
+                'Nutrition for conception'}
               {journeyData?.journeyStage === 'pregnant' &&
-                renderPregnantContent()}
-              {journeyData?.journeyStage === 'born' && renderBabyContent()}
-            </>
-          )}
-          {activeTab === 'recipes' && renderRecipesTab()}
-          {activeTab === 'inventory' && renderInventoryTab()}
-          {activeTab === 'allergens' && renderAllergenTrackerTab()}
-          {activeTab === 'reactions' && renderReactionsTab()}
-
-          {!journeyData && (
-            <div className="bg-card rounded-3xl p-8 border border-border text-center">
-              <p className="text-muted-foreground mb-4">
-                Complete onboarding to see personalized nutrition guidance
-              </p>
-              <Link href="/onboarding">
-                <Button>Complete Onboarding</Button>
-              </Link>
-            </div>
-          )}
+                `Trimester ${getTrimester(weeksPregnant)} nutrition guide`}
+              {journeyData?.journeyStage === 'born' &&
+                `Feeding guide for ${babyAgeMonths} months`}
+            </p>
+          </div>
         </div>
-      </main>
 
-      <BottomNav />
-    </div>
+        {journeyData?.journeyStage === 'born' && babyAgeMonths >= 4 && (
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            <button
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === 'overview'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
+              }`}
+              onClick={() => setActiveTab('overview')}
+              type="button"
+            >
+              Overview
+            </button>
+            <button
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === 'recipes'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
+              }`}
+              onClick={() => setActiveTab('recipes')}
+              type="button"
+            >
+              Recipes
+            </button>
+            <button
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === 'inventory'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
+              }`}
+              onClick={() => setActiveTab('inventory')}
+              type="button"
+            >
+              Milk Inventory
+            </button>
+            <button
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === 'allergens'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
+              }`}
+              onClick={() => setActiveTab('allergens')}
+              type="button"
+            >
+              Allergens
+            </button>
+            <button
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === 'reactions'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
+              }`}
+              onClick={() => setActiveTab('reactions')}
+              type="button"
+            >
+              Reactions
+            </button>
+          </div>
+        )}
+
+        {/* Quick Links */}
+        {activeTab === 'overview' && (
+          <div className="grid grid-cols-2 gap-3">
+            <Link href="/learning">
+              <div className="bg-card border border-border rounded-2xl p-4 hover:bg-muted/50 transition-colors">
+                <BookOpen className="h-5 w-5 text-primary mb-2" />
+                <p className="font-medium text-sm">Learning Hub</p>
+                <p className="text-xs text-muted-foreground">Feeding guides</p>
+              </div>
+            </Link>
+            <Link href="/chat">
+              <div className="bg-card border border-border rounded-2xl p-4 hover:bg-muted/50 transition-colors">
+                <ChefHat className="h-5 w-5 text-secondary mb-2" />
+                <p className="font-medium text-sm">Ask AI</p>
+                <p className="text-xs text-muted-foreground">Recipe ideas</p>
+              </div>
+            </Link>
+          </div>
+        )}
+
+        {activeTab === 'overview' && (
+          <>
+            {journeyData?.journeyStage === 'ttc' && renderTTCContent()}
+            {journeyData?.journeyStage === 'pregnant' &&
+              renderPregnantContent()}
+            {journeyData?.journeyStage === 'born' && renderBabyContent()}
+          </>
+        )}
+        {activeTab === 'recipes' && renderRecipesTab()}
+        {activeTab === 'inventory' && renderInventoryTab()}
+        {activeTab === 'allergens' && renderAllergenTrackerTab()}
+        {activeTab === 'reactions' && renderReactionsTab()}
+
+        {!journeyData && (
+          <div className="bg-card rounded-3xl p-8 border border-border text-center">
+            <p className="text-muted-foreground mb-4">
+              Complete onboarding to see personalized nutrition guidance
+            </p>
+            <Link href="/onboarding">
+              <Button>Complete Onboarding</Button>
+            </Link>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }

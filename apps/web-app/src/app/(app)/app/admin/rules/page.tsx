@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
 import { useState } from 'react';
-import { Header } from '~/app/(app)/app/_components/header';
 
 // Mock data representing the dynamic content rules
 type EditableCondition = {
@@ -271,10 +270,8 @@ export default function AdminRulesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <Header />
-
-      <div className="px-4 py-6 space-y-6">
+    <>
+      <main className="px-4 py-6 space-y-6">
         {/* Page Title */}
         <div className="flex items-center justify-between">
           <div>
@@ -494,8 +491,7 @@ export default function AdminRulesPage() {
             </div>
           )}
         </div>
-      </div>
-
+      </main>
       {isDrawerOpen && (
         <>
           {/* Backdrop */}
@@ -803,6 +799,6 @@ export default function AdminRulesPage() {
           </div>
         </>
       )}
-    </div>
+    </>
   );
 }

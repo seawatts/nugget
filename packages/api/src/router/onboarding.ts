@@ -27,10 +27,15 @@ export const onboardingRouter = createTRPCRouter({
       where: eq(FamilyMembers.userId, ctx.auth.userId),
     });
 
+    // Get journey stage from the first baby if it exists
+    const baby = await ctx.db.query.Babies.findFirst({
+      where: eq(Babies.userId, ctx.auth.userId),
+    });
+
     return {
       completed: Boolean(familyMember?.onboardingCompletedAt),
-      journeyStage: familyMember?.journeyStage,
-      ttcMethod: familyMember?.ttcMethod,
+      journeyStage: baby?.journeyStage,
+      ttcMethod: baby?.ttcMethod,
       userRole: familyMember?.userRole,
     };
   }),
@@ -125,9 +130,7 @@ export const onboardingRouter = createTRPCRouter({
           const [updated] = await tx
             .update(FamilyMembers)
             .set({
-              journeyStage: input.journeyStage,
               onboardingCompletedAt: new Date(),
-              ttcMethod: input.ttcMethod || null,
               updatedAt: new Date(),
               userRole: input.userRole,
             })
@@ -140,9 +143,7 @@ export const onboardingRouter = createTRPCRouter({
             .insert(FamilyMembers)
             .values({
               familyId: family.id,
-              journeyStage: input.journeyStage,
               onboardingCompletedAt: new Date(),
-              ttcMethod: input.ttcMethod || null,
               userId,
               userRole: input.userRole,
             })
@@ -154,26 +155,49 @@ export const onboardingRouter = createTRPCRouter({
           throw new Error('Failed to update family member');
         }
 
-        // 3. For "born" stage, create baby record
+        // 3. Create or update baby record for all journey stages
         let baby = null;
-        if (input.journeyStage === 'born' && input.birthDate) {
+        const existingBaby = await tx.query.Babies.findFirst({
+          where: eq(Babies.userId, userId),
+        });
+
+        const babyValues = {
+          birthDate: input.birthDate ? new Date(input.birthDate) : null,
+          dueDate: input.dueDate ? new Date(input.dueDate) : null,
+          familyId: family.id,
+          firstName: input.babyName || 'Baby',
+          journeyStage: input.journeyStage,
+          ttcMethod: input.ttcMethod || null,
+          userId,
+        };
+
+        if (existingBaby) {
+          // Update existing baby
+          const [updatedBaby] = await tx
+            .update(Babies)
+            .set(babyValues)
+            .where(eq(Babies.id, existingBaby.id))
+            .returning();
+          baby = updatedBaby;
+        } else {
+          // Create new baby
           const [createdBaby] = await tx
             .insert(Babies)
-            .values({
-              birthDate: new Date(input.birthDate),
-              familyId: family.id,
-              name: input.babyName || 'Baby',
-              userId,
-            })
+            .values(babyValues)
             .returning();
-
-          if (!createdBaby) {
-            throw new Error('Failed to create baby');
-          }
-
           baby = createdBaby;
+        }
 
-          // 4. Create initial supply inventory for the baby
+        if (!baby) {
+          throw new Error('Failed to create or update baby');
+        }
+
+        // 4. Create initial supply inventory for the baby if it doesn't exist
+        const existingInventory = await tx.query.SupplyInventory.findFirst({
+          where: eq(SupplyInventory.babyId, baby.id),
+        });
+
+        if (!existingInventory) {
           await tx.insert(SupplyInventory).values({
             babyId: baby.id,
             donorMl: 0,
