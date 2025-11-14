@@ -28,7 +28,7 @@ export const DatePicker = function DatePickerCmp({
           {date ? format(date, 'PPP') : <span>Pick a date</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
+      <PopoverContent align="start" className="w-auto p-0">
         <Calendar
           mode="single"
           onSelect={setDate}

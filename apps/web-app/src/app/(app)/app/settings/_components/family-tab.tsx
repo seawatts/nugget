@@ -1,5 +1,6 @@
 'use client';
 
+import { useOrganization, useOrganizationList } from '@clerk/nextjs';
 import { api } from '@nugget/api/react';
 import {
   AlertDialog,
@@ -20,9 +21,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@nugget/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@nugget/ui/select';
 import { formatDistanceToNow } from 'date-fns';
 import {
   AlertCircle,
+  Building,
   Calendar,
   Crown,
   Heart,
@@ -62,6 +71,11 @@ const roleColors: Record<RoleType, string> = {
 };
 
 export function FamilyTab() {
+  const { organization } = useOrganization();
+  const { userMemberships, setActive } = useOrganizationList({
+    userMemberships: { infinite: true },
+  });
+
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [selectedInvitation, setSelectedInvitation] = useState<{
     code: string;
@@ -81,6 +95,19 @@ export function FamilyTab() {
     api.invitations.list.useQuery();
 
   const utils = api.useUtils();
+
+  const handleFamilyChange = async (orgId: string) => {
+    try {
+      await setActive?.({ organization: orgId });
+      toast.success('Switched family');
+      // Invalidate queries to refetch data for new family
+      await utils.familyMembers.all.invalidate();
+      await utils.invitations.list.invalidate();
+    } catch (error) {
+      toast.error('Failed to switch family');
+      console.error('Failed to switch family:', error);
+    }
+  };
 
   const removeMemberMutation = api.familyMembers.remove.useMutation({
     onError: (error) => {
@@ -121,12 +148,44 @@ export function FamilyTab() {
   const activeInvitations = invitations?.filter(
     (inv) => inv.isActive && !inv.usedAt,
   );
-  const usedInvitations = invitations?.filter(
-    (inv) => inv.usedAt || !inv.isActive,
-  );
+  const usedInvitations = invitations?.filter((inv) => inv.usedAt);
+
+  const allFamilies = userMemberships?.data || [];
 
   return (
     <div className="space-y-4">
+      {/* Family Selector */}
+      <Card className="p-6 space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold">Current Family</h2>
+          <p className="text-sm text-muted-foreground">
+            Select which family you want to manage
+          </p>
+        </div>
+
+        <Select
+          onValueChange={handleFamilyChange}
+          value={organization?.id || ''}
+        >
+          <SelectTrigger className="w-full" id="family-select">
+            <div className="flex items-center gap-2">
+              <Building className="size-4 text-muted-foreground" />
+              <SelectValue placeholder="Select a family" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            {allFamilies.map((membership) => (
+              <SelectItem
+                key={membership.organization.id}
+                value={membership.organization.id}
+              >
+                {membership.organization.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Card>
+
       {/* Family Members */}
       <Card className="p-6 space-y-4">
         <div className="flex items-center justify-between">

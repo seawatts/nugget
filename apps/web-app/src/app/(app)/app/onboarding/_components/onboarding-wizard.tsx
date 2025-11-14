@@ -26,6 +26,8 @@ export function OnboardingWizard() {
   const [dueDateManuallySet, setDueDateManuallySet] = useState(false);
   const [birthDate, setBirthDate] = useState('');
   const [fullName, setFullName] = useState('');
+  const [birthWeightLbs, setBirthWeightLbs] = useState('');
+  const [birthWeightOz, setBirthWeightOz] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   // Upsert user when component mounts to ensure user exists in database
@@ -66,6 +68,8 @@ export function OnboardingWizard() {
     try {
       console.log('handleComplete called', {
         birthDate,
+        birthWeightLbs,
+        birthWeightOz,
         fullName,
         isPending,
         journeyStage,
@@ -85,9 +89,15 @@ export function OnboardingWizard() {
 
       console.log('Parsed name:', { firstName, lastName, middleName });
 
+      // Convert lbs/oz to total ounces
+      const lbs = Number.parseInt(birthWeightLbs || '0', 10);
+      const oz = Number.parseInt(birthWeightOz || '0', 10);
+      const birthWeightTotalOz = lbs * 16 + oz;
+
       // Save to localStorage as backup
       const onboardingData = {
         birthDate,
+        birthWeightOz: birthWeightTotalOz > 0 ? birthWeightTotalOz : undefined,
         completedAt: new Date().toISOString(),
         dueDate,
         firstName,
@@ -105,6 +115,8 @@ export function OnboardingWizard() {
         try {
           console.log('Submitting onboarding data:', {
             birthDate: birthDate || undefined,
+            birthWeightOz:
+              birthWeightTotalOz > 0 ? birthWeightTotalOz : undefined,
             dueDate: dueDate || undefined,
             firstName: firstName || undefined,
             journeyStage,
@@ -116,6 +128,8 @@ export function OnboardingWizard() {
 
           const result = await completeOnboardingAction({
             birthDate: birthDate || undefined,
+            birthWeightOz:
+              birthWeightTotalOz > 0 ? birthWeightTotalOz : undefined,
             dueDate: dueDate || undefined,
             firstName: firstName || undefined,
             journeyStage,
@@ -202,12 +216,16 @@ export function OnboardingWizard() {
           {step === 2 && (
             <StageDetailsStep
               birthDate={birthDate}
+              birthWeightLbs={birthWeightLbs}
+              birthWeightOz={birthWeightOz}
               dueDate={dueDate}
               dueDateManuallySet={dueDateManuallySet}
               fullName={fullName}
               journeyStage={journeyStage}
               lastPeriodDate={lastPeriodDate}
               onBirthDateChange={setBirthDate}
+              onBirthWeightLbsChange={setBirthWeightLbs}
+              onBirthWeightOzChange={setBirthWeightOz}
               onDueDateChange={handleDueDateChange}
               onFullNameChange={setFullName}
               onLastPeriodChange={handleLastPeriodChange}

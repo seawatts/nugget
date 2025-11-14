@@ -2,6 +2,7 @@ import { createId } from '@nugget/id';
 import { relations, sql } from 'drizzle-orm';
 import {
   boolean,
+  index,
   integer,
   json,
   pgEnum,
@@ -102,6 +103,7 @@ export const temperatureUnitEnum = pgEnum('temperatureUnit', [
   'celsius',
 ]);
 export const timeFormatEnum = pgEnum('timeFormat', ['12h', '24h']);
+export const themeEnum = pgEnum('theme', ['light', 'dark', 'system']);
 
 // Zod enum types
 export const UserRoleType = z.enum(userRoleEnum.enumValues).enum;
@@ -123,6 +125,7 @@ export const TTCMethodType = z.enum(ttcMethodEnum.enumValues).enum;
 export const MeasurementUnitType = z.enum(measurementUnitEnum.enumValues).enum;
 export const TemperatureUnitType = z.enum(temperatureUnitEnum.enumValues).enum;
 export const TimeFormatType = z.enum(timeFormatEnum.enumValues).enum;
+export const ThemeType = z.enum(themeEnum.enumValues).enum;
 
 // ============================================================================
 // Tables - Users & Families
@@ -148,6 +151,7 @@ export const Users = pgTable('users', {
   temperatureUnit: temperatureUnitEnum('temperatureUnit')
     .default('fahrenheit')
     .notNull(),
+  theme: themeEnum('theme').default('system').notNull(),
   timeFormat: timeFormatEnum('timeFormat').default('12h').notNull(),
   unitPref: unitPrefEnum('unitPref').default('ML').notNull(), // User's preferred unit for display
   updatedAt: timestamp('updatedAt', {
@@ -218,7 +222,12 @@ export const FamilyMembers = pgTable(
       .default(requestingUserId()),
     userRole: userRoleEnum('userRole'),
   },
-  (table) => [unique().on(table.userId, table.familyId)],
+  (table) => [
+    unique().on(table.userId, table.familyId),
+    // Index for RLS policy lookups - speeds up family member queries
+    index('familyMembers_userId_idx').on(table.userId),
+    index('familyMembers_familyId_idx').on(table.familyId),
+  ],
 );
 
 export const ShortUrls = pgTable('shortUrls', {

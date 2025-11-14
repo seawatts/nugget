@@ -1,251 +1,320 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
-import { Input } from '@nugget/ui/input';
-import { cn } from '@nugget/ui/lib/utils';
-import type { LucideIcon } from 'lucide-react';
+import { Icons } from '@nugget/ui/custom/icons';
+import { Label } from '@nugget/ui/label';
 import {
-  Baby,
   Check,
   Copy,
+  Crown,
   Heart,
-  Link2,
-  Mail,
-  Stethoscope,
+  Share2,
+  Shield,
+  User,
   Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { QRCodeCanvas } from 'qrcode.react';
+import { useEffect, useRef, useState } from 'react';
 
-type InviteType = 'partner' | 'caregiver' | 'family' | 'doctor';
+type RoleType = 'primary' | 'partner' | 'caregiver';
+type CopyState = 'idle' | 'copying' | 'copied';
 
-interface InviteOption {
-  type: InviteType;
-  title: string;
-  description: string;
-  icon: LucideIcon;
-  color: string;
-}
+const roleIcons: Record<
+  RoleType,
+  React.ComponentType<{ className?: string }>
+> = {
+  caregiver: Shield,
+  partner: Heart,
+  primary: Crown,
+};
 
-const inviteOptions: InviteOption[] = [
-  {
-    color: 'bg-accent/20 text-accent',
-    description: 'Full access to track and manage baby care together',
-    icon: Heart,
-    title: 'Partner',
-    type: 'partner',
-  },
-  {
-    color: 'bg-secondary/20 text-secondary',
-    description: 'Access to daily routines and care schedules',
-    icon: Users,
-    title: 'Caregiver / Babysitter',
-    type: 'caregiver',
-  },
-  {
-    color: 'bg-primary/20 text-primary',
-    description: 'View milestones, photos, and updates',
-    icon: Baby,
-    title: 'Family & Friends',
-    type: 'family',
-  },
-  {
-    color: 'bg-chart-4/20 text-chart-4',
-    description: 'Access to medical records and health data',
-    icon: Stethoscope,
-    title: 'Healthcare Provider',
-    type: 'doctor',
-  },
-];
+const roleLabels: Record<RoleType, string> = {
+  caregiver: 'Caregiver',
+  partner: 'Partner',
+  primary: 'Primary',
+};
+
+const roleColors: Record<RoleType, string> = {
+  caregiver: 'text-secondary',
+  partner: 'text-accent',
+  primary: 'text-primary',
+};
 
 export function InviteCaregiversStep() {
-  const [selectedType, setSelectedType] = useState<InviteType | null>(null);
-  const [email, setEmail] = useState('');
-  const [showLink, setShowLink] = useState(false);
-  const [inviteLink, setInviteLink] = useState('');
-  const [copied, setCopied] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState<string>('');
+  const [copyState, setCopyState] = useState<CopyState>('idle');
+  const [shared, setShared] = useState(false);
+  const qrCodeRef = useRef<HTMLCanvasElement>(null);
 
-  const selectedOption = inviteOptions.find((opt) => opt.type === selectedType);
+  const { data: members, isLoading: membersLoading } =
+    api.familyMembers.all.useQuery();
 
-  const generateInviteLink = () => {
-    // Generate a unique invite link (in production, this would be a real API call)
-    const uniqueId = Math.random().toString(36).substring(7);
-    const link = `${window.location.origin}/accept-invite?type=${selectedType}&id=${uniqueId}`;
-    setInviteLink(link);
-    setShowLink(true);
+  const createInvitationMutation = api.invitations.create.useMutation({
+    onSuccess: (data) => {
+      const url = `${window.location.origin}/invite/accept/${data.code}`;
+      setInviteUrl(url);
+    },
+  });
+
+  // Automatically generate invitation on mount
+  useEffect(() => {
+    createInvitationMutation.mutate({ role: 'partner' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createInvitationMutation]);
+
+  const handleCopy = async () => {
+    if (!inviteUrl) return;
+
+    setCopyState('copying');
+
+    // Check if clipboard API is available
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(inviteUrl);
+        setCopyState('copied');
+        setTimeout(() => setCopyState('idle'), 2000);
+        return;
+      } catch (error) {
+        console.error('Failed to copy with clipboard API:', error);
+        // Fall through to fallback method
+      }
+    }
+
+    // Fallback for older browsers or insecure contexts
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = inviteUrl;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+
+      if (successful) {
+        setCopyState('copied');
+        setTimeout(() => setCopyState('idle'), 2000);
+      } else {
+        setCopyState('idle');
+      }
+    } catch (error) {
+      console.error('Failed to copy with fallback:', error);
+      setCopyState('idle');
+    }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(inviteLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const handleShare = async () => {
+    if (!inviteUrl) {
+      console.error('No invite URL to share');
+      return;
+    }
 
-  const sendEmailInvite = () => {
-    // In production, this would send an actual email
-    console.log(`Sending invite to ${email} as ${selectedType}`);
-    setEmailSent(true);
-    setTimeout(() => {
-      setEmailSent(false);
-      setEmail('');
-    }, 3000);
+    if (navigator.share) {
+      try {
+        const shareData = {
+          text: 'Join my family on Nugget!',
+          title: 'Family Invitation',
+          url: inviteUrl,
+        };
+
+        await navigator.share(shareData);
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+      } catch (error) {
+        // User canceled share - don't show error for AbortError
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Failed to share:', error);
+        }
+      }
+    } else {
+      // Fallback to copy on desktop or unsupported browsers
+      await handleCopy();
+    }
   };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-balance">Invite Caregivers</h1>
+        <h1 className="text-3xl font-bold text-balance">Invite Family</h1>
         <p className="text-muted-foreground text-balance">
           Share your baby's journey with others (optional)
         </p>
       </div>
 
-      {!selectedType ? (
-        <div className="space-y-3">
-          {inviteOptions.map((option) => {
-            const Icon = option.icon;
-            return (
-              <button
-                className={cn(
-                  'w-full p-6 rounded-3xl border-2 transition-all text-left',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-                  'border-border bg-card hover:border-primary/50',
-                )}
-                key={option.type}
-                onClick={() => setSelectedType(option.type)}
-                type="button"
-              >
-                <div className="flex items-start gap-4">
-                  <div className={`p-3 rounded-2xl ${option.color}`}>
-                    <Icon className="h-6 w-6" />
+      {/* Family Members List */}
+      <Card className="p-6 space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold">Family Members</h2>
+          <p className="text-sm text-muted-foreground">
+            People who have access to your family
+          </p>
+        </div>
+
+        {membersLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Icons.Spinner className="size-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : members && members.length > 0 ? (
+          <div className="space-y-2">
+            {members.map((member) => {
+              const RoleIcon = member.role
+                ? roleIcons[member.role as RoleType]
+                : User;
+              const roleLabel = member.role
+                ? roleLabels[member.role as RoleType]
+                : 'Member';
+              const roleColor = member.role
+                ? roleColors[member.role as RoleType]
+                : 'text-muted-foreground';
+
+              return (
+                <div
+                  className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+                  key={member.id}
+                >
+                  <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center">
+                    {member.user?.avatarUrl ? (
+                      <img
+                        alt={`${member.user.firstName || ''} ${member.user.lastName || ''}`}
+                        className="size-10 rounded-full object-cover"
+                        src={member.user.avatarUrl}
+                      />
+                    ) : (
+                      <User className="size-5 text-primary" />
+                    )}
                   </div>
-                  <div className="flex-1 space-y-1">
-                    <h3 className="font-semibold">{option.title}</h3>
-                    <p className="text-sm text-muted-foreground text-balance">
-                      {option.description}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium truncate">
+                        {member.user?.firstName || member.user?.email}{' '}
+                        {member.user?.lastName || ''}
+                      </p>
+                      <div className={`flex items-center gap-1 ${roleColor}`}>
+                        <RoleIcon className="size-3" />
+                        <span className="text-xs">{roleLabel}</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {member.user?.email}
                     </p>
                   </div>
                 </div>
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {/* Selected Type Header */}
-          <Card className="p-6">
-            <div className="flex items-start gap-4">
-              <div className={`p-3 rounded-2xl ${selectedOption?.color}`}>
-                {selectedOption && <selectedOption.icon className="h-6 w-6" />}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">
-                  {selectedOption?.title}
-                </h3>
-                <p className="text-sm text-muted-foreground text-balance">
-                  {selectedOption?.description}
-                </p>
-              </div>
-            </div>
-          </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Users className="size-12 text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">
+              No family members yet
+            </p>
+          </div>
+        )}
+      </Card>
 
-          {/* Email Invite */}
-          <Card className="p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-primary/20">
-                <Mail className="h-5 w-5 text-primary" />
+      {/* Invite Section */}
+      <Card className="p-6 space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold">Invite Link</h2>
+          <p className="text-sm text-muted-foreground">
+            Share this link or QR code to invite family members
+          </p>
+        </div>
+
+        {!inviteUrl || createInvitationMutation.isPending ? (
+          <div className="flex flex-col items-center justify-center py-8 space-y-4">
+            <Icons.Spinner className="size-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">
+              Generating invitation...
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* QR Code */}
+            <div className="flex flex-col items-center space-y-4">
+              <div className="bg-white rounded-2xl shadow-lg p-4">
+                <QRCodeCanvas
+                  imageSettings={{
+                    excavate: true,
+                    height: 48,
+                    src: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxMiIgZmlsbD0id2hpdGUiLz4KICA8dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSI0MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+8J+QozwvdGV4dD4KPC9zdmc+',
+                    width: 48,
+                  }}
+                  includeMargin={false}
+                  level="H"
+                  ref={qrCodeRef}
+                  size={256}
+                  value={inviteUrl}
+                />
               </div>
-              <h3 className="font-semibold">Send Email Invite</h3>
+              <p className="text-sm text-center text-muted-foreground">
+                Scan this QR code to accept the invitation
+              </p>
             </div>
-            <div className="space-y-3">
-              <Input
-                className="h-12"
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter email address"
-                type="email"
-                value={email}
-              />
+
+            {/* Invitation Link */}
+            <div className="space-y-2">
+              <Label>Invitation Link</Label>
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 px-3 py-2 text-sm bg-muted rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                  readOnly
+                  value={inviteUrl}
+                />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button
-                className="w-full h-12"
-                disabled={!email || emailSent}
-                onClick={sendEmailInvite}
-                size="lg"
+                className="w-full"
+                disabled={copyState !== 'idle'}
+                onClick={handleCopy}
+                variant="outline"
               >
-                {emailSent ? (
+                {copyState === 'copying' ? (
                   <>
-                    <Check className="h-5 w-5 mr-2" />
-                    Invite Sent!
+                    <Icons.Spinner className="size-4 mr-2 animate-spin" />
+                    Copying...
+                  </>
+                ) : copyState === 'copied' ? (
+                  <>
+                    <Check className="size-4 mr-2" />
+                    Copied!
                   </>
                 ) : (
                   <>
-                    <Mail className="h-5 w-5 mr-2" />
-                    Send Invite
+                    <Copy className="size-4 mr-2" />
+                    Copy Link
+                  </>
+                )}
+              </Button>
+              <Button
+                className="w-full"
+                disabled={shared}
+                onClick={handleShare}
+                variant="outline"
+              >
+                {shared ? (
+                  <>
+                    <Check className="size-4 mr-2" />
+                    Shared!
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="size-4 mr-2" />
+                    Share
                   </>
                 )}
               </Button>
             </div>
-          </Card>
-
-          {/* Share Link */}
-          <Card className="p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-secondary/20">
-                <Link2 className="h-5 w-5 text-secondary" />
-              </div>
-              <h3 className="font-semibold">Share Invite Link</h3>
-            </div>
-            {!showLink ? (
-              <Button
-                className="w-full h-12 bg-transparent"
-                onClick={generateInviteLink}
-                size="lg"
-                variant="outline"
-              >
-                <Link2 className="h-5 w-5 mr-2" />
-                Generate Link
-              </Button>
-            ) : (
-              <div className="space-y-3">
-                <div className="p-4 bg-muted rounded-xl break-all text-sm font-mono">
-                  {inviteLink}
-                </div>
-                <Button
-                  className="w-full h-12 bg-transparent"
-                  onClick={copyToClipboard}
-                  size="lg"
-                  variant="outline"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="h-5 w-5 mr-2" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-5 w-5 mr-2" />
-                      Copy Link
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
-          </Card>
-
-          {/* Back Button */}
-          <Button
-            className="w-full"
-            onClick={() => {
-              setSelectedType(null);
-              setShowLink(false);
-              setEmail('');
-            }}
-            variant="ghost"
-          >
-            Choose Different Type
-          </Button>
-        </div>
-      )}
+          </>
+        )}
+      </Card>
     </div>
   );
 }

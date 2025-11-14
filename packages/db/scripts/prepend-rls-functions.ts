@@ -1,8 +1,11 @@
 #!/usr/bin/env bun
 
 /**
- * Prepends RLS helper functions to the latest Drizzle migration file
+ * Prepends RLS helper functions to the FIRST Drizzle migration file (0000-...)
  * Run this script after generating migrations with drizzle-kit
+ *
+ * This ensures the RLS functions are only added once to the initial migration,
+ * not to every new migration.
  */
 
 import { readdir, readFile, writeFile } from 'node:fs/promises';
@@ -44,23 +47,24 @@ async function prependRlsFunctions() {
   const files = await readdir(drizzleDir);
   const sqlFiles = files
     .filter((file) => file.endsWith('.sql') && file !== 'meta')
-    .sort()
-    .reverse(); // Get latest first
+    .sort(); // Sort to get files in order (0000, 0001, 0002, etc.)
 
-  const latestMigration = sqlFiles[0];
-  if (!latestMigration) {
-    console.log('No migration files found');
+  // Get the FIRST migration file (0000-...)
+  const firstMigration = sqlFiles.find((file) => file.startsWith('0000'));
+
+  if (!firstMigration) {
+    console.log('No first migration file (0000-...) found');
     return;
   }
 
-  const migrationPath = path.join(drizzleDir, latestMigration);
+  const migrationPath = path.join(drizzleDir, firstMigration);
 
   // Read the migration file
   const content = await readFile(migrationPath, 'utf-8');
 
   // Check if functions already exist
   if (content.includes('CREATE OR REPLACE FUNCTION requesting_user_id()')) {
-    console.log(`✓ RLS functions already exist in ${latestMigration}`);
+    console.log(`✓ RLS functions already exist in ${firstMigration}`);
     return;
   }
 
@@ -70,7 +74,7 @@ async function prependRlsFunctions() {
   // Write back to file
   await writeFile(migrationPath, newContent, 'utf-8');
 
-  console.log(`✓ Added RLS functions to ${latestMigration}`);
+  console.log(`✓ Added RLS functions to ${firstMigration}`);
 }
 
 prependRlsFunctions().catch(console.error);

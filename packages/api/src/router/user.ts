@@ -3,6 +3,7 @@ import {
   CreateUserSchema,
   MeasurementUnitType,
   TemperatureUnitType,
+  ThemeType,
   TimeFormatType,
   Users,
 } from '@nugget/db/schema';
@@ -83,6 +84,9 @@ export const userRouter = {
           .optional(),
         temperatureUnit: z
           .enum([TemperatureUnitType.fahrenheit, TemperatureUnitType.celsius])
+          .optional(),
+        theme: z
+          .enum([ThemeType.light, ThemeType.dark, ThemeType.system])
           .optional(),
         timeFormat: z
           .enum([TimeFormatType['12h'], TimeFormatType['24h']])

@@ -17,16 +17,7 @@ import {
 } from '@nugget/ui/drawer';
 import { useIsDesktop } from '@nugget/ui/hooks/use-media-query';
 import { Label } from '@nugget/ui/label';
-import { RadioGroup, RadioGroupItem } from '@nugget/ui/radio-group';
-import {
-  Check,
-  Copy,
-  Crown,
-  Heart,
-  QrCode,
-  Share2,
-  Shield,
-} from 'lucide-react';
+import { Check, Copy, Share2 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -40,33 +31,6 @@ interface InviteDialogProps {
 }
 
 type RoleType = 'primary' | 'partner' | 'caregiver';
-
-const roleOptions: Array<{
-  value: RoleType;
-  label: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-}> = [
-  {
-    description: 'Full access to all family data and settings',
-    icon: Crown,
-    label: 'Primary',
-    value: 'primary',
-  },
-  {
-    description: 'Can add and edit entries, view all data',
-    icon: Heart,
-    label: 'Partner',
-    value: 'partner',
-  },
-  {
-    description: 'Limited access for caregivers and babysitters',
-    icon: Shield,
-    label: 'Caregiver',
-    value: 'caregiver',
-  },
-];
-
 type CopyState = 'idle' | 'copying' | 'copied';
 
 export function InviteDialog({
@@ -75,7 +39,6 @@ export function InviteDialog({
   existingInvitation,
 }: InviteDialogProps) {
   const isDesktop = useIsDesktop();
-  const [selectedRole, setSelectedRole] = useState<RoleType>('partner');
   const [inviteUrl, setInviteUrl] = useState<string>('');
   const [copyState, setCopyState] = useState<CopyState>('idle');
   const [shared, setShared] = useState(false);
@@ -87,10 +50,6 @@ export function InviteDialog({
       setInviteUrl(url);
     },
   });
-
-  const handleGenerateInvite = () => {
-    createInvitationMutation.mutate({ role: selectedRole });
-  };
 
   const handleCopy = async () => {
     if (!inviteUrl) return;
@@ -164,20 +123,29 @@ export function InviteDialog({
     }
   };
 
-  // Set up existing invitation when dialog opens
+  // Set up existing invitation or generate new one when dialog opens
   useEffect(() => {
-    if (isOpen && existingInvitation) {
-      const url = `${window.location.origin}/invite/accept/${existingInvitation.code}`;
-      setInviteUrl(url);
-      setSelectedRole(existingInvitation.role);
+    if (isOpen) {
+      if (existingInvitation) {
+        // Use existing invitation
+        const url = `${window.location.origin}/invite/accept/${existingInvitation.code}`;
+        setInviteUrl(url);
+      } else {
+        // Automatically generate new invitation with default role (partner)
+        createInvitationMutation.mutate({ role: 'partner' });
+      }
     }
-  }, [isOpen, existingInvitation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isOpen,
+    existingInvitation, // Automatically generate new invitation with default role (partner)
+    createInvitationMutation,
+  ]);
 
   // Reset state when dialog closes
   useEffect(() => {
     if (!isOpen) {
       setInviteUrl('');
-      setSelectedRole('partner');
       setCopyState('idle');
       setShared(false);
     }
@@ -185,74 +153,13 @@ export function InviteDialog({
 
   const content = (
     <div className="space-y-6">
-      {!inviteUrl ? (
-        <>
-          {/* Role Selection */}
-          <div className="space-y-3">
-            <Label>Select Role</Label>
-            <RadioGroup
-              onValueChange={(value) => setSelectedRole(value as RoleType)}
-              value={selectedRole}
-            >
-              <div className="space-y-2">
-                {roleOptions.map((option) => {
-                  const Icon = option.icon;
-                  return (
-                    <div
-                      className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-primary/50 transition-colors cursor-pointer"
-                      key={option.value}
-                      onClick={() => setSelectedRole(option.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          setSelectedRole(option.value);
-                        }
-                      }}
-                    >
-                      <RadioGroupItem id={option.value} value={option.value} />
-                      <div className="flex items-start gap-3 flex-1">
-                        <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center">
-                          <Icon className="size-5 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <Label
-                            className="font-semibold cursor-pointer"
-                            htmlFor={option.value}
-                          >
-                            {option.label}
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            {option.description}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </RadioGroup>
-          </div>
-
-          {/* Generate Button */}
-          <Button
-            className="w-full"
-            disabled={createInvitationMutation.isPending}
-            onClick={handleGenerateInvite}
-            size="lg"
-          >
-            {createInvitationMutation.isPending ? (
-              <>
-                <Icons.Spinner className="size-4 mr-2 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <QrCode className="size-4 mr-2" />
-                Generate Invitation
-              </>
-            )}
-          </Button>
-        </>
+      {!inviteUrl || createInvitationMutation.isPending ? (
+        <div className="flex flex-col items-center justify-center py-8 space-y-4">
+          <Icons.Spinner className="size-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">
+            Generating invitation...
+          </p>
+        </div>
       ) : (
         <>
           {/* QR Code */}

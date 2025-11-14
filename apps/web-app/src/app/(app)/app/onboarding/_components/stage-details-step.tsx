@@ -11,11 +11,15 @@ interface StageDetailsStepProps {
   dueDateManuallySet: boolean;
   birthDate: string;
   fullName: string;
+  birthWeightLbs: string;
+  birthWeightOz: string;
   onTTCMethodSelect: (method: TTCMethod) => void;
   onLastPeriodChange: (date: string) => void;
   onDueDateChange: (date: string) => void;
   onBirthDateChange: (date: string) => void;
   onFullNameChange: (name: string) => void;
+  onBirthWeightLbsChange: (lbs: string) => void;
+  onBirthWeightOzChange: (oz: string) => void;
 }
 
 export function StageDetailsStep({
@@ -26,11 +30,15 @@ export function StageDetailsStep({
   dueDateManuallySet,
   birthDate,
   fullName,
+  birthWeightLbs,
+  birthWeightOz,
   onTTCMethodSelect,
   onLastPeriodChange,
   onDueDateChange,
   onBirthDateChange,
   onFullNameChange,
+  onBirthWeightLbsChange,
+  onBirthWeightOzChange,
 }: StageDetailsStepProps) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -54,8 +62,12 @@ export function StageDetailsStep({
       {journeyStage === 'born' && (
         <BabyDetailsForm
           birthDate={birthDate}
+          birthWeightLbs={birthWeightLbs}
+          birthWeightOz={birthWeightOz}
           fullName={fullName}
           onBirthDateChange={onBirthDateChange}
+          onBirthWeightLbsChange={onBirthWeightLbsChange}
+          onBirthWeightOzChange={onBirthWeightOzChange}
           onFullNameChange={onFullNameChange}
         />
       )}

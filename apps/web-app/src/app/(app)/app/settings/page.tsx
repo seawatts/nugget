@@ -1,21 +1,19 @@
 'use client';
 
-import { SignOutButton, useOrganization, useUser } from '@clerk/nextjs';
+import { SignOutButton, useUser } from '@clerk/nextjs';
 import { api } from '@nugget/api/react';
 import { Button } from '@nugget/ui/button';
-import { Input } from '@nugget/ui/input';
+// import { Input } from '@nugget/ui/input';
 import { Label } from '@nugget/ui/label';
-import { Switch } from '@nugget/ui/switch';
+// import { Switch } from '@nugget/ui/switch';
 import {
-  AlertTriangle,
-  Bell,
-  Building,
+  // Bell,
   Calendar,
   ChevronRight,
   LogOut,
   Mail,
   Moon,
-  Phone,
+  // Phone,
   Shield,
   Sun,
   Trash2,
@@ -33,8 +31,8 @@ import { FamilyTab } from './_components/family-tab';
 type Tab =
   | 'baby'
   | 'family'
-  | 'notifications'
-  | 'contacts'
+  // | 'notifications'
+  // | 'contacts'
   | 'account'
   | 'preferences';
 
@@ -51,8 +49,8 @@ export default function SettingsPage() {
   const tabs = [
     { icon: User, id: 'baby' as Tab, label: 'Baby' },
     { icon: Users, id: 'family' as Tab, label: 'Family' },
-    { icon: Bell, id: 'notifications' as Tab, label: 'Notifications' },
-    { icon: Phone, id: 'contacts' as Tab, label: 'Contacts' },
+    // { icon: Bell, id: 'notifications' as Tab, label: 'Notifications' },
+    // { icon: Phone, id: 'contacts' as Tab, label: 'Contacts' },
     { icon: UserCircle, id: 'account' as Tab, label: 'Account' },
     { icon: Shield, id: 'preferences' as Tab, label: 'Preferences' },
   ];
@@ -89,8 +87,8 @@ export default function SettingsPage() {
         {/* Tab Content */}
         {activeTab === 'baby' && <BabyTab />}
         {activeTab === 'family' && <FamilyTab />}
-        {activeTab === 'notifications' && <NotificationsTab />}
-        {activeTab === 'contacts' && <ContactsTab />}
+        {/* {activeTab === 'notifications' && <NotificationsTab />} */}
+        {/* {activeTab === 'contacts' && <ContactsTab />} */}
         {activeTab === 'account' && <AccountTab />}
         {activeTab === 'preferences' && mounted && (
           <PreferencesTab currentTheme={theme} setTheme={setTheme} />
@@ -100,256 +98,255 @@ export default function SettingsPage() {
   );
 }
 
-function NotificationsTab() {
-  const [notifications, setNotifications] = useState({
-    activityReminders: true,
-    dailyInsights: true,
-    feedingReminders: true,
-    milestoneAlerts: true,
-    pushNotifications: true,
-    sleepReminders: true,
-    weeklyReports: false,
-  });
+// function NotificationsTab() {
+//   const [notifications, setNotifications] = useState({
+//     activityReminders: true,
+//     dailyInsights: true,
+//     feedingReminders: true,
+//     milestoneAlerts: true,
+//     pushNotifications: true,
+//     sleepReminders: true,
+//     weeklyReports: false,
+//   });
 
-  return (
-    <div className="space-y-4">
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold">Push Notifications</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage your notification preferences
-          </p>
-        </div>
+//   return (
+//     <div className="space-y-4">
+//       <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+//         <div>
+//           <h2 className="text-xl font-semibold">Push Notifications</h2>
+//           <p className="text-sm text-muted-foreground">
+//             Manage your notification preferences
+//           </p>
+//         </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between py-2">
-            <div className="space-y-0.5">
-              <Label>Enable Push Notifications</Label>
-              <p className="text-sm text-muted-foreground">
-                Receive notifications on this device
-              </p>
-            </div>
-            <Switch
-              checked={notifications.pushNotifications}
-              onCheckedChange={(checked) =>
-                setNotifications({
-                  ...notifications,
-                  pushNotifications: checked,
-                })
-              }
-            />
-          </div>
+//         <div className="space-y-4">
+//           <div className="flex items-center justify-between py-2">
+//             <div className="space-y-0.5">
+//               <Label>Enable Push Notifications</Label>
+//               <p className="text-sm text-muted-foreground">
+//                 Receive notifications on this device
+//               </p>
+//             </div>
+//             <Switch
+//               checked={notifications.pushNotifications}
+//               onCheckedChange={(checked) =>
+//                 setNotifications({
+//                   ...notifications,
+//                   pushNotifications: checked,
+//                 })
+//               }
+//             />
+//           </div>
 
-          <div className="flex items-center justify-between py-2">
-            <div className="space-y-0.5">
-              <Label>Feeding Reminders</Label>
-              <p className="text-sm text-muted-foreground">
-                Get reminded when it's time to feed
-              </p>
-            </div>
-            <Switch
-              checked={notifications.feedingReminders}
-              onCheckedChange={(checked) =>
-                setNotifications({
-                  ...notifications,
-                  feedingReminders: checked,
-                })
-              }
-            />
-          </div>
+//           <div className="flex items-center justify-between py-2">
+//             <div className="space-y-0.5">
+//               <Label>Feeding Reminders</Label>
+//               <p className="text-sm text-muted-foreground">
+//                 Get reminded when it's time to feed
+//               </p>
+//             </div>
+//             <Switch
+//               checked={notifications.feedingReminders}
+//               onCheckedChange={(checked) =>
+//                 setNotifications({
+//                   ...notifications,
+//                   feedingReminders: checked,
+//                 })
+//               }
+//             />
+//           </div>
 
-          <div className="flex items-center justify-between py-2">
-            <div className="space-y-0.5">
-              <Label>Sleep Reminders</Label>
-              <p className="text-sm text-muted-foreground">
-                Get reminded about nap times
-              </p>
-            </div>
-            <Switch
-              checked={notifications.sleepReminders}
-              onCheckedChange={(checked) =>
-                setNotifications({ ...notifications, sleepReminders: checked })
-              }
-            />
-          </div>
+//           <div className="flex items-center justify-between py-2">
+//             <div className="space-y-0.5">
+//               <Label>Sleep Reminders</Label>
+//               <p className="text-sm text-muted-foreground">
+//                 Get reminded about nap times
+//               </p>
+//             </div>
+//             <Switch
+//               checked={notifications.sleepReminders}
+//               onCheckedChange={(checked) =>
+//                 setNotifications({ ...notifications, sleepReminders: checked })
+//               }
+//             />
+//           </div>
 
-          <div className="flex items-center justify-between py-2">
-            <div className="space-y-0.5">
-              <Label>Activity Reminders</Label>
-              <p className="text-sm text-muted-foreground">
-                Get reminded to log activities
-              </p>
-            </div>
-            <Switch
-              checked={notifications.activityReminders}
-              onCheckedChange={(checked) =>
-                setNotifications({
-                  ...notifications,
-                  activityReminders: checked,
-                })
-              }
-            />
-          </div>
+//           <div className="flex items-center justify-between py-2">
+//             <div className="space-y-0.5">
+//               <Label>Activity Reminders</Label>
+//               <p className="text-sm text-muted-foreground">
+//                 Get reminded to log activities
+//               </p>
+//             </div>
+//             <Switch
+//               checked={notifications.activityReminders}
+//               onCheckedChange={(checked) =>
+//                 setNotifications({
+//                   ...notifications,
+//                   activityReminders: checked,
+//                 })
+//               }
+//             />
+//           </div>
 
-          <div className="flex items-center justify-between py-2">
-            <div className="space-y-0.5">
-              <Label>Milestone Alerts</Label>
-              <p className="text-sm text-muted-foreground">
-                Get notified about developmental milestones
-              </p>
-            </div>
-            <Switch
-              checked={notifications.milestoneAlerts}
-              onCheckedChange={(checked) =>
-                setNotifications({ ...notifications, milestoneAlerts: checked })
-              }
-            />
-          </div>
+//           <div className="flex items-center justify-between py-2">
+//             <div className="space-y-0.5">
+//               <Label>Milestone Alerts</Label>
+//               <p className="text-sm text-muted-foreground">
+//                 Get notified about developmental milestones
+//               </p>
+//             </div>
+//             <Switch
+//               checked={notifications.milestoneAlerts}
+//               onCheckedChange={(checked) =>
+//                 setNotifications({ ...notifications, milestoneAlerts: checked })
+//               }
+//             />
+//           </div>
 
-          <div className="flex items-center justify-between py-2">
-            <div className="space-y-0.5">
-              <Label>Daily Insights</Label>
-              <p className="text-sm text-muted-foreground">
-                Receive daily summaries and insights
-              </p>
-            </div>
-            <Switch
-              checked={notifications.dailyInsights}
-              onCheckedChange={(checked) =>
-                setNotifications({ ...notifications, dailyInsights: checked })
-              }
-            />
-          </div>
+//           <div className="flex items-center justify-between py-2">
+//             <div className="space-y-0.5">
+//               <Label>Daily Insights</Label>
+//               <p className="text-sm text-muted-foreground">
+//                 Receive daily summaries and insights
+//               </p>
+//             </div>
+//             <Switch
+//               checked={notifications.dailyInsights}
+//               onCheckedChange={(checked) =>
+//                 setNotifications({ ...notifications, dailyInsights: checked })
+//               }
+//             />
+//           </div>
 
-          <div className="flex items-center justify-between py-2">
-            <div className="space-y-0.5">
-              <Label>Weekly Reports</Label>
-              <p className="text-sm text-muted-foreground">
-                Get weekly progress reports
-              </p>
-            </div>
-            <Switch
-              checked={notifications.weeklyReports}
-              onCheckedChange={(checked) =>
-                setNotifications({ ...notifications, weeklyReports: checked })
-              }
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+//           <div className="flex items-center justify-between py-2">
+//             <div className="space-y-0.5">
+//               <Label>Weekly Reports</Label>
+//               <p className="text-sm text-muted-foreground">
+//                 Get weekly progress reports
+//               </p>
+//             </div>
+//             <Switch
+//               checked={notifications.weeklyReports}
+//               onCheckedChange={(checked) =>
+//                 setNotifications({ ...notifications, weeklyReports: checked })
+//               }
+//             />
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 
-function ContactsTab() {
-  const [contacts, setContacts] = useState({
-    emergencyContact: '',
-    emergencyName: '',
-    partnerPhone: '',
-    pediatricianName: '',
-    pediatricianPhone: '',
-  });
+// function ContactsTab() {
+//   const [contacts, setContacts] = useState({
+//     emergencyContact: '',
+//     emergencyName: '',
+//     partnerPhone: '',
+//     pediatricianName: '',
+//     pediatricianPhone: '',
+//   });
 
-  return (
-    <div className="space-y-4">
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold">Emergency Contacts</h2>
-          <p className="text-sm text-muted-foreground">
-            Important contacts for quick access
-          </p>
-        </div>
+//   return (
+//     <div className="space-y-4">
+//       <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+//         <div>
+//           <h2 className="text-xl font-semibold">Emergency Contacts</h2>
+//           <p className="text-sm text-muted-foreground">
+//             Important contacts for quick access
+//           </p>
+//         </div>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="emergencyName">Emergency Contact Name</Label>
-            <Input
-              id="emergencyName"
-              onChange={(e) =>
-                setContacts({ ...contacts, emergencyName: e.target.value })
-              }
-              placeholder="e.g., Grandma, Neighbor"
-              value={contacts.emergencyName}
-            />
-          </div>
+//         <div className="space-y-4">
+//           <div className="space-y-2">
+//             <Label htmlFor="emergencyName">Emergency Contact Name</Label>
+//             <Input
+//               id="emergencyName"
+//               onChange={(e) =>
+//                 setContacts({ ...contacts, emergencyName: e.target.value })
+//               }
+//               placeholder="e.g., Grandma, Neighbor"
+//               value={contacts.emergencyName}
+//             />
+//           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="emergencyContact">Emergency Contact Number</Label>
-            <Input
-              id="emergencyContact"
-              onChange={(e) =>
-                setContacts({ ...contacts, emergencyContact: e.target.value })
-              }
-              placeholder="(555) 123-4567"
-              type="tel"
-              value={contacts.emergencyContact}
-            />
-          </div>
+//           <div className="space-y-2">
+//             <Label htmlFor="emergencyContact">Emergency Contact Number</Label>
+//             <Input
+//               id="emergencyContact"
+//               onChange={(e) =>
+//                 setContacts({ ...contacts, emergencyContact: e.target.value })
+//               }
+//               placeholder="(555) 123-4567"
+//               type="tel"
+//               value={contacts.emergencyContact}
+//             />
+//           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="partnerPhone">Partner Phone Number</Label>
-            <Input
-              id="partnerPhone"
-              onChange={(e) =>
-                setContacts({ ...contacts, partnerPhone: e.target.value })
-              }
-              placeholder="(555) 123-4567"
-              type="tel"
-              value={contacts.partnerPhone}
-            />
-          </div>
-        </div>
-      </div>
+//           <div className="space-y-2">
+//             <Label htmlFor="partnerPhone">Partner Phone Number</Label>
+//             <Input
+//               id="partnerPhone"
+//               onChange={(e) =>
+//                 setContacts({ ...contacts, partnerPhone: e.target.value })
+//               }
+//               placeholder="(555) 123-4567"
+//               type="tel"
+//               value={contacts.partnerPhone}
+//             />
+//           </div>
+//         </div>
+//       </div>
 
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold">Healthcare Providers</h2>
-          <p className="text-sm text-muted-foreground">
-            Your baby's healthcare team
-          </p>
-        </div>
+//       <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+//         <div>
+//           <h2 className="text-xl font-semibold">Healthcare Providers</h2>
+//           <p className="text-sm text-muted-foreground">
+//             Your baby's healthcare team
+//           </p>
+//         </div>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="pediatricianName">Pediatrician Name</Label>
-            <Input
-              id="pediatricianName"
-              onChange={(e) =>
-                setContacts({ ...contacts, pediatricianName: e.target.value })
-              }
-              placeholder="Dr. Smith"
-              value={contacts.pediatricianName}
-            />
-          </div>
+//         <div className="space-y-4">
+//           <div className="space-y-2">
+//             <Label htmlFor="pediatricianName">Pediatrician Name</Label>
+//             <Input
+//               id="pediatricianName"
+//               onChange={(e) =>
+//                 setContacts({ ...contacts, pediatricianName: e.target.value })
+//               }
+//               placeholder="Dr. Smith"
+//               value={contacts.pediatricianName}
+//             />
+//           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="pediatricianPhone">Pediatrician Phone</Label>
-            <Input
-              id="pediatricianPhone"
-              onChange={(e) =>
-                setContacts({ ...contacts, pediatricianPhone: e.target.value })
-              }
-              placeholder="(555) 555-1234"
-              type="tel"
-              value={contacts.pediatricianPhone}
-            />
-          </div>
-        </div>
-      </div>
+//           <div className="space-y-2">
+//             <Label htmlFor="pediatricianPhone">Pediatrician Phone</Label>
+//             <Input
+//               id="pediatricianPhone"
+//               onChange={(e) =>
+//                 setContacts({ ...contacts, pediatricianPhone: e.target.value })
+//               }
+//               placeholder="(555) 555-1234"
+//               type="tel"
+//               value={contacts.pediatricianPhone}
+//             />
+//           </div>
+//         </div>
+//       </div>
 
-      <Button className="w-full" size="lg">
-        Save Contacts
-      </Button>
-    </div>
-  );
-}
+//       <Button className="w-full" size="lg">
+//         Save Contacts
+//       </Button>
+//     </div>
+//   );
+// }
 
 function AccountTab() {
   const { user, isLoaded: userLoaded } = useUser();
-  const { organization, isLoaded: orgLoaded } = useOrganization();
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
 
-  if (!userLoaded || !orgLoaded) {
+  if (!userLoaded) {
     return (
       <div className="space-y-4">
         <div className="bg-card border border-border rounded-2xl p-6">
@@ -408,19 +405,6 @@ function AccountTab() {
               <p className="text-sm text-muted-foreground">{createdAt}</p>
             </div>
           </div>
-
-          {/* Organization */}
-          {organization && (
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-              <Building className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1">
-                <Label className="text-sm font-medium">Baby Profile</Label>
-                <p className="text-sm text-muted-foreground">
-                  {organization.name}
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -473,41 +457,78 @@ function AccountTab() {
         </SignOutButton>
       </div>
 
-      {/* Danger Zone */}
-      <div className="bg-card border border-destructive rounded-2xl p-6 space-y-4">
-        <div className="flex items-start gap-2">
-          <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
-          <div>
-            <h2 className="text-xl font-semibold text-destructive">
-              Danger Zone
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Irreversible account actions
+      {/* Privacy & Data */}
+      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold">Privacy & Data</h2>
+          <p className="text-sm text-muted-foreground">
+            Control your data and privacy
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <button
+            className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors text-left"
+            type="button"
+          >
+            <div>
+              <p className="font-medium">Privacy Policy</p>
+              <p className="text-sm text-muted-foreground">
+                Read our privacy policy
+              </p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </button>
+
+          <button
+            className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors text-left"
+            type="button"
+          >
+            <div>
+              <p className="font-medium">Terms of Service</p>
+              <p className="text-sm text-muted-foreground">
+                Read our terms of service
+              </p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </button>
+
+          <button
+            className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors text-left"
+            type="button"
+          >
+            <div>
+              <p className="font-medium">Data Usage</p>
+              <p className="text-sm text-muted-foreground">
+                Learn how we use your data
+              </p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </button>
+        </div>
+      </div>
+
+      {/* Delete Account */}
+      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+        <div className="flex items-start gap-3">
+          <UserCircle className="size-5 text-muted-foreground mt-0.5" />
+          <div className="flex-1">
+            <h3 className="font-semibold text-lg">Delete Account</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Permanently delete your account and ALL data including all baby
+              profiles, activities, and settings. This action is final and
+              cannot be undone.
             </p>
           </div>
         </div>
-
-        <div className="p-4 rounded-lg border border-destructive bg-destructive/5">
-          <div className="flex items-start gap-3 mb-3">
-            <UserCircle className="h-5 w-5 text-destructive mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-medium text-destructive">Delete Account</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Permanently delete your account and ALL data including all baby
-                profiles, activities, and settings. This action is final and
-                cannot be undone.
-              </p>
-            </div>
-          </div>
-          <Button
-            className="w-full"
-            onClick={() => setShowDeleteAccountDialog(true)}
-            variant="destructive"
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete Account Permanently
-          </Button>
-        </div>
+        <Button
+          className="w-full"
+          onClick={() => setShowDeleteAccountDialog(true)}
+          variant="destructive"
+        >
+          <Trash2 className="mr-2 size-4" />
+          Delete Account Permanently
+        </Button>
       </div>
 
       {/* Delete Account Dialog */}
@@ -547,8 +568,12 @@ function PreferencesTab({
         temperatureUnit: user.temperatureUnit || 'fahrenheit',
         timeFormat: user.timeFormat || '12h',
       });
+      // Sync theme from database with next-themes
+      if (user.theme && user.theme !== currentTheme) {
+        setTheme(user.theme);
+      }
     }
-  }, [user]);
+  }, [user, currentTheme, setTheme]);
 
   // Save preferences to database when they change
   const handlePreferenceChange = async (
@@ -574,6 +599,26 @@ function PreferencesTab({
       }
       toast.error('Failed to save preferences');
       console.error('Failed to save preferences:', error);
+    }
+  };
+
+  // Save theme preference to database
+  const handleThemeChange = async (theme: 'light' | 'dark' | 'system') => {
+    // Update next-themes immediately for instant UI feedback
+    setTheme(theme);
+
+    try {
+      await updatePreferences.mutateAsync({ theme });
+      // Invalidate the user query to refetch updated data
+      await utils.user.current.invalidate();
+      toast.success('Theme saved');
+    } catch (error) {
+      // Revert on error
+      if (user?.theme) {
+        setTheme(user.theme);
+      }
+      toast.error('Failed to save theme');
+      console.error('Failed to save theme:', error);
     }
   };
 
@@ -603,7 +648,7 @@ function PreferencesTab({
             <div className="grid grid-cols-3 gap-2">
               <Button
                 className="flex flex-col items-center gap-2 h-auto py-4"
-                onClick={() => setTheme('light')}
+                onClick={() => handleThemeChange('light')}
                 variant={currentTheme === 'light' ? 'default' : 'outline'}
               >
                 <Sun className="h-5 w-5" />
@@ -611,7 +656,7 @@ function PreferencesTab({
               </Button>
               <Button
                 className="flex flex-col items-center gap-2 h-auto py-4"
-                onClick={() => setTheme('dark')}
+                onClick={() => handleThemeChange('dark')}
                 variant={currentTheme === 'dark' ? 'default' : 'outline'}
               >
                 <Moon className="h-5 w-5" />
@@ -619,7 +664,7 @@ function PreferencesTab({
               </Button>
               <Button
                 className="flex flex-col items-center gap-2 h-auto py-4"
-                onClick={() => setTheme('system')}
+                onClick={() => handleThemeChange('system')}
                 variant={currentTheme === 'system' ? 'default' : 'outline'}
               >
                 <Shield className="h-5 w-5" />
@@ -720,56 +765,6 @@ function PreferencesTab({
               </Button>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold">Privacy & Data</h2>
-          <p className="text-sm text-muted-foreground">
-            Control your data and privacy
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          <button
-            className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors text-left"
-            type="button"
-          >
-            <div>
-              <p className="font-medium">Privacy Policy</p>
-              <p className="text-sm text-muted-foreground">
-                Read our privacy policy
-              </p>
-            </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          </button>
-
-          <button
-            className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors text-left"
-            type="button"
-          >
-            <div>
-              <p className="font-medium">Terms of Service</p>
-              <p className="text-sm text-muted-foreground">
-                Read our terms of service
-              </p>
-            </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          </button>
-
-          <button
-            className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors text-left"
-            type="button"
-          >
-            <div>
-              <p className="font-medium">Data Usage</p>
-              <p className="text-sm text-muted-foreground">
-                Learn how we use your data
-              </p>
-            </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          </button>
         </div>
       </div>
     </div>

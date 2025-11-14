@@ -104,6 +104,7 @@ export const checkOnboarding = action.action(async () => {
 // Complete onboarding action
 const completeOnboardingSchema = z.object({
   birthDate: z.string().optional(),
+  birthWeightOz: z.number().optional(),
   dueDate: z.string().optional(),
   firstName: z.string().optional(),
   journeyStage: z.enum(['ttc', 'pregnant', 'born']),
@@ -223,6 +224,7 @@ export const completeOnboardingAction = action
         birthDate: parsedInput.birthDate
           ? new Date(parsedInput.birthDate)
           : null,
+        birthWeightOz: parsedInput.birthWeightOz || null,
         dueDate: parsedInput.dueDate ? new Date(parsedInput.dueDate) : null,
         familyId: family.id,
         firstName: parsedInput.firstName || 'Baby',

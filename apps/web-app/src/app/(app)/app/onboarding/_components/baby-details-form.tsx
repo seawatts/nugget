@@ -1,42 +1,73 @@
 'use client';
 
 import { Button } from '@nugget/ui/button';
-import { Calendar } from '@nugget/ui/calendar';
-import { Icons } from '@nugget/ui/custom/icons';
+import { DateTimePicker } from '@nugget/ui/custom/date-time-picker';
 import { Input } from '@nugget/ui/input';
 import { Label } from '@nugget/ui/label';
-import { cn } from '@nugget/ui/lib/utils';
-import { Popover, PopoverContent, PopoverTrigger } from '@nugget/ui/popover';
-import { format, parse } from 'date-fns';
+import { parse } from 'date-fns';
+import { Minus, Plus } from 'lucide-react';
 
 interface BabyDetailsFormProps {
   fullName: string;
   birthDate: string;
+  birthWeightLbs: string;
+  birthWeightOz: string;
   onFullNameChange: (name: string) => void;
   onBirthDateChange: (date: string) => void;
+  onBirthWeightLbsChange: (lbs: string) => void;
+  onBirthWeightOzChange: (oz: string) => void;
 }
 
-// Helper to parse YYYY-MM-DD string as local date (not UTC)
+// Helper to parse date string (supports both YYYY-MM-DD and ISO format)
 function parseLocalDate(dateString: string): Date | undefined {
   if (!dateString) return undefined;
-  // Parse the date string as a local date to avoid timezone issues
+
+  // Try parsing as ISO string first (includes time)
+  const isoDate = new Date(dateString);
+  if (!Number.isNaN(isoDate.getTime())) {
+    return isoDate;
+  }
+
+  // Fall back to parsing YYYY-MM-DD format
   return parse(dateString, 'yyyy-MM-dd', new Date());
 }
 
 export function BabyDetailsForm({
   fullName,
   birthDate,
+  birthWeightLbs,
+  birthWeightOz,
   onFullNameChange,
   onBirthDateChange,
+  onBirthWeightLbsChange,
+  onBirthWeightOzChange,
 }: BabyDetailsFormProps) {
   const selectedDate = parseLocalDate(birthDate);
 
-  const handleDateSelect = (date: Date | undefined) => {
+  const handleDateChange = (date: Date | undefined) => {
     if (date) {
-      // Format as YYYY-MM-DD for consistency with the existing state management
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      onBirthDateChange(formattedDate);
+      // Store the full date with time as ISO string
+      onBirthDateChange(date.toISOString());
     }
+  };
+
+  const handleWeightAdjust = (type: 'lbs' | 'oz', adjustment: number) => {
+    if (type === 'lbs') {
+      const currentLbs = Number.parseInt(birthWeightLbs || '0', 10);
+      const newLbs = Math.max(0, currentLbs + adjustment);
+      onBirthWeightLbsChange(newLbs.toString());
+    } else {
+      const currentOz = Number.parseInt(birthWeightOz || '0', 10);
+      const newOz = Math.max(0, Math.min(15, currentOz + adjustment));
+      onBirthWeightOzChange(newOz.toString());
+    }
+  };
+
+  const setQuickWeight = (totalOz: number) => {
+    const lbs = Math.floor(totalOz / 16);
+    const oz = totalOz % 16;
+    onBirthWeightLbsChange(lbs.toString());
+    onBirthWeightOzChange(oz.toString());
   };
 
   return (
@@ -58,40 +89,142 @@ export function BabyDetailsForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="birthDate">Birth Date</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              className={cn(
-                'w-full justify-start text-left font-normal text-base',
-                !birthDate && 'text-muted-foreground',
-              )}
-              id="birthDate"
-              variant="outline"
-            >
-              <Icons.Calendar size="sm" variant="muted" />
-              {birthDate && selectedDate ? (
-                format(selectedDate, 'PPP')
-              ) : (
-                <span>Pick a date</span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-auto p-0">
-            <Calendar
-              captionLayout="dropdown"
-              defaultMonth={selectedDate}
-              fromYear={new Date().getFullYear() - 2}
-              mode="single"
-              onSelect={handleDateSelect}
-              selected={selectedDate}
-              toDate={new Date()}
-              toYear={new Date().getFullYear()}
-            />
-          </PopoverContent>
-        </Popover>
+        <Label htmlFor="birthDate">Birth Date & Time</Label>
+        <DateTimePicker
+          date={selectedDate}
+          placeholder="Pick a date and time"
+          setDate={handleDateChange}
+        />
         <p className="text-xs text-muted-foreground">
           We'll track age-appropriate milestones and provide personalized tips
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        <Label>Birth Weight (optional)</Label>
+
+        <div className="grid grid-cols-2 gap-3">
+          {/* Pounds */}
+          <div className="space-y-2">
+            <Label
+              className="text-xs text-muted-foreground"
+              htmlFor="birthWeightLbs"
+            >
+              Pounds
+            </Label>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => handleWeightAdjust('lbs', -1)}
+                size="icon"
+                type="button"
+                variant="outline"
+              >
+                <Minus className="size-4" />
+              </Button>
+              <Input
+                className="text-center"
+                id="birthWeightLbs"
+                min="0"
+                onChange={(e) => onBirthWeightLbsChange(e.target.value)}
+                placeholder="0"
+                type="number"
+                value={birthWeightLbs}
+              />
+              <Button
+                onClick={() => handleWeightAdjust('lbs', 1)}
+                size="icon"
+                type="button"
+                variant="outline"
+              >
+                <Plus className="size-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Ounces */}
+          <div className="space-y-2">
+            <Label
+              className="text-xs text-muted-foreground"
+              htmlFor="birthWeightOz"
+            >
+              Ounces
+            </Label>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => handleWeightAdjust('oz', -1)}
+                size="icon"
+                type="button"
+                variant="outline"
+              >
+                <Minus className="size-4" />
+              </Button>
+              <Input
+                className="text-center"
+                id="birthWeightOz"
+                max="15"
+                min="0"
+                onChange={(e) => onBirthWeightOzChange(e.target.value)}
+                placeholder="0"
+                type="number"
+                value={birthWeightOz}
+              />
+              <Button
+                onClick={() => handleWeightAdjust('oz', 1)}
+                size="icon"
+                type="button"
+                variant="outline"
+              >
+                <Plus className="size-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Select Buttons */}
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Quick Select</Label>
+          <div className="grid grid-cols-4 gap-2">
+            <Button
+              className="text-xs"
+              onClick={() => setQuickWeight(96)}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              6lb 0oz
+            </Button>
+            <Button
+              className="text-xs"
+              onClick={() => setQuickWeight(112)}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              7lb 0oz
+            </Button>
+            <Button
+              className="text-xs"
+              onClick={() => setQuickWeight(128)}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              8lb 0oz
+            </Button>
+            <Button
+              className="text-xs"
+              onClick={() => setQuickWeight(144)}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              9lb 0oz
+            </Button>
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Optional: We&apos;ll help you track your baby&apos;s growth
         </p>
       </div>
     </div>

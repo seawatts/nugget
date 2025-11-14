@@ -199,6 +199,17 @@ const policyConfigs: Record<string, PolicyConfig> = {
     policies: [
       createUserOwnershipPolicy('SELECT', 'id'),
       createUserOwnershipPolicy('UPDATE', 'id'),
+      // Allow users to read other users in the same family
+      {
+        name: 'Users can select family members',
+        operation: 'SELECT',
+        using: `"users"."id" IN (
+          SELECT fm2."userId"
+          FROM "familyMembers" fm1
+          JOIN "familyMembers" fm2 USING ("familyId")
+          WHERE fm1."userId" = (SELECT requesting_user_id())
+        )`,
+      },
     ],
     tableName: 'users',
   },
