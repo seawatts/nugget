@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import withPWA from '@ducanh2912/next-pwa';
 import withBundleAnalyzer from '@next/bundle-analyzer';
 import { withPostHogConfig } from '@posthog/nextjs-config';
@@ -14,8 +16,6 @@ const nextConfig = {
 
     // cacheLife: true,
     // cacheComponents: true,
-    // Activate new client-side router improvements
-    clientSegmentCache: true, // will be renamed to cacheComponents in Next.js 16
 
     // Enable support for `global-not-found`, which allows you to more easily define a global 404 page.
     globalNotFound: true,
@@ -58,6 +58,10 @@ const nextConfig = {
     '@nugget/logger',
     '@nugget/zustand',
   ],
+  turbopack: {
+    // In monorepo: tooling/next/base.mjs -> workspace root (two levels up)
+    root: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'),
+  },
   typescript: { ignoreBuildErrors: true },
 };
 
