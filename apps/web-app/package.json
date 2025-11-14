@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@ai-sdk/openai": "2.0.65",
+    "@ai-sdk/openai": "2.0.66",
     "@ai-sdk/react": "2.0.93",
     "@clerk/nextjs": "catalog:",
     "@dnd-kit/core": "6.3.1",
