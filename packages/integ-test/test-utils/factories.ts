@@ -32,15 +32,15 @@ export class TestFactories {
   }
 
   async createOrg(
-    overrides?: Partial<schema.OrgType>,
-  ): Promise<schema.OrgType> {
+    overrides?: Partial<schema.FamilyType>,
+  ): Promise<schema.FamilyType> {
     const user = await this.createUser();
 
     const org = {
       clerkOrgId: `org_${faker.string.alphanumeric(20)}`,
       createdAt: new Date(),
       createdByUserId: user.id,
-      id: createId({ prefix: 'org' }),
+      id: createId({ prefix: 'family' }),
       name: faker.company.name(),
       stripeCustomerId: faker.string.alphanumeric(20),
       stripeSubscriptionId: faker.string.alphanumeric(20),
@@ -48,7 +48,10 @@ export class TestFactories {
       ...overrides,
     };
 
-    const [created] = await this.db.insert(schema.Orgs).values(org).returning();
+    const [created] = await this.db
+      .insert(schema.Families)
+      .values(org)
+      .returning();
     if (!created) {
       throw new Error('Failed to create org');
     }
@@ -59,7 +62,7 @@ export class TestFactories {
     userId: string,
     familyId: string,
     role: 'primary' | 'partner' | 'caregiver' = 'primary',
-  ): Promise<schema.OrgMembersType> {
+  ): Promise<schema.FamilyMemberType> {
     const member = {
       createdAt: new Date(),
       familyId,
@@ -69,7 +72,7 @@ export class TestFactories {
     };
 
     const [created] = await this.db
-      .insert(schema.OrgMembers)
+      .insert(schema.FamilyMembers)
       .values(member)
       .returning();
     if (!created) {
@@ -80,7 +83,7 @@ export class TestFactories {
 
   async createCompleteSetup(overrides?: {
     user?: Partial<schema.UserType>;
-    org?: Partial<schema.OrgType>;
+    org?: Partial<schema.FamilyType>;
   }) {
     // Create user
     const user = await this.createUser(overrides?.user);

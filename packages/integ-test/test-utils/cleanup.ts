@@ -8,8 +8,8 @@ export async function cleanupTestData(
   // Delete all data in reverse order of dependencies
   // Use try-catch to handle potential constraint issues
   try {
-    await db.delete(schema.OrgMembers);
-    await db.delete(schema.Orgs);
+    await db.delete(schema.FamilyMembers);
+    await db.delete(schema.Families);
     await db.delete(schema.Users);
   } catch (error) {
     console.warn('Cleanup warning:', error);
@@ -17,7 +17,7 @@ export async function cleanupTestData(
     try {
       // Use TRUNCATE CASCADE for more thorough cleanup
       await db.execute(
-        sql`TRUNCATE TABLE "orgMembers", "orgs", "user" RESTART IDENTITY CASCADE`,
+        sql`TRUNCATE TABLE "familyMembers", "families", "users" RESTART IDENTITY CASCADE`,
       );
     } catch (truncateError) {
       console.error('Failed to cleanup test data:', truncateError);

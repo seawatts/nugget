@@ -1,6 +1,6 @@
 import { createClerkClient } from '@clerk/backend';
 import { db } from '@nugget/db/client';
-import { Orgs, Users } from '@nugget/db/schema';
+import { Families, Users } from '@nugget/db/schema';
 import { createId } from '@nugget/id';
 import { eq } from 'drizzle-orm';
 import { env } from './env';
@@ -103,7 +103,7 @@ export async function createTestOrg(
 
   // Create organization in database
   const [dbOrg] = await db
-    .insert(Orgs)
+    .insert(Families)
     .values({
       clerkOrgId: clerkOrg.id,
       createdByUserId: ownerId,
@@ -150,7 +150,7 @@ export async function createTestSetup(
   const cleanup = async () => {
     try {
       // Clean up organization from database
-      await db.delete(Orgs).where(eq(Orgs.id, org.id));
+      await db.delete(Families).where(eq(Families.id, org.id));
 
       // Clean up user from database
       await db.delete(Users).where(eq(Users.id, user.id));
