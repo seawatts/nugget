@@ -4,7 +4,7 @@ import {
   type User,
 } from '@clerk/nextjs/server';
 import { db } from '@nugget/db/client';
-import { Orgs, Users } from '@nugget/db/schema';
+import { Families, FamilyMembers, Users } from '@nugget/db/schema';
 import { generateRandomName } from '@nugget/id';
 import {
   BILLING_INTERVALS,
@@ -101,7 +101,7 @@ async function createOrgInDatabase({
   tx: Transaction;
 }) {
   const [org] = await tx
-    .insert(Orgs)
+    .insert(Families)
     .values({
       clerkOrgId,
       createdByUserId: userId,
@@ -130,12 +130,12 @@ async function updateOrgWithStripeCustomerId({
   tx: Transaction;
 }) {
   await tx
-    .update(Orgs)
+    .update(Families)
     .set({
       stripeCustomerId,
       updatedAt: new Date(),
     })
-    .where(eq(Orgs.id, orgId));
+    .where(eq(Families.id, orgId));
 }
 
 // Helper function to auto-subscribe to free plan
@@ -176,14 +176,14 @@ async function autoSubscribeToFreePlan({
 
     // Update org with subscription info
     await tx
-      .update(Orgs)
+      .update(Families)
       .set({
         stripeCustomerId: customerId,
         stripeSubscriptionId: subscription.id,
         stripeSubscriptionStatus: subscription.status,
         updatedAt: new Date(),
       })
-      .where(eq(Orgs.id, orgId));
+      .where(eq(Families.id, orgId));
 
     console.log(
       `Auto-subscribed org ${orgId} to free plan with subscription ${subscription.id}`,
@@ -255,8 +255,8 @@ export async function createOrg({
     }
 
     // Check if organization name already exists in database
-    const existingOrgByName = await tx.query.Orgs.findFirst({
-      where: eq(Orgs.name, name),
+    const existingOrgByName = await tx.query.Families.findFirst({
+      where: eq(Families.name, name),
     });
 
     if (existingOrgByName) {
@@ -325,8 +325,8 @@ export async function createOrg({
     }
 
     // Final check: Double-check that the organization wasn't created by another process
-    const finalCheckOrg = await tx.query.Orgs.findFirst({
-      where: eq(Orgs.clerkOrgId, clerkOrg.id),
+    const finalCheckOrg = await tx.query.Families.findFirst({
+      where: eq(Families.clerkOrgId, clerkOrg.id),
     });
 
     if (finalCheckOrg) {
@@ -351,6 +351,27 @@ export async function createOrg({
       tx,
       userId,
     });
+
+    // Create family member record for the creator
+    try {
+      await tx
+        .insert(FamilyMembers)
+        .values({
+          familyId: org.id,
+          role: 'primary',
+          userId,
+        })
+        .onConflictDoNothing();
+      console.log(
+        'Created family member record for org creator:',
+        userId,
+        'in org:',
+        org.id,
+      );
+    } catch (error) {
+      console.error('Failed to create family member for org creator:', error);
+      // Don't throw - the webhook will handle this if it fails here
+    }
 
     // Create or update Stripe customer
     console.log(

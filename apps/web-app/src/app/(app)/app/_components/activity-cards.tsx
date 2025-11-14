@@ -1,7 +1,9 @@
 'use client';
 
-import { Card } from '@nugget/ui/card';
-import { cn } from '@nugget/ui/lib/utils';
+import { useUser } from '@clerk/nextjs';
+import type { Activities } from '@nugget/db/schema';
+import { createId } from '@nugget/id';
+import { toast } from '@nugget/ui/sonner';
 import {
   Activity,
   Baby,
@@ -17,8 +19,14 @@ import {
   Tablet as Toilet,
   UtensilsCrossed,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { ActivityDrawer } from '~/app/(app)/app/_components/activity-drawer';
+import { ActivityCard } from './activity-card';
+import { createActivityAction } from './activity-cards.actions';
+import {
+  formatActivityForToast,
+  getDefaultActivityData,
+} from './activity-utils';
 
 const activities = [
   {
@@ -128,8 +136,17 @@ const activities = [
 ];
 
 export function ActivityCards() {
+  const { user } = useUser();
   const [openDrawer, setOpenDrawer] = useState<string | null>(null);
+  const [editingActivity, setEditingActivity] = useState<
+    typeof Activities.$inferSelect | null
+  >(null);
   const [babyAgeDays, setBabyAgeDays] = useState<number | null>(null);
+  const [loadingActivity, setLoadingActivity] = useState<string | null>(null);
+  const [_isPending, startTransition] = useTransition();
+  const [_optimisticActivities, setOptimisticActivities] = useState<
+    Array<typeof Activities.$inferSelect>
+  >([]);
 
   useEffect(() => {
     const onboardingData = localStorage.getItem('onboardingData');
@@ -246,32 +263,99 @@ export function ActivityCards() {
 
   const visibleActivities = getVisibleActivities();
 
+  const handleQuickCreate = async (activityId: string) => {
+    setLoadingActivity(activityId);
+
+    // Get baby data from localStorage for optimistic update
+    const onboardingData = localStorage.getItem('onboardingData');
+    let birthDate: Date | null = null;
+    if (onboardingData) {
+      try {
+        const data = JSON.parse(onboardingData);
+        birthDate = data.birthDate ? new Date(data.birthDate) : null;
+      } catch (e) {
+        console.error('Error parsing onboarding data:', e);
+      }
+    }
+
+    // Create optimistic activity
+    const optimisticData = getDefaultActivityData(activityId, birthDate);
+    const optimisticActivity = {
+      ...optimisticData,
+      amount: null,
+      babyId: 'temp',
+      createdAt: new Date(),
+      details: null,
+      duration: null,
+      endTime: null,
+      feedingSource: null,
+      id: createId({ prefix: 'activity-optimistic' }),
+      isScheduled: false,
+      notes: null,
+      startTime: new Date(),
+      updatedAt: new Date(),
+      userId: user?.id ?? 'temp-user-id',
+    } as typeof Activities.$inferSelect;
+
+    // Add to optimistic state
+    setOptimisticActivities((prev) => [...prev, optimisticActivity]);
+
+    startTransition(async () => {
+      try {
+        const result = await createActivityAction({ activityType: activityId });
+
+        if (result?.data?.activity) {
+          const activity = result.data.activity;
+
+          // Show success toast with edit action
+          toast.success(formatActivityForToast(activityId, optimisticData), {
+            action: {
+              label: 'Edit',
+              onClick: () => {
+                setEditingActivity(activity);
+                setOpenDrawer(activityId);
+              },
+            },
+            description: 'Tap Edit to add more details',
+            duration: 6000,
+          });
+        } else if (result?.serverError) {
+          toast.error(result.serverError);
+          // Remove optimistic activity on error
+          setOptimisticActivities((prev) =>
+            prev.filter((a) => a.id !== optimisticActivity.id),
+          );
+        }
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : 'Failed to create activity',
+        );
+        // Remove optimistic activity on error
+        setOptimisticActivities((prev) =>
+          prev.filter((a) => a.id !== optimisticActivity.id),
+        );
+      } finally {
+        setLoadingActivity(null);
+      }
+    });
+  };
+
+  const handleDrawerClose = () => {
+    setOpenDrawer(null);
+    setEditingActivity(null);
+  };
+
   return (
     <>
       <div className="grid grid-cols-2 gap-3">
         {visibleActivities.map((activity) => {
-          const Icon = activity.icon;
           return (
-            <Card
-              className={cn(
-                'relative overflow-hidden border-0 p-6 transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer',
-                activity.color,
-                activity.fullWidth && 'col-span-2',
-              )}
+            <ActivityCard
+              activity={activity}
+              isLoading={loadingActivity === activity.id}
               key={activity.id}
-              onClick={() => setOpenDrawer(activity.id)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={cn('opacity-30', activity.textColor)}>
-                    <Icon className="h-12 w-12" strokeWidth={1.5} />
-                  </div>
-                  <h2 className={cn('text-2xl font-bold', activity.textColor)}>
-                    {activity.label}
-                  </h2>
-                </div>
-              </div>
-            </Card>
+              onClick={() => handleQuickCreate(activity.id)}
+            />
           );
         })}
       </div>
@@ -279,9 +363,10 @@ export function ActivityCards() {
       {activities.map((activity) => (
         <ActivityDrawer
           activity={activity}
+          existingActivity={openDrawer === activity.id ? editingActivity : null}
           isOpen={openDrawer === activity.id}
           key={activity.id}
-          onClose={() => setOpenDrawer(null)}
+          onClose={handleDrawerClose}
         />
       ))}
     </>

@@ -1,26 +1,45 @@
 'use client';
 
+import { SignOutButton, useOrganization, useUser } from '@clerk/nextjs';
+import { api } from '@nugget/api/react';
 import { Button } from '@nugget/ui/button';
 import { Input } from '@nugget/ui/input';
 import { Label } from '@nugget/ui/label';
 import { Switch } from '@nugget/ui/switch';
 import {
+  AlertTriangle,
   Bell,
+  Building,
+  Calendar,
   ChevronRight,
+  LogOut,
+  Mail,
   Moon,
   Phone,
   Shield,
   Sun,
+  Trash2,
   User,
   UserCircle,
+  Users,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { BabyTab } from './_components/baby-tab';
+import { DeleteAccountDialog } from './_components/delete-account-dialog';
+import { FamilyTab } from './_components/family-tab';
 
-type Tab = 'profile' | 'notifications' | 'contacts' | 'account' | 'preferences';
+type Tab =
+  | 'baby'
+  | 'family'
+  | 'notifications'
+  | 'contacts'
+  | 'account'
+  | 'preferences';
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('profile');
+  const [activeTab, setActiveTab] = useState<Tab>('baby');
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -30,7 +49,8 @@ export default function SettingsPage() {
   }, []);
 
   const tabs = [
-    { icon: User, id: 'profile' as Tab, label: 'Profile' },
+    { icon: User, id: 'baby' as Tab, label: 'Baby' },
+    { icon: Users, id: 'family' as Tab, label: 'Family' },
     { icon: Bell, id: 'notifications' as Tab, label: 'Notifications' },
     { icon: Phone, id: 'contacts' as Tab, label: 'Contacts' },
     { icon: UserCircle, id: 'account' as Tab, label: 'Account' },
@@ -67,7 +87,8 @@ export default function SettingsPage() {
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'profile' && <ProfileTab />}
+        {activeTab === 'baby' && <BabyTab />}
+        {activeTab === 'family' && <FamilyTab />}
         {activeTab === 'notifications' && <NotificationsTab />}
         {activeTab === 'contacts' && <ContactsTab />}
         {activeTab === 'account' && <AccountTab />}
@@ -76,135 +97,6 @@ export default function SettingsPage() {
         )}
       </div>
     </main>
-  );
-}
-
-function ProfileTab() {
-  const [formData, setFormData] = useState({
-    babyName: '',
-    birthDate: '',
-    dueDate: '',
-    parentName: '',
-  });
-
-  useEffect(() => {
-    const data = localStorage.getItem('onboardingData');
-    if (data) {
-      try {
-        const parsed = JSON.parse(data);
-        setFormData({
-          babyName: parsed.firstName || parsed.babyName || '',
-          birthDate: parsed.birthDate || '',
-          dueDate: parsed.dueDate || '',
-          parentName: parsed.parentName || '',
-        });
-      } catch (e) {
-        console.error('Error parsing onboarding data:', e);
-      }
-    }
-  }, []);
-
-  const handleSave = () => {
-    const existingData = localStorage.getItem('onboardingData');
-    let parsed = {};
-    if (existingData) {
-      try {
-        parsed = JSON.parse(existingData);
-      } catch (e) {
-        console.error('Error parsing onboarding data:', e);
-      }
-    }
-
-    localStorage.setItem(
-      'onboardingData',
-      JSON.stringify({
-        ...parsed,
-        babyName: formData.babyName,
-        birthDate: formData.birthDate,
-        dueDate: formData.dueDate,
-        firstName: formData.babyName,
-        parentName: formData.parentName,
-      }),
-    );
-
-    // Reload the page to update the header
-    window.location.reload();
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold">Baby Information</h2>
-          <p className="text-sm text-muted-foreground">
-            Update your baby's details
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="babyName">Baby's Name</Label>
-            <Input
-              id="babyName"
-              onChange={(e) =>
-                setFormData({ ...formData, babyName: e.target.value })
-              }
-              placeholder="Enter baby's name"
-              value={formData.babyName}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="birthDate">Birth Date</Label>
-            <Input
-              id="birthDate"
-              onChange={(e) =>
-                setFormData({ ...formData, birthDate: e.target.value })
-              }
-              type="date"
-              value={formData.birthDate}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="dueDate">Due Date (if pregnant)</Label>
-            <Input
-              id="dueDate"
-              onChange={(e) =>
-                setFormData({ ...formData, dueDate: e.target.value })
-              }
-              type="date"
-              value={formData.dueDate}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold">Parent Information</h2>
-          <p className="text-sm text-muted-foreground">Your personal details</p>
-        </div>
-
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="parentName">Your Name</Label>
-            <Input
-              id="parentName"
-              onChange={(e) =>
-                setFormData({ ...formData, parentName: e.target.value })
-              }
-              placeholder="Enter your name"
-              value={formData.parentName}
-            />
-          </div>
-        </div>
-      </div>
-
-      <Button className="w-full" onClick={handleSave} size="lg">
-        Save Changes
-      </Button>
-    </div>
   );
 }
 
@@ -453,64 +345,179 @@ function ContactsTab() {
 }
 
 function AccountTab() {
+  const { user, isLoaded: userLoaded } = useUser();
+  const { organization, isLoaded: orgLoaded } = useOrganization();
+  const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
+
+  if (!userLoaded || !orgLoaded) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-card border border-border rounded-2xl p-6">
+          <p className="text-muted-foreground">
+            Loading account information...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const primaryEmail = user?.primaryEmailAddress?.emailAddress;
+  const createdAt = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : 'Unknown';
+
+  const externalAccounts = user?.externalAccounts || [];
+  const connectedProviders = externalAccounts.map((account) => ({
+    id: account.id,
+    provider: account.provider,
+    username: account.username || account.emailAddress,
+  }));
+
   return (
     <div className="space-y-4">
+      {/* Account Information */}
       <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
         <div>
-          <h2 className="text-xl font-semibold">Account Settings</h2>
+          <h2 className="text-xl font-semibold">Account Information</h2>
           <p className="text-sm text-muted-foreground">
-            Manage your account information
+            Your account details and settings
           </p>
         </div>
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
-            <Input
-              disabled
-              id="email"
-              placeholder="your.email@example.com"
-              type="email"
-            />
-            <p className="text-xs text-muted-foreground">
-              Email management coming soon
-            </p>
+          {/* Email */}
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+            <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <Label className="text-sm font-medium">Email Address</Label>
+              <p className="text-sm text-muted-foreground break-all">
+                {primaryEmail || 'No email address'}
+              </p>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <div className="flex gap-2">
-              <Input disabled id="password" type="password" value="••••••••" />
-              <Button disabled variant="outline">
-                Change
-              </Button>
+          {/* Account Created */}
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+            <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
+            <div className="flex-1">
+              <Label className="text-sm font-medium">Member Since</Label>
+              <p className="text-sm text-muted-foreground">{createdAt}</p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Password management coming soon
-            </p>
           </div>
+
+          {/* Organization */}
+          {organization && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+              <Building className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div className="flex-1">
+                <Label className="text-sm font-medium">Baby Profile</Label>
+                <p className="text-sm text-muted-foreground">
+                  {organization.name}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Connected Accounts */}
+      {connectedProviders.length > 0 && (
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold">Connected Accounts</h2>
+            <p className="text-sm text-muted-foreground">
+              Accounts you've connected to sign in
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            {connectedProviders.map((account) => (
+              <div
+                className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+                key={account.id}
+              >
+                <div className="flex-1">
+                  <p className="text-sm font-medium capitalize">
+                    {account.provider}
+                  </p>
+                  {account.username && (
+                    <p className="text-xs text-muted-foreground">
+                      {account.username}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Sign Out */}
       <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
         <div>
-          <h2 className="text-xl font-semibold text-destructive">
-            Danger Zone
-          </h2>
+          <h2 className="text-xl font-semibold">Session</h2>
           <p className="text-sm text-muted-foreground">
-            Irreversible account actions
+            Sign out of your account
           </p>
         </div>
 
-        <div className="space-y-3">
+        <SignOutButton>
           <Button className="w-full" variant="outline">
-            Export My Data
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
           </Button>
-          <Button className="w-full" variant="destructive">
-            Delete Account
+        </SignOutButton>
+      </div>
+
+      {/* Danger Zone */}
+      <div className="bg-card border border-destructive rounded-2xl p-6 space-y-4">
+        <div className="flex items-start gap-2">
+          <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
+          <div>
+            <h2 className="text-xl font-semibold text-destructive">
+              Danger Zone
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Irreversible account actions
+            </p>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-lg border border-destructive bg-destructive/5">
+          <div className="flex items-start gap-3 mb-3">
+            <UserCircle className="h-5 w-5 text-destructive mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-medium text-destructive">Delete Account</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Permanently delete your account and ALL data including all baby
+                profiles, activities, and settings. This action is final and
+                cannot be undone.
+              </p>
+            </div>
+          </div>
+          <Button
+            className="w-full"
+            onClick={() => setShowDeleteAccountDialog(true)}
+            variant="destructive"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete Account Permanently
           </Button>
         </div>
       </div>
+
+      {/* Delete Account Dialog */}
+      {user && (
+        <DeleteAccountDialog
+          isOpen={showDeleteAccountDialog}
+          onClose={() => setShowDeleteAccountDialog(false)}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 }
@@ -522,11 +529,63 @@ function PreferencesTab({
   currentTheme: string | undefined;
   setTheme: (theme: string) => void;
 }) {
+  const { data: user, isLoading } = api.user.current.useQuery();
+  const updatePreferences = api.user.updatePreferences.useMutation();
+  const utils = api.useUtils();
+
   const [preferences, setPreferences] = useState({
-    measurementUnit: 'imperial',
-    temperatureUnit: 'fahrenheit',
-    timeFormat: '12h',
+    measurementUnit: 'imperial' as 'imperial' | 'metric',
+    temperatureUnit: 'fahrenheit' as 'fahrenheit' | 'celsius',
+    timeFormat: '12h' as '12h' | '24h',
   });
+
+  // Load preferences from user data
+  useEffect(() => {
+    if (user) {
+      setPreferences({
+        measurementUnit: user.measurementUnit || 'imperial',
+        temperatureUnit: user.temperatureUnit || 'fahrenheit',
+        timeFormat: user.timeFormat || '12h',
+      });
+    }
+  }, [user]);
+
+  // Save preferences to database when they change
+  const handlePreferenceChange = async (
+    key: 'measurementUnit' | 'temperatureUnit' | 'timeFormat',
+    value: string,
+  ) => {
+    // Optimistic update
+    setPreferences((prev) => ({ ...prev, [key]: value }));
+
+    try {
+      await updatePreferences.mutateAsync({ [key]: value });
+      // Invalidate the user query to refetch updated data
+      await utils.user.current.invalidate();
+      toast.success('Preferences saved');
+    } catch (error) {
+      // Revert on error
+      if (user) {
+        setPreferences({
+          measurementUnit: user.measurementUnit || 'imperial',
+          temperatureUnit: user.temperatureUnit || 'fahrenheit',
+          timeFormat: user.timeFormat || '12h',
+        });
+      }
+      toast.error('Failed to save preferences');
+      console.error('Failed to save preferences:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-card border border-border rounded-2xl p-6">
+          <p className="text-muted-foreground">Loading preferences...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -585,10 +644,7 @@ function PreferencesTab({
             <div className="grid grid-cols-2 gap-2">
               <Button
                 onClick={() =>
-                  setPreferences({
-                    ...preferences,
-                    measurementUnit: 'imperial',
-                  })
+                  handlePreferenceChange('measurementUnit', 'imperial')
                 }
                 variant={
                   preferences.measurementUnit === 'imperial'
@@ -600,7 +656,7 @@ function PreferencesTab({
               </Button>
               <Button
                 onClick={() =>
-                  setPreferences({ ...preferences, measurementUnit: 'metric' })
+                  handlePreferenceChange('measurementUnit', 'metric')
                 }
                 variant={
                   preferences.measurementUnit === 'metric'
@@ -618,10 +674,7 @@ function PreferencesTab({
             <div className="grid grid-cols-2 gap-2">
               <Button
                 onClick={() =>
-                  setPreferences({
-                    ...preferences,
-                    temperatureUnit: 'fahrenheit',
-                  })
+                  handlePreferenceChange('temperatureUnit', 'fahrenheit')
                 }
                 variant={
                   preferences.temperatureUnit === 'fahrenheit'
@@ -633,7 +686,7 @@ function PreferencesTab({
               </Button>
               <Button
                 onClick={() =>
-                  setPreferences({ ...preferences, temperatureUnit: 'celsius' })
+                  handlePreferenceChange('temperatureUnit', 'celsius')
                 }
                 variant={
                   preferences.temperatureUnit === 'celsius'
@@ -650,9 +703,7 @@ function PreferencesTab({
             <Label>Time Format</Label>
             <div className="grid grid-cols-2 gap-2">
               <Button
-                onClick={() =>
-                  setPreferences({ ...preferences, timeFormat: '12h' })
-                }
+                onClick={() => handlePreferenceChange('timeFormat', '12h')}
                 variant={
                   preferences.timeFormat === '12h' ? 'default' : 'outline'
                 }
@@ -660,9 +711,7 @@ function PreferencesTab({
                 12-hour
               </Button>
               <Button
-                onClick={() =>
-                  setPreferences({ ...preferences, timeFormat: '24h' })
-                }
+                onClick={() => handlePreferenceChange('timeFormat', '24h')}
                 variant={
                   preferences.timeFormat === '24h' ? 'default' : 'outline'
                 }

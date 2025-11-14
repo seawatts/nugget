@@ -1,11 +1,12 @@
 'use client';
 
+import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 import { Calendar, Clock, X } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityDrawerContent } from '~/app/(app)/app/_components/drawers/activity-drawer-content';
 import { BathDrawer } from '~/app/(app)/app/_components/drawers/bath-drawer';
 import { BottleDrawerContent } from '~/app/(app)/app/_components/drawers/bottle-drawer';
@@ -28,20 +29,37 @@ interface ActivityDrawerProps {
     color: string;
     textColor: string;
   };
+  existingActivity?: typeof Activities.$inferSelect | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
 export function ActivityDrawer({
   activity,
+  existingActivity,
   isOpen,
   onClose,
 }: ActivityDrawerProps) {
   const Icon = activity.icon;
   const [startTime, setStartTime] = useState(new Date());
+  const isEditing = Boolean(existingActivity);
+
+  // Update startTime when existingActivity changes
+  useEffect(() => {
+    if (existingActivity?.startTime) {
+      setStartTime(new Date(existingActivity.startTime));
+    } else {
+      setStartTime(new Date());
+    }
+  }, [existingActivity]);
 
   const handleSave = () => {
-    console.log('[v0] Saving activity:', activity.id, startTime);
+    if (isEditing) {
+      console.log('[v0] Updating activity:', existingActivity?.id, startTime);
+      // TODO: Implement update mutation
+    } else {
+      console.log('[v0] Saving activity:', activity.id, startTime);
+    }
     onClose();
   };
 
@@ -187,7 +205,7 @@ export function ActivityDrawer({
               )}
               onClick={handleSave}
             >
-              Save
+              {isEditing ? 'Update' : 'Save'}
             </Button>
           </div>
         </div>

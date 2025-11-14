@@ -17,8 +17,23 @@ import { Suspense } from 'react';
 import { env } from '~/env.server';
 
 export const metadata: Metadata = {
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Nugget',
+  },
   description:
     "Your complete parenting journey companion - from trying to conceive to tracking your baby's milestones",
+  icons: {
+    apple: [
+      { sizes: '180x180', type: 'image/png', url: '/apple-touch-icon.png' },
+    ],
+    icon: [
+      { sizes: '32x32', type: 'image/png', url: '/favicon-32x32.png' },
+      { sizes: '16x16', type: 'image/png', url: '/favicon-16x16.png' },
+    ],
+  },
+  manifest: '/manifest.webmanifest',
   metadataBase: new URL(
     env.VERCEL_ENV === 'production'
       ? 'https://nugget.baby'

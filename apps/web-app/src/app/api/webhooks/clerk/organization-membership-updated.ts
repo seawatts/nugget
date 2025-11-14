@@ -4,7 +4,7 @@ import type {
 } from '@clerk/nextjs/server';
 import { posthog } from '@nugget/analytics/posthog/server';
 import { db } from '@nugget/db/client';
-import { OrgMembers, Orgs, Users } from '@nugget/db/schema';
+import { Families, FamilyMembers, Users } from '@nugget/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 export async function handleOrganizationMembershipUpdated(event: WebhookEvent) {
@@ -16,8 +16,8 @@ export async function handleOrganizationMembershipUpdated(event: WebhookEvent) {
     db.query.Users.findFirst({
       where: eq(Users.clerkId, membershipData.public_user_data.user_id),
     }),
-    db.query.Orgs.findFirst({
-      where: eq(Orgs.clerkOrgId, membershipData.organization.id),
+    db.query.Families.findFirst({
+      where: eq(Families.clerkOrgId, membershipData.organization.id),
     }),
   ]);
 
@@ -30,11 +30,16 @@ export async function handleOrganizationMembershipUpdated(event: WebhookEvent) {
   }
 
   const [member] = await db
-    .update(OrgMembers)
+    .update(FamilyMembers)
     .set({
       role: membershipData.role === 'admin' ? 'primary' : 'partner',
     })
-    .where(and(eq(OrgMembers.userId, user.id), eq(OrgMembers.familyId, org.id)))
+    .where(
+      and(
+        eq(FamilyMembers.userId, user.id),
+        eq(FamilyMembers.familyId, org.id),
+      ),
+    )
     .returning();
 
   if (!member) {

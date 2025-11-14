@@ -282,11 +282,7 @@ export const activitiesRouter = createTRPCRouter({
         orderBy: [desc(Activities.startTime)],
         where: and(...conditions),
         with: {
-          familyMember: {
-            with: {
-              user: true,
-            },
-          },
+          user: true,
         },
       });
     }),

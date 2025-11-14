@@ -224,11 +224,7 @@ export const supplyTransactionsRouter = createTRPCRouter({
         orderBy: [desc(SupplyTransactions.timestamp)],
         where: and(...conditions),
         with: {
-          familyMember: {
-            with: {
-              user: true,
-            },
-          },
+          user: true,
         },
       });
     }),

@@ -1,4 +1,4 @@
-import { Orgs } from '@nugget/db/schema';
+import { Families } from '@nugget/db/schema';
 import {
   BILLING_INTERVALS,
   createBillingPortalSession,
@@ -17,8 +17,8 @@ export const billingRouter = createTRPCRouter({
   cancelSubscription: protectedProcedure.mutation(async ({ ctx }) => {
     if (!ctx.auth.orgId) throw new Error('Organization ID is required');
 
-    const org = await ctx.db.query.Orgs.findFirst({
-      where: eq(Orgs.id, ctx.auth.orgId),
+    const org = await ctx.db.query.Families.findFirst({
+      where: eq(Families.id, ctx.auth.orgId),
     });
 
     if (!org || !org.stripeSubscriptionId) {
@@ -35,11 +35,11 @@ export const billingRouter = createTRPCRouter({
 
       // Update local database
       await ctx.db
-        .update(Orgs)
+        .update(Families)
         .set({
           stripeSubscriptionStatus: subscription.status,
         })
-        .where(eq(Orgs.id, ctx.auth.orgId));
+        .where(eq(Families.id, ctx.auth.orgId));
 
       return {
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
@@ -61,8 +61,8 @@ export const billingRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       if (!ctx.auth.orgId) throw new Error('Organization ID is required');
 
-      const org = await ctx.db.query.Orgs.findFirst({
-        where: eq(Orgs.id, ctx.auth.orgId),
+      const org = await ctx.db.query.Families.findFirst({
+        where: eq(Families.id, ctx.auth.orgId),
       });
 
       if (!org || !org.stripeCustomerId) {
@@ -97,8 +97,8 @@ export const billingRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       if (!ctx.auth.orgId) throw new Error('Organization ID is required');
 
-      const org = await ctx.db.query.Orgs.findFirst({
-        where: eq(Orgs.id, ctx.auth.orgId),
+      const org = await ctx.db.query.Families.findFirst({
+        where: eq(Families.id, ctx.auth.orgId),
       });
 
       if (!org) {
@@ -127,11 +127,11 @@ export const billingRouter = createTRPCRouter({
 
         // Update org with customer ID
         await ctx.db
-          .update(Orgs)
+          .update(Families)
           .set({
             stripeCustomerId: customerId,
           })
-          .where(eq(Orgs.id, ctx.auth.orgId));
+          .where(eq(Families.id, ctx.auth.orgId));
       }
 
       // Create checkout session
@@ -161,8 +161,8 @@ export const billingRouter = createTRPCRouter({
   getBillingDetails: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.auth.orgId) throw new Error('Organization ID is required');
 
-    const org = await ctx.db.query.Orgs.findFirst({
-      where: eq(Orgs.id, ctx.auth.orgId),
+    const org = await ctx.db.query.Families.findFirst({
+      where: eq(Families.id, ctx.auth.orgId),
     });
 
     if (!org) {
@@ -188,8 +188,8 @@ export const billingRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       if (!ctx.auth.orgId) throw new Error('Organization ID is required');
 
-      const org = await ctx.db.query.Orgs.findFirst({
-        where: eq(Orgs.id, ctx.auth.orgId),
+      const org = await ctx.db.query.Families.findFirst({
+        where: eq(Families.id, ctx.auth.orgId),
       });
 
       if (!org || !org.stripeCustomerId) {
@@ -217,8 +217,8 @@ export const billingRouter = createTRPCRouter({
   getSubscriptionDetails: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.auth.orgId) throw new Error('Organization ID is required');
 
-    const org = await ctx.db.query.Orgs.findFirst({
-      where: eq(Orgs.id, ctx.auth.orgId),
+    const org = await ctx.db.query.Families.findFirst({
+      where: eq(Families.id, ctx.auth.orgId),
     });
 
     if (!org || !org.stripeSubscriptionId) {
@@ -269,8 +269,8 @@ export const billingRouter = createTRPCRouter({
   getSubscriptionStatus: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.auth.orgId) throw new Error('Organization ID is required');
 
-    const org = await ctx.db.query.Orgs.findFirst({
-      where: eq(Orgs.id, ctx.auth.orgId),
+    const org = await ctx.db.query.Families.findFirst({
+      where: eq(Families.id, ctx.auth.orgId),
     });
 
     if (!org) {
@@ -311,8 +311,8 @@ export const billingRouter = createTRPCRouter({
   getUsageInfo: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.auth.orgId) throw new Error('Organization ID is required');
 
-    const org = await ctx.db.query.Orgs.findFirst({
-      where: eq(Orgs.id, ctx.auth.orgId),
+    const org = await ctx.db.query.Families.findFirst({
+      where: eq(Families.id, ctx.auth.orgId),
     });
 
     if (!org || !org.stripeSubscriptionId) {
@@ -357,8 +357,8 @@ export const billingRouter = createTRPCRouter({
   reactivateSubscription: protectedProcedure.mutation(async ({ ctx }) => {
     if (!ctx.auth.orgId) throw new Error('Organization ID is required');
 
-    const org = await ctx.db.query.Orgs.findFirst({
-      where: eq(Orgs.id, ctx.auth.orgId),
+    const org = await ctx.db.query.Families.findFirst({
+      where: eq(Families.id, ctx.auth.orgId),
     });
 
     if (!org || !org.stripeSubscriptionId) {
@@ -375,11 +375,11 @@ export const billingRouter = createTRPCRouter({
 
       // Update local database
       await ctx.db
-        .update(Orgs)
+        .update(Families)
         .set({
           stripeSubscriptionStatus: subscription.status,
         })
-        .where(eq(Orgs.id, ctx.auth.orgId));
+        .where(eq(Families.id, ctx.auth.orgId));
 
       return {
         cancelAtPeriodEnd: subscription.cancel_at_period_end,

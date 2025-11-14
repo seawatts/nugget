@@ -21,6 +21,7 @@ import {
   IconArrowUp,
   IconBadge,
   IconBan,
+  IconBell,
   IconBookmark,
   IconBookmarkPlus,
   IconBorderHorizontal,
@@ -76,6 +77,8 @@ import {
   IconPlayerPlay,
   IconPlus,
   IconPoint,
+  IconRefresh,
+  IconRefreshDot,
   IconRocket,
   IconSearch,
   IconSettings,
@@ -92,6 +95,7 @@ import {
   IconUpload,
   IconUser,
   IconUsers,
+  IconWifiOff,
   IconX,
 } from '@tabler/icons-react';
 import type { VariantProps } from 'class-variance-authority';
@@ -188,6 +192,9 @@ export const Icons = {
     ({ size, variant }) => iconVariants({ size, variant }),
   ),
   BarChart2: twx(IconChartBar).transientProps(['size', 'variant'])<IconProps>(
+    ({ size, variant }) => iconVariants({ size, variant }),
+  ),
+  Bell: twx(IconBell).transientProps(['size', 'variant'])<IconProps>(
     ({ size, variant }) => iconVariants({ size, variant }),
   ),
   Bookmark: twx(IconBookmark).transientProps(['size', 'variant'])<IconProps>(
@@ -434,7 +441,13 @@ export const Icons = {
   Plus: twx(IconPlus).transientProps(['size', 'variant'])<IconProps>(
     ({ size, variant }) => iconVariants({ size, variant }),
   ),
+  RefreshCw: twx(IconRefresh).transientProps(['size', 'variant'])<IconProps>(
+    ({ size, variant }) => iconVariants({ size, variant }),
+  ),
   Rocket: twx(IconRocket).transientProps(['size', 'variant'])<IconProps>(
+    ({ size, variant }) => iconVariants({ size, variant }),
+  ),
+  RotateCw: twx(IconRefreshDot).transientProps(['size', 'variant'])<IconProps>(
     ({ size, variant }) => iconVariants({ size, variant }),
   ),
   Search: twx(IconSearch).transientProps(['size', 'variant'])<IconProps>(
@@ -497,6 +510,9 @@ export const Icons = {
     ({ size, variant }) => iconVariants({ size, variant }),
   ),
   UsersRound: twx(IconUsers).transientProps(['size', 'variant'])<IconProps>(
+    ({ size, variant }) => iconVariants({ size, variant }),
+  ),
+  WifiOff: twx(IconWifiOff).transientProps(['size', 'variant'])<IconProps>(
     ({ size, variant }) => iconVariants({ size, variant }),
   ),
   X: twx(IconX).transientProps(['size', 'variant'])<IconProps>(

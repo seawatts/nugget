@@ -4,7 +4,7 @@ import type {
 } from '@clerk/nextjs/server';
 import { posthog } from '@nugget/analytics/posthog/server';
 import { db } from '@nugget/db/client';
-import { Orgs } from '@nugget/db/schema';
+import { Families } from '@nugget/db/schema';
 import { PLAN_TYPES, stripe } from '@nugget/stripe';
 import { eq } from 'drizzle-orm';
 
@@ -22,8 +22,8 @@ export async function handleOrganizationMembershipDeleted(event: WebhookEvent) {
   });
 
   // Find the organization in our database
-  const org = await db.query.Orgs.findFirst({
-    where: eq(Orgs.clerkOrgId, membershipData.organization.id),
+  const org = await db.query.Families.findFirst({
+    where: eq(Families.clerkOrgId, membershipData.organization.id),
   });
 
   if (!org) {

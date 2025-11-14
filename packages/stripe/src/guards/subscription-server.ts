@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@nugget/db/client';
-import { Orgs } from '@nugget/db/schema';
+import { Families } from '@nugget/db/schema';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -17,8 +17,8 @@ export async function getOrgSubscriptionStatus(): Promise<{
   }
 
   // Get the organization
-  const org = await db.query.Orgs.findFirst({
-    where: eq(Orgs.id, orgId),
+  const org = await db.query.Families.findFirst({
+    where: eq(Families.id, orgId),
   });
 
   if (!org) {

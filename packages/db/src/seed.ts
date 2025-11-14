@@ -5,11 +5,11 @@ import { db } from './client';
 import {
   Activities,
   Babies,
+  Families,
+  FamilyMembers,
   GrowthRecords,
   MedicalRecords,
   Milestones,
-  OrgMembers,
-  Orgs,
   ShortUrls,
   Users,
 } from './schema';
@@ -22,8 +22,8 @@ await db.delete(MedicalRecords);
 await db.delete(Activities);
 await db.delete(Babies);
 await db.delete(ShortUrls);
-await db.delete(OrgMembers);
-await db.delete(Orgs);
+await db.delete(FamilyMembers);
+await db.delete(Families);
 await db.delete(Users);
 
 const userId = 'user_30oVYOGDYUTdXqB6HImz3XbRyTs';
@@ -35,11 +35,11 @@ const stripeSubscriptionId = 'sub_1RsJCH4hM6DbRRtOGcENjqIO';
 await seed(db, {
   Activities,
   Babies,
+  Families,
+  FamilyMembers,
   GrowthRecords,
   MedicalRecords,
   Milestones,
-  OrgMembers,
-  Orgs,
   ShortUrls,
   Users,
 }).refine((funcs) => ({
@@ -60,6 +60,32 @@ await seed(db, {
     columns: {
       name: funcs.default({ defaultValue: 'Baby Test' }),
       userId: funcs.default({ defaultValue: userId }),
+    },
+    count: 1,
+  },
+  Families: {
+    columns: {
+      clerkOrgId: funcs.default({
+        defaultValue: orgId,
+      }),
+      id: funcs.default({ defaultValue: orgId }),
+      name: funcs.default({ defaultValue: orgName }),
+      stripeCustomerId: funcs.default({ defaultValue: stripeCustomerId }),
+      stripeSubscriptionId: funcs.default({
+        defaultValue: stripeSubscriptionId,
+      }),
+      stripeSubscriptionStatus: funcs.default({
+        defaultValue: 'active',
+      }),
+    },
+    count: 1,
+  },
+  FamilyMembers: {
+    columns: {
+      orgId: funcs.default({ defaultValue: orgId }),
+      userId: funcs.default({
+        defaultValue: userId,
+      }),
     },
     count: 1,
   },
@@ -100,32 +126,6 @@ await seed(db, {
       userId: funcs.default({ defaultValue: userId }),
     },
     count: 5,
-  },
-  OrgMembers: {
-    columns: {
-      orgId: funcs.default({ defaultValue: orgId }),
-      userId: funcs.default({
-        defaultValue: userId,
-      }),
-    },
-    count: 1,
-  },
-  Orgs: {
-    columns: {
-      clerkOrgId: funcs.default({
-        defaultValue: orgId,
-      }),
-      id: funcs.default({ defaultValue: orgId }),
-      name: funcs.default({ defaultValue: orgName }),
-      stripeCustomerId: funcs.default({ defaultValue: stripeCustomerId }),
-      stripeSubscriptionId: funcs.default({
-        defaultValue: stripeSubscriptionId,
-      }),
-      stripeSubscriptionStatus: funcs.default({
-        defaultValue: 'active',
-      }),
-    },
-    count: 1,
   },
   ShortUrls: {
     columns: {

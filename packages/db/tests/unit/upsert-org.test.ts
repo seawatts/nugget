@@ -94,11 +94,11 @@ const mockTransaction = mock((callback) =>
 const mockQuery = {
   OrgMembers: {
     findFirst: mock(() =>
-      Promise.resolve(null as Partial<OrgMembersType> | null),
+      Promise.resolve(null as Partial<FamilyMemberType> | null),
     ),
   },
   Orgs: {
-    findFirst: mock(() => Promise.resolve(null as Partial<OrgType> | null)),
+    findFirst: mock(() => Promise.resolve(null as Partial<FamilyType> | null)),
   },
   Users: {
     findFirst: mock(() =>
@@ -186,7 +186,7 @@ mock.module('../../src/schema', () => {
 
 // Import after all mocks are set up
 import { upsertOrg } from '@nugget/api/services';
-import type { OrgMembersType, OrgType, UserType } from '../../src/schema';
+import type { FamilyMemberType, FamilyType, UserType } from '../../src/schema';
 
 describe('upsertOrg', () => {
   beforeEach(() => {

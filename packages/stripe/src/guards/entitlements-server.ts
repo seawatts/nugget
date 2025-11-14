@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@nugget/db/client';
-import { Orgs } from '@nugget/db/schema';
+import { Families } from '@nugget/db/schema';
 import { eq } from 'drizzle-orm';
 import { stripe } from '../index';
 import type {
@@ -78,8 +78,8 @@ export async function checkOrgEntitlements(
   }
 
   // Get the organization
-  const org = await db.query.Orgs.findFirst({
-    where: eq(Orgs.id, orgId),
+  const org = await db.query.Families.findFirst({
+    where: eq(Families.id, orgId),
   });
 
   if (!org?.stripeCustomerId) {
@@ -113,8 +113,8 @@ export async function getOrgEntitlements(): Promise<EntitlementsRecord> {
   }
 
   // Get the organization
-  const org = await db.query.Orgs.findFirst({
-    where: eq(Orgs.id, orgId),
+  const org = await db.query.Families.findFirst({
+    where: eq(Families.id, orgId),
   });
 
   if (!org?.stripeCustomerId) {

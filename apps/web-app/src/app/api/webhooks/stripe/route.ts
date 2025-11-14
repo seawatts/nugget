@@ -1,5 +1,5 @@
 import { db } from '@nugget/db/client';
-import { Orgs, type stripeSubscriptionStatusEnum } from '@nugget/db/schema';
+import { Families, type stripeSubscriptionStatusEnum } from '@nugget/db/schema';
 import { constructWebhookEvent } from '@nugget/stripe';
 import { eq } from 'drizzle-orm';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -35,13 +35,13 @@ export async function POST(req: NextRequest) {
           session.subscription
         ) {
           await db
-            .update(Orgs)
+            .update(Families)
             .set({
               stripeCustomerId: session.customer as string,
               stripeSubscriptionId: session.subscription as string,
               stripeSubscriptionStatus: 'active',
             })
-            .where(eq(Orgs.id, session.metadata.orgId));
+            .where(eq(Families.id, session.metadata.orgId));
         }
         break;
       }
@@ -53,13 +53,13 @@ export async function POST(req: NextRequest) {
         // Update subscription status
         if (subscription.metadata?.orgId) {
           await db
-            .update(Orgs)
+            .update(Families)
             .set({
               stripeSubscriptionId: subscription.id,
               stripeSubscriptionStatus:
                 subscription.status as (typeof stripeSubscriptionStatusEnum.enumValues)[number],
             })
-            .where(eq(Orgs.id, subscription.metadata.orgId));
+            .where(eq(Families.id, subscription.metadata.orgId));
         }
         break;
       }
@@ -70,11 +70,11 @@ export async function POST(req: NextRequest) {
         // Update subscription status to canceled
         if (subscription.metadata?.orgId) {
           await db
-            .update(Orgs)
+            .update(Families)
             .set({
               stripeSubscriptionStatus: 'canceled',
             })
-            .where(eq(Orgs.id, subscription.metadata.orgId));
+            .where(eq(Families.id, subscription.metadata.orgId));
         }
         break;
       }
@@ -103,17 +103,17 @@ export async function POST(req: NextRequest) {
             : invoice.subscription?.id;
 
         if (subscriptionId) {
-          const org = await db.query.Orgs.findFirst({
-            where: eq(Orgs.stripeSubscriptionId, subscriptionId),
+          const org = await db.query.Families.findFirst({
+            where: eq(Families.stripeSubscriptionId, subscriptionId),
           });
 
           if (org && org.stripeSubscriptionStatus === 'past_due') {
             await db
-              .update(Orgs)
+              .update(Families)
               .set({
                 stripeSubscriptionStatus: 'active',
               })
-              .where(eq(Orgs.id, org.id));
+              .where(eq(Families.id, org.id));
           }
         }
         break;
@@ -131,17 +131,17 @@ export async function POST(req: NextRequest) {
             : invoice.subscription?.id;
 
         if (subscriptionId) {
-          const org = await db.query.Orgs.findFirst({
-            where: eq(Orgs.stripeSubscriptionId, subscriptionId),
+          const org = await db.query.Families.findFirst({
+            where: eq(Families.stripeSubscriptionId, subscriptionId),
           });
 
           if (org) {
             await db
-              .update(Orgs)
+              .update(Families)
               .set({
                 stripeSubscriptionStatus: 'past_due',
               })
-              .where(eq(Orgs.id, org.id));
+              .where(eq(Families.id, org.id));
           }
         }
         break;

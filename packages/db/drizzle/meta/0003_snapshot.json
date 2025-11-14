@@ -1,0 +1,1363 @@
+{
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  },
+  "dialect": "postgresql",
+  "enums": {
+    "public.activityType": {
+      "name": "activityType",
+      "schema": "public",
+      "values": [
+        "sleep",
+        "feeding",
+        "bottle",
+        "nursing",
+        "pumping",
+        "diaper",
+        "wet",
+        "dirty",
+        "both",
+        "solids",
+        "bath",
+        "medicine",
+        "temperature",
+        "tummy_time",
+        "growth",
+        "potty"
+      ]
+    },
+    "public.feedingSource": {
+      "name": "feedingSource",
+      "schema": "public",
+      "values": ["pumped", "donor", "direct", "formula"]
+    },
+    "public.journeyStage": {
+      "name": "journeyStage",
+      "schema": "public",
+      "values": ["ttc", "pregnant", "born"]
+    },
+    "public.localConnectionStatus": {
+      "name": "localConnectionStatus",
+      "schema": "public",
+      "values": ["connected", "disconnected"]
+    },
+    "public.milestoneType": {
+      "name": "milestoneType",
+      "schema": "public",
+      "values": ["physical", "cognitive", "social", "language", "self_care"]
+    },
+    "public.stripeSubscriptionStatus": {
+      "name": "stripeSubscriptionStatus",
+      "schema": "public",
+      "values": [
+        "active",
+        "canceled",
+        "incomplete",
+        "incomplete_expired",
+        "past_due",
+        "paused",
+        "trialing",
+        "unpaid"
+      ]
+    },
+    "public.supplyTransactionType": {
+      "name": "supplyTransactionType",
+      "schema": "public",
+      "values": ["add", "deduct"]
+    },
+    "public.ttcMethod": {
+      "name": "ttcMethod",
+      "schema": "public",
+      "values": ["natural", "ivf", "other"]
+    },
+    "public.unitPref": {
+      "name": "unitPref",
+      "schema": "public",
+      "values": ["ML", "OZ"]
+    },
+    "public.userRole": {
+      "name": "userRole",
+      "schema": "public",
+      "values": ["primary", "partner", "caregiver"]
+    }
+  },
+  "id": "1dc21cd4-d37c-4223-8238-c1d7b8ef283c",
+  "policies": {},
+  "prevId": "bcf59dc1-d14e-489c-b860-4cbcef6fb78d",
+  "roles": {},
+  "schemas": {},
+  "sequences": {},
+  "tables": {
+    "public.activities": {
+      "checkConstraints": {},
+      "columns": {
+        "amount": {
+          "name": "amount",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "babyId": {
+          "name": "babyId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar(128)"
+        },
+        "createdAt": {
+          "default": "now()",
+          "name": "createdAt",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "details": {
+          "name": "details",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "json"
+        },
+        "duration": {
+          "name": "duration",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "endTime": {
+          "name": "endTime",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "feedingSource": {
+          "name": "feedingSource",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "feedingSource",
+          "typeSchema": "public"
+        },
+        "id": {
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "varchar(128)"
+        },
+        "isScheduled": {
+          "default": false,
+          "name": "isScheduled",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "boolean"
+        },
+        "notes": {
+          "name": "notes",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "startTime": {
+          "name": "startTime",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "type": {
+          "name": "type",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "activityType",
+          "typeSchema": "public"
+        },
+        "updatedAt": {
+          "default": "now()",
+          "name": "updatedAt",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "userId": {
+          "default": "requesting_user_id()",
+          "name": "userId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar(128)"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "activities_babyId_babies_id_fk": {
+          "columnsFrom": ["babyId"],
+          "columnsTo": ["id"],
+          "name": "activities_babyId_babies_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "activities",
+          "tableTo": "babies"
+        }
+      },
+      "indexes": {},
+      "isRLSEnabled": false,
+      "name": "activities",
+      "policies": {},
+      "schema": "",
+      "uniqueConstraints": {}
+    },
+    "public.babies": {
+      "checkConstraints": {},
+      "columns": {
+        "birthDate": {
+          "name": "birthDate",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "birthWeightOz": {
+          "name": "birthWeightOz",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "createdAt": {
+          "default": "now()",
+          "name": "createdAt",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "currentWeightOz": {
+          "name": "currentWeightOz",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "dueDate": {
+          "name": "dueDate",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "familyId": {
+          "default": "requesting_family_id()",
+          "name": "familyId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar(128)"
+        },
+        "feedIntervalHours": {
+          "default": 2.5,
+          "name": "feedIntervalHours",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "firstName": {
+          "name": "firstName",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "gender": {
+          "name": "gender",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "id": {
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "varchar(128)"
+        },
+        "journeyStage": {
+          "name": "journeyStage",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "journeyStage",
+          "typeSchema": "public"
+        },
+        "lastName": {
+          "name": "lastName",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "metadata": {
+          "name": "metadata",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "json"
+        },
+        "middleName": {
+          "name": "middleName",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "mlPerPump": {
+          "default": 24,
+          "name": "mlPerPump",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "photoUrl": {
+          "name": "photoUrl",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "pumpsPerDay": {
+          "default": 6,
+          "name": "pumpsPerDay",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "ttcMethod": {
+          "name": "ttcMethod",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "ttcMethod",
+          "typeSchema": "public"
+        },
+        "updatedAt": {
+          "default": "now()",
+          "name": "updatedAt",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "userId": {
+          "default": "requesting_user_id()",
+          "name": "userId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar(128)"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "babies_familyId_families_id_fk": {
+          "columnsFrom": ["familyId"],
+          "columnsTo": ["id"],
+          "name": "babies_familyId_families_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "babies",
+          "tableTo": "families"
+        }
+      },
+      "indexes": {},
+      "isRLSEnabled": false,
+      "name": "babies",
+      "policies": {},
+      "schema": "",
+      "uniqueConstraints": {}
+    },
+    "public.families": {
+      "checkConstraints": {},
+      "columns": {
+        "clerkOrgId": {
+          "name": "clerkOrgId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "createdAt": {
+          "default": "now()",
+          "name": "createdAt",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp with time zone"
+        },
+        "createdByUserId": {
+          "name": "createdByUserId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar"
+        },
+        "id": {
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "varchar(128)"
+        },
+        "name": {
+          "name": "name",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "stripeCustomerId": {
+          "name": "stripeCustomerId",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "stripeSubscriptionId": {
+          "name": "stripeSubscriptionId",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "stripeSubscriptionStatus": {
+          "name": "stripeSubscriptionStatus",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "stripeSubscriptionStatus",
+          "typeSchema": "public"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp with time zone"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "families_createdByUserId_users_id_fk": {
+          "columnsFrom": ["createdByUserId"],
+          "columnsTo": ["id"],
+          "name": "families_createdByUserId_users_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "families",
+          "tableTo": "users"
+        }
+      },
+      "indexes": {},
+      "isRLSEnabled": false,
+      "name": "families",
+      "policies": {},
+      "schema": "",
+      "uniqueConstraints": {
+        "families_clerkOrgId_unique": {
+          "columns": ["clerkOrgId"],
+          "name": "families_clerkOrgId_unique",
+          "nullsNotDistinct": false
+        },
+        "families_name_unique": {
+          "columns": ["name"],
+          "name": "families_name_unique",
+          "nullsNotDistinct": false
+        }
+      }
+    },
+    "public.familyMembers": {
+      "checkConstraints": {},
+      "columns": {
+        "createdAt": {
+          "default": "now()",
+          "name": "createdAt",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp with time zone"
+        },
+        "familyId": {
+          "default": "requesting_family_id()",
+          "name": "familyId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar"
+        },
+        "id": {
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "varchar(128)"
+        },
+        "onboardingCompletedAt": {
+          "name": "onboardingCompletedAt",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp with time zone"
+        },
+        "role": {
+          "default": "'primary'",
+          "name": "role",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "userRole",
+          "typeSchema": "public"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp with time zone"
+        },
+        "userId": {
+          "default": "requesting_user_id()",
+          "name": "userId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar"
+        },
+        "userRole": {
+          "name": "userRole",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "userRole",
+          "typeSchema": "public"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "familyMembers_familyId_families_id_fk": {
+          "columnsFrom": ["familyId"],
+          "columnsTo": ["id"],
+          "name": "familyMembers_familyId_families_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "familyMembers",
+          "tableTo": "families"
+        },
+        "familyMembers_userId_users_id_fk": {
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "name": "familyMembers_userId_users_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "familyMembers",
+          "tableTo": "users"
+        }
+      },
+      "indexes": {},
+      "isRLSEnabled": false,
+      "name": "familyMembers",
+      "policies": {},
+      "schema": "",
+      "uniqueConstraints": {
+        "familyMembers_userId_familyId_unique": {
+          "columns": ["userId", "familyId"],
+          "name": "familyMembers_userId_familyId_unique",
+          "nullsNotDistinct": false
+        }
+      }
+    },
+    "public.growthRecords": {
+      "checkConstraints": {},
+      "columns": {
+        "babyId": {
+          "name": "babyId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar(128)"
+        },
+        "createdAt": {
+          "default": "now()",
+          "name": "createdAt",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "date": {
+          "name": "date",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "headCircumference": {
+          "name": "headCircumference",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "height": {
+          "name": "height",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "id": {
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "varchar(128)"
+        },
+        "metadata": {
+          "name": "metadata",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "json"
+        },
+        "notes": {
+          "name": "notes",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "updatedAt": {
+          "default": "now()",
+          "name": "updatedAt",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "userId": {
+          "default": "requesting_user_id()",
+          "name": "userId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar(128)"
+        },
+        "weight": {
+          "name": "weight",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "integer"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "growthRecords_babyId_babies_id_fk": {
+          "columnsFrom": ["babyId"],
+          "columnsTo": ["id"],
+          "name": "growthRecords_babyId_babies_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "growthRecords",
+          "tableTo": "babies"
+        }
+      },
+      "indexes": {},
+      "isRLSEnabled": false,
+      "name": "growthRecords",
+      "policies": {},
+      "schema": "",
+      "uniqueConstraints": {}
+    },
+    "public.invitations": {
+      "checkConstraints": {},
+      "columns": {
+        "code": {
+          "name": "code",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar(128)"
+        },
+        "createdAt": {
+          "default": "now()",
+          "name": "createdAt",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp with time zone"
+        },
+        "expiresAt": {
+          "name": "expiresAt",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp with time zone"
+        },
+        "familyId": {
+          "default": "requesting_family_id()",
+          "name": "familyId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar"
+        },
+        "id": {
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "varchar(128)"
+        },
+        "invitedByUserId": {
+          "default": "requesting_user_id()",
+          "name": "invitedByUserId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar"
+        },
+        "isActive": {
+          "default": true,
+          "name": "isActive",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "boolean"
+        },
+        "role": {
+          "default": "'partner'",
+          "name": "role",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "userRole",
+          "typeSchema": "public"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp with time zone"
+        },
+        "usedAt": {
+          "name": "usedAt",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp with time zone"
+        },
+        "usedByUserId": {
+          "name": "usedByUserId",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "varchar"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "invitations_familyId_families_id_fk": {
+          "columnsFrom": ["familyId"],
+          "columnsTo": ["id"],
+          "name": "invitations_familyId_families_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "invitations",
+          "tableTo": "families"
+        },
+        "invitations_invitedByUserId_users_id_fk": {
+          "columnsFrom": ["invitedByUserId"],
+          "columnsTo": ["id"],
+          "name": "invitations_invitedByUserId_users_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "invitations",
+          "tableTo": "users"
+        },
+        "invitations_usedByUserId_users_id_fk": {
+          "columnsFrom": ["usedByUserId"],
+          "columnsTo": ["id"],
+          "name": "invitations_usedByUserId_users_id_fk",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "tableFrom": "invitations",
+          "tableTo": "users"
+        }
+      },
+      "indexes": {},
+      "isRLSEnabled": false,
+      "name": "invitations",
+      "policies": {},
+      "schema": "",
+      "uniqueConstraints": {
+        "invitations_code_unique": {
+          "columns": ["code"],
+          "name": "invitations_code_unique",
+          "nullsNotDistinct": false
+        }
+      }
+    },
+    "public.medicalRecords": {
+      "checkConstraints": {},
+      "columns": {
+        "babyId": {
+          "name": "babyId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar(128)"
+        },
+        "createdAt": {
+          "default": "now()",
+          "name": "createdAt",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "date": {
+          "name": "date",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "description": {
+          "name": "description",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "id": {
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "varchar(128)"
+        },
+        "location": {
+          "name": "location",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "metadata": {
+          "name": "metadata",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "json"
+        },
+        "provider": {
+          "name": "provider",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "title": {
+          "name": "title",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "type": {
+          "name": "type",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "updatedAt": {
+          "default": "now()",
+          "name": "updatedAt",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "userId": {
+          "default": "requesting_user_id()",
+          "name": "userId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar(128)"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "medicalRecords_babyId_babies_id_fk": {
+          "columnsFrom": ["babyId"],
+          "columnsTo": ["id"],
+          "name": "medicalRecords_babyId_babies_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "medicalRecords",
+          "tableTo": "babies"
+        }
+      },
+      "indexes": {},
+      "isRLSEnabled": false,
+      "name": "medicalRecords",
+      "policies": {},
+      "schema": "",
+      "uniqueConstraints": {}
+    },
+    "public.milestones": {
+      "checkConstraints": {},
+      "columns": {
+        "achievedDate": {
+          "name": "achievedDate",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "babyId": {
+          "name": "babyId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar(128)"
+        },
+        "createdAt": {
+          "default": "now()",
+          "name": "createdAt",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "description": {
+          "name": "description",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "id": {
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "varchar(128)"
+        },
+        "metadata": {
+          "name": "metadata",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "json"
+        },
+        "photoUrl": {
+          "name": "photoUrl",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "title": {
+          "name": "title",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "type": {
+          "name": "type",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "milestoneType",
+          "typeSchema": "public"
+        },
+        "updatedAt": {
+          "default": "now()",
+          "name": "updatedAt",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "userId": {
+          "default": "requesting_user_id()",
+          "name": "userId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar(128)"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "milestones_babyId_babies_id_fk": {
+          "columnsFrom": ["babyId"],
+          "columnsTo": ["id"],
+          "name": "milestones_babyId_babies_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "milestones",
+          "tableTo": "babies"
+        }
+      },
+      "indexes": {},
+      "isRLSEnabled": false,
+      "name": "milestones",
+      "policies": {},
+      "schema": "",
+      "uniqueConstraints": {}
+    },
+    "public.pushSubscriptions": {
+      "checkConstraints": {},
+      "columns": {
+        "auth": {
+          "name": "auth",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "createdAt": {
+          "default": "now()",
+          "name": "createdAt",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp with time zone"
+        },
+        "endpoint": {
+          "name": "endpoint",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "id": {
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "varchar(128)"
+        },
+        "p256dh": {
+          "name": "p256dh",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp with time zone"
+        },
+        "userId": {
+          "default": "requesting_user_id()",
+          "name": "userId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "pushSubscriptions_userId_users_id_fk": {
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "name": "pushSubscriptions_userId_users_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "pushSubscriptions",
+          "tableTo": "users"
+        }
+      },
+      "indexes": {},
+      "isRLSEnabled": false,
+      "name": "pushSubscriptions",
+      "policies": {},
+      "schema": "",
+      "uniqueConstraints": {
+        "pushSubscriptions_endpoint_unique": {
+          "columns": ["endpoint"],
+          "name": "pushSubscriptions_endpoint_unique",
+          "nullsNotDistinct": false
+        }
+      }
+    },
+    "public.shortUrls": {
+      "checkConstraints": {},
+      "columns": {
+        "code": {
+          "name": "code",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar(128)"
+        },
+        "createdAt": {
+          "default": "now()",
+          "name": "createdAt",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp with time zone"
+        },
+        "expiresAt": {
+          "name": "expiresAt",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp with time zone"
+        },
+        "familyId": {
+          "default": "requesting_family_id()",
+          "name": "familyId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar"
+        },
+        "id": {
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "varchar(128)"
+        },
+        "isActive": {
+          "default": true,
+          "name": "isActive",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "boolean"
+        },
+        "redirectUrl": {
+          "name": "redirectUrl",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp with time zone"
+        },
+        "userId": {
+          "default": "requesting_user_id()",
+          "name": "userId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "shortUrls_familyId_families_id_fk": {
+          "columnsFrom": ["familyId"],
+          "columnsTo": ["id"],
+          "name": "shortUrls_familyId_families_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "shortUrls",
+          "tableTo": "families"
+        },
+        "shortUrls_userId_users_id_fk": {
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "name": "shortUrls_userId_users_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "shortUrls",
+          "tableTo": "users"
+        }
+      },
+      "indexes": {},
+      "isRLSEnabled": false,
+      "name": "shortUrls",
+      "policies": {},
+      "schema": "",
+      "uniqueConstraints": {}
+    },
+    "public.supplyInventory": {
+      "checkConstraints": {},
+      "columns": {
+        "babyId": {
+          "name": "babyId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar(128)"
+        },
+        "createdAt": {
+          "default": "now()",
+          "name": "createdAt",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "donorMl": {
+          "default": 0,
+          "name": "donorMl",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "formulaMl": {
+          "default": 0,
+          "name": "formulaMl",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "id": {
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "varchar(128)"
+        },
+        "pumpedMl": {
+          "default": 0,
+          "name": "pumpedMl",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "updatedAt": {
+          "default": "now()",
+          "name": "updatedAt",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "userId": {
+          "default": "requesting_user_id()",
+          "name": "userId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar(128)"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "supplyInventory_babyId_babies_id_fk": {
+          "columnsFrom": ["babyId"],
+          "columnsTo": ["id"],
+          "name": "supplyInventory_babyId_babies_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "supplyInventory",
+          "tableTo": "babies"
+        }
+      },
+      "indexes": {},
+      "isRLSEnabled": false,
+      "name": "supplyInventory",
+      "policies": {},
+      "schema": "",
+      "uniqueConstraints": {}
+    },
+    "public.supplyTransactions": {
+      "checkConstraints": {},
+      "columns": {
+        "amountMl": {
+          "name": "amountMl",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "babyId": {
+          "name": "babyId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar(128)"
+        },
+        "createdAt": {
+          "default": "now()",
+          "name": "createdAt",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "id": {
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "varchar(128)"
+        },
+        "notes": {
+          "name": "notes",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "source": {
+          "name": "source",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "feedingSource",
+          "typeSchema": "public"
+        },
+        "timestamp": {
+          "default": "now()",
+          "name": "timestamp",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "type": {
+          "name": "type",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "supplyTransactionType",
+          "typeSchema": "public"
+        },
+        "updatedAt": {
+          "default": "now()",
+          "name": "updatedAt",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "userId": {
+          "default": "requesting_user_id()",
+          "name": "userId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "varchar(128)"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "supplyTransactions_babyId_babies_id_fk": {
+          "columnsFrom": ["babyId"],
+          "columnsTo": ["id"],
+          "name": "supplyTransactions_babyId_babies_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "supplyTransactions",
+          "tableTo": "babies"
+        }
+      },
+      "indexes": {},
+      "isRLSEnabled": false,
+      "name": "supplyTransactions",
+      "policies": {},
+      "schema": "",
+      "uniqueConstraints": {}
+    },
+    "public.users": {
+      "checkConstraints": {},
+      "columns": {
+        "avatarUrl": {
+          "name": "avatarUrl",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "clerkId": {
+          "name": "clerkId",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "createdAt": {
+          "default": "now()",
+          "name": "createdAt",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "timestamp"
+        },
+        "email": {
+          "name": "email",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "firstName": {
+          "name": "firstName",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "id": {
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "varchar(128)"
+        },
+        "lastLoggedInAt": {
+          "name": "lastLoggedInAt",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp with time zone"
+        },
+        "lastName": {
+          "name": "lastName",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "online": {
+          "default": false,
+          "name": "online",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "boolean"
+        },
+        "unitPref": {
+          "default": "'ML'",
+          "name": "unitPref",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "unitPref",
+          "typeSchema": "public"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "timestamp with time zone"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {},
+      "indexes": {},
+      "isRLSEnabled": false,
+      "name": "users",
+      "policies": {},
+      "schema": "",
+      "uniqueConstraints": {
+        "users_clerkId_unique": {
+          "columns": ["clerkId"],
+          "name": "users_clerkId_unique",
+          "nullsNotDistinct": false
+        }
+      }
+    }
+  },
+  "version": "7",
+  "views": {}
+}

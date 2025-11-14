@@ -1,9 +1,10 @@
 import { activitiesRouter } from './router/activities';
 import { babiesRouter } from './router/babies';
 import { billingRouter } from './router/billing';
+import { familyRouter } from './router/family';
+import { familyMembersRouter } from './router/family-members';
+import { invitationsRouter } from './router/invitations';
 import { onboardingRouter } from './router/onboarding';
-import { orgRouter } from './router/org';
-import { orgMembersRouter } from './router/org-members';
 import { supplyInventoryRouter } from './router/supply-inventory';
 import { supplyTransactionsRouter } from './router/supply-transactions';
 import { userRouter } from './router/user';
@@ -13,9 +14,10 @@ export const appRouter = createTRPCRouter({
   activities: activitiesRouter,
   babies: babiesRouter,
   billing: billingRouter,
+  family: familyRouter,
+  familyMembers: familyMembersRouter,
+  invitations: invitationsRouter,
   onboarding: onboardingRouter,
-  org: orgRouter,
-  orgMembers: orgMembersRouter,
   supplyInventory: supplyInventoryRouter,
   supplyTransactions: supplyTransactionsRouter,
   user: userRouter,

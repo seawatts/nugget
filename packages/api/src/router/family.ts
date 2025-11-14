@@ -1,10 +1,10 @@
-import { OrgMembers, Orgs } from '@nugget/db/schema';
+import { Families, FamilyMembers } from '@nugget/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { createOrg } from '../services';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
-export const orgRouter = createTRPCRouter({
+export const familyRouter = createTRPCRouter({
   checkNameAvailability: protectedProcedure
     .input(
       z.object({
@@ -13,12 +13,12 @@ export const orgRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      // First check if the user already has access to an organization with this name
-      const existingOrgWithAccess = await ctx.db.query.Orgs.findFirst({
-        where: eq(Orgs.name, input.name),
+      // First check if the user already has access to a family with this name
+      const existingOrgWithAccess = await ctx.db.query.Families.findFirst({
+        where: eq(Families.name, input.name),
         with: {
           familyMembers: {
-            where: eq(OrgMembers.userId, ctx.auth.userId),
+            where: eq(FamilyMembers.userId, ctx.auth.userId),
           },
         },
       });
@@ -34,8 +34,8 @@ export const orgRouter = createTRPCRouter({
         };
       }
 
-      const existingOrg = await ctx.db.query.Orgs.findFirst({
-        where: eq(Orgs.name, input.name),
+      const existingOrg = await ctx.db.query.Families.findFirst({
+        where: eq(Families.name, input.name),
       });
 
       const isAvailable =
@@ -51,9 +51,44 @@ export const orgRouter = createTRPCRouter({
     }),
   current: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.auth.orgId) throw new Error('Organization ID is required');
-    return ctx.db.query.Orgs.findFirst({
-      where: eq(Orgs.id, ctx.auth.orgId),
+    return ctx.db.query.Families.findFirst({
+      where: eq(Families.id, ctx.auth.orgId),
     });
+  }),
+
+  // Delete an organization and all associated data
+  delete: protectedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.auth.orgId) throw new Error('Organization ID is required');
+
+    // Verify the org exists and user has access to it
+    const org = await ctx.db.query.Families.findFirst({
+      where: eq(Families.id, ctx.auth.orgId),
+      with: {
+        familyMembers: {
+          where: eq(FamilyMembers.userId, ctx.auth.userId),
+        },
+      },
+    });
+
+    if (!org) {
+      throw new Error('Organization not found');
+    }
+
+    if (org.familyMembers.length === 0) {
+      throw new Error('You do not have permission to delete this organization');
+    }
+
+    // Delete the organization (cascades to babies, activities, supply transactions, etc.)
+    const [deletedOrg] = await ctx.db
+      .delete(Families)
+      .where(eq(Families.id, ctx.auth.orgId))
+      .returning();
+
+    if (!deletedOrg) {
+      throw new Error('Failed to delete organization');
+    }
+
+    return { success: true };
   }),
 
   updateName: protectedProcedure
@@ -72,9 +107,9 @@ export const orgRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       if (!ctx.auth.orgId) throw new Error('Organization ID is required');
 
-      // Check if organization name already exists
-      const existingOrg = await ctx.db.query.Orgs.findFirst({
-        where: eq(Orgs.name, input.name),
+      // Check if family name already exists
+      const existingOrg = await ctx.db.query.Families.findFirst({
+        where: eq(Families.name, input.name),
       });
 
       if (existingOrg && existingOrg.id !== ctx.auth.orgId) {
@@ -82,12 +117,12 @@ export const orgRouter = createTRPCRouter({
       }
 
       const [updatedOrg] = await ctx.db
-        .update(Orgs)
+        .update(Families)
         .set({
           name: input.name,
           updatedAt: new Date(),
         })
-        .where(eq(Orgs.id, ctx.auth.orgId))
+        .where(eq(Families.id, ctx.auth.orgId))
         .returning();
 
       return updatedOrg;
@@ -108,8 +143,8 @@ export const orgRouter = createTRPCRouter({
       }
 
       try {
-        const existingOrg = await ctx.db.query.Orgs.findFirst({
-          where: eq(Orgs.name, input.name),
+        const existingOrg = await ctx.db.query.Families.findFirst({
+          where: eq(Families.name, input.name),
         });
 
         if (existingOrg) {

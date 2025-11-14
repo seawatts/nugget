@@ -1,7 +1,7 @@
 import type { OrganizationJSON, WebhookEvent } from '@clerk/nextjs/server';
 import { posthog } from '@nugget/analytics/posthog/server';
 import { db } from '@nugget/db/client';
-import { Orgs, Users } from '@nugget/db/schema';
+import { Families, Users } from '@nugget/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function handleOrganizationCreated(event: WebhookEvent) {
@@ -24,7 +24,7 @@ export async function handleOrganizationCreated(event: WebhookEvent) {
   }
 
   const [org] = await db
-    .insert(Orgs)
+    .insert(Families)
     .values({
       clerkOrgId: orgData.id,
       createdByUserId: createdByUser.id,
@@ -36,7 +36,7 @@ export async function handleOrganizationCreated(event: WebhookEvent) {
         createdByUserId: createdByUser.id,
         name: orgData.name,
       },
-      target: Orgs.clerkOrgId,
+      target: Families.clerkOrgId,
     })
     .returning();
 

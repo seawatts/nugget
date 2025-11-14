@@ -14,6 +14,20 @@
       "tag": "0001_last_wolfpack",
       "version": "7",
       "when": 1763076298877
+    },
+    {
+      "breakpoints": true,
+      "idx": 2,
+      "tag": "0002_even_iron_lad",
+      "version": "7",
+      "when": 1763098481718
+    },
+    {
+      "breakpoints": true,
+      "idx": 3,
+      "tag": "0003_tiresome_electro",
+      "version": "7",
+      "when": 1763110404847
     }
   ],
   "version": "7"

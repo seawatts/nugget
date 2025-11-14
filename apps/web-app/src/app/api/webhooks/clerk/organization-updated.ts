@@ -1,7 +1,7 @@
 import type { OrganizationJSON, WebhookEvent } from '@clerk/nextjs/server';
 import { posthog } from '@nugget/analytics/posthog/server';
 import { db } from '@nugget/db/client';
-import { Orgs } from '@nugget/db/schema';
+import { Families } from '@nugget/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function handleOrganizationUpdated(event: WebhookEvent) {
@@ -9,11 +9,11 @@ export async function handleOrganizationUpdated(event: WebhookEvent) {
   const orgData = event.data as OrganizationJSON;
 
   const [org] = await db
-    .update(Orgs)
+    .update(Families)
     .set({
       name: orgData.name,
     })
-    .where(eq(Orgs.clerkOrgId, orgData.id))
+    .where(eq(Families.clerkOrgId, orgData.id))
     .returning();
 
   if (!org) {

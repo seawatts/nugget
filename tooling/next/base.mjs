@@ -1,3 +1,4 @@
+import withPWA from '@ducanh2912/next-pwa';
 import withBundleAnalyzer from '@next/bundle-analyzer';
 import { withPostHogConfig } from '@posthog/nextjs-config';
 
@@ -57,10 +58,6 @@ const nextConfig = {
     '@nugget/logger',
     '@nugget/zustand',
   ],
-  turbopack: {
-    // Set the workspace root to silence the lockfile warning
-    root: '../..',
-  },
   typescript: { ignoreBuildErrors: true },
 };
 
@@ -68,6 +65,86 @@ const withPlugins = [
   process.env.WITH_BUNDLE_ANALYZER === 'true'
     ? withBundleAnalyzer({ enabled: true })
     : null,
+  withPWA({
+    dest: 'public',
+    disable: process.env.NODE_ENV === 'development',
+    fallbacks: {
+      document: '/offline',
+    },
+    register: true,
+    skipWaiting: true,
+    workboxOptions: {
+      runtimeCaching: [
+        {
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'google-fonts',
+            expiration: {
+              maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+              maxEntries: 4,
+            },
+          },
+          urlPattern: /^https:\/\/fonts\.(?:gstatic|googleapis)\.com\/.*/i,
+        },
+        {
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'image-cache',
+            expiration: {
+              maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+              maxEntries: 64,
+            },
+          },
+          urlPattern: /^https:\/\/.*\.(?:png|jpg|jpeg|svg|gif|webp)$/i,
+        },
+        {
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'static-font-assets',
+            expiration: {
+              maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+              maxEntries: 4,
+            },
+          },
+          urlPattern: /\.(?:eot|otf|ttc|ttf|woff|woff2|font.css)$/i,
+        },
+        {
+          handler: 'StaleWhileRevalidate',
+          options: {
+            cacheName: 'static-style-script-assets',
+            expiration: {
+              maxAgeSeconds: 24 * 60 * 60, // 24 hours
+              maxEntries: 32,
+            },
+          },
+          urlPattern: /\.(?:css|js)$/i,
+        },
+        {
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'api-cache',
+            expiration: {
+              maxAgeSeconds: 5 * 60, // 5 minutes
+              maxEntries: 16,
+            },
+            networkTimeoutSeconds: 10,
+          },
+          urlPattern: /^\/api\/.*/i,
+        },
+        {
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'pages-cache',
+            expiration: {
+              maxAgeSeconds: 24 * 60 * 60, // 24 hours
+              maxEntries: 32,
+            },
+          },
+          urlPattern: /^\/app\/.*/i,
+        },
+      ],
+    },
+  }),
 ].filter((plugin) => plugin !== null);
 
 const configWithPlugins = withPlugins.reduce(

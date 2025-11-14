@@ -2,7 +2,7 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@nugget/db/client';
-import { Orgs } from '@nugget/db/schema';
+import { Families } from '@nugget/db/schema';
 import {
   BILLING_INTERVALS,
   createCheckoutSession,
@@ -36,8 +36,8 @@ export const createCheckoutSessionAction = action
     }
 
     // Get the organization
-    const org = await db.query.Orgs.findFirst({
-      where: eq(Orgs.id, parsedInput.orgId),
+    const org = await db.query.Families.findFirst({
+      where: eq(Families.id, parsedInput.orgId),
     });
 
     if (!org) {
@@ -72,11 +72,11 @@ export const createCheckoutSessionAction = action
 
       // Update org with customer ID
       await db
-        .update(Orgs)
+        .update(Families)
         .set({
           stripeCustomerId: customerId,
         })
-        .where(eq(Orgs.id, parsedInput.orgId));
+        .where(eq(Families.id, parsedInput.orgId));
     }
 
     // Create checkout session

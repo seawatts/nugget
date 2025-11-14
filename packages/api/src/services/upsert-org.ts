@@ -4,7 +4,7 @@ import {
   type User,
 } from '@clerk/nextjs/server';
 import { db } from '@nugget/db/client';
-import { OrgMembers, Orgs, Users } from '@nugget/db/schema';
+import { Families, FamilyMembers, Users } from '@nugget/db/schema';
 import { generateRandomName, generateUniqueOrgName } from '@nugget/id';
 import {
   BILLING_INTERVALS,
@@ -33,7 +33,7 @@ type UpsertOrgResult = {
 };
 
 // Helper function to create or update org membership
-async function ensureOrgMembership({
+async function ensureFamilyMembership({
   orgId,
   userId,
   tx,
@@ -43,7 +43,7 @@ async function ensureOrgMembership({
   tx: Transaction;
 }) {
   await tx
-    .insert(OrgMembers)
+    .insert(FamilyMembers)
     .values({
       familyId: orgId,
       role: 'primary',
@@ -53,7 +53,7 @@ async function ensureOrgMembership({
       set: {
         updatedAt: new Date(),
       },
-      target: [OrgMembers.familyId, OrgMembers.userId],
+      target: [FamilyMembers.familyId, FamilyMembers.userId],
     });
 }
 
@@ -71,7 +71,7 @@ async function upsertOrgInDatabase({
   tx: Transaction;
 }) {
   const [org] = await tx
-    .insert(Orgs)
+    .insert(Families)
     .values({
       clerkOrgId,
       createdByUserId: userId,
@@ -85,7 +85,7 @@ async function upsertOrgInDatabase({
         stripeCustomerId,
         updatedAt: new Date(),
       },
-      target: [Orgs.clerkOrgId],
+      target: [Families.clerkOrgId],
     })
     .returning();
 
@@ -108,12 +108,12 @@ async function updateOrgWithStripeCustomerId({
   tx: Transaction;
 }) {
   await tx
-    .update(Orgs)
+    .update(Families)
     .set({
       stripeCustomerId,
       updatedAt: new Date(),
     })
-    .where(eq(Orgs.id, orgId));
+    .where(eq(Families.id, orgId));
 }
 
 async function autoSubscribeToFreePlan({
@@ -153,14 +153,14 @@ async function autoSubscribeToFreePlan({
 
     // Update org with subscription info
     await tx
-      .update(Orgs)
+      .update(Families)
       .set({
         stripeCustomerId: customerId,
         stripeSubscriptionId: subscription.id,
         stripeSubscriptionStatus: subscription.status,
         updatedAt: new Date(),
       })
-      .where(eq(Orgs.id, orgId));
+      .where(eq(Families.id, orgId));
 
     console.log(
       `Auto-subscribed org ${orgId} to free plan with subscription ${subscription.id}`,
@@ -254,7 +254,7 @@ async function buildOrgResult({
   userId: string;
 }): Promise<UpsertOrgResult> {
   // Ensure org membership
-  await ensureOrgMembership({ orgId: org.id, tx, userId });
+  await ensureFamilyMembership({ orgId: org.id, tx, userId });
 
   return {
     org: {
@@ -287,27 +287,27 @@ async function findExistingOrg({
   const [existingMembership, existingOrgByOrgId, existingOrgByUser] =
     await Promise.all([
       // Check 1: User already has an org membership
-      tx.query.OrgMembers.findFirst({
-        where: eq(OrgMembers.userId, userId),
+      tx.query.FamilyMembers.findFirst({
+        where: eq(FamilyMembers.userId, userId),
       }),
       // Check 2: If orgId is provided, check if organization already exists
       orgId
-        ? tx.query.Orgs.findFirst({
-            where: eq(Orgs.clerkOrgId, orgId),
+        ? tx.query.Families.findFirst({
+            where: eq(Families.clerkOrgId, orgId),
           })
         : null,
       // Check 3: User has created any organization
       !orgId
-        ? tx.query.Orgs.findFirst({
-            where: eq(Orgs.createdByUserId, userId),
+        ? tx.query.Families.findFirst({
+            where: eq(Families.createdByUserId, userId),
           })
         : null,
     ]);
 
   // Check 1: User already has an org membership
   if (existingMembership && !orgId) {
-    const existingOrg = await tx.query.Orgs.findFirst({
-      where: eq(Orgs.id, existingMembership.familyId),
+    const existingOrg = await tx.query.Families.findFirst({
+      where: eq(Families.id, existingMembership.familyId),
     });
 
     if (existingOrg) {
@@ -430,8 +430,8 @@ export async function upsertOrg({
       while (attempts < maxAttempts) {
         try {
           // Check if organization name already exists in database
-          const existingOrgByName = await tx.query.Orgs.findFirst({
-            where: eq(Orgs.name, orgName),
+          const existingOrgByName = await tx.query.Families.findFirst({
+            where: eq(Families.name, orgName),
           });
 
           if (existingOrgByName) {
@@ -498,8 +498,8 @@ export async function upsertOrg({
     }
 
     // Final check: Double-check that the organization wasn't created by another process
-    const finalCheckOrg = await tx.query.Orgs.findFirst({
-      where: eq(Orgs.clerkOrgId, clerkOrg.id),
+    const finalCheckOrg = await tx.query.Families.findFirst({
+      where: eq(Families.clerkOrgId, clerkOrg.id),
     });
 
     if (finalCheckOrg) {

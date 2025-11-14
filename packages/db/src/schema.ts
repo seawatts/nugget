@@ -93,6 +93,15 @@ export const journeyStageEnum = pgEnum('journeyStage', [
   'born',
 ]);
 export const ttcMethodEnum = pgEnum('ttcMethod', ['natural', 'ivf', 'other']);
+export const measurementUnitEnum = pgEnum('measurementUnit', [
+  'imperial',
+  'metric',
+]);
+export const temperatureUnitEnum = pgEnum('temperatureUnit', [
+  'fahrenheit',
+  'celsius',
+]);
+export const timeFormatEnum = pgEnum('timeFormat', ['12h', '24h']);
 
 // Zod enum types
 export const UserRoleType = z.enum(userRoleEnum.enumValues).enum;
@@ -111,6 +120,9 @@ export const SupplyTransactionTypeType = z.enum(
 ).enum;
 export const JourneyStageType = z.enum(journeyStageEnum.enumValues).enum;
 export const TTCMethodType = z.enum(ttcMethodEnum.enumValues).enum;
+export const MeasurementUnitType = z.enum(measurementUnitEnum.enumValues).enum;
+export const TemperatureUnitType = z.enum(temperatureUnitEnum.enumValues).enum;
+export const TimeFormatType = z.enum(timeFormatEnum.enumValues).enum;
 
 // ============================================================================
 // Tables - Users & Families
@@ -128,7 +140,15 @@ export const Users = pgTable('users', {
     withTimezone: true,
   }),
   lastName: text('lastName'),
+  // User preferences
+  measurementUnit: measurementUnitEnum('measurementUnit')
+    .default('imperial')
+    .notNull(),
   online: boolean('online').default(false).notNull(),
+  temperatureUnit: temperatureUnitEnum('temperatureUnit')
+    .default('fahrenheit')
+    .notNull(),
+  timeFormat: timeFormatEnum('timeFormat').default('12h').notNull(),
   unitPref: unitPrefEnum('unitPref').default('ML').notNull(), // User's preferred unit for display
   updatedAt: timestamp('updatedAt', {
     mode: 'date',
@@ -233,6 +253,71 @@ export const ShortUrls = pgTable('shortUrls', {
     })
     .notNull()
     .default(requestingUserId()),
+});
+
+export const pushSubscriptions = pgTable('pushSubscriptions', {
+  auth: text('auth').notNull(),
+  createdAt: timestamp('createdAt', {
+    mode: 'date',
+    withTimezone: true,
+  }).defaultNow(),
+  endpoint: text('endpoint').notNull().unique(),
+  id: varchar('id', { length: 128 })
+    .$defaultFn(() => createId({ prefix: 'pushSub' }))
+    .notNull()
+    .primaryKey(),
+  p256dh: text('p256dh').notNull(),
+  updatedAt: timestamp('updatedAt', {
+    mode: 'date',
+    withTimezone: true,
+  }).$onUpdateFn(() => new Date()),
+  userId: varchar('userId')
+    .references(() => Users.id, {
+      onDelete: 'cascade',
+    })
+    .notNull()
+    .default(requestingUserId()),
+});
+
+export const Invitations = pgTable('invitations', {
+  code: varchar('code', { length: 128 }).notNull().unique(),
+  createdAt: timestamp('createdAt', {
+    mode: 'date',
+    withTimezone: true,
+  }).defaultNow(),
+  expiresAt: timestamp('expiresAt', {
+    mode: 'date',
+    withTimezone: true,
+  }).notNull(),
+  familyId: varchar('familyId')
+    .references(() => Families.id, {
+      onDelete: 'cascade',
+    })
+    .notNull()
+    .default(requestingFamilyId()),
+  id: varchar('id', { length: 128 })
+    .$defaultFn(() => createId({ prefix: 'invite' }))
+    .notNull()
+    .primaryKey(),
+  invitedByUserId: varchar('invitedByUserId')
+    .references(() => Users.id, {
+      onDelete: 'cascade',
+    })
+    .notNull()
+    .default(requestingUserId()),
+  isActive: boolean('isActive').notNull().default(true),
+  role: userRoleEnum('role').default('partner').notNull(),
+  updatedAt: timestamp('updatedAt', {
+    mode: 'date',
+    withTimezone: true,
+  }).$onUpdateFn(() => new Date()),
+  usedAt: timestamp('usedAt', {
+    mode: 'date',
+    withTimezone: true,
+  }),
+  usedByUserId: varchar('usedByUserId').references(() => Users.id, {
+    onDelete: 'set null',
+  }),
 });
 
 // ============================================================================
@@ -346,7 +431,7 @@ export const Babies = pgTable('babies', {
   gender: text('gender'),
   id: varchar('id', { length: 128 })
     .primaryKey()
-    .$defaultFn(() => createId()),
+    .$defaultFn(() => createId({ prefix: 'baby' })),
   journeyStage: journeyStageEnum('journeyStage'),
   lastName: text('lastName'),
   metadata: json('metadata').$type<Record<string, unknown>>(),
@@ -373,14 +458,10 @@ export const Activities = pgTable('activities', {
   details: json('details').$type<ActivityDetails>(),
   duration: integer('duration'), // in minutes
   endTime: timestamp('endTime', { mode: 'date' }),
-  familyMemberId: varchar('familyMemberId', { length: 128 }).references(
-    () => FamilyMembers.id,
-    { onDelete: 'set null' },
-  ), // FamilyMember who performed/assigned the activity
   feedingSource: feedingSourceEnum('feedingSource'), // Source of milk/formula for feeding activities
   id: varchar('id', { length: 128 })
     .primaryKey()
-    .$defaultFn(() => createId()),
+    .$defaultFn(() => createId({ prefix: 'activity' })),
   isScheduled: boolean('isScheduled').default(false).notNull(), // Whether this is a scheduled/future feed
   notes: text('notes'),
   startTime: timestamp('startTime', { mode: 'date' }).notNull(),
@@ -403,7 +484,7 @@ export const MedicalRecords = pgTable('medicalRecords', {
   description: text('description'),
   id: varchar('id', { length: 128 })
     .primaryKey()
-    .$defaultFn(() => createId()),
+    .$defaultFn(() => createId({ prefix: 'medical' })),
   location: text('location'),
   metadata: json('metadata').$type<Record<string, unknown>>(),
   provider: text('provider'),
@@ -427,7 +508,7 @@ export const Milestones = pgTable('milestones', {
   description: text('description'),
   id: varchar('id', { length: 128 })
     .primaryKey()
-    .$defaultFn(() => createId()),
+    .$defaultFn(() => createId({ prefix: 'milestone' })),
   metadata: json('metadata').$type<Record<string, unknown>>(),
   photoUrl: text('photoUrl'),
   title: text('title').notNull(),
@@ -451,7 +532,7 @@ export const GrowthRecords = pgTable('growthRecords', {
   height: integer('height'), // in cm
   id: varchar('id', { length: 128 })
     .primaryKey()
-    .$defaultFn(() => createId()),
+    .$defaultFn(() => createId({ prefix: 'growth' })),
   metadata: json('metadata').$type<Record<string, unknown>>(),
   notes: text('notes'),
   updatedAt: timestamp('updatedAt', { mode: 'date' })
@@ -477,7 +558,7 @@ export const SupplyInventory = pgTable('supplyInventory', {
   formulaMl: integer('formulaMl').default(0).notNull(), // Formula in ml
   id: varchar('id', { length: 128 })
     .primaryKey()
-    .$defaultFn(() => createId()),
+    .$defaultFn(() => createId({ prefix: 'inventory' })),
   pumpedMl: integer('pumpedMl').default(0).notNull(), // Pumped milk in ml
   updatedAt: timestamp('updatedAt', { mode: 'date' })
     .notNull()
@@ -494,13 +575,9 @@ export const SupplyTransactions = pgTable('supplyTransactions', {
     .notNull()
     .references(() => Babies.id, { onDelete: 'cascade' }),
   createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
-  familyMemberId: varchar('familyMemberId', { length: 128 }).references(
-    () => FamilyMembers.id,
-    { onDelete: 'set null' },
-  ), // Who made the transaction
   id: varchar('id', { length: 128 })
     .primaryKey()
-    .$defaultFn(() => createId()),
+    .$defaultFn(() => createId({ prefix: 'transaction' })),
   notes: text('notes'),
   source: feedingSourceEnum('source').notNull(), // pumped, donor, or formula
   timestamp: timestamp('timestamp', { mode: 'date' }).notNull().defaultNow(),
@@ -520,6 +597,8 @@ export const SupplyTransactions = pgTable('supplyTransactions', {
 
 export const UsersRelations = relations(Users, ({ many }) => ({
   familyMembers: many(FamilyMembers),
+  invitationsSent: many(Invitations, { relationName: 'invitedBy' }),
+  invitationsUsed: many(Invitations, { relationName: 'usedBy' }),
 }));
 
 export const FamiliesRelations = relations(Families, ({ one, many }) => ({
@@ -528,6 +607,7 @@ export const FamiliesRelations = relations(Families, ({ one, many }) => ({
     references: [Users.id],
   }),
   familyMembers: many(FamilyMembers),
+  invitations: many(Invitations),
 }));
 
 export const FamilyMembersRelations = relations(FamilyMembers, ({ one }) => ({
@@ -552,6 +632,23 @@ export const ShortUrlsRelations = relations(ShortUrls, ({ one }) => ({
   }),
 }));
 
+export const InvitationsRelations = relations(Invitations, ({ one }) => ({
+  family: one(Families, {
+    fields: [Invitations.familyId],
+    references: [Families.id],
+  }),
+  invitedBy: one(Users, {
+    fields: [Invitations.invitedByUserId],
+    references: [Users.id],
+    relationName: 'invitedBy',
+  }),
+  usedBy: one(Users, {
+    fields: [Invitations.usedByUserId],
+    references: [Users.id],
+    relationName: 'usedBy',
+  }),
+}));
+
 export const BabiesRelations = relations(Babies, ({ one, many }) => ({
   activities: many(Activities),
   family: one(Families, {
@@ -563,6 +660,10 @@ export const BabiesRelations = relations(Babies, ({ one, many }) => ({
   milestones: many(Milestones),
   supplyInventory: many(SupplyInventory),
   supplyTransactions: many(SupplyTransactions),
+  user: one(Users, {
+    fields: [Babies.userId],
+    references: [Users.id],
+  }),
 }));
 
 export const ActivitiesRelations = relations(Activities, ({ one }) => ({
@@ -570,9 +671,9 @@ export const ActivitiesRelations = relations(Activities, ({ one }) => ({
     fields: [Activities.babyId],
     references: [Babies.id],
   }),
-  familyMember: one(FamilyMembers, {
-    fields: [Activities.familyMemberId],
-    references: [FamilyMembers.id],
+  user: one(Users, {
+    fields: [Activities.userId],
+    references: [Users.id],
   }),
 }));
 
@@ -581,6 +682,10 @@ export const MedicalRecordsRelations = relations(MedicalRecords, ({ one }) => ({
     fields: [MedicalRecords.babyId],
     references: [Babies.id],
   }),
+  user: one(Users, {
+    fields: [MedicalRecords.userId],
+    references: [Users.id],
+  }),
 }));
 
 export const MilestonesRelations = relations(Milestones, ({ one }) => ({
@@ -588,12 +693,20 @@ export const MilestonesRelations = relations(Milestones, ({ one }) => ({
     fields: [Milestones.babyId],
     references: [Babies.id],
   }),
+  user: one(Users, {
+    fields: [Milestones.userId],
+    references: [Users.id],
+  }),
 }));
 
 export const GrowthRecordsRelations = relations(GrowthRecords, ({ one }) => ({
   baby: one(Babies, {
     fields: [GrowthRecords.babyId],
     references: [Babies.id],
+  }),
+  user: one(Users, {
+    fields: [GrowthRecords.userId],
+    references: [Users.id],
   }),
 }));
 
@@ -603,6 +716,10 @@ export const SupplyInventoryRelations = relations(
     baby: one(Babies, {
       fields: [SupplyInventory.babyId],
       references: [Babies.id],
+    }),
+    user: one(Users, {
+      fields: [SupplyInventory.userId],
+      references: [Users.id],
     }),
   }),
 );
@@ -614,9 +731,9 @@ export const SupplyTransactionsRelations = relations(
       fields: [SupplyTransactions.babyId],
       references: [Babies.id],
     }),
-    familyMember: one(FamilyMembers, {
-      fields: [SupplyTransactions.familyMemberId],
-      references: [FamilyMembers.id],
+    user: one(Users, {
+      fields: [SupplyTransactions.userId],
+      references: [Users.id],
     }),
   }),
 );
@@ -632,6 +749,12 @@ export type FamilyMemberType = typeof FamilyMembers.$inferSelect & {
   family?: FamilyType;
 };
 export type ShortUrlType = typeof ShortUrls.$inferSelect;
+export type InvitationType = typeof Invitations.$inferSelect & {
+  invitedBy?: UserType;
+  usedBy?: UserType;
+  family?: FamilyType;
+};
+export type NewInvitation = typeof Invitations.$inferInsert;
 
 export type Baby = typeof Babies.$inferSelect;
 export type NewBaby = typeof Babies.$inferInsert;
@@ -681,6 +804,22 @@ export const UpdateShortUrlSchema = createUpdateSchema(ShortUrls).omit({
   userId: true,
 });
 
+export const insertInvitationSchema = createInsertSchema(Invitations).omit({
+  createdAt: true,
+  familyId: true,
+  id: true,
+  invitedByUserId: true,
+  updatedAt: true,
+});
+export const selectInvitationSchema = createSelectSchema(Invitations);
+export const updateInvitationSchema = createUpdateSchema(Invitations).omit({
+  createdAt: true,
+  familyId: true,
+  id: true,
+  invitedByUserId: true,
+  updatedAt: true,
+});
+
 export const insertBabySchema = createInsertSchema(Babies);
 export const selectBabySchema = createSelectSchema(Babies);
 export const updateBabySchema = insertBabySchema.partial();
@@ -724,11 +863,3 @@ export const updateFamilyMemberSchema = insertFamilyMemberSchema.partial();
 // ============================================================================
 // Backward compatibility exports (deprecated - use Families/FamilyMembers)
 // ============================================================================
-/** @deprecated Use Families instead */
-export const Orgs = Families;
-/** @deprecated Use FamilyMembers instead */
-export const OrgMembers = FamilyMembers;
-/** @deprecated Use FamilyType instead */
-export type OrgType = FamilyType;
-/** @deprecated Use FamilyMemberType instead */
-export type OrgMembersType = FamilyMemberType;
