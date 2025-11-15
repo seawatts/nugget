@@ -5,7 +5,6 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../src/supabase/types';
 
 const CLERK_DOMAIN = 'clerk.nugget.baby';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
@@ -61,7 +60,7 @@ async function testSupabaseJWTValidation(clerkToken: string | null) {
 
   try {
     // Try to create a client with the Clerk token
-    const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
         autoRefreshToken: false,
         detectSessionInUrl: false,
@@ -96,10 +95,11 @@ async function testRequestingUserIdFunction() {
   console.log('\n🔧 Test 3: Testing requesting_user_id() function...');
 
   try {
-    const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // Try to call the function
-    const { data, error } = await supabase.rpc('requesting_user_id');
+    // biome-ignore lint/suspicious/noExplicitAny: Test script needs to work with dynamic RPC calls
+    const { data, error } = await (supabase.rpc as any)('requesting_user_id');
 
     if (error) {
       // This is expected if not authenticated, but the function should exist
@@ -129,7 +129,7 @@ async function testStorageBucket() {
   console.log('\n🪣 Test 4: Checking storage bucket configuration...');
 
   try {
-    const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const { data, error } = await supabase.storage.listBuckets();
 
@@ -225,7 +225,7 @@ async function testStorageUpload(clerkToken: string | null) {
   }
 
   try {
-    const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
         autoRefreshToken: false,
         detectSessionInUrl: false,
@@ -318,19 +318,27 @@ async function runTests() {
   ];
 
   for (const test of tests) {
-    const status = test.result.skipped
+    const result = test.result as { success: boolean; skipped?: boolean };
+    const status = result.skipped
       ? '⏭️  SKIPPED'
-      : test.result.success
+      : result.success
         ? '✅ PASSED'
         : '❌ FAILED';
     console.log(`${status}  ${test.name}`);
   }
 
-  const passed = tests.filter((t) => t.result.success).length;
-  const failed = tests.filter(
-    (t) => !t.result.success && !t.result.skipped,
-  ).length;
-  const skipped = tests.filter((t) => t.result.skipped).length;
+  const passed = tests.filter((t) => {
+    const result = t.result as { success: boolean; skipped?: boolean };
+    return result.success;
+  }).length;
+  const failed = tests.filter((t) => {
+    const result = t.result as { success: boolean; skipped?: boolean };
+    return !result.success && !result.skipped;
+  }).length;
+  const skipped = tests.filter((t) => {
+    const result = t.result as { success: boolean; skipped?: boolean };
+    return result.skipped;
+  }).length;
 
   console.log('='.repeat(60));
   console.log(
