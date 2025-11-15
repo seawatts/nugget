@@ -14,6 +14,7 @@ export const supplyInventoryRouter = createTRPCRouter({
     .input(
       insertSupplyInventorySchema.omit({
         createdAt: true,
+        familyId: true,
         id: true,
         updatedAt: true,
         userId: true,
@@ -40,6 +41,7 @@ export const supplyInventoryRouter = createTRPCRouter({
         .insert(SupplyInventory)
         .values({
           ...input,
+          familyId: ctx.auth.orgId,
           userId: ctx.auth.userId,
         })
         .returning();
@@ -76,11 +78,15 @@ export const supplyInventoryRouter = createTRPCRouter({
 
       // If no inventory exists, create one
       if (!inventory && ctx.auth.userId) {
+        if (!ctx.auth.orgId) {
+          throw new Error('Organization ID is required');
+        }
         const [newInventory] = await ctx.db
           .insert(SupplyInventory)
           .values({
             babyId: input.babyId,
             donorMl: 0,
+            familyId: ctx.auth.orgId,
             formulaMl: 0,
             pumpedMl: 0,
             userId: ctx.auth.userId,

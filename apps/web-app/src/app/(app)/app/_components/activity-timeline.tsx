@@ -417,7 +417,7 @@ export function ActivityTimeline({
   return (
     <div className="flex flex-col gap-6">
       {Array.from(groupedActivities.entries()).map(
-        ([dayLabel, dayActivities]) => (
+        ([dayLabel, dayActivities], groupIndex) => (
           <div
             className={isInitialLoad ? 'animate-in fade-in duration-300' : ''}
             key={dayLabel}
@@ -426,7 +426,7 @@ export function ActivityTimeline({
               <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide">
                 {dayLabel}
               </h3>
-              {dayLabel === 'Today' && (
+              {groupIndex === 0 && (
                 <ActivityTimelineFilters
                   activityTypes={activities}
                   onFilterChange={handleFilterChange}

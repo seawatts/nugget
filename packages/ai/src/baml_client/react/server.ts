@@ -24,13 +24,187 @@ import { b } from '../index';
 import type { Check, Checked  } from "../types";
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml";
 
-import type {  ImprovementSuggestions } from "../types"
+import type {  AppointmentNudgeOutput,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  NewbornMilestoneOutput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  SleepRegressionTipsOutput,  StalePromptsOutput } from "../types"
 
 import type * as types from "../types"
 
 /**
  * Regular BAML server actions that return direct responses.
  */
+
+/**
+ * Executes the "AppointmentNudge" BAML action.
+ *
+ * This server action calls the underlying BAML function "AppointmentNudge"
+ * with the specified parameters.
+ *
+ * @param { string } type - Input parameter.
+ *
+ * @returns {Promise<types.AppointmentNudgeOutput>} A promise that resolves with the result of the action.
+ */
+export const AppointmentNudge = async (
+  type: string,
+): Promise<types.AppointmentNudgeOutput> => {
+  return b.AppointmentNudge(
+    type,
+  );
+};
+
+/**
+ * Executes the "BabyVisitExplainer" BAML action.
+ *
+ * This server action calls the underlying BAML function "BabyVisitExplainer"
+ * with the specified parameters.
+ *
+ * @param { number } ageWeeks - Input parameter.
+ *
+ * @returns {Promise<types.BabyVisitExplainerOutput>} A promise that resolves with the result of the action.
+ */
+export const BabyVisitExplainer = async (
+  ageWeeks: number,
+): Promise<types.BabyVisitExplainerOutput> => {
+  return b.BabyVisitExplainer(
+    ageWeeks,
+  );
+};
+
+/**
+ * Executes the "BirthPlanHeadline" BAML action.
+ *
+ * This server action calls the underlying BAML function "BirthPlanHeadline"
+ * with the specified parameters.
+ *
+ * @param { string } mode - Input parameter.
+ *
+ * @returns {Promise<types.BirthPlanHeadlineOutput>} A promise that resolves with the result of the action.
+ */
+export const BirthPlanHeadline = async (
+  mode: string,
+): Promise<types.BirthPlanHeadlineOutput> => {
+  return b.BirthPlanHeadline(
+    mode,
+  );
+};
+
+/**
+ * Executes the "HospitalPackAdvice" BAML action.
+ *
+ * This server action calls the underlying BAML function "HospitalPackAdvice"
+ * with the specified parameters.
+ *
+ * @param { number } progress - Input parameter.
+ *
+ * @returns {Promise<types.HospitalPackAdviceOutput>} A promise that resolves with the result of the action.
+ */
+export const HospitalPackAdvice = async (
+  progress: number,
+): Promise<types.HospitalPackAdviceOutput> => {
+  return b.HospitalPackAdvice(
+    progress,
+  );
+};
+
+/**
+ * Executes the "NewbornWeekMilestone" BAML action.
+ *
+ * This server action calls the underlying BAML function "NewbornWeekMilestone"
+ * with the specified parameters.
+ *
+ * @param { number } week - Input parameter.
+ * @param { string | null } babySex (optional) - Input parameter.
+ * @param { boolean } firstPregnancy - Input parameter.
+ *
+ * @returns {Promise<types.NewbornMilestoneOutput>} A promise that resolves with the result of the action.
+ */
+export const NewbornWeekMilestone = async (
+  week: number,
+  babySex?: string | null,
+  firstPregnancy: boolean,
+): Promise<types.NewbornMilestoneOutput> => {
+  return b.NewbornWeekMilestone(
+    week,
+    babySex,
+    firstPregnancy,
+  );
+};
+
+/**
+ * Executes the "PostpartumTips" BAML action.
+ *
+ * This server action calls the underlying BAML function "PostpartumTips"
+ * with the specified parameters.
+ *
+ * @param { number } day - Input parameter.
+ * @param { boolean } firstPregnancy - Input parameter.
+ *
+ * @returns {Promise<types.PostpartumTipsOutput>} A promise that resolves with the result of the action.
+ */
+export const PostpartumTips = async (
+  day: number,
+  firstPregnancy: boolean,
+): Promise<types.PostpartumTipsOutput> => {
+  return b.PostpartumTips(
+    day,
+    firstPregnancy,
+  );
+};
+
+/**
+ * Executes the "PregnancyWeekSummary" BAML action.
+ *
+ * This server action calls the underlying BAML function "PregnancyWeekSummary"
+ * with the specified parameters.
+ *
+ * @param { number } week - Input parameter.
+ *
+ * @returns {Promise<types.PregnancyWeekSummaryOutput>} A promise that resolves with the result of the action.
+ */
+export const PregnancyWeekSummary = async (
+  week: number,
+): Promise<types.PregnancyWeekSummaryOutput> => {
+  return b.PregnancyWeekSummary(
+    week,
+  );
+};
+
+/**
+ * Executes the "SleepRegressionTips" BAML action.
+ *
+ * This server action calls the underlying BAML function "SleepRegressionTips"
+ * with the specified parameters.
+ *
+ * @param { number } week - Input parameter.
+ *
+ * @returns {Promise<types.SleepRegressionTipsOutput>} A promise that resolves with the result of the action.
+ */
+export const SleepRegressionTips = async (
+  week: number,
+): Promise<types.SleepRegressionTipsOutput> => {
+  return b.SleepRegressionTips(
+    week,
+  );
+};
+
+/**
+ * Executes the "StalePrompts" BAML action.
+ *
+ * This server action calls the underlying BAML function "StalePrompts"
+ * with the specified parameters.
+ *
+ * @param { string } topic - Input parameter.
+ * @param { Record<string, string> } context - Input parameter.
+ *
+ * @returns {Promise<types.StalePromptsOutput>} A promise that resolves with the result of the action.
+ */
+export const StalePrompts = async (
+  topic: string,
+  context: Record<string, string>,
+): Promise<types.StalePromptsOutput> => {
+  return b.StalePrompts(
+    topic,
+    context,
+  );
+};
 
 /**
  * Executes the "SuggestImprovements" BAML action.

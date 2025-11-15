@@ -130,15 +130,19 @@ export function InviteDialog({
         // Use existing invitation
         const url = `${window.location.origin}/invite/accept/${existingInvitation.code}`;
         setInviteUrl(url);
-      } else {
+      } else if (!inviteUrl && !createInvitationMutation.isPending) {
         // Automatically generate new invitation with default role (partner)
+        // Only if we don't already have a URL and mutation isn't pending
         createInvitationMutation.mutate({ role: 'partner' });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isOpen,
-    existingInvitation, // Automatically generate new invitation with default role (partner)
+    existingInvitation,
+    inviteUrl,
+    createInvitationMutation.isPending, // Automatically generate new invitation with default role (partner)
+    // Only if we don't already have a URL and mutation isn't pending
     createInvitationMutation,
   ]);
 

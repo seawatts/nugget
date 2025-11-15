@@ -7,6 +7,10 @@ import { useState } from 'react';
 export function PumpingDrawerContent() {
   const [leftAmount, setLeftAmount] = useState(2);
   const [rightAmount, setRightAmount] = useState(2);
+  const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<
+    'electric' | 'manual' | null
+  >(null);
 
   return (
     <div className="space-y-6">
@@ -87,7 +91,16 @@ export function PumpingDrawerContent() {
         <p className="text-sm font-medium text-muted-foreground">Duration</p>
         <div className="grid grid-cols-4 gap-2">
           {[10, 15, 20, 30].map((min) => (
-            <Button className="h-12 bg-transparent" key={min} variant="outline">
+            <Button
+              className={`h-12 ${
+                selectedDuration === min
+                  ? 'border-[oklch(0.65_0.18_280)] bg-[oklch(0.65_0.18_280)]/10'
+                  : 'bg-transparent'
+              }`}
+              key={min}
+              onClick={() => setSelectedDuration(min)}
+              variant="outline"
+            >
               {min}m
             </Button>
           ))}
@@ -98,10 +111,26 @@ export function PumpingDrawerContent() {
       <div className="space-y-3">
         <p className="text-sm font-medium text-muted-foreground">Method</p>
         <div className="grid grid-cols-2 gap-3">
-          <Button className="h-12 bg-transparent" variant="outline">
+          <Button
+            className={`h-12 ${
+              selectedMethod === 'electric'
+                ? 'border-[oklch(0.65_0.18_280)] bg-[oklch(0.65_0.18_280)]/10'
+                : 'bg-transparent'
+            }`}
+            onClick={() => setSelectedMethod('electric')}
+            variant="outline"
+          >
             Electric
           </Button>
-          <Button className="h-12 bg-transparent" variant="outline">
+          <Button
+            className={`h-12 ${
+              selectedMethod === 'manual'
+                ? 'border-[oklch(0.65_0.18_280)] bg-[oklch(0.65_0.18_280)]/10'
+                : 'bg-transparent'
+            }`}
+            onClick={() => setSelectedMethod('manual')}
+            variant="outline"
+          >
             Manual
           </Button>
         </div>

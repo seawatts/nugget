@@ -201,6 +201,7 @@ export const onboardingRouter = createTRPCRouter({
           await tx.insert(SupplyInventory).values({
             babyId: baby.id,
             donorMl: 0,
+            familyId: family.id,
             formulaMl: 0,
             pumpedMl: 0,
             userId,

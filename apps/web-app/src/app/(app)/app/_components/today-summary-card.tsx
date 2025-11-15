@@ -1,7 +1,6 @@
 'use client';
 
 import type { Activities } from '@nugget/db/schema';
-import { formatDistanceToNow } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
@@ -26,6 +25,7 @@ const activityIcons: Record<string, LucideIcon> = {
   bath: Bath,
   bottle: Milk,
   diaper: Baby,
+  feeding: Milk,
   growth: Scale,
   medicine: Pill,
   nursing: Droplet,
@@ -42,6 +42,7 @@ const activityColors: Record<string, string> = {
   bath: 'text-[oklch(0.62_0.18_260)]',
   bottle: 'text-[oklch(0.68_0.18_35)]',
   diaper: 'text-[oklch(0.78_0.14_60)]',
+  feeding: 'text-[oklch(0.68_0.18_35)]',
   growth: 'text-[oklch(0.62_0.18_260)]',
   medicine: 'text-[oklch(0.68_0.18_10)]',
   nursing: 'text-[oklch(0.68_0.18_35)]',
@@ -58,6 +59,7 @@ const activityLabels: Record<string, string> = {
   bath: 'Bath',
   bottle: 'Bottle',
   diaper: 'Diaper',
+  feeding: 'Feeding',
   growth: 'Growth',
   medicine: 'Medicine',
   nursing: 'Nursing',
@@ -86,39 +88,33 @@ function formatDuration(minutes: number): string {
   return `${hours}h ${remainingMinutes}m`;
 }
 
-function formatTimeAgo(activity: typeof Activities.$inferSelect): string {
-  const timeAgo = formatDistanceToNow(new Date(activity.startTime), {
-    addSuffix: false,
-  });
-  // Remove "about" prefix for cleaner display
-  const cleanTimeAgo = timeAgo.replace(/^about\s+/, '');
-  return `${cleanTimeAgo} ago`;
-}
-
-function formatLastAmount(activity: typeof Activities.$inferSelect): string {
-  const type = activity.type;
-
-  // Activities with duration (sleep, tummy_time, etc)
-  if (
-    (type === 'sleep' || type === 'tummy_time' || type === 'bath') &&
-    activity.duration &&
-    activity.duration > 0
-  ) {
-    return formatDuration(activity.duration);
+function formatTotal(
+  type: string,
+  totalAmount: number,
+  totalDuration: number,
+  count: number,
+): string {
+  switch (type) {
+    case 'feeding': {
+      if (totalAmount === 0) return '0 oz';
+      const amountOz = Math.round(totalAmount / 30); // Convert ml to oz
+      return `${amountOz} oz`;
+    }
+    case 'sleep': {
+      if (totalDuration === 0) return '0 min';
+      return formatDuration(totalDuration);
+    }
+    case 'diaper': {
+      return `${count} ${count === 1 ? 'change' : 'changes'}`;
+    }
+    case 'pumping': {
+      if (totalAmount === 0) return '0 oz';
+      const amountOz = Math.round(totalAmount / 30); // Convert ml to oz
+      return `${amountOz} oz`;
+    }
+    default:
+      return '';
   }
-
-  // Feeding activities (bottle, nursing, pumping) - show amount
-  if (
-    (type === 'bottle' || type === 'nursing' || type === 'pumping') &&
-    activity.amount &&
-    activity.amount > 0
-  ) {
-    const amountOz = Math.round(activity.amount / 30); // Convert ml to oz
-    return `${amountOz}oz`;
-  }
-
-  // For other activities, don't show anything
-  return '';
 }
 
 export function TodaySummaryCard({
@@ -171,28 +167,26 @@ export function TodaySummaryCard({
     ];
   }, [optimisticActivities, activitiesData]);
 
-  // Group activities by type, tracking count, most recent activity, and totals
+  // Map activity types to display categories
+  const mapActivityTypeToCategory = (type: string): string => {
+    if (type === 'bottle' || type === 'nursing') return 'feeding';
+    return type;
+  };
+
+  // Group activities by category, tracking count and totals
   const activitySummaries = allActivities.reduce(
     (acc, activity) => {
-      const type = activity.type;
-      if (!acc[type]) {
-        acc[type] = {
+      const category = mapActivityTypeToCategory(activity.type);
+      if (!acc[category]) {
+        acc[category] = {
           count: 1,
-          mostRecent: activity,
           totalAmount: activity.amount || 0,
           totalDuration: activity.duration || 0,
         };
       } else {
-        acc[type].count += 1;
-        acc[type].totalDuration += activity.duration || 0;
-        acc[type].totalAmount += activity.amount || 0;
-        // Update most recent if this activity is newer
-        if (
-          new Date(activity.startTime).getTime() >
-          new Date(acc[type].mostRecent.startTime).getTime()
-        ) {
-          acc[type].mostRecent = activity;
-        }
+        acc[category].count += 1;
+        acc[category].totalDuration += activity.duration || 0;
+        acc[category].totalAmount += activity.amount || 0;
       }
       return acc;
     },
@@ -200,12 +194,24 @@ export function TodaySummaryCard({
       string,
       {
         count: number;
-        mostRecent: typeof Activities.$inferSelect;
         totalDuration: number;
         totalAmount: number;
       }
     >,
   );
+
+  // Define the fixed categories to display
+  const displayCategories = ['feeding', 'sleep', 'diaper', 'pumping'];
+
+  // Ensure all categories exist with default values
+  const categorySummaries = displayCategories.map((category) => ({
+    category,
+    summary: activitySummaries[category] || {
+      count: 0,
+      totalAmount: 0,
+      totalDuration: 0,
+    },
+  }));
 
   if (loading) {
     return (
@@ -227,21 +233,8 @@ export function TodaySummaryCard({
     );
   }
 
-  if (allActivities.length === 0) {
-    return (
-      <div className="rounded-xl border border-border bg-card/50 p-6">
-        <div className="flex flex-col items-center justify-center text-center gap-2">
-          <Baby className="size-8 text-muted-foreground/50" />
-          <p className="text-sm text-muted-foreground">
-            No activities tracked today yet
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="rounded-xl border border-border bg-gradient-to-br from-card/50 to-card/80 backdrop-blur-sm p-5 shadow-sm">
+    <div className="rounded-xl border border-border bg-linear-to-br from-card/50 to-card/80 backdrop-blur-sm p-5 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-foreground">
           Today's Summary
@@ -252,42 +245,37 @@ export function TodaySummaryCard({
         </span>
       </div>
 
-      {/* Activity summaries grid */}
       <div className="grid grid-cols-2 gap-2.5">
-        {Object.entries(activitySummaries)
-          .sort((a, b) => b[1].count - a[1].count) // Sort by count descending
-          .slice(0, 4) // Show top 4
-          .map(([type, summary]) => {
-            const Icon = activityIcons[type] || Baby;
-            const colorClass = activityColors[type] || 'text-primary';
-            const label = activityLabels[type] || type;
-            const timeAgo = formatTimeAgo(summary.mostRecent);
-            const lastAmount = formatLastAmount(summary.mostRecent);
+        {categorySummaries.map(({ category, summary }) => {
+          const Icon = activityIcons[category] || Baby;
+          const colorClass = activityColors[category] || 'text-primary';
+          const label = activityLabels[category] || category;
+          const total = formatTotal(
+            category,
+            summary.totalAmount,
+            summary.totalDuration,
+            summary.count,
+          );
 
-            return (
-              <div
-                className="flex items-start gap-2.5 p-3 rounded-lg bg-card/60 border border-border/50"
-                key={type}
-              >
-                <div className="shrink-0 p-2 rounded-full bg-muted/40 self-start">
-                  <Icon className={`size-4 ${colorClass}`} />
-                </div>
-                <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                  <p className="text-xs text-muted-foreground leading-tight">
-                    {label}
-                  </p>
-                  <p className="text-sm font-semibold text-foreground leading-tight">
-                    {timeAgo}
-                  </p>
-                  {lastAmount && (
-                    <p className="text-xs text-muted-foreground/70 leading-tight">
-                      {lastAmount}
-                    </p>
-                  )}
-                </div>
+          return (
+            <div
+              className="flex items-start gap-2.5 p-3 rounded-lg bg-card/60 border border-border/50"
+              key={category}
+            >
+              <div className="shrink-0 p-2 rounded-full bg-muted/40 self-start">
+                <Icon className={`size-4 ${colorClass}`} />
               </div>
-            );
-          })}
+              <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                <p className="text-xs text-muted-foreground leading-tight">
+                  {label}
+                </p>
+                <p className="text-sm font-semibold text-foreground leading-tight">
+                  {total}
+                </p>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

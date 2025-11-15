@@ -47,10 +47,56 @@ export function all_succeeded<CheckName extends string>(checks: Record<CheckName
 export function get_checks<CheckName extends string>(checks: Record<CheckName, Check>): Check[] {
     return Object.values(checks)
 }
+export interface AppointmentNudgeOutput {
+  text: string
+  
+}
+
+export interface BabyVisitExplainerOutput {
+  text: string
+  
+}
+
+export interface BirthPlanHeadlineOutput {
+  text: string
+  
+}
+
+export interface HospitalPackAdviceOutput {
+  headline: string
+  subtext: string
+  
+}
+
 export interface ImprovementSuggestions {
   seo: string[]
   accessibility: string[]
   performance: string[]
   overall_priority: string[]
+  
+}
+
+export interface NewbornMilestoneOutput {
+  text: string
+  
+}
+
+export interface PostpartumTipsOutput {
+  text: string
+  
+}
+
+export interface PregnancyWeekSummaryOutput {
+  text: string
+  
+}
+
+export interface SleepRegressionTipsOutput {
+  snippet: string
+  
+}
+
+export interface StalePromptsOutput {
+  list: string[]
   
 }

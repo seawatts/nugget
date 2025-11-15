@@ -44,6 +44,7 @@ export const babiesRouter = createTRPCRouter({
       await ctx.db.insert(SupplyInventory).values({
         babyId: baby.id,
         donorMl: 0,
+        familyId: ctx.auth.orgId,
         formulaMl: 0,
         pumpedMl: 0,
         userId: ctx.auth.userId,

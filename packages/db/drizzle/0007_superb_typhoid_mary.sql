@@ -1,0 +1,2 @@
+ALTER TABLE "activities" ADD COLUMN "assignedUserId" varchar(128);--> statement-breakpoint
+ALTER TABLE "activities" ADD CONSTRAINT "activities_assignedUserId_users_id_fk" FOREIGN KEY ("assignedUserId") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;

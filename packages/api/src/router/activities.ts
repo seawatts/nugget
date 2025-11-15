@@ -17,6 +17,7 @@ export const activitiesRouter = createTRPCRouter({
       insertActivitySchema
         .omit({
           createdAt: true,
+          familyId: true,
           id: true,
           updatedAt: true,
           userId: true,
@@ -46,6 +47,7 @@ export const activitiesRouter = createTRPCRouter({
         .insert(Activities)
         .values({
           ...input,
+          familyId: ctx.auth.orgId,
           userId: ctx.auth.userId,
         })
         .returning();
@@ -96,6 +98,7 @@ export const activitiesRouter = createTRPCRouter({
           input.feedings.map((feeding) => ({
             amount: feeding.amount,
             babyId: input.babyId,
+            familyId: ctx.auth.orgId,
             feedingSource: feeding.feedingSource as
               | (typeof FeedingSourceType)[keyof typeof FeedingSourceType]
               | undefined,

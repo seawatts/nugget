@@ -139,6 +139,10 @@ const policyConfigs: Record<string, PolicyConfig> = {
     policies: [createUserOwnershipPolicy('ALL', 'userId')],
     tableName: 'babies',
   },
+  contentCache: {
+    policies: [createUserOwnershipPolicy('ALL', 'userId')],
+    tableName: 'contentCache',
+  },
   families: {
     policies: [
       // Users can access families they created
@@ -172,6 +176,13 @@ const policyConfigs: Record<string, PolicyConfig> = {
     policies: [createUserOwnershipPolicy('ALL', 'userId')],
     tableName: 'growthRecords',
   },
+  invitations: {
+    policies: [
+      createUserOwnershipPolicy('ALL', 'invitedByUserId'),
+      createFamilyOwnershipPolicy('ALL', 'familyId'),
+    ],
+    tableName: 'invitations',
+  },
   medicalRecords: {
     policies: [createUserOwnershipPolicy('ALL', 'userId')],
     tableName: 'medicalRecords',
@@ -179,6 +190,10 @@ const policyConfigs: Record<string, PolicyConfig> = {
   milestones: {
     policies: [createUserOwnershipPolicy('ALL', 'userId')],
     tableName: 'milestones',
+  },
+  pushSubscriptions: {
+    policies: [createUserOwnershipPolicy('ALL', 'userId')],
+    tableName: 'pushSubscriptions',
   },
   shortUrls: {
     policies: [

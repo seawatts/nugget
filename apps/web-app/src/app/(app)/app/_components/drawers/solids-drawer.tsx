@@ -6,6 +6,8 @@ import { useState } from 'react';
 
 export function SolidsDrawerContent() {
   const [selectedFoods, setSelectedFoods] = useState<string[]>([]);
+  const [selectedAmount, setSelectedAmount] = useState<string | null>(null);
+  const [selectedMeal, setSelectedMeal] = useState<string | null>(null);
 
   const foods = [
     { icon: Apple, id: 'fruits', label: 'Fruits' },
@@ -52,8 +54,13 @@ export function SolidsDrawerContent() {
         <div className="grid grid-cols-4 gap-2">
           {['None', 'Some', 'Most', 'All'].map((amount) => (
             <Button
-              className="h-12 bg-transparent"
+              className={`h-12 ${
+                selectedAmount === amount
+                  ? 'border-[oklch(0.72_0.16_330)] bg-[oklch(0.72_0.16_330)]/10'
+                  : 'bg-transparent'
+              }`}
               key={amount}
+              onClick={() => setSelectedAmount(amount)}
               variant="outline"
             >
               {amount}
@@ -68,8 +75,13 @@ export function SolidsDrawerContent() {
         <div className="grid grid-cols-3 gap-2">
           {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map((meal) => (
             <Button
-              className="h-12 bg-transparent"
+              className={`h-12 ${
+                selectedMeal === meal
+                  ? 'border-[oklch(0.72_0.16_330)] bg-[oklch(0.72_0.16_330)]/10'
+                  : 'bg-transparent'
+              }`}
               key={meal}
+              onClick={() => setSelectedMeal(meal)}
               variant="outline"
             >
               {meal}

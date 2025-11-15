@@ -17,6 +17,7 @@ export const supplyTransactionsRouter = createTRPCRouter({
       insertSupplyTransactionSchema
         .omit({
           createdAt: true,
+          familyId: true,
           id: true,
           timestamp: true,
           updatedAt: true,
@@ -49,11 +50,15 @@ export const supplyTransactionsRouter = createTRPCRouter({
       });
 
       if (!inventory) {
+        if (!ctx.auth.orgId) {
+          throw new Error('Organization ID is required');
+        }
         const [newInventory] = await ctx.db
           .insert(SupplyInventory)
           .values({
             babyId: input.babyId,
             donorMl: 0,
+            familyId: ctx.auth.orgId,
             formulaMl: 0,
             pumpedMl: 0,
             userId: ctx.auth.userId,
@@ -72,6 +77,7 @@ export const supplyTransactionsRouter = createTRPCRouter({
         .insert(SupplyTransactions)
         .values({
           ...input,
+          familyId: ctx.auth.orgId,
           timestamp: new Date(),
           userId: ctx.auth.userId,
         })

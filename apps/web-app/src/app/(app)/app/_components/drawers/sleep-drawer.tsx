@@ -3,7 +3,7 @@
 import { Button } from '@nugget/ui/button';
 import { Textarea } from '@nugget/ui/textarea';
 import { Moon, Play, Square } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface SleepDrawerContentProps {
   startTime: Date;
@@ -14,6 +14,8 @@ interface SleepDrawerContentProps {
   setSleepType: (type: 'nap' | 'night') => void;
   notes: string;
   setNotes: (notes: string) => void;
+  activeActivityId?: string | null;
+  onTimerStart?: () => Promise<void>;
 }
 
 export function SleepDrawerContent({
@@ -25,14 +27,58 @@ export function SleepDrawerContent({
   setSleepType,
   notes,
   setNotes,
+  activeActivityId,
+  onTimerStart,
 }: SleepDrawerContentProps) {
   const [isTracking, setIsTracking] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleStartStop = () => {
-    if (!isTracking) {
+  // Set tracking state if there's an active activity
+  useEffect(() => {
+    if (activeActivityId) {
       setIsTracking(true);
-      setStartTime(new Date());
+      // Calculate elapsed time from startTime
+      const elapsedSeconds = Math.floor(
+        (Date.now() - startTime.getTime()) / 1000,
+      );
+      setDuration(elapsedSeconds);
+    }
+  }, [activeActivityId, startTime, setDuration]);
+
+  // Timer effect - runs when isTracking is true
+  useEffect(() => {
+    if (isTracking) {
+      timerRef.current = setInterval(() => {
+        const elapsedSeconds = Math.floor(
+          (Date.now() - startTime.getTime()) / 1000,
+        );
+        setDuration(elapsedSeconds);
+      }, 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [isTracking, startTime, setDuration]);
+
+  const handleStartStop = async () => {
+    if (!isTracking) {
+      const newStartTime = new Date();
+      setStartTime(newStartTime);
       setDuration(0);
+      setIsTracking(true);
+
+      // Create activity in database immediately
+      if (onTimerStart) {
+        await onTimerStart();
+      }
     } else {
       setIsTracking(false);
     }

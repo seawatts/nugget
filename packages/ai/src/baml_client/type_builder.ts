@@ -27,14 +27,32 @@ export { FieldType, EnumBuilder, ClassBuilder }
 export default class TypeBuilder {
     private tb: _TypeBuilder;
     
+    AppointmentNudgeOutput: ClassViewer<'AppointmentNudgeOutput', "text">;
+    
+    BabyVisitExplainerOutput: ClassViewer<'BabyVisitExplainerOutput', "text">;
+    
+    BirthPlanHeadlineOutput: ClassViewer<'BirthPlanHeadlineOutput', "text">;
+    
+    HospitalPackAdviceOutput: ClassViewer<'HospitalPackAdviceOutput', "headline" | "subtext">;
+    
     ImprovementSuggestions: ClassViewer<'ImprovementSuggestions', "seo" | "accessibility" | "performance" | "overall_priority">;
+    
+    NewbornMilestoneOutput: ClassViewer<'NewbornMilestoneOutput', "text">;
+    
+    PostpartumTipsOutput: ClassViewer<'PostpartumTipsOutput', "text">;
+    
+    PregnancyWeekSummaryOutput: ClassViewer<'PregnancyWeekSummaryOutput', "text">;
+    
+    SleepRegressionTipsOutput: ClassViewer<'SleepRegressionTipsOutput', "snippet">;
+    
+    StalePromptsOutput: ClassViewer<'StalePromptsOutput', "list">;
     
     
 
     constructor() {
         this.tb = new _TypeBuilder({
           classes: new Set([
-            "ImprovementSuggestions",
+            "AppointmentNudgeOutput","BabyVisitExplainerOutput","BirthPlanHeadlineOutput","HospitalPackAdviceOutput","ImprovementSuggestions","NewbornMilestoneOutput","PostpartumTipsOutput","PregnancyWeekSummaryOutput","SleepRegressionTipsOutput","StalePromptsOutput",
           ]),
           enums: new Set([
             
@@ -42,8 +60,44 @@ export default class TypeBuilder {
           runtime: DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME
         });
         
+        this.AppointmentNudgeOutput = this.tb.classViewer("AppointmentNudgeOutput", [
+          "text",
+        ]);
+        
+        this.BabyVisitExplainerOutput = this.tb.classViewer("BabyVisitExplainerOutput", [
+          "text",
+        ]);
+        
+        this.BirthPlanHeadlineOutput = this.tb.classViewer("BirthPlanHeadlineOutput", [
+          "text",
+        ]);
+        
+        this.HospitalPackAdviceOutput = this.tb.classViewer("HospitalPackAdviceOutput", [
+          "headline","subtext",
+        ]);
+        
         this.ImprovementSuggestions = this.tb.classViewer("ImprovementSuggestions", [
           "seo","accessibility","performance","overall_priority",
+        ]);
+        
+        this.NewbornMilestoneOutput = this.tb.classViewer("NewbornMilestoneOutput", [
+          "text",
+        ]);
+        
+        this.PostpartumTipsOutput = this.tb.classViewer("PostpartumTipsOutput", [
+          "text",
+        ]);
+        
+        this.PregnancyWeekSummaryOutput = this.tb.classViewer("PregnancyWeekSummaryOutput", [
+          "text",
+        ]);
+        
+        this.SleepRegressionTipsOutput = this.tb.classViewer("SleepRegressionTipsOutput", [
+          "snippet",
+        ]);
+        
+        this.StalePromptsOutput = this.tb.classViewer("StalePromptsOutput", [
+          "list",
         ]);
         
         

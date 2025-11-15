@@ -65,7 +65,7 @@ export function InviteCaregiversStep() {
     }
     // Only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [createInvitationMutation, inviteUrl]);
 
   const handleCopy = async () => {
     if (!inviteUrl) return;

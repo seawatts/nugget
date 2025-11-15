@@ -460,6 +460,10 @@ export const Babies = pgTable('babies', {
 
 export const Activities = pgTable('activities', {
   amount: integer('amount'), // for feeding, in ml
+  assignedUserId: varchar('assignedUserId', { length: 128 }).references(
+    () => Users.id,
+    { onDelete: 'set null' },
+  ), // User assigned to complete this scheduled feeding
   babyId: varchar('babyId', { length: 128 })
     .notNull()
     .references(() => Babies.id, { onDelete: 'cascade' }),
@@ -467,6 +471,10 @@ export const Activities = pgTable('activities', {
   details: json('details').$type<ActivityDetails>(),
   duration: integer('duration'), // in minutes
   endTime: timestamp('endTime', { mode: 'date' }),
+  familyId: varchar('familyId', { length: 128 })
+    .notNull()
+    .references(() => Families.id, { onDelete: 'cascade' })
+    .default(requestingFamilyId()),
   feedingSource: feedingSourceEnum('feedingSource'), // Source of milk/formula for feeding activities
   id: varchar('id', { length: 128 })
     .primaryKey()
@@ -491,6 +499,10 @@ export const MedicalRecords = pgTable('medicalRecords', {
   createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
   date: timestamp('date', { mode: 'date' }).notNull(),
   description: text('description'),
+  familyId: varchar('familyId', { length: 128 })
+    .notNull()
+    .references(() => Families.id, { onDelete: 'cascade' })
+    .default(requestingFamilyId()),
   id: varchar('id', { length: 128 })
     .primaryKey()
     .$defaultFn(() => createId({ prefix: 'medical' })),
@@ -515,6 +527,10 @@ export const Milestones = pgTable('milestones', {
     .references(() => Babies.id, { onDelete: 'cascade' }),
   createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
   description: text('description'),
+  familyId: varchar('familyId', { length: 128 })
+    .notNull()
+    .references(() => Families.id, { onDelete: 'cascade' })
+    .default(requestingFamilyId()),
   id: varchar('id', { length: 128 })
     .primaryKey()
     .$defaultFn(() => createId({ prefix: 'milestone' })),
@@ -537,6 +553,10 @@ export const GrowthRecords = pgTable('growthRecords', {
     .references(() => Babies.id, { onDelete: 'cascade' }),
   createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
   date: timestamp('date', { mode: 'date' }).notNull(),
+  familyId: varchar('familyId', { length: 128 })
+    .notNull()
+    .references(() => Families.id, { onDelete: 'cascade' })
+    .default(requestingFamilyId()),
   headCircumference: integer('headCircumference'), // in cm
   height: integer('height'), // in cm
   id: varchar('id', { length: 128 })
@@ -564,6 +584,10 @@ export const SupplyInventory = pgTable('supplyInventory', {
     .references(() => Babies.id, { onDelete: 'cascade' }),
   createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
   donorMl: integer('donorMl').default(0).notNull(), // Donor milk in ml
+  familyId: varchar('familyId', { length: 128 })
+    .notNull()
+    .references(() => Families.id, { onDelete: 'cascade' })
+    .default(requestingFamilyId()),
   formulaMl: integer('formulaMl').default(0).notNull(), // Formula in ml
   id: varchar('id', { length: 128 })
     .primaryKey()
@@ -584,6 +608,10 @@ export const SupplyTransactions = pgTable('supplyTransactions', {
     .notNull()
     .references(() => Babies.id, { onDelete: 'cascade' }),
   createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+  familyId: varchar('familyId', { length: 128 })
+    .notNull()
+    .references(() => Families.id, { onDelete: 'cascade' })
+    .default(requestingFamilyId()),
   id: varchar('id', { length: 128 })
     .primaryKey()
     .$defaultFn(() => createId({ prefix: 'transaction' })),
@@ -599,6 +627,54 @@ export const SupplyTransactions = pgTable('supplyTransactions', {
     .notNull()
     .default(requestingUserId()),
 });
+
+// ============================================================================
+// Tables - Content Cache
+// ============================================================================
+
+export const ContentCache = pgTable(
+  'contentCache',
+  {
+    babyId: varchar('babyId', { length: 128 })
+      .references(() => Babies.id, {
+        onDelete: 'cascade',
+      })
+      .notNull(),
+    createdAt: timestamp('createdAt', {
+      mode: 'date',
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+    expiresAt: timestamp('expiresAt', {
+      mode: 'date',
+      withTimezone: true,
+    }).notNull(),
+    familyId: varchar('familyId', { length: 128 })
+      .notNull()
+      .references(() => Families.id, { onDelete: 'cascade' })
+      .default(requestingFamilyId()),
+    id: varchar('id', { length: 128 })
+      .$defaultFn(() => createId({ prefix: 'cache' }))
+      .notNull()
+      .primaryKey(),
+    key: text('key').notNull(),
+    updatedAt: timestamp('updatedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }).$onUpdateFn(() => new Date()),
+    userId: varchar('userId', { length: 128 })
+      .notNull()
+      .default(requestingUserId()),
+    value: json('value').$type<unknown>().notNull(),
+  },
+  (table) => [
+    // Composite index for efficient baby + key lookups
+    index('contentCache_babyId_key_idx').on(table.babyId, table.key),
+    // Unique constraint to prevent duplicate baby+key combinations
+    unique().on(table.babyId, table.key),
+  ],
+);
 
 // ============================================================================
 // Relations
@@ -660,6 +736,7 @@ export const InvitationsRelations = relations(Invitations, ({ one }) => ({
 
 export const BabiesRelations = relations(Babies, ({ one, many }) => ({
   activities: many(Activities),
+  contentCache: many(ContentCache),
   family: one(Families, {
     fields: [Babies.familyId],
     references: [Families.id],
@@ -680,6 +757,10 @@ export const ActivitiesRelations = relations(Activities, ({ one }) => ({
     fields: [Activities.babyId],
     references: [Babies.id],
   }),
+  family: one(Families, {
+    fields: [Activities.familyId],
+    references: [Families.id],
+  }),
   user: one(Users, {
     fields: [Activities.userId],
     references: [Users.id],
@@ -690,6 +771,10 @@ export const MedicalRecordsRelations = relations(MedicalRecords, ({ one }) => ({
   baby: one(Babies, {
     fields: [MedicalRecords.babyId],
     references: [Babies.id],
+  }),
+  family: one(Families, {
+    fields: [MedicalRecords.familyId],
+    references: [Families.id],
   }),
   user: one(Users, {
     fields: [MedicalRecords.userId],
@@ -702,6 +787,10 @@ export const MilestonesRelations = relations(Milestones, ({ one }) => ({
     fields: [Milestones.babyId],
     references: [Babies.id],
   }),
+  family: one(Families, {
+    fields: [Milestones.familyId],
+    references: [Families.id],
+  }),
   user: one(Users, {
     fields: [Milestones.userId],
     references: [Users.id],
@@ -712,6 +801,10 @@ export const GrowthRecordsRelations = relations(GrowthRecords, ({ one }) => ({
   baby: one(Babies, {
     fields: [GrowthRecords.babyId],
     references: [Babies.id],
+  }),
+  family: one(Families, {
+    fields: [GrowthRecords.familyId],
+    references: [Families.id],
   }),
   user: one(Users, {
     fields: [GrowthRecords.userId],
@@ -725,6 +818,10 @@ export const SupplyInventoryRelations = relations(
     baby: one(Babies, {
       fields: [SupplyInventory.babyId],
       references: [Babies.id],
+    }),
+    family: one(Families, {
+      fields: [SupplyInventory.familyId],
+      references: [Families.id],
     }),
     user: one(Users, {
       fields: [SupplyInventory.userId],
@@ -740,12 +837,31 @@ export const SupplyTransactionsRelations = relations(
       fields: [SupplyTransactions.babyId],
       references: [Babies.id],
     }),
+    family: one(Families, {
+      fields: [SupplyTransactions.familyId],
+      references: [Families.id],
+    }),
     user: one(Users, {
       fields: [SupplyTransactions.userId],
       references: [Users.id],
     }),
   }),
 );
+
+export const ContentCacheRelations = relations(ContentCache, ({ one }) => ({
+  baby: one(Babies, {
+    fields: [ContentCache.babyId],
+    references: [Babies.id],
+  }),
+  family: one(Families, {
+    fields: [ContentCache.familyId],
+    references: [Families.id],
+  }),
+  user: one(Users, {
+    fields: [ContentCache.userId],
+    references: [Users.id],
+  }),
+}));
 
 // ============================================================================
 // Types
@@ -779,6 +895,8 @@ export type SupplyInventoryType = typeof SupplyInventory.$inferSelect;
 export type NewSupplyInventory = typeof SupplyInventory.$inferInsert;
 export type SupplyTransaction = typeof SupplyTransactions.$inferSelect;
 export type NewSupplyTransaction = typeof SupplyTransactions.$inferInsert;
+export type ContentCacheType = typeof ContentCache.$inferSelect;
+export type NewContentCache = typeof ContentCache.$inferInsert;
 
 // ============================================================================
 // Zod Schemas
@@ -868,6 +986,10 @@ export const updateSupplyTransactionSchema =
 export const insertFamilyMemberSchema = createInsertSchema(FamilyMembers);
 export const selectFamilyMemberSchema = createSelectSchema(FamilyMembers);
 export const updateFamilyMemberSchema = insertFamilyMemberSchema.partial();
+
+export const insertContentCacheSchema = createInsertSchema(ContentCache);
+export const selectContentCacheSchema = createSelectSchema(ContentCache);
+export const updateContentCacheSchema = insertContentCacheSchema.partial();
 
 // ============================================================================
 // Backward compatibility exports (deprecated - use Families/FamilyMembers)

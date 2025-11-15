@@ -24,13 +24,196 @@ import { b } from '../index';
 import type { Check, Checked  } from "../types";
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml";
 
-import type {  ImprovementSuggestions } from "../types"
+import type {  AppointmentNudgeOutput,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  NewbornMilestoneOutput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  SleepRegressionTipsOutput,  StalePromptsOutput } from "../types"
 
 import type * as types from "../types"
 
 /**
  * Streaming BAML server actions that return ReadableStreams.
  */
+
+/**
+ * Executes the streaming variant of the "AppointmentNudge" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { string } type - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const AppointmentNudge = async (
+  type: string,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.AppointmentNudge(
+    type,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "BabyVisitExplainer" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { number } ageWeeks - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const BabyVisitExplainer = async (
+  ageWeeks: number,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.BabyVisitExplainer(
+    ageWeeks,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "BirthPlanHeadline" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { string } mode - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const BirthPlanHeadline = async (
+  mode: string,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.BirthPlanHeadline(
+    mode,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "HospitalPackAdvice" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { number } progress - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const HospitalPackAdvice = async (
+  progress: number,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.HospitalPackAdvice(
+    progress,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "NewbornWeekMilestone" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { number } week - Input parameter.
+ * @param { string | null } babySex (optional) - Input parameter.
+ * @param { boolean } firstPregnancy - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const NewbornWeekMilestone = async (
+  week: number,
+  babySex?: string | null,
+  firstPregnancy: boolean,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.NewbornWeekMilestone(
+    week,
+    babySex,
+    firstPregnancy,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "PostpartumTips" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { number } day - Input parameter.
+ * @param { boolean } firstPregnancy - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const PostpartumTips = async (
+  day: number,
+  firstPregnancy: boolean,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.PostpartumTips(
+    day,
+    firstPregnancy,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "PregnancyWeekSummary" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { number } week - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const PregnancyWeekSummary = async (
+  week: number,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.PregnancyWeekSummary(
+    week,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "SleepRegressionTips" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { number } week - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const SleepRegressionTips = async (
+  week: number,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.SleepRegressionTips(
+    week,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "StalePrompts" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { string } topic - Input parameter.
+ * @param { Record<string, string> } context - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const StalePrompts = async (
+  topic: string,
+  context: Record<string, string>,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.StalePrompts(
+    topic,
+    context,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
 
 /**
  * Executes the streaming variant of the "SuggestImprovements" BAML action.

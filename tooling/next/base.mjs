@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import withPWA from '@ducanh2912/next-pwa';
 import withBundleAnalyzer from '@next/bundle-analyzer';
 import { withPostHogConfig } from '@posthog/nextjs-config';
+import { withBaml } from './baml-config';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -70,6 +71,7 @@ const withPlugins = [
   process.env.WITH_BUNDLE_ANALYZER === 'true'
     ? withBundleAnalyzer({ enabled: true })
     : null,
+  withBaml(),
   withPWA({
     dest: 'public',
     disable: process.env.NODE_ENV === 'development',

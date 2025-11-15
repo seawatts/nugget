@@ -7,8 +7,10 @@
     "typescript": "catalog:"
   },
   "exports": {
+    ".": "./src/index.ts",
     "./*": "./src/baml_client/*.ts",
-    "./react/*": "./src/baml_client/react/*.ts"
+    "./react/*": "./src/baml_client/react/*.ts",
+    "./async_client": "./src/baml_client/async_client.ts"
   },
   "license": "MIT",
   "name": "@nugget/ai",

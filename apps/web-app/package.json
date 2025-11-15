@@ -11,6 +11,7 @@
     "@hookform/resolvers": "5.2.2",
     "@nugget/analytics": "workspace:*",
     "@nugget/api": "workspace:*",
+    "@nugget/content-rules": "workspace:*",
     "@nugget/db": "workspace:*",
     "@nugget/stripe": "workspace:*",
     "@nugget/ui": "workspace:*",

@@ -1,0 +1,29 @@
+{
+  "dependencies": {
+    "@nugget/ai": "workspace:*",
+    "@nugget/db": "workspace:*",
+    "drizzle-orm": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./cache-adapter": "./src/cache-adapter.ts",
+    "./db-cache-adapter": "./src/db-cache-adapter.ts",
+    "./dynamic-baml": "./src/dynamic-baml.ts",
+    "./example-program": "./src/example-program.ts"
+  },
+  "license": "MIT",
+  "name": "@nugget/content-rules",
+  "private": true,
+  "scripts": {
+    "clean": "git clean -xdf .turbo node_modules dist",
+    "dev": "tsc --watch",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "type": "module",
+  "version": "0.1.0"
+}

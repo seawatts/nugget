@@ -13,7 +13,7 @@ client<llm> CustomGPT4oMini {
   provider openai
   retry_policy Exponential
   options {
-    model "gpt-4o-mini"
+    model "gpt-5-nano"
     api_key env.OPENAI_API_KEY
   }
 }

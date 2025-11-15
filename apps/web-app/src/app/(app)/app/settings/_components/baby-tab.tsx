@@ -208,7 +208,7 @@ export function BabyTab() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [formData, handleSave]);
+  }, [handleSave]);
 
   if (isLoading) {
     return (

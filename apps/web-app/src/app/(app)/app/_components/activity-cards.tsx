@@ -7,26 +7,27 @@ import { toast } from '@nugget/ui/sonner';
 import {
   Baby,
   Bath,
-  Droplet,
   Droplets,
   Milk,
   Moon,
-  Pill,
   Scale,
   Thermometer,
   Timer,
   Tablet as Toilet,
-  UtensilsCrossed,
 } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
 import { ActivityDrawer } from '~/app/(app)/app/_components/activity-drawer';
-import { ActivityCard } from './activity-card';
 import { createActivityAction } from './activity-cards.actions';
 import {
   formatActivityForToast,
   getDefaultActivityData,
 } from './activity-utils';
+import { PredictiveDiaperCard } from './predictive-diaper-card';
+import { PredictiveFeedingCard } from './predictive-feeding-card';
+import { PredictivePumpingCard } from './predictive-pumping-card';
+import { PredictiveSleepCard } from './predictive-sleep-card';
 
+// All activities for drawer management
 const activities = [
   {
     color: 'bg-[oklch(0.75_0.15_195)]',
@@ -38,26 +39,10 @@ const activities = [
   },
   {
     color: 'bg-[oklch(0.68_0.18_35)]',
-    fullWidth: false,
-    icon: Droplet,
-    id: 'nursing' as const,
-    label: 'Nursing',
-    textColor: 'text-white',
-  },
-  {
-    color: 'bg-[oklch(0.68_0.18_35)]',
-    fullWidth: false,
-    icon: Milk,
-    id: 'bottle' as const,
-    label: 'Bottle',
-    textColor: 'text-white',
-  },
-  {
-    color: 'bg-[oklch(0.72_0.16_330)]',
     fullWidth: true,
-    icon: UtensilsCrossed,
-    id: 'solids' as const,
-    label: 'Solids',
+    icon: Milk,
+    id: 'feeding' as const,
+    label: 'Feeding',
     textColor: 'text-white',
   },
   {
@@ -77,27 +62,11 @@ const activities = [
     textColor: 'text-[oklch(0.18_0.02_250)]',
   },
   {
-    color: 'bg-[oklch(0.65_0.18_280)]',
-    fullWidth: true,
-    icon: Droplets,
-    id: 'pumping' as const,
-    label: 'Pumping',
-    textColor: 'text-white',
-  },
-  {
     color: 'bg-[oklch(0.70_0.16_150)]',
     fullWidth: false,
     icon: Timer,
     id: 'tummy_time' as const,
     label: 'Tummy Time',
-    textColor: 'text-white',
-  },
-  {
-    color: 'bg-[oklch(0.68_0.18_10)]',
-    fullWidth: false,
-    icon: Pill,
-    id: 'medicine' as const,
-    label: 'Medicine',
     textColor: 'text-white',
   },
   {
@@ -122,6 +91,14 @@ const activities = [
     icon: Bath,
     id: 'bath' as const,
     label: 'Bath',
+    textColor: 'text-white',
+  },
+  {
+    color: 'bg-[oklch(0.65_0.18_280)]',
+    fullWidth: true,
+    icon: Droplets,
+    id: 'pumping' as const,
+    label: 'Pumping',
     textColor: 'text-white',
   },
 ];
@@ -169,57 +146,41 @@ export function ActivityCards({
     if (babyAgeDays === null) {
       // Default to newborn activities
       return activities.filter((a) =>
-        ['sleep', 'nursing', 'bottle', 'diaper'].includes(a.id),
+        ['sleep', 'feeding', 'diaper'].includes(a.id),
       );
     }
 
-    // 0-7 days: Sleep, Nursing, Bottle, Diaper (4 buttons)
+    // 0-7 days: Sleep, Feeding, Diaper
     if (babyAgeDays <= 7) {
       return activities.filter((a) =>
-        ['sleep', 'nursing', 'bottle', 'diaper'].includes(a.id),
+        ['sleep', 'feeding', 'diaper'].includes(a.id),
       );
     }
 
-    // 8-30 days: Sleep, Nursing, Bottle, Diaper, Pumping, Medicine (6 buttons)
+    // 8-30 days: Sleep, Feeding, Diaper, Medicine
     if (babyAgeDays <= 30) {
       return activities.filter((a) =>
-        [
-          'sleep',
-          'nursing',
-          'bottle',
-          'diaper',
-          'pumping',
-          'medicine',
-        ].includes(a.id),
+        ['sleep', 'feeding', 'diaper', 'medicine'].includes(a.id),
       );
     }
 
-    // 31-120 days: Sleep, Nursing, Bottle, Diaper, Pumping, Activity (6 buttons)
+    // 31-120 days: Sleep, Feeding, Diaper, Activity
     if (babyAgeDays <= 120) {
       return activities.filter((a) =>
-        [
-          'sleep',
-          'nursing',
-          'bottle',
-          'diaper',
-          'pumping',
-          'activity',
-        ].includes(a.id),
+        ['sleep', 'feeding', 'diaper', 'activity'].includes(a.id),
       );
     }
 
-    // 121-365 days: Sleep, Nursing, Bottle, Solids, Diaper, Activity (6 buttons)
+    // 121-365 days: Sleep, Feeding, Diaper, Activity
     if (babyAgeDays <= 365) {
       return activities.filter((a) =>
-        ['sleep', 'nursing', 'bottle', 'solids', 'diaper', 'activity'].includes(
-          a.id,
-        ),
+        ['sleep', 'feeding', 'diaper', 'activity'].includes(a.id),
       );
     }
 
-    // 365+ days: Sleep, Bottle, Solids, Diaper, Potty (5 buttons)
+    // 365+ days: Sleep, Feeding, Diaper, Potty
     return activities.filter((a) =>
-      ['sleep', 'bottle', 'solids', 'diaper', 'potty'].includes(a.id),
+      ['sleep', 'feeding', 'diaper', 'potty'].includes(a.id),
     );
   };
 
@@ -407,19 +368,30 @@ export function ActivityCards({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3">
-        {displayActivities.map((activity) => {
-          return (
-            <ActivityCard
-              activity={activity}
-              isLoading={loadingActivity === activity.id}
-              key={activity.id}
-              onClick={() => handleQuickCreate(activity.id)}
-            />
-          );
-        })}
+      {/* All Action Cards Section - Predictive + Quick Actions */}
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <PredictiveFeedingCard
+          onCardClick={() => {
+            // Open unified feeding drawer for selection
+            setOpenDrawer('feeding');
+          }}
+          refreshTrigger={onActivityCreated ? 1 : 0}
+        />
+        <PredictiveSleepCard
+          onCardClick={() => setOpenDrawer('sleep')}
+          refreshTrigger={onActivityCreated ? 1 : 0}
+        />
+        <PredictiveDiaperCard
+          onCardClick={() => setOpenDrawer('diaper')}
+          refreshTrigger={onActivityCreated ? 1 : 0}
+        />
+        <PredictivePumpingCard
+          onCardClick={() => setOpenDrawer('pumping')}
+          refreshTrigger={onActivityCreated ? 1 : 0}
+        />
       </div>
 
+      {/* Activity Drawers */}
       {activities.map((activity) => (
         <ActivityDrawer
           activity={activity}

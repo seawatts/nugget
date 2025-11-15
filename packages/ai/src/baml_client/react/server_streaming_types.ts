@@ -21,11 +21,20 @@ $ pnpm add @boundaryml/baml
 import type { Check, Checked  } from "../types";
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml";
 
-import type {  ImprovementSuggestions } from "../types"
+import type {  AppointmentNudgeOutput,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  NewbornMilestoneOutput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  SleepRegressionTipsOutput,  StalePromptsOutput } from "../types"
 
 import type * as types from "../types"
 import type { partial_types }from "../partial_types";
 
 export type StreamingServerTypes = {
+  AppointmentNudge: AppointmentNudgeOutput,
+  BabyVisitExplainer: BabyVisitExplainerOutput,
+  BirthPlanHeadline: BirthPlanHeadlineOutput,
+  HospitalPackAdvice: HospitalPackAdviceOutput,
+  NewbornWeekMilestone: NewbornMilestoneOutput,
+  PostpartumTips: PostpartumTipsOutput,
+  PregnancyWeekSummary: PregnancyWeekSummaryOutput,
+  SleepRegressionTips: SleepRegressionTipsOutput,
+  StalePrompts: StalePromptsOutput,
   SuggestImprovements: ImprovementSuggestions,
 }

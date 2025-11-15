@@ -20,7 +20,7 @@ $ pnpm add @boundaryml/baml
 
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml"
 import type { Checked, Check } from "./types"
-import type {  ImprovementSuggestions } from "./types"
+import type {  AppointmentNudgeOutput,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  NewbornMilestoneOutput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  SleepRegressionTipsOutput,  StalePromptsOutput } from "./types"
 import type * as types from "./types"
 
 /******************************************************************************
@@ -36,10 +36,38 @@ export interface StreamState<T> {
 }
 
 export namespace partial_types {
+    export interface AppointmentNudgeOutput {
+      text?: string | null
+    }
+    export interface BabyVisitExplainerOutput {
+      text?: string | null
+    }
+    export interface BirthPlanHeadlineOutput {
+      text?: string | null
+    }
+    export interface HospitalPackAdviceOutput {
+      headline?: string | null
+      subtext?: string | null
+    }
     export interface ImprovementSuggestions {
       seo: string[]
       accessibility: string[]
       performance: string[]
       overall_priority: string[]
+    }
+    export interface NewbornMilestoneOutput {
+      text?: string | null
+    }
+    export interface PostpartumTipsOutput {
+      text?: string | null
+    }
+    export interface PregnancyWeekSummaryOutput {
+      text?: string | null
+    }
+    export interface SleepRegressionTipsOutput {
+      snippet?: string | null
+    }
+    export interface StalePromptsOutput {
+      list: string[]
     }
 }

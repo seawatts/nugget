@@ -167,6 +167,7 @@ export const createFamilyEarlyAction = action
               await tx.insert(SupplyInventory).values({
                 babyId: baby.id,
                 donorMl: 0,
+                familyId: family.id,
                 formulaMl: 0,
                 pumpedMl: 0,
                 userId,
@@ -259,6 +260,7 @@ export const createFamilyEarlyAction = action
       await tx.insert(SupplyInventory).values({
         babyId: baby.id,
         donorMl: 0,
+        familyId: family.id,
         formulaMl: 0,
         pumpedMl: 0,
         userId,

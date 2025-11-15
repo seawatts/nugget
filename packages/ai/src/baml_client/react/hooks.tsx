@@ -348,6 +348,464 @@ function useBamlAction<FunctionName extends FunctionNames>(
   } satisfies HookOutput<FunctionName, { stream: typeof props.stream }>
 }
 /**
+ * A specialized hook for the AppointmentNudge BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - type: string
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.AppointmentNudgeOutput
+ * - **Streaming Partial:** AppointmentNudgeOutput
+ * - **Streaming Final:** types.AppointmentNudgeOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useAppointmentNudge({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useAppointmentNudge({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useAppointmentNudge(props: HookInput<'AppointmentNudge', { stream: false }>): HookOutput<'AppointmentNudge', { stream: false }>
+export function useAppointmentNudge(props?: HookInput<'AppointmentNudge', { stream?: true }>): HookOutput<'AppointmentNudge', { stream: true }>
+export function useAppointmentNudge(
+  props: HookInput<'AppointmentNudge', { stream?: boolean }> = {},
+): HookOutput<'AppointmentNudge', { stream: true }> | HookOutput<'AppointmentNudge', { stream: false }> {
+  let action: ServerAction = Actions.AppointmentNudge;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.AppointmentNudge;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'AppointmentNudge', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the BabyVisitExplainer BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - ageWeeks: number
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.BabyVisitExplainerOutput
+ * - **Streaming Partial:** BabyVisitExplainerOutput
+ * - **Streaming Final:** types.BabyVisitExplainerOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useBabyVisitExplainer({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useBabyVisitExplainer({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useBabyVisitExplainer(props: HookInput<'BabyVisitExplainer', { stream: false }>): HookOutput<'BabyVisitExplainer', { stream: false }>
+export function useBabyVisitExplainer(props?: HookInput<'BabyVisitExplainer', { stream?: true }>): HookOutput<'BabyVisitExplainer', { stream: true }>
+export function useBabyVisitExplainer(
+  props: HookInput<'BabyVisitExplainer', { stream?: boolean }> = {},
+): HookOutput<'BabyVisitExplainer', { stream: true }> | HookOutput<'BabyVisitExplainer', { stream: false }> {
+  let action: ServerAction = Actions.BabyVisitExplainer;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.BabyVisitExplainer;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'BabyVisitExplainer', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the BirthPlanHeadline BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - mode: string
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.BirthPlanHeadlineOutput
+ * - **Streaming Partial:** BirthPlanHeadlineOutput
+ * - **Streaming Final:** types.BirthPlanHeadlineOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useBirthPlanHeadline({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useBirthPlanHeadline({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useBirthPlanHeadline(props: HookInput<'BirthPlanHeadline', { stream: false }>): HookOutput<'BirthPlanHeadline', { stream: false }>
+export function useBirthPlanHeadline(props?: HookInput<'BirthPlanHeadline', { stream?: true }>): HookOutput<'BirthPlanHeadline', { stream: true }>
+export function useBirthPlanHeadline(
+  props: HookInput<'BirthPlanHeadline', { stream?: boolean }> = {},
+): HookOutput<'BirthPlanHeadline', { stream: true }> | HookOutput<'BirthPlanHeadline', { stream: false }> {
+  let action: ServerAction = Actions.BirthPlanHeadline;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.BirthPlanHeadline;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'BirthPlanHeadline', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the HospitalPackAdvice BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - progress: number
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.HospitalPackAdviceOutput
+ * - **Streaming Partial:** HospitalPackAdviceOutput
+ * - **Streaming Final:** types.HospitalPackAdviceOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useHospitalPackAdvice({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useHospitalPackAdvice({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useHospitalPackAdvice(props: HookInput<'HospitalPackAdvice', { stream: false }>): HookOutput<'HospitalPackAdvice', { stream: false }>
+export function useHospitalPackAdvice(props?: HookInput<'HospitalPackAdvice', { stream?: true }>): HookOutput<'HospitalPackAdvice', { stream: true }>
+export function useHospitalPackAdvice(
+  props: HookInput<'HospitalPackAdvice', { stream?: boolean }> = {},
+): HookOutput<'HospitalPackAdvice', { stream: true }> | HookOutput<'HospitalPackAdvice', { stream: false }> {
+  let action: ServerAction = Actions.HospitalPackAdvice;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.HospitalPackAdvice;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'HospitalPackAdvice', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the NewbornWeekMilestone BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - week: number
+ *
+ * - babySex (optional): string | null
+ *
+ * - firstPregnancy: boolean
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.NewbornMilestoneOutput
+ * - **Streaming Partial:** NewbornMilestoneOutput
+ * - **Streaming Final:** types.NewbornMilestoneOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useNewbornWeekMilestone({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useNewbornWeekMilestone({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useNewbornWeekMilestone(props: HookInput<'NewbornWeekMilestone', { stream: false }>): HookOutput<'NewbornWeekMilestone', { stream: false }>
+export function useNewbornWeekMilestone(props?: HookInput<'NewbornWeekMilestone', { stream?: true }>): HookOutput<'NewbornWeekMilestone', { stream: true }>
+export function useNewbornWeekMilestone(
+  props: HookInput<'NewbornWeekMilestone', { stream?: boolean }> = {},
+): HookOutput<'NewbornWeekMilestone', { stream: true }> | HookOutput<'NewbornWeekMilestone', { stream: false }> {
+  let action: ServerAction = Actions.NewbornWeekMilestone;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.NewbornWeekMilestone;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'NewbornWeekMilestone', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the PostpartumTips BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - day: number
+ *
+ * - firstPregnancy: boolean
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.PostpartumTipsOutput
+ * - **Streaming Partial:** PostpartumTipsOutput
+ * - **Streaming Final:** types.PostpartumTipsOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = usePostpartumTips({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = usePostpartumTips({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function usePostpartumTips(props: HookInput<'PostpartumTips', { stream: false }>): HookOutput<'PostpartumTips', { stream: false }>
+export function usePostpartumTips(props?: HookInput<'PostpartumTips', { stream?: true }>): HookOutput<'PostpartumTips', { stream: true }>
+export function usePostpartumTips(
+  props: HookInput<'PostpartumTips', { stream?: boolean }> = {},
+): HookOutput<'PostpartumTips', { stream: true }> | HookOutput<'PostpartumTips', { stream: false }> {
+  let action: ServerAction = Actions.PostpartumTips;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.PostpartumTips;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'PostpartumTips', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the PregnancyWeekSummary BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - week: number
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.PregnancyWeekSummaryOutput
+ * - **Streaming Partial:** PregnancyWeekSummaryOutput
+ * - **Streaming Final:** types.PregnancyWeekSummaryOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = usePregnancyWeekSummary({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = usePregnancyWeekSummary({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function usePregnancyWeekSummary(props: HookInput<'PregnancyWeekSummary', { stream: false }>): HookOutput<'PregnancyWeekSummary', { stream: false }>
+export function usePregnancyWeekSummary(props?: HookInput<'PregnancyWeekSummary', { stream?: true }>): HookOutput<'PregnancyWeekSummary', { stream: true }>
+export function usePregnancyWeekSummary(
+  props: HookInput<'PregnancyWeekSummary', { stream?: boolean }> = {},
+): HookOutput<'PregnancyWeekSummary', { stream: true }> | HookOutput<'PregnancyWeekSummary', { stream: false }> {
+  let action: ServerAction = Actions.PregnancyWeekSummary;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.PregnancyWeekSummary;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'PregnancyWeekSummary', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the SleepRegressionTips BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - week: number
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.SleepRegressionTipsOutput
+ * - **Streaming Partial:** SleepRegressionTipsOutput
+ * - **Streaming Final:** types.SleepRegressionTipsOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useSleepRegressionTips({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useSleepRegressionTips({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useSleepRegressionTips(props: HookInput<'SleepRegressionTips', { stream: false }>): HookOutput<'SleepRegressionTips', { stream: false }>
+export function useSleepRegressionTips(props?: HookInput<'SleepRegressionTips', { stream?: true }>): HookOutput<'SleepRegressionTips', { stream: true }>
+export function useSleepRegressionTips(
+  props: HookInput<'SleepRegressionTips', { stream?: boolean }> = {},
+): HookOutput<'SleepRegressionTips', { stream: true }> | HookOutput<'SleepRegressionTips', { stream: false }> {
+  let action: ServerAction = Actions.SleepRegressionTips;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.SleepRegressionTips;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'SleepRegressionTips', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the StalePrompts BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - topic: string
+ *
+ * - context: Record<string, string>
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.StalePromptsOutput
+ * - **Streaming Partial:** StalePromptsOutput
+ * - **Streaming Final:** types.StalePromptsOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useStalePrompts({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useStalePrompts({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useStalePrompts(props: HookInput<'StalePrompts', { stream: false }>): HookOutput<'StalePrompts', { stream: false }>
+export function useStalePrompts(props?: HookInput<'StalePrompts', { stream?: true }>): HookOutput<'StalePrompts', { stream: true }>
+export function useStalePrompts(
+  props: HookInput<'StalePrompts', { stream?: boolean }> = {},
+): HookOutput<'StalePrompts', { stream: true }> | HookOutput<'StalePrompts', { stream: false }> {
+  let action: ServerAction = Actions.StalePrompts;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.StalePrompts;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'StalePrompts', { stream: false }>)
+  }
+}
+/**
  * A specialized hook for the SuggestImprovements BAML function that supports both streaming and non‑streaming responses.
  *
  * **Input Types:**
