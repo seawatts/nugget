@@ -8,13 +8,16 @@ interface SignOutButtonProps {
 }
 
 export function SignOutButton({ children }: SignOutButtonProps) {
-  const handleSignOut = () => {
-    clearAppLocalStorage();
-  };
-
   return (
-    <ClerkSignOutButton signOutCallback={handleSignOut}>
-      {children}
+    <ClerkSignOutButton>
+      <button
+        onClick={() => {
+          clearAppLocalStorage();
+        }}
+        type="button"
+      >
+        {children}
+      </button>
     </ClerkSignOutButton>
   );
 }
