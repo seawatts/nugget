@@ -37,6 +37,7 @@ const nextConfig = {
       { hostname: 'nugget.baby' },
       { hostname: 'randomuser.me' },
       { hostname: 'cdn.brandfetch.io' },
+      { hostname: '*.supabase.co' },
     ],
   },
   logging: {

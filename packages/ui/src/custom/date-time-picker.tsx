@@ -164,9 +164,9 @@ export function DateTimePicker({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {['00', '15', '30', '45'].map((m) => (
-                    <SelectItem key={m} value={m}>
-                      {m}
+                  {Array.from({ length: 60 }, (_, i) => i).map((m) => (
+                    <SelectItem key={m} value={m.toString().padStart(2, '0')}>
+                      {m.toString().padStart(2, '0')}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -13,6 +13,7 @@ interface StageDetailsStepProps {
   fullName: string;
   birthWeightLbs: string;
   birthWeightOz: string;
+  gender: string;
   onTTCMethodSelect: (method: TTCMethod) => void;
   onLastPeriodChange: (date: string) => void;
   onDueDateChange: (date: string) => void;
@@ -20,6 +21,7 @@ interface StageDetailsStepProps {
   onFullNameChange: (name: string) => void;
   onBirthWeightLbsChange: (lbs: string) => void;
   onBirthWeightOzChange: (oz: string) => void;
+  onGenderChange: (gender: string) => void;
 }
 
 export function StageDetailsStep({
@@ -32,6 +34,7 @@ export function StageDetailsStep({
   fullName,
   birthWeightLbs,
   birthWeightOz,
+  gender,
   onTTCMethodSelect,
   onLastPeriodChange,
   onDueDateChange,
@@ -39,6 +42,7 @@ export function StageDetailsStep({
   onFullNameChange,
   onBirthWeightLbsChange,
   onBirthWeightOzChange,
+  onGenderChange,
 }: StageDetailsStepProps) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -65,10 +69,12 @@ export function StageDetailsStep({
           birthWeightLbs={birthWeightLbs}
           birthWeightOz={birthWeightOz}
           fullName={fullName}
+          gender={gender}
           onBirthDateChange={onBirthDateChange}
           onBirthWeightLbsChange={onBirthWeightLbsChange}
           onBirthWeightOzChange={onBirthWeightOzChange}
           onFullNameChange={onFullNameChange}
+          onGenderChange={onGenderChange}
         />
       )}
     </div>

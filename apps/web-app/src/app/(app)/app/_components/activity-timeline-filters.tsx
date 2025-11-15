@@ -1,5 +1,6 @@
 'use client';
 
+import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
 import { Checkbox } from '@nugget/ui/checkbox';
 import { Icons } from '@nugget/ui/custom/icons';
@@ -33,6 +34,7 @@ interface ActivityType {
 }
 
 interface FamilyMember {
+  avatarUrl: string | null;
   id: string;
   isCurrentUser: boolean;
   name: string;
@@ -150,6 +152,20 @@ export function ActivityTimelineFilters({
                   id={`user-${member.userId}`}
                   onCheckedChange={() => handleUserToggle(member.userId)}
                 />
+                <Avatar className="size-6 shrink-0">
+                  <AvatarImage
+                    alt={member.name}
+                    src={member.avatarUrl || undefined}
+                  />
+                  <AvatarFallback className="text-xs">
+                    {member.name
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
                 <Label
                   className="text-sm cursor-pointer flex-1"
                   htmlFor={`user-${member.userId}`}

@@ -4,7 +4,11 @@ import { useOrganizationList } from '@clerk/nextjs';
 import { parseBabyName } from '@nugget/utils';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
-import { completeOnboardingAction, upsertUserAction } from '../actions';
+import {
+  completeOnboardingAction,
+  createFamilyEarlyAction,
+  upsertUserAction,
+} from '../actions';
 import { InviteCaregiversStep } from './invite-caregivers-step';
 import { JourneyStageStep } from './journey-stage-step';
 import { NavigationButtons } from './navigation-buttons';
@@ -28,6 +32,7 @@ export function OnboardingWizard() {
   const [fullName, setFullName] = useState('');
   const [birthWeightLbs, setBirthWeightLbs] = useState('');
   const [birthWeightOz, setBirthWeightOz] = useState('');
+  const [gender, setGender] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   // Upsert user when component mounts to ensure user exists in database
@@ -102,6 +107,7 @@ export function OnboardingWizard() {
         dueDate,
         firstName,
         fullName,
+        gender,
         journeyStage,
         lastName,
         lastPeriodDate,
@@ -119,6 +125,7 @@ export function OnboardingWizard() {
               birthWeightTotalOz > 0 ? birthWeightTotalOz : undefined,
             dueDate: dueDate || undefined,
             firstName: firstName || undefined,
+            gender: gender || undefined,
             journeyStage,
             lastName: lastName || undefined,
             lastPeriodDate: lastPeriodDate || undefined,
@@ -132,6 +139,7 @@ export function OnboardingWizard() {
               birthWeightTotalOz > 0 ? birthWeightTotalOz : undefined,
             dueDate: dueDate || undefined,
             firstName: firstName || undefined,
+            gender: gender || undefined,
             journeyStage,
             lastName: lastName || undefined,
             lastPeriodDate: lastPeriodDate || undefined,
@@ -178,6 +186,85 @@ export function OnboardingWizard() {
     }
   };
 
+  const handleNext = async () => {
+    // If moving from step 2 to step 3, create the family and baby first
+    if (step === 2) {
+      setError(null);
+      startTransition(async () => {
+        try {
+          // Parse the full name into parts
+          const { firstName, middleName, lastName } = parseBabyName(fullName);
+
+          // Convert lbs/oz to total ounces
+          const lbs = Number.parseInt(birthWeightLbs || '0', 10);
+          const oz = Number.parseInt(birthWeightOz || '0', 10);
+          const birthWeightTotalOz = lbs * 16 + oz;
+
+          const result = await createFamilyEarlyAction({
+            birthDate: birthDate || undefined,
+            birthWeightOz:
+              birthWeightTotalOz > 0 ? birthWeightTotalOz : undefined,
+            dueDate: dueDate || undefined,
+            firstName: firstName || undefined,
+            gender: gender || undefined,
+            journeyStage: journeyStage ?? 'born',
+            lastName: lastName || undefined,
+            lastPeriodDate: lastPeriodDate || undefined,
+            middleName: middleName || undefined,
+            ttcMethod: ttcMethod || undefined,
+          });
+
+          if (result?.serverError) {
+            console.error('Failed to create family:', result.serverError);
+            setError(
+              result.serverError ||
+                'Failed to set up family. Please try again.',
+            );
+            return;
+          }
+
+          if (result?.data?.success && result.data.family) {
+            console.log(
+              'Family and baby created successfully:',
+              result.data.family,
+            );
+
+            // Set the active organization in Clerk session
+            if (setActive) {
+              try {
+                await setActive({
+                  organization: result.data.family.clerkOrgId,
+                });
+                console.log(
+                  'Active organization set:',
+                  result.data.family.clerkOrgId,
+                );
+
+                // Give a small delay to ensure session is updated
+                await new Promise((resolve) => setTimeout(resolve, 500));
+              } catch (error) {
+                console.error('Failed to set active organization:', error);
+                // Continue anyway, it might still work
+              }
+            }
+
+            // Move to step 3
+            setStep(3);
+          } else {
+            console.error('Unexpected result from createFamilyEarlyAction');
+            setError('Failed to set up family. Please try again.');
+          }
+        } catch (error) {
+          console.error('Error creating family:', error);
+          setError('Failed to set up family. Please try again.');
+        }
+      });
+    } else {
+      // For other steps, just increment
+      setStep(step + 1);
+    }
+  };
+
   const canProceed = () => {
     let result = false;
     if (step === 1) {
@@ -221,6 +308,7 @@ export function OnboardingWizard() {
               dueDate={dueDate}
               dueDateManuallySet={dueDateManuallySet}
               fullName={fullName}
+              gender={gender}
               journeyStage={journeyStage}
               lastPeriodDate={lastPeriodDate}
               onBirthDateChange={setBirthDate}
@@ -228,6 +316,7 @@ export function OnboardingWizard() {
               onBirthWeightOzChange={setBirthWeightOz}
               onDueDateChange={handleDueDateChange}
               onFullNameChange={setFullName}
+              onGenderChange={setGender}
               onLastPeriodChange={handleLastPeriodChange}
               onTTCMethodSelect={setTTCMethod}
               ttcMethod={ttcMethod}
@@ -248,7 +337,7 @@ export function OnboardingWizard() {
             isPending={isPending}
             onBack={() => setStep(step - 1)}
             onComplete={handleComplete}
-            onNext={() => setStep(step + 1)}
+            onNext={handleNext}
             totalSteps={TOTAL_STEPS}
           />
 

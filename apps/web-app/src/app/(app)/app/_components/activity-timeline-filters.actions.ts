@@ -20,6 +20,7 @@ export const getFamilyMembersAction = action.action(async () => {
 
   // Map members to simpler format
   const memberList = members.map((member) => ({
+    avatarUrl: member.user?.avatarUrl || null,
     id: member.id,
     isCurrentUser: member.userId === ctx.auth?.userId,
     name: member.user?.firstName
@@ -31,6 +32,7 @@ export const getFamilyMembersAction = action.action(async () => {
   // If current user is not in the list, add them
   if (currentUser && !memberList.some((m) => m.userId === currentUser.id)) {
     memberList.unshift({
+      avatarUrl: currentUser.avatarUrl || null,
       id: currentUser.id,
       isCurrentUser: true,
       name: currentUser.firstName

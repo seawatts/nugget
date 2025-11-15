@@ -60,9 +60,12 @@ export function InviteCaregiversStep() {
 
   // Automatically generate invitation on mount
   useEffect(() => {
-    createInvitationMutation.mutate({ role: 'partner' });
+    if (!inviteUrl && !createInvitationMutation.isPending) {
+      createInvitationMutation.mutate({ role: 'partner' });
+    }
+    // Only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [createInvitationMutation]);
+  }, []);
 
   const handleCopy = async () => {
     if (!inviteUrl) return;

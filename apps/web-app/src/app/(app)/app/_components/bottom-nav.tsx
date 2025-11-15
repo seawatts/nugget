@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import { Button } from '@nugget/ui/button';
 import { NuggetAvatar } from '@nugget/ui/custom/nugget-avatar';
 import { cn } from '@nugget/ui/lib/utils';
@@ -266,6 +267,11 @@ export function BottomNav() {
   const [journeyStage, setJourneyStage] = useState<string | null>(null);
   const [babyName, setBabyName] = useState('Baby');
   const [ageDisplay, setAgeDisplay] = useState<string | undefined>(undefined);
+  const [babyPhotoUrl, setBabyPhotoUrl] = useState<string | null>(null);
+
+  // Fetch baby data to get profile picture
+  const { data: babies = [] } = api.babies.list.useQuery();
+  const mostRecentBaby = babies[0];
 
   const isOnboarding = pathname?.startsWith('/app/onboarding');
 
@@ -317,6 +323,13 @@ export function BottomNav() {
       }
     }
   }, []);
+
+  // Update baby photo when data changes
+  useEffect(() => {
+    if (mostRecentBaby?.photoUrl) {
+      setBabyPhotoUrl(mostRecentBaby.photoUrl);
+    }
+  }, [mostRecentBaby?.photoUrl]);
 
   if (isOnboarding) return null;
 
@@ -484,7 +497,11 @@ export function BottomNav() {
                 {/* Avatar container */}
                 <div className="relative flex items-center justify-center size-16 rounded-full bg-linear-to-br from-primary to-primary/80 p-[3px] shadow-2xl shadow-primary/50 transition-all group-hover:scale-105 group-hover:shadow-primary/70 cursor-pointer">
                   <div className="size-full rounded-full bg-card flex items-center justify-center p-1">
-                    <NuggetAvatar name={babyName} size="lg" />
+                    <NuggetAvatar
+                      image={babyPhotoUrl || undefined}
+                      name={babyName}
+                      size="lg"
+                    />
                   </div>
                 </div>
               </div>

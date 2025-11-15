@@ -43,6 +43,8 @@ default_pool_size = 20
 max_client_conn = 100
 
 [db.vault]
+# Note: When using Clerk third-party auth, the JWT secret is only used for non-Clerk tokens
+# Clerk RS256 tokens are verified using the public key from the JWKS endpoint
 secret_key = "env(SUPABASE_JWT_SECRET)"
 
 [db.migrations]
@@ -94,12 +96,12 @@ file_size_limit = "50MiB"
 # [storage.image_transformation]
 # enabled = true
 
-# Uncomment to configure local storage buckets
-# [storage.buckets.images]
-# public = false
-# file_size_limit = "50MiB"
-# allowed_mime_types = ["image/png", "image/jpeg"]
-# objects_path = "./images"
+# Configure local storage buckets
+[storage.buckets.baby-avatars]
+public = true
+file_size_limit = "5MiB"
+allowed_mime_types = ["image/png", "image/jpeg", "image/jpg", "image/webp"]
+objects_path = "./storage/baby-avatars"
 
 [auth]
 enabled = true
@@ -271,9 +273,12 @@ enabled = false
 
 # Use Clerk as a third-party provider alongside Supabase Auth.
 [auth.third_party.clerk]
-enabled = false
+enabled = true
 # Obtain from https://clerk.com/setup/supabase
-# domain = "example.clerk.accounts.dev"
+# Get your Clerk domain from: https://dashboard.clerk.com (e.g., magnificent-javelin-57.clerk.accounts.dev)
+# This tells Supabase to fetch Clerk's public keys from the JWKS endpoint to verify RS256 tokens
+domain = "clerk.nugget.baby"
+# Supabase will use https://clerk.nugget.baby/.well-known/jwks.json to verify JWTs
 
 [edge_runtime]
 enabled = true

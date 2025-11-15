@@ -1,6 +1,6 @@
 'use client';
 
-import { SignOutButton, useUser } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
 import { Icons } from '@nugget/ui/custom/icons';
 import {
   DropdownMenu,
@@ -14,7 +14,6 @@ import {
 } from '@nugget/ui/dropdown-menu';
 import { SidebarMenuButton } from '@nugget/ui/sidebar';
 import { ToggleGroup, ToggleGroupItem } from '@nugget/ui/toggle-group';
-
 import {
   ArrowLeftFromLine,
   ChevronDown,
@@ -24,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
+import { SignOutButton } from '~/components/sign-out-button';
 export function UserDropdownMenu() {
   const { setTheme } = useTheme();
   const router = useRouter();

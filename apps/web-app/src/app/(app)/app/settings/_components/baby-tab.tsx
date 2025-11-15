@@ -19,6 +19,7 @@ import { Baby, Minus, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { DeleteBabyDialog } from './delete-baby-dialog';
+import { ProfilePictureUpload } from './profile-picture-upload';
 
 interface BabyFormData {
   fullName: string;
@@ -207,7 +208,7 @@ export function BabyTab() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [handleSave]);
+  }, [formData, handleSave]);
 
   if (isLoading) {
     return (
@@ -280,6 +281,21 @@ export function BabyTab() {
             Your baby's basic details
           </p>
         </div>
+
+        {/* Profile Picture Upload */}
+        {baby && (
+          <ProfilePictureUpload
+            babyId={baby.id}
+            babyName={
+              getFullBabyName({
+                firstName: baby.firstName || '',
+                lastName: baby.lastName,
+                middleName: baby.middleName,
+              }) || 'Baby'
+            }
+            currentPhotoUrl={baby.photoUrl}
+          />
+        )}
 
         <div className="space-y-4">
           <div className="space-y-2">

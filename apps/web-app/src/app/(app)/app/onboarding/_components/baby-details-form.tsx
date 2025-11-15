@@ -4,6 +4,13 @@ import { Button } from '@nugget/ui/button';
 import { DateTimePicker } from '@nugget/ui/custom/date-time-picker';
 import { Input } from '@nugget/ui/input';
 import { Label } from '@nugget/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@nugget/ui/select';
 import { parse } from 'date-fns';
 import { Minus, Plus } from 'lucide-react';
 
@@ -12,10 +19,12 @@ interface BabyDetailsFormProps {
   birthDate: string;
   birthWeightLbs: string;
   birthWeightOz: string;
+  gender: string;
   onFullNameChange: (name: string) => void;
   onBirthDateChange: (date: string) => void;
   onBirthWeightLbsChange: (lbs: string) => void;
   onBirthWeightOzChange: (oz: string) => void;
+  onGenderChange: (gender: string) => void;
 }
 
 // Helper to parse date string (supports both YYYY-MM-DD and ISO format)
@@ -37,10 +46,12 @@ export function BabyDetailsForm({
   birthDate,
   birthWeightLbs,
   birthWeightOz,
+  gender,
   onFullNameChange,
   onBirthDateChange,
   onBirthWeightLbsChange,
   onBirthWeightOzChange,
+  onGenderChange,
 }: BabyDetailsFormProps) {
   const selectedDate = parseLocalDate(birthDate);
 
@@ -86,6 +97,21 @@ export function BabyDetailsForm({
           Optional: Enter full name if you&apos;d like. We&apos;ll automatically
           split it into first, middle, and last names.
         </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="gender">Gender (optional)</Label>
+        <Select onValueChange={onGenderChange} value={gender}>
+          <SelectTrigger className="w-full" id="gender">
+            <SelectValue placeholder="Select gender" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="male">Male</SelectItem>
+            <SelectItem value="female">Female</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+            <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">

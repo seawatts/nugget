@@ -1,6 +1,6 @@
 'use client';
 
-import { SignOutButton, useUser } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
 import { api } from '@nugget/api/react';
 import { Button } from '@nugget/ui/button';
 // import { Input } from '@nugget/ui/input';
@@ -24,6 +24,7 @@ import {
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { SignOutButton } from '~/components/sign-out-button';
 import { BabyTab } from './_components/baby-tab';
 import { DeleteAccountDialog } from './_components/delete-account-dialog';
 import { FamilyTab } from './_components/family-tab';
