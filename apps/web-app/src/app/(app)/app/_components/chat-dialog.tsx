@@ -37,6 +37,7 @@ export interface Message {
 
 interface ChatDialogProps {
   babyId: string;
+  chatId?: string;
   initialMessages?: Message[];
   systemPrompt?: string;
   compact?: boolean;
@@ -46,12 +47,13 @@ interface ChatDialogProps {
 
 export function ChatDialogContent({
   babyId,
+  chatId,
   initialMessages = [],
   systemPrompt,
   compact = false,
 }: Omit<ChatDialogProps, 'open' | 'onOpenChange'>) {
   useAuth();
-  const [activeChat, setActiveChat] = useState<string | null>(null);
+  const [activeChat, setActiveChat] = useState<string | null>(chatId || null);
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -60,6 +62,13 @@ export function ChatDialogContent({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { executeAsync: loadChatMessages } = useAction(getChatMessagesAction);
+
+  // Set activeChat when chatId prop changes
+  useEffect(() => {
+    if (chatId) {
+      setActiveChat(chatId);
+    }
+  }, [chatId]);
 
   // Focus input on mount
   useEffect(() => {
@@ -309,6 +318,7 @@ export function ChatDialogContent({
  */
 export function ChatDialog({
   babyId,
+  chatId,
   initialMessages,
   systemPrompt,
   compact = false,
@@ -326,6 +336,7 @@ export function ChatDialog({
           </DialogHeader>
           <ChatDialogContent
             babyId={babyId}
+            chatId={chatId}
             compact={compact}
             initialMessages={initialMessages}
             systemPrompt={systemPrompt}
@@ -343,6 +354,7 @@ export function ChatDialog({
         </DrawerHeader>
         <ChatDialogContent
           babyId={babyId}
+          chatId={chatId}
           compact={compact}
           initialMessages={initialMessages}
           systemPrompt={systemPrompt}

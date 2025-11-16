@@ -36,6 +36,7 @@ import {
   type TimelineItem,
 } from './activity-timeline.actions';
 import { getDisplayNotes } from './activity-utils';
+import { ChatDialog } from './chat-dialog';
 import { formatVolumeDisplay, getVolumeUnit } from './volume-utils';
 
 const activities = [
@@ -254,6 +255,11 @@ export function ActivityTimeline({
     [],
   );
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [chatDialogOpen, setChatDialogOpen] = useState(false);
+  const [selectedChatData, setSelectedChatData] = useState<{
+    chatId: string;
+    babyId: string;
+  } | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -353,8 +359,15 @@ export function ActivityTimeline({
     if (item.type === 'activity') {
       setEditingActivity(item.data);
       setOpenDrawer(item.data.type);
+    } else if (item.type === 'chat') {
+      // Open chat dialog with the chat data
+      setSelectedChatData({
+        babyId: item.data.chat.babyId,
+        chatId: item.data.chat.id,
+      });
+      setChatDialogOpen(true);
     }
-    // For milestones and chats, we can add handlers later
+    // For milestones, we can add handlers later
   };
 
   const handleDrawerClose = () => {
@@ -582,7 +595,10 @@ export function ActivityTimeline({
                           ? 'opacity-100 animate-pulse cursor-not-allowed'
                           : 'opacity-60 hover:opacity-90 cursor-pointer'
                       } transition-all duration-200 hover:scale-[1.01] hover:shadow-sm ${isInitialLoad ? 'animate-in slide-in-from-bottom-2' : ''} w-full text-left`}
-                      disabled={isOptimistic || item.type !== 'activity'}
+                      disabled={
+                        isOptimistic ||
+                        (item.type !== 'activity' && item.type !== 'chat')
+                      }
                       onClick={() => !isOptimistic && handleItemClick(item)}
                       style={
                         isInitialLoad
@@ -677,6 +693,16 @@ export function ActivityTimeline({
           onClose={handleDrawerClose}
         />
       ))}
+
+      {/* Chat Dialog */}
+      {selectedChatData && (
+        <ChatDialog
+          babyId={selectedChatData.babyId}
+          chatId={selectedChatData.chatId}
+          onOpenChange={setChatDialogOpen}
+          open={chatDialogOpen}
+        />
+      )}
     </div>
   );
 }
