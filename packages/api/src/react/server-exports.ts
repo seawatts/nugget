@@ -1,3 +1,3 @@
 export * from './hydration-boundary';
 export * from './server';
-export * from './server-actions';
+export { getApi as getServerActionCaller } from './server-actions';

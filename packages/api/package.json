@@ -27,7 +27,8 @@
     ".": "./src/index.ts",
     "./client": "./src/client.ts",
     "./react": "./src/react/client-exports.ts",
-    "./server": "./src/react/server-exports.ts",
+    "./rsc": "./src/react/server.ts",
+    "./server": "./src/react/server-actions.ts",
     "./services": "./src/services/index.ts"
   },
   "license": "MIT",

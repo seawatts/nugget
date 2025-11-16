@@ -19,6 +19,22 @@ const createContext = cache(async () => {
 
 export const getQueryClient = cache(createQueryClient);
 
+/**
+ * Create tRPC helpers for React Server Components
+ * Uses createServerSideHelpers which integrates with React Query for prefetching.
+ *
+ * Import from '@nugget/api/rsc' for React Server Components.
+ *
+ * Only supports queries with .fetch():
+ *
+ * @example
+ * ```ts
+ * import { getApi } from '@nugget/api/rsc';
+ *
+ * const api = await getApi();
+ * const data = await api.activities.list.fetch({ ... });  // Queries only
+ * ```
+ */
 export const getApi = cache(async () =>
   createServerSideHelpers({
     ctx: await createContext(),

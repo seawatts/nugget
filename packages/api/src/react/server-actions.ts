@@ -5,18 +5,22 @@ import { createCallerFactory } from '../trpc';
 
 /**
  * Create a tRPC caller for use in Server Actions
- * This is different from getApi() which uses createServerSideHelpers
- * and is meant for React Server Components (queries only).
+ * Uses createCaller which supports both queries and mutations.
  *
- * Use this when you need to call mutations from Server Actions.
+ * Import from '@nugget/api/server' for server actions.
+ *
+ * Call mutations directly without .fetch() or .mutate() wrappers:
  *
  * @example
  * ```ts
- * const caller = await getServerActionCaller();
- * const result = await caller.activities.create({ ... });
+ * import { getApi } from '@nugget/api/server';
+ *
+ * const api = await getApi();
+ * const result = await api.activities.create({ ... });  // Direct call
+ * const data = await api.activities.list({ ... });      // Also works for queries
  * ```
  */
-export const getServerActionCaller = cache(async () => {
+export const getApi = cache(async () => {
   const ctx = await createTRPCContext();
   return createCallerFactory(appRouter)(ctx);
 });

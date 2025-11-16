@@ -50,7 +50,7 @@ export const createActivityAction = action
       const api = await getApi();
 
       // Get the most recent baby
-      const baby = await api.babies.getMostRecent.fetch();
+      const baby = await api.babies.getMostRecent();
 
       if (!baby) {
         throw new Error('No baby found. Please complete onboarding first.');
@@ -63,7 +63,7 @@ export const createActivityAction = action
       );
 
       // Create the activity
-      const activity = await api.activities.create.mutate({
+      const activity = await api.activities.create({
         babyId: baby.id,
         details: null,
         ...defaultData,
@@ -148,14 +148,14 @@ export const createActivityWithDetailsAction = action
       const api = await getApi();
 
       // Get the most recent baby
-      const baby = await api.babies.getMostRecent.fetch();
+      const baby = await api.babies.getMostRecent();
 
       if (!baby) {
         throw new Error('No baby found. Please complete onboarding first.');
       }
 
       // Create the activity with provided details
-      const activity = await api.activities.create.mutate({
+      const activity = await api.activities.create({
         amount: parsedInput.amount,
         babyId: baby.id,
         details: parsedInput.details || null,
@@ -192,14 +192,14 @@ export const getInProgressSleepActivityAction = action
       const api = await getApi();
 
       // Get the most recent baby
-      const baby = await api.babies.getMostRecent.fetch();
+      const baby = await api.babies.getMostRecent();
 
       if (!baby) {
         throw new Error('No baby found. Please complete onboarding first.');
       }
 
       // Find in-progress sleep activity (has startTime but no endTime)
-      const activities = await api.activities.list.fetch({
+      const activities = await api.activities.list({
         babyId: baby.id,
         limit: 50,
       });

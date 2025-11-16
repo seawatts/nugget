@@ -109,7 +109,7 @@ export const quickLogSleepAction = action
       }
 
       // Create the sleep activity
-      const activity = await api.activities.create.mutate({
+      const activity = await api.activities.create({
         babyId: baby.id,
         details: null,
         duration: parsedInput.duration || null,

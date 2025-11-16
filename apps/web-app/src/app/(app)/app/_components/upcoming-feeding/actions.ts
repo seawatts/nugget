@@ -40,7 +40,7 @@ export const getUpcomingFeedingAction = action.action(
     }
 
     // Get the most recent baby
-    const baby = await api.babies.getMostRecent.fetch();
+    const baby = await api.babies.getMostRecent();
 
     if (!baby) {
       throw new Error('No baby found. Please complete onboarding first.');
@@ -56,7 +56,7 @@ export const getUpcomingFeedingAction = action.action(
     }
 
     // Fetch recent activities (last 48 hours) for prediction
-    const recentActivities = await api.activities.list.fetch({
+    const recentActivities = await api.activities.list({
       babyId: baby.id,
       limit: 50,
     });
@@ -140,14 +140,14 @@ export const claimFeedingAction = action
       const api = await getApi();
 
       // Get the most recent baby
-      const baby = await api.babies.getMostRecent.fetch();
+      const baby = await api.babies.getMostRecent();
 
       if (!baby) {
         throw new Error('No baby found. Please complete onboarding first.');
       }
 
       // Check if there's already a scheduled feeding
-      const recentActivities = await api.activities.list.fetch({
+      const recentActivities = await api.activities.list({
         babyId: baby.id,
         limit: 20,
       });
@@ -210,7 +210,7 @@ export const completeFeedingAction = action
       const api = await getApi();
 
       // Update the activity to mark as completed
-      const activity = await api.activities.update.mutate({
+      const activity = await api.activities.update({
         id: parsedInput.activityId,
         isScheduled: false,
         startTime: new Date(), // Update to actual completion time
@@ -246,7 +246,7 @@ export const unclaimFeedingAction = action
       const api = await getApi();
 
       // Update the activity to remove assignment
-      const activity = await api.activities.update.mutate({
+      const activity = await api.activities.update({
         assignedUserId: null,
         id: parsedInput.activityId,
       });
@@ -283,14 +283,14 @@ export const quickLogFeedingAction = action
       const api = await getApi();
 
       // Get the most recent baby
-      const baby = await api.babies.getMostRecent.fetch();
+      const baby = await api.babies.getMostRecent();
 
       if (!baby) {
         throw new Error('No baby found. Please complete onboarding first.');
       }
 
       // Create the feeding activity
-      const activity = await api.activities.create.mutate({
+      const activity = await api.activities.create({
         amount: parsedInput.amount,
         babyId: baby.id,
         details: null,
