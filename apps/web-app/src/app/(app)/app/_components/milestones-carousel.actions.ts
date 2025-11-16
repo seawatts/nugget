@@ -61,7 +61,7 @@ export async function getMilestonesCarouselContent(
     // Verify authentication
     const authResult = await auth();
     if (!authResult.userId) {
-      return { milestones: [] };
+      return { ageInDays: 0, babyName: '', milestones: [] };
     }
 
     // Create tRPC API helper
@@ -71,7 +71,7 @@ export async function getMilestonesCarouselContent(
     const baby = await api.babies.getById({ id: babyId });
 
     if (!baby) {
-      return { milestones: [] };
+      return { ageInDays: 0, babyName: '', milestones: [] };
     }
 
     // Get completed milestones for this baby

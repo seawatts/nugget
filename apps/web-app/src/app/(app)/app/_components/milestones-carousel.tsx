@@ -88,11 +88,11 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
                         ? {
                             ...m,
                             bulletPoints:
-                              result.data.bulletPoints ?? m.bulletPoints,
+                              result.data?.bulletPoints ?? m.bulletPoints,
                             followUpQuestion:
-                              result.data.followUpQuestion ??
+                              result.data?.followUpQuestion ??
                               m.followUpQuestion,
-                            summary: result.data.summary ?? m.summary,
+                            summary: result.data?.summary ?? m.summary,
                           }
                         : m,
                     ),

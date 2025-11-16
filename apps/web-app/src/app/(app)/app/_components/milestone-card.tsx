@@ -39,7 +39,14 @@ interface TypeConfig {
   color: string;
 }
 
-const typeConfig: Record<string, TypeConfig> = {
+type MilestoneType =
+  | 'physical'
+  | 'cognitive'
+  | 'social'
+  | 'language'
+  | 'self_care';
+
+const typeConfig: Record<MilestoneType, TypeConfig> = {
   cognitive: {
     bgColor: 'bg-purple-500/10',
     borderColor: 'border-purple-500/20',
