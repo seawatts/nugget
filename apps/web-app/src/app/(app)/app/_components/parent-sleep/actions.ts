@@ -1,5 +1,6 @@
 'use server';
 
+import { auth } from '@clerk/nextjs/server';
 import { getApi } from '@nugget/api/server';
 import { Activities } from '@nugget/db/schema';
 import { and, eq, gte } from 'drizzle-orm';
@@ -81,13 +82,13 @@ export const logParentSleepAction = action
 export const getParentSleepDataAction = action
   .schema(z.object({ userId: z.string() }))
   .action(async ({ parsedInput: { userId } }) => {
-    const ctx = await createTRPCContext();
+    const api = await getApi();
 
     // Get the last 24 hours
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     // Get all sleep activities for this user in the last 24 hours
-    const sleepActivities = await ctx.db.query.Activities.findMany({
+    const sleepActivities = await api.db.query.Activities.findMany({
       orderBy: (activities, { desc }) => [desc(activities.startTime)],
       where: and(
         eq(Activities.userId, userId),
@@ -128,14 +129,14 @@ export const quickLogParentSleepAction = action
     }),
   )
   .action(async ({ parsedInput: { userId, durationHours } }) => {
-    const ctx = await createTRPCContext();
+    const api = await getApi();
+    const authResult = await auth();
 
-    if (!ctx.auth?.orgId) {
+    if (!authResult?.orgId) {
       throw new Error('Authentication required');
     }
 
-    const { orgId } = ctx.auth;
-    const caller = createCaller(ctx);
+    const { orgId } = authResult;
 
     // Get primary baby (required for activities table)
     const babies = await api.babies.list.fetch();

@@ -1,7 +1,9 @@
 'use server';
 
+import { auth } from '@clerk/nextjs/server';
 import { PostpartumTips } from '@nugget/ai/react/server';
 import { getApi } from '@nugget/api/server';
+import { db } from '@nugget/db/client';
 import { Activities } from '@nugget/db/schema';
 import { differenceInDays, differenceInWeeks, subDays } from 'date-fns';
 import { and, eq, gte } from 'drizzle-orm';
@@ -28,16 +30,17 @@ export interface LearningTip {
  */
 export const getParentLearningContentAction = action.action(async () => {
   const api = await getApi();
+  const authResult = await auth();
 
   // Check authentication
-  if (!ctx.auth?.userId || !ctx.auth?.orgId) {
+  if (!authResult?.userId || !authResult?.orgId) {
     return { babyName: '', postpartumDay: 0, tips: [] };
   }
 
-  const { orgId } = ctx.auth;
+  const { orgId } = authResult;
 
   // Get the primary baby
-  const babies = await caller.babies.list();
+  const babies = await api.babies.list.fetch();
   const baby = babies[0];
 
   if (!baby || !baby.birthDate) {
@@ -53,7 +56,7 @@ export const getParentLearningContentAction = action.action(async () => {
   const sevenDaysAgo = subDays(new Date(), 7);
 
   // Fetch activities from last 24 hours
-  const activities24h = await ctx.db.query.Activities.findMany({
+  const activities24h = await db.query.Activities.findMany({
     where: and(
       eq(Activities.familyId, orgId),
       gte(Activities.startTime, twentyFourHoursAgo),
@@ -61,7 +64,7 @@ export const getParentLearningContentAction = action.action(async () => {
   });
 
   // Fetch activities from last 7 days for patterns
-  const activities7d = await ctx.db.query.Activities.findMany({
+  const activities7d = await db.query.Activities.findMany({
     where: and(
       eq(Activities.familyId, orgId),
       gte(Activities.startTime, sevenDaysAgo),

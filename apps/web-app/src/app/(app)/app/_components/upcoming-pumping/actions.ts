@@ -99,10 +99,6 @@ export const quickLogPumpingAction = action
         throw new Error('Authentication required');
       }
 
-      // Create tRPC caller
-      const ctx = await createTRPCContext();
-      const caller = createCaller(ctx);
-
       // Get the most recent baby
       const baby = await api.babies.getMostRecent.fetch();
 
