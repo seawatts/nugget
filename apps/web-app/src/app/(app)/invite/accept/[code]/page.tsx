@@ -44,7 +44,7 @@ export default async function InviteAcceptPage(props: {
   const api = await getApi();
   let invitation: Awaited<ReturnType<typeof api.invitations.get.fetch>>;
   try {
-    invitation = await api.invitations.get.fetch({ code: params.code });
+    invitation = await api.invitations.get({ code: params.code });
   } catch (_error) {
     // Invitation not found or error occurred
     notFound();

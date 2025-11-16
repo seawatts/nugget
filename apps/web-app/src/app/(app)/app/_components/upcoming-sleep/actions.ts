@@ -32,7 +32,7 @@ export const getUpcomingSleepAction = action.action(
     const api = await getApi();
 
     // Get the most recent baby
-    const baby = await api.babies.getMostRecent.fetch();
+    const baby = await api.babies.getMostRecent();
 
     if (!baby) {
       throw new Error('No baby found. Please complete onboarding first.');
@@ -48,7 +48,7 @@ export const getUpcomingSleepAction = action.action(
     }
 
     // Fetch recent activities (last 72 hours) for prediction
-    const recentActivities = await api.activities.list.fetch({
+    const recentActivities = await api.activities.list({
       babyId: baby.id,
       limit: 50,
     });
@@ -102,7 +102,7 @@ export const quickLogSleepAction = action
       }
 
       // Get the most recent baby
-      const baby = await api.babies.getMostRecent.fetch();
+      const baby = await api.babies.getMostRecent();
 
       if (!baby) {
         throw new Error('No baby found. Please complete onboarding first.');

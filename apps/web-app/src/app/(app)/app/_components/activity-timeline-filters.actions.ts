@@ -14,10 +14,10 @@ export const getFamilyMembersAction = action.action(async () => {
   const authResult = await auth();
 
   // Get all family members
-  const members = await api.familyMembers.all.fetch();
+  const members = await api.familyMembers.all();
 
   // Get current user to ensure they're included
-  const currentUser = await api.user.current.fetch();
+  const currentUser = await api.user.current();
 
   // Map members to simpler format
   const memberList = members.map((member) => ({

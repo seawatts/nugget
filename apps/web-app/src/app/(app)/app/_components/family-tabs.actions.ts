@@ -23,13 +23,13 @@ export const getFamilyTabsDataAction = action.action(async () => {
   const authResult = await auth();
 
   // Get all babies
-  const babies = await api.babies.list.fetch();
+  const babies = await api.babies.list();
 
   // Get all family members
-  const members = await api.familyMembers.all.fetch();
+  const members = await api.familyMembers.all();
 
   // Get current user to ensure they're included
-  const currentUser = await api.user.current.fetch();
+  const currentUser = await api.user.current();
 
   const tabs: FamilyTabMember[] = [];
 

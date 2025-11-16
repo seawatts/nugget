@@ -40,7 +40,7 @@ export const getParentLearningContentAction = action.action(async () => {
   const { orgId } = authResult;
 
   // Get the primary baby
-  const babies = await api.babies.list.fetch();
+  const babies = await api.babies.list();
   const baby = babies[0];
 
   if (!baby || !baby.birthDate) {

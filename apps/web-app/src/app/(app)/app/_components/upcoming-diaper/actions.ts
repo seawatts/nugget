@@ -32,7 +32,7 @@ export const getUpcomingDiaperAction = action.action(
     const api = await getApi();
 
     // Get the most recent baby
-    const baby = await api.babies.getMostRecent.fetch();
+    const baby = await api.babies.getMostRecent();
 
     if (!baby) {
       throw new Error('No baby found. Please complete onboarding first.');
@@ -49,7 +49,7 @@ export const getUpcomingDiaperAction = action.action(
 
     // Fetch recent activities (last 72 hours) for prediction
     // We need more activities to analyze feeding/sleep correlations
-    const recentActivities = await api.activities.list.fetch({
+    const recentActivities = await api.activities.list({
       babyId: baby.id,
       limit: 100,
     });
@@ -111,7 +111,7 @@ export const quickLogDiaperAction = action
       }
 
       // Get the most recent baby
-      const baby = await api.babies.getMostRecent.fetch();
+      const baby = await api.babies.getMostRecent();
 
       if (!baby) {
         throw new Error('No baby found. Please complete onboarding first.');

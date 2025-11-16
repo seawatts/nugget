@@ -24,7 +24,7 @@ export const getEntityInfoAction = action
     // Check if it's a baby (baby IDs start with 'baby_')
     if (userId.startsWith('baby_')) {
       try {
-        const baby = await api.babies.getById.fetch({ id: userId });
+        const baby = await api.babies.getById({ id: userId });
         if (baby) {
           return {
             avatarUrl: baby.photoUrl,
@@ -40,7 +40,7 @@ export const getEntityInfoAction = action
 
     // Check if it's a user
     try {
-      const user = await api.user.byId.fetch({ id: userId });
+      const user = await api.user.byId({ id: userId });
       if (user) {
         return {
           avatarUrl: user.avatarUrl,

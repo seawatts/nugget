@@ -47,7 +47,7 @@ export const logParentSleepAction = action
       const { orgId } = authResult;
 
       // Get primary baby (required for activities table)
-      const babies = await api.babies.list.fetch();
+      const babies = await api.babies.list();
       const primaryBaby = babies[0];
 
       if (!primaryBaby) {
@@ -139,7 +139,7 @@ export const quickLogParentSleepAction = action
     const { orgId } = authResult;
 
     // Get primary baby (required for activities table)
-    const babies = await api.babies.list.fetch();
+    const babies = await api.babies.list();
     const primaryBaby = babies[0];
 
     if (!primaryBaby) {

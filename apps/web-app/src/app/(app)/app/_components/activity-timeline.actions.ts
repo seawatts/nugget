@@ -37,14 +37,14 @@ export const getActivitiesAction = action
       const api = await getApi();
 
       // Get the most recent baby
-      const baby = await api.babies.getMostRecent.fetch();
+      const baby = await api.babies.getMostRecent();
 
       if (!baby) {
         return { activities: [], hasMore: false };
       }
 
       // Fetch activities, filtering out scheduled ones
-      const activities = await api.activities.list.fetch({
+      const activities = await api.activities.list({
         activityTypes: parsedInput.activityTypes,
         babyId: baby.id,
         isScheduled: false,

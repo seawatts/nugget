@@ -163,14 +163,14 @@ export const claimFeedingAction = action
 
       if (existingScheduled) {
         // Update existing scheduled feeding with new assignment
-        activity = await api.activities.update.fetch({
+        activity = await api.activities.update({
           assignedUserId: authResult.userId,
           id: existingScheduled.id,
           startTime: new Date(parsedInput.predictedTime),
         });
       } else {
         // Create new scheduled feeding
-        activity = await api.activities.create.fetch({
+        activity = await api.activities.create({
           assignedUserId: authResult.userId,
           babyId: baby.id,
           details: null,

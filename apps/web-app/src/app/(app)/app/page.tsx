@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export default async function Home() {
   // Get the primary baby and redirect to their page
   const api = await getApi();
-  const baby = await api.babies.getMostRecent.fetch();
+  const baby = await api.babies.getMostRecent();
 
   if (baby) {
     redirect(`/app/${baby.id}`);

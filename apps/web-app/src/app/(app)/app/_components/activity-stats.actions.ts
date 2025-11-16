@@ -36,14 +36,14 @@ export const getActivityStatsAction = action
     const api = await getApi();
 
     // Get the most recent baby
-    const baby = await api.babies.getMostRecent.fetch();
+    const baby = await api.babies.getMostRecent();
 
     if (!baby) {
       throw new Error('No baby found. Please complete onboarding first.');
     }
 
     // Fetch recent activities
-    const recentActivities = await api.activities.list.fetch({
+    const recentActivities = await api.activities.list({
       babyId: baby.id,
       limit: 50,
     });

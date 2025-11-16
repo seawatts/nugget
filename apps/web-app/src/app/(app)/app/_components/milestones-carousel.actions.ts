@@ -58,7 +58,7 @@ export async function getMilestonesCarouselContent(
     const api = await getApi();
 
     // Get the specific baby by ID
-    const baby = await api.babies.getById.fetch({ id: babyId });
+    const baby = await api.babies.getById({ id: babyId });
 
     if (!baby) {
       return { milestones: [] };
@@ -210,7 +210,7 @@ export const completeMilestoneAction = action
 
     // Create tRPC API helper to get familyId
     const api = await getApi();
-    const baby = await api.babies.getById.fetch({ id: input.babyId });
+    const baby = await api.babies.getById({ id: input.babyId });
 
     if (!baby) {
       throw new Error('Baby not found');

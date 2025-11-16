@@ -96,7 +96,7 @@ export async function getLearningCarouselContent(
     const api = await getApi();
 
     // Get the specific baby by ID
-    const baby = await api.babies.getById.fetch({ id: babyId });
+    const baby = await api.babies.getById({ id: babyId });
 
     if (!baby) {
       return { baby: null, cards: [] };
@@ -458,7 +458,7 @@ export async function resolveCardAIContent(
     const api = await getApi();
 
     // Get the primary baby for the family
-    const babies = await api.babies.list.fetch();
+    const babies = await api.babies.list();
     const baby = babies[0];
 
     if (!baby) {

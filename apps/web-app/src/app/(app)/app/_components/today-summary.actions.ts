@@ -25,7 +25,7 @@ export const getTodaySummaryAction = action.action(
     const api = await getApi();
 
     // Get the most recent baby
-    const baby = await api.babies.getMostRecent.fetch();
+    const baby = await api.babies.getMostRecent();
 
     if (!baby) {
       return { activities: [] };
@@ -33,7 +33,7 @@ export const getTodaySummaryAction = action.action(
 
     // Fetch all activities from today, filtering out scheduled ones
     const todayStart = startOfDay(new Date());
-    const activities = await api.activities.list.fetch({
+    const activities = await api.activities.list({
       babyId: baby.id,
       isScheduled: false,
       limit: 100, // Maximum allowed by validation (should be plenty for a single day)
