@@ -237,7 +237,6 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
                   ageLabel={milestone.ageLabel}
                   babyId={babyId}
                   bulletPoints={milestone.bulletPoints}
-                  description={milestone.description}
                   followUpQuestion={milestone.followUpQuestion}
                   isCompleted={milestone.isCompleted}
                   isEnhancing={enhancingIds.has(milestone.id)}

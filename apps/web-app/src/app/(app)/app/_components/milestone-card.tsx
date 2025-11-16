@@ -20,7 +20,6 @@ import { QuickChatDialog } from './quick-chat-dialog';
 
 interface MilestoneCardProps {
   title: string;
-  description: string;
   type: 'physical' | 'cognitive' | 'social' | 'language' | 'self_care';
   ageLabel: string;
   isCompleted?: boolean;
@@ -80,7 +79,6 @@ const typeConfig: Record<string, TypeConfig> = {
 
 export function MilestoneCard({
   title,
-  description,
   type,
   ageLabel,
   isCompleted = false,

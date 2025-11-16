@@ -131,7 +131,9 @@ export const getActivitiesAction = action
           ...milestones.map(
             (milestone): TimelineMilestone => ({
               data: milestone,
-              timestamp: new Date(milestone.achievedDate!),
+              timestamp: milestone.achievedDate
+                ? new Date(milestone.achievedDate)
+                : new Date(),
               type: 'milestone',
             }),
           ),
