@@ -1,7 +1,7 @@
 'use server';
 
 import { WellnessScreening } from '@nugget/ai/react/server';
-import { createTRPCContext } from '@nugget/api';
+import { getApi } from '@nugget/api/server';
 import { ParentCheckIns, WellnessAssessments } from '@nugget/db/schema';
 import { differenceInDays } from 'date-fns';
 import { and, desc, eq } from 'drizzle-orm';
@@ -49,7 +49,7 @@ export const getWellnessAssessmentAction = action
     z.object({ triggered: z.boolean().default(false), userId: z.string() }),
   )
   .action(async ({ parsedInput }): Promise<WellnessScreeningOutput> => {
-    const ctx = await createTRPCContext();
+    const api = await getApi();
 
     if (!ctx.auth?.orgId) {
       throw new Error('Authentication required.');
@@ -58,7 +58,7 @@ export const getWellnessAssessmentAction = action
     const { orgId } = ctx.auth;
 
     // Get baby data
-    const baby = await ctx.db.query.Babies.findFirst({
+    const baby = await api.db.query.Babies.findFirst({
       orderBy: (babies, { desc }) => [desc(babies.birthDate)],
       where: (babies, { eq }) => eq(babies.familyId, orgId),
     });
@@ -78,7 +78,7 @@ export const getWellnessAssessmentAction = action
     const ageInDays = ppDay;
 
     // Get previous check-ins for context
-    const checkIns = await ctx.db.query.ParentCheckIns.findMany({
+    const checkIns = await api.db.query.ParentCheckIns.findMany({
       limit: 5,
       orderBy: [desc(ParentCheckIns.date)],
       where: and(
@@ -94,7 +94,7 @@ export const getWellnessAssessmentAction = action
     }));
 
     // Determine first pregnancy
-    const allBabies = await ctx.db.query.Babies.findMany({
+    const allBabies = await api.db.query.Babies.findMany({
       where: (babies, { eq }) => eq(babies.familyId, orgId),
     });
     const firstPregnancy = allBabies.length === 1;
@@ -154,7 +154,7 @@ const submitWellnessSchema = z.object({
 export const submitWellnessResponsesAction = action
   .schema(submitWellnessSchema)
   .action(async ({ parsedInput }) => {
-    const ctx = await createTRPCContext();
+    const api = await getApi();
 
     if (!ctx.auth?.orgId) {
       throw new Error('Authentication required.');
@@ -201,7 +201,7 @@ export const submitWellnessResponsesAction = action
     }
 
     // Save assessment
-    const [assessment] = await ctx.db
+    const [assessment] = await api.db
       .insert(WellnessAssessments)
       .values({
         assessmentType: parsedInput.assessmentType,
@@ -233,7 +233,7 @@ export const submitWellnessResponsesAction = action
 export const getWellnessTrendsAction = action
   .schema(z.object({ days: z.number().default(90), userId: z.string() }))
   .action(async ({ parsedInput }): Promise<WellnessTrend[]> => {
-    const ctx = await createTRPCContext();
+    const api = await getApi();
 
     if (!ctx.auth?.orgId) {
       throw new Error('Authentication required.');
@@ -244,7 +244,7 @@ export const getWellnessTrendsAction = action
     const since = new Date();
     since.setDate(since.getDate() - parsedInput.days);
 
-    const assessments = await ctx.db.query.WellnessAssessments.findMany({
+    const assessments = await api.db.query.WellnessAssessments.findMany({
       orderBy: [desc(WellnessAssessments.date)],
       where: and(
         eq(WellnessAssessments.familyId, orgId),

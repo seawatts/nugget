@@ -1,7 +1,7 @@
 'use server';
 
 import { PostpartumTips } from '@nugget/ai/react/server';
-import { createCaller, createTRPCContext } from '@nugget/api';
+import { getApi } from '@nugget/api/server';
 import { Activities } from '@nugget/db/schema';
 import { differenceInDays, differenceInWeeks, subDays } from 'date-fns';
 import { and, eq, gte } from 'drizzle-orm';
@@ -27,7 +27,7 @@ export interface LearningTip {
  * Get postpartum learning content for a parent
  */
 export const getParentLearningContentAction = action.action(async () => {
-  const ctx = await createTRPCContext();
+  const api = await getApi();
 
   // Check authentication
   if (!ctx.auth?.userId || !ctx.auth?.orgId) {
@@ -35,8 +35,6 @@ export const getParentLearningContentAction = action.action(async () => {
   }
 
   const { orgId } = ctx.auth;
-
-  const caller = createCaller(ctx);
 
   // Get the primary baby
   const babies = await caller.babies.list();

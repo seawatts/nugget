@@ -1,6 +1,7 @@
 'use server';
 
-import { createCaller, createTRPCContext } from '@nugget/api';
+import { auth } from '@clerk/nextjs/server';
+import { getApi } from '@nugget/api/server';
 import { createSafeActionClient } from 'next-safe-action';
 
 const action = createSafeActionClient();
@@ -18,17 +19,17 @@ export interface FamilyTabMember {
  * Fetch all family members and babies for display in tabs
  */
 export const getFamilyTabsDataAction = action.action(async () => {
-  const ctx = await createTRPCContext();
-  const caller = createCaller(ctx);
+  const api = await getApi();
+  const authResult = await auth();
 
   // Get all babies
-  const babies = await caller.babies.list();
+  const babies = await api.babies.list.fetch();
 
   // Get all family members
-  const members = await caller.familyMembers.all();
+  const members = await api.familyMembers.all.fetch();
 
   // Get current user to ensure they're included
-  const currentUser = await caller.user.current();
+  const currentUser = await api.user.current.fetch();
 
   const tabs: FamilyTabMember[] = [];
 
@@ -45,7 +46,7 @@ export const getFamilyTabsDataAction = action.action(async () => {
 
   // Add family members
   for (const member of members) {
-    const isCurrentUser = member.userId === ctx.auth?.userId;
+    const isCurrentUser = member.userId === authResult?.userId;
     tabs.push({
       avatarUrl: member.user?.avatarUrl || null,
       firstName: member.user?.firstName || member.user?.email || 'Unknown',

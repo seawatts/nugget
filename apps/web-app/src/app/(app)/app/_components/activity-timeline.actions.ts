@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import { createCaller, createTRPCContext } from '@nugget/api';
+import { getApi } from '@nugget/api/server';
 import type { Activities } from '@nugget/db/schema';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';
@@ -33,19 +33,18 @@ export const getActivitiesAction = action
         throw new Error('Authentication required');
       }
 
-      // Create tRPC caller
-      const ctx = await createTRPCContext();
-      const caller = createCaller(ctx);
+      // Create tRPC API helper
+      const api = await getApi();
 
       // Get the most recent baby
-      const baby = await caller.babies.getMostRecent();
+      const baby = await api.babies.getMostRecent.fetch();
 
       if (!baby) {
         return { activities: [], hasMore: false };
       }
 
       // Fetch activities, filtering out scheduled ones
-      const activities = await caller.activities.list({
+      const activities = await api.activities.list.fetch({
         activityTypes: parsedInput.activityTypes,
         babyId: baby.id,
         isScheduled: false,

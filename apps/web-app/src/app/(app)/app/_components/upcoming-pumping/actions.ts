@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import { createCaller, createTRPCContext } from '@nugget/api';
+import { getApi } from '@nugget/api/server';
 import type { Activities } from '@nugget/db/schema';
 import { revalidatePath } from 'next/cache';
 import { createSafeActionClient } from 'next-safe-action';
@@ -29,11 +29,10 @@ export const getUpcomingPumpingAction = action.action(
     }
 
     // Create tRPC caller
-    const ctx = await createTRPCContext();
-    const caller = createCaller(ctx);
+    const api = await getApi();
 
     // Get the most recent baby
-    const baby = await caller.babies.getMostRecent();
+    const baby = await api.babies.getMostRecent.fetch();
 
     if (!baby) {
       throw new Error('No baby found. Please complete onboarding first.');
@@ -49,7 +48,7 @@ export const getUpcomingPumpingAction = action.action(
     }
 
     // Fetch recent activities (last 48 hours) for prediction
-    const recentActivities = await caller.activities.list({
+    const recentActivities = await api.activities.list.fetch({
       babyId: baby.id,
       limit: 50,
     });
@@ -105,14 +104,14 @@ export const quickLogPumpingAction = action
       const caller = createCaller(ctx);
 
       // Get the most recent baby
-      const baby = await caller.babies.getMostRecent();
+      const baby = await api.babies.getMostRecent.fetch();
 
       if (!baby) {
         throw new Error('No baby found. Please complete onboarding first.');
       }
 
       // Create the pumping activity
-      const activity = await caller.activities.create({
+      const activity = await api.activities.create({
         amount: parsedInput.amount || null,
         babyId: baby.id,
         details: null,

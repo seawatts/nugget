@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import { createCaller, createTRPCContext } from '@nugget/api';
+import { getApi } from '@nugget/api/server';
 import type { Activities } from '@nugget/db/schema';
 import { revalidatePath } from 'next/cache';
 import { createSafeActionClient } from 'next-safe-action';
@@ -46,12 +46,11 @@ export const createActivityAction = action
         throw new Error('Authentication required');
       }
 
-      // Create tRPC caller
-      const ctx = await createTRPCContext();
-      const caller = createCaller(ctx);
+      // Create tRPC API helper
+      const api = await getApi();
 
       // Get the most recent baby
-      const baby = await caller.babies.getMostRecent();
+      const baby = await api.babies.getMostRecent.fetch();
 
       if (!baby) {
         throw new Error('No baby found. Please complete onboarding first.');
@@ -64,7 +63,7 @@ export const createActivityAction = action
       );
 
       // Create the activity
-      const activity = await caller.activities.create({
+      const activity = await api.activities.create.fetch({
         babyId: baby.id,
         details: null,
         ...defaultData,
@@ -145,19 +144,18 @@ export const createActivityWithDetailsAction = action
         throw new Error('Authentication required');
       }
 
-      // Create tRPC caller
-      const ctx = await createTRPCContext();
-      const caller = createCaller(ctx);
+      // Create tRPC API helper
+      const api = await getApi();
 
       // Get the most recent baby
-      const baby = await caller.babies.getMostRecent();
+      const baby = await api.babies.getMostRecent.fetch();
 
       if (!baby) {
         throw new Error('No baby found. Please complete onboarding first.');
       }
 
       // Create the activity with provided details
-      const activity = await caller.activities.create({
+      const activity = await api.activities.create.fetch({
         amount: parsedInput.amount,
         babyId: baby.id,
         details: parsedInput.details || null,
@@ -190,19 +188,18 @@ export const getInProgressSleepActivityAction = action
         throw new Error('Authentication required');
       }
 
-      // Create tRPC caller
-      const ctx = await createTRPCContext();
-      const caller = createCaller(ctx);
+      // Create tRPC API helper
+      const api = await getApi();
 
       // Get the most recent baby
-      const baby = await caller.babies.getMostRecent();
+      const baby = await api.babies.getMostRecent.fetch();
 
       if (!baby) {
         throw new Error('No baby found. Please complete onboarding first.');
       }
 
       // Find in-progress sleep activity (has startTime but no endTime)
-      const activities = await caller.activities.list({
+      const activities = await api.activities.list.fetch({
         babyId: baby.id,
         limit: 50,
       });

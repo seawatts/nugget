@@ -1,7 +1,7 @@
 'use server';
 
 import { PersonalizedTasks } from '@nugget/ai/react/server';
-import { createTRPCContext } from '@nugget/api';
+import { getApi } from '@nugget/api/server';
 import { ParentTasks } from '@nugget/db/schema';
 import { differenceInDays } from 'date-fns';
 import { and, desc, eq } from 'drizzle-orm';
@@ -53,7 +53,7 @@ export const getPersonalizedTasksAction = action
     }),
   )
   .action(async ({ parsedInput }): Promise<TasksOutput> => {
-    const ctx = await createTRPCContext();
+    const api = await getApi();
 
     if (!ctx.auth?.orgId) {
       throw new Error('Authentication required.');
@@ -62,7 +62,7 @@ export const getPersonalizedTasksAction = action
     const { orgId } = ctx.auth;
 
     // Get baby data
-    const baby = await ctx.db.query.Babies.findFirst({
+    const baby = await api.db.query.Babies.findFirst({
       orderBy: (babies, { desc }) => [desc(babies.birthDate)],
       where: (babies, { eq }) => eq(babies.familyId, orgId),
     });
@@ -92,7 +92,7 @@ export const getPersonalizedTasksAction = action
     // Save tasks to database
     const savedTasks = await Promise.all(
       bamlResult.tasks.map(async (task) => {
-        const savedTaskArray = await ctx.db
+        const savedTaskArray = await api.db
           .insert(ParentTasks)
           .values({
             category: task.category as ParentTask['category'],
@@ -145,7 +145,7 @@ export const getPersonalizedTasksAction = action
 export const getTodaysTasksAction = action
   .schema(z.object({ userId: z.string() }))
   .action(async ({ parsedInput }): Promise<ParentTask[]> => {
-    const ctx = await createTRPCContext();
+    const api = await getApi();
 
     if (!ctx.auth?.orgId) {
       throw new Error('Authentication required.');
@@ -156,7 +156,7 @@ export const getTodaysTasksAction = action
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const tasks = await ctx.db.query.ParentTasks.findMany({
+    const tasks = await api.db.query.ParentTasks.findMany({
       limit: 20,
       orderBy: [desc(ParentTasks.priority), desc(ParentTasks.generatedDate)],
       where: and(
@@ -185,7 +185,7 @@ export const getTodaysTasksAction = action
 export const completeTaskAction = action
   .schema(z.object({ taskId: z.string() }))
   .action(async ({ parsedInput }) => {
-    const ctx = await createTRPCContext();
+    const api = await getApi();
 
     if (!ctx.auth?.userId || !ctx.auth?.orgId) {
       throw new Error('Authentication required.');
@@ -193,7 +193,7 @@ export const completeTaskAction = action
 
     const { userId, orgId: _orgId } = ctx.auth;
 
-    await ctx.db
+    await api.db
       .update(ParentTasks)
       .set({
         completed: true,
@@ -215,7 +215,7 @@ export const completeTaskAction = action
 export const uncompleteTaskAction = action
   .schema(z.object({ taskId: z.string() }))
   .action(async ({ parsedInput }) => {
-    const ctx = await createTRPCContext();
+    const api = await getApi();
 
     if (!ctx.auth?.userId || !ctx.auth?.orgId) {
       throw new Error('Authentication required.');
@@ -223,7 +223,7 @@ export const uncompleteTaskAction = action
 
     const { userId, orgId: _orgId } = ctx.auth;
 
-    await ctx.db
+    await api.db
       .update(ParentTasks)
       .set({
         completed: false,
@@ -245,7 +245,7 @@ export const uncompleteTaskAction = action
 export const getTaskCompletionStatsAction = action
   .schema(z.object({ days: z.number().default(7), userId: z.string() }))
   .action(async ({ parsedInput }) => {
-    const ctx = await createTRPCContext();
+    const api = await getApi();
 
     if (!ctx.auth?.orgId) {
       throw new Error('Authentication required.');
@@ -256,7 +256,7 @@ export const getTaskCompletionStatsAction = action
     const since = new Date();
     since.setDate(since.getDate() - parsedInput.days);
 
-    const tasks = await ctx.db.query.ParentTasks.findMany({
+    const tasks = await api.db.query.ParentTasks.findMany({
       where: and(
         eq(ParentTasks.familyId, orgId),
         eq(ParentTasks.userId, parsedInput.userId),

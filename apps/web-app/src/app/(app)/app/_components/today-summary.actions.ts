@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import { createCaller, createTRPCContext } from '@nugget/api';
+import { getApi } from '@nugget/api/server';
 import type { Activities } from '@nugget/db/schema';
 import { startOfDay } from 'date-fns';
 import { createSafeActionClient } from 'next-safe-action';
@@ -21,12 +21,11 @@ export const getTodaySummaryAction = action.action(
       throw new Error('Authentication required');
     }
 
-    // Create tRPC caller
-    const ctx = await createTRPCContext();
-    const caller = createCaller(ctx);
+    // Create tRPC API helper
+    const api = await getApi();
 
     // Get the most recent baby
-    const baby = await caller.babies.getMostRecent();
+    const baby = await api.babies.getMostRecent.fetch();
 
     if (!baby) {
       return { activities: [] };
@@ -34,7 +33,7 @@ export const getTodaySummaryAction = action.action(
 
     // Fetch all activities from today, filtering out scheduled ones
     const todayStart = startOfDay(new Date());
-    const activities = await caller.activities.list({
+    const activities = await api.activities.list.fetch({
       babyId: baby.id,
       isScheduled: false,
       limit: 100, // Maximum allowed by validation (should be plenty for a single day)

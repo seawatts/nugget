@@ -2,7 +2,7 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { b } from '@nugget/ai/async_client';
-import { createCaller, createTRPCContext } from '@nugget/api';
+import { getApi } from '@nugget/api/server';
 import {
   evalCond,
   type RuleContext,
@@ -54,12 +54,11 @@ export async function getMilestonesCarouselContent(
       return { milestones: [] };
     }
 
-    // Create tRPC caller
-    const ctx = await createTRPCContext();
-    const caller = createCaller(ctx);
+    // Create tRPC API helper
+    const api = await getApi();
 
     // Get the specific baby by ID
-    const baby = await caller.babies.getById({ id: babyId });
+    const baby = await api.babies.getById.fetch({ id: babyId });
 
     if (!baby) {
       return { milestones: [] };
@@ -81,12 +80,7 @@ export async function getMilestonesCarouselContent(
     );
 
     // Create database-backed cache for this baby
-    const _cache = new DbCache(
-      ctx.db,
-      baby.id,
-      baby.familyId,
-      authResult.userId,
-    );
+    const _cache = new DbCache(db, baby.id, baby.familyId, authResult.userId);
 
     // Build rule context
     const context = buildRuleContext(baby);
@@ -214,10 +208,9 @@ export const completeMilestoneAction = action
     const { userId } = await auth();
     if (!userId) throw new Error('Unauthorized');
 
-    // Create tRPC context to get familyId
-    const ctx = await createTRPCContext();
-    const caller = createCaller(ctx);
-    const baby = await caller.babies.getById({ id: input.babyId });
+    // Create tRPC API helper to get familyId
+    const api = await getApi();
+    const baby = await api.babies.getById.fetch({ id: input.babyId });
 
     if (!baby) {
       throw new Error('Baby not found');
@@ -253,11 +246,7 @@ export const completeMilestoneAction = action
  * Get enhanced baby data with activities and growth records
  * Similar to learning carousel but focused on milestone-relevant data
  */
-async function _getEnhancedBabyData(
-  babyId: string,
-  birthDate: Date | null,
-  ctx: Awaited<ReturnType<typeof createTRPCContext>>,
-) {
+async function _getEnhancedBabyData(babyId: string, birthDate: Date | null) {
   if (!birthDate) {
     return null;
   }
@@ -267,7 +256,7 @@ async function _getEnhancedBabyData(
   const oneWeekAgo = subWeeks(now, 1);
 
   // Get activities from last 24 hours
-  const activities24h = await ctx.db
+  const activities24h = await db
     .select()
     .from(Activities)
     .where(
@@ -276,7 +265,7 @@ async function _getEnhancedBabyData(
     .execute();
 
   // Get activities from last week
-  const activitiesWeek = await ctx.db
+  const activitiesWeek = await db
     .select()
     .from(Activities)
     .where(

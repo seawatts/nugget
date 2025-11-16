@@ -1,6 +1,7 @@
 'use server';
 
-import { createCaller, createTRPCContext } from '@nugget/api';
+import { auth } from '@clerk/nextjs/server';
+import { getApi } from '@nugget/api/server';
 import { createSafeActionClient } from 'next-safe-action';
 
 const action = createSafeActionClient();
@@ -9,20 +10,20 @@ const action = createSafeActionClient();
  * Fetch family members for the current user's family
  */
 export const getFamilyMembersAction = action.action(async () => {
-  const ctx = await createTRPCContext();
-  const caller = createCaller(ctx);
+  const api = await getApi();
+  const authResult = await auth();
 
   // Get all family members
-  const members = await caller.familyMembers.all();
+  const members = await api.familyMembers.all.fetch();
 
   // Get current user to ensure they're included
-  const currentUser = await caller.user.current();
+  const currentUser = await api.user.current.fetch();
 
   // Map members to simpler format
   const memberList = members.map((member) => ({
     avatarUrl: member.user?.avatarUrl || null,
     id: member.id,
-    isCurrentUser: member.userId === ctx.auth?.userId,
+    isCurrentUser: member.userId === authResult?.userId,
     name: member.user?.firstName
       ? `${member.user.firstName}${member.user.lastName ? ` ${member.user.lastName}` : ''}`
       : member.user?.email || 'Unknown',

@@ -29,7 +29,10 @@
         "POSTHOG_*",
         "OPENAI_API_KEY",
         "STRIPE_*",
-        "RESEND_*"
+        "RESEND_*",
+        "VAPID_PUBLIC_KEY",
+        "VAPID_PRIVATE_KEY",
+        "COMMITTER_TOKEN"
       ]
     },
     "//#clean": {
@@ -45,7 +48,10 @@
         "POSTHOG_*",
         "OPENAI_API_KEY",
         "STRIPE_*",
-        "RESEND_*"
+        "RESEND_*",
+        "VAPID_PUBLIC_KEY",
+        "VAPID_PRIVATE_KEY",
+        "COMMITTER_TOKEN"
       ],
       "outputs": [
         ".next/**",
@@ -74,7 +80,10 @@
         "POSTHOG_*",
         "OPENAI_API_KEY",
         "STRIPE_*",
-        "RESEND_*"
+        "RESEND_*",
+        "VAPID_PUBLIC_KEY",
+        "VAPID_PRIVATE_KEY",
+        "COMMITTER_TOKEN"
       ],
       "persistent": true
     },

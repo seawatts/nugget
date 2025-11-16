@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import { createCaller, createTRPCContext } from '@nugget/api';
+import { getApi } from '@nugget/api/server';
 import type { Activities } from '@nugget/db/schema';
 import { revalidatePath } from 'next/cache';
 import { createSafeActionClient } from 'next-safe-action';
@@ -55,14 +55,13 @@ export const updateActivityAction = action
         throw new Error('Authentication required');
       }
 
-      // Create tRPC caller
-      const ctx = await createTRPCContext();
-      const caller = createCaller(ctx);
+      // Create tRPC API helper
+      const api = await getApi();
 
       const { id, ...updateData } = parsedInput;
 
       // Update the activity
-      const activity = await caller.activities.update({
+      const activity = await api.activities.update.fetch({
         id,
         ...updateData,
       });

@@ -1,6 +1,6 @@
 'use server';
 
-import { createCaller, createTRPCContext } from '@nugget/api';
+import { getApi } from '@nugget/api/server';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';
 
@@ -19,13 +19,12 @@ export interface EntityInfo {
 export const getEntityInfoAction = action
   .schema(z.object({ userId: z.string() }))
   .action(async ({ parsedInput: { userId } }) => {
-    const ctx = await createTRPCContext();
-    const caller = createCaller(ctx);
+    const api = await getApi();
 
     // Check if it's a baby (baby IDs start with 'baby_')
     if (userId.startsWith('baby_')) {
       try {
-        const baby = await caller.babies.getById({ id: userId });
+        const baby = await api.babies.getById.fetch({ id: userId });
         if (baby) {
           return {
             avatarUrl: baby.photoUrl,
@@ -41,7 +40,7 @@ export const getEntityInfoAction = action
 
     // Check if it's a user
     try {
-      const user = await caller.user.byId({ id: userId });
+      const user = await api.user.byId.fetch({ id: userId });
       if (user) {
         return {
           avatarUrl: user.avatarUrl,

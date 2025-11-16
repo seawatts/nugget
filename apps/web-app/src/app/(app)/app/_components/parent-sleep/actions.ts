@@ -1,6 +1,6 @@
 'use server';
 
-import { createCaller, createTRPCContext } from '@nugget/api';
+import { getApi } from '@nugget/api/server';
 import { Activities } from '@nugget/db/schema';
 import { and, eq, gte } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -35,17 +35,16 @@ export const logParentSleepAction = action
     async ({
       parsedInput: { userId, startTime, endTime, duration, notes },
     }) => {
-      const ctx = await createTRPCContext();
+      const api = await getApi();
 
       if (!ctx.auth?.orgId) {
         throw new Error('Authentication required');
       }
 
       const { orgId } = ctx.auth;
-      const caller = createCaller(ctx);
 
       // Get primary baby (required for activities table)
-      const babies = await caller.babies.list();
+      const babies = await api.babies.list.fetch();
       const primaryBaby = babies[0];
 
       if (!primaryBaby) {
@@ -139,7 +138,7 @@ export const quickLogParentSleepAction = action
     const caller = createCaller(ctx);
 
     // Get primary baby (required for activities table)
-    const babies = await caller.babies.list();
+    const babies = await api.babies.list.fetch();
     const primaryBaby = babies[0];
 
     if (!primaryBaby) {

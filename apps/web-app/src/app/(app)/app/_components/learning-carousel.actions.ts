@@ -2,7 +2,7 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { b } from '@nugget/ai/async_client';
-import { createCaller, createTRPCContext } from '@nugget/api';
+import { getApi } from '@nugget/api/server';
 import {
   pickForSlot,
   type RuleContext,
@@ -13,6 +13,7 @@ import {
 import { DbCache } from '@nugget/content-rules/db-cache-adapter';
 import { resolveAIProps } from '@nugget/content-rules/dynamic-baml';
 import { createExampleProgram } from '@nugget/content-rules/example-program';
+import { db } from '@nugget/db/client';
 import { Activities, type Baby, GrowthRecords } from '@nugget/db/schema';
 import {
   differenceInDays,
@@ -91,12 +92,11 @@ export async function getLearningCarouselContent(
       return { baby: null, cards: [] };
     }
 
-    // Create tRPC caller
-    const ctx = await createTRPCContext();
-    const caller = createCaller(ctx);
+    // Create tRPC API helper
+    const api = await getApi();
 
     // Get the specific baby by ID
-    const baby = await caller.babies.getById({ id: babyId });
+    const baby = await api.babies.getById.fetch({ id: babyId });
 
     if (!baby) {
       return { baby: null, cards: [] };
@@ -108,16 +108,10 @@ export async function getLearningCarouselContent(
       baby.birthDate,
       baby.birthWeightOz,
       baby.currentWeightOz,
-      ctx,
     );
 
     // Create database-backed cache for this baby
-    const cache = new DbCache(
-      ctx.db,
-      baby.id,
-      baby.familyId,
-      authResult.userId,
-    );
+    const cache = new DbCache(db, baby.id, baby.familyId, authResult.userId);
 
     // Build rule context with enhanced data
     const context = buildRuleContext(baby, enhancedData);
@@ -276,21 +270,20 @@ async function getEnhancedBabyData(
   birthDate: Date | null,
   birthWeightOz: number | null,
   currentWeightOz: number | null,
-  ctx: Awaited<ReturnType<typeof createTRPCContext>>,
 ): Promise<EnhancedBabyData> {
   const now = new Date();
   const ageInDays = birthDate ? differenceInDays(now, birthDate) : 0;
   const ageInWeeks = birthDate ? differenceInWeeks(now, birthDate) : 0;
 
   // Fetch latest growth record
-  const latestGrowth = await ctx.db.query.GrowthRecords.findFirst({
+  const latestGrowth = await db.query.GrowthRecords.findFirst({
     orderBy: [desc(GrowthRecords.date)],
     where: eq(GrowthRecords.babyId, babyId),
   });
 
   // Fetch activities from last 24 hours
   const twentyFourHoursAgo = subDays(now, 1);
-  const recentActivities = await ctx.db.query.Activities.findMany({
+  const recentActivities = await db.query.Activities.findMany({
     orderBy: [desc(Activities.startTime)],
     where: and(
       eq(Activities.babyId, babyId),
@@ -301,7 +294,7 @@ async function getEnhancedBabyData(
 
   // Fetch activities from last 7 days for weekly patterns
   const sevenDaysAgo = subWeeks(now, 1);
-  const weeklyActivities = await ctx.db.query.Activities.findMany({
+  const weeklyActivities = await db.query.Activities.findMany({
     orderBy: [desc(Activities.startTime)],
     where: and(
       eq(Activities.babyId, babyId),
@@ -461,12 +454,11 @@ export async function resolveCardAIContent(
       return null;
     }
 
-    // Create tRPC caller
-    const ctx = await createTRPCContext();
-    const caller = createCaller(ctx);
+    // Create tRPC API helper
+    const api = await getApi();
 
     // Get the primary baby for the family
-    const babies = await caller.babies.list();
+    const babies = await api.babies.list.fetch();
     const baby = babies[0];
 
     if (!baby) {
@@ -479,16 +471,10 @@ export async function resolveCardAIContent(
       baby.birthDate,
       baby.birthWeightOz,
       baby.currentWeightOz,
-      ctx,
     );
 
     // Create database-backed cache for this baby
-    const cache = new DbCache(
-      ctx.db,
-      baby.id,
-      baby.familyId,
-      authResult.userId,
-    );
+    const cache = new DbCache(db, baby.id, baby.familyId, authResult.userId);
 
     // Build rule context with enhanced data
     const context = buildRuleContext(baby, enhancedData);
