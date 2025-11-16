@@ -141,6 +141,13 @@ export interface LearningTip {
   
 }
 
+export interface MilestoneEnhancementOutput {
+  bulletPoints: string[]
+  followUpQuestion: string
+  summary: string
+  
+}
+
 export interface MilestoneExplanationOutput {
   explanation: string
   whyItMatters: string

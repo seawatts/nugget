@@ -53,6 +53,8 @@ export default class TypeBuilder {
     
     LearningTip: ClassViewer<'LearningTip', "category" | "subtitle" | "summary" | "bulletPoints" | "followUpQuestion">;
     
+    MilestoneEnhancementOutput: ClassViewer<'MilestoneEnhancementOutput', "bulletPoints" | "followUpQuestion" | "summary">;
+    
     MilestoneExplanationOutput: ClassViewer<'MilestoneExplanationOutput', "explanation" | "whyItMatters" | "whatToExpect" | "tips" | "reassurance">;
     
     MilestoneSuggestion: ClassViewer<'MilestoneSuggestion', "title" | "type" | "description" | "ageLabel" | "relevance">;
@@ -86,7 +88,7 @@ export default class TypeBuilder {
     constructor() {
         this.tb = new _TypeBuilder({
           classes: new Set([
-            "AppointmentNudgeOutput","BabyAssistantChatOutput","BabyContext","BabyVisitExplainerOutput","BirthPlanHeadlineOutput","ChatMessage","ChatTitleOutput","CheckInQuestion","ContextualMilestonesOutput","DailyCheckInQuestionsOutput","HospitalPackAdviceOutput","ImprovementSuggestions","LearningTip","MilestoneExplanationOutput","MilestoneSuggestion","NewbornMilestoneOutput","ParentTask","ParentTip","PersonalizedTasksOutput","PostpartumTipsOutput","PregnancyWeekSummaryOutput","RoleSpecificTipsOutput","SleepRegressionTipsOutput","StalePromptsOutput","WellnessQuestion","WellnessScreeningOutput",
+            "AppointmentNudgeOutput","BabyAssistantChatOutput","BabyContext","BabyVisitExplainerOutput","BirthPlanHeadlineOutput","ChatMessage","ChatTitleOutput","CheckInQuestion","ContextualMilestonesOutput","DailyCheckInQuestionsOutput","HospitalPackAdviceOutput","ImprovementSuggestions","LearningTip","MilestoneEnhancementOutput","MilestoneExplanationOutput","MilestoneSuggestion","NewbornMilestoneOutput","ParentTask","ParentTip","PersonalizedTasksOutput","PostpartumTipsOutput","PregnancyWeekSummaryOutput","RoleSpecificTipsOutput","SleepRegressionTipsOutput","StalePromptsOutput","WellnessQuestion","WellnessScreeningOutput",
           ]),
           enums: new Set([
             "ResponseType",
@@ -144,6 +146,10 @@ export default class TypeBuilder {
         
         this.LearningTip = this.tb.classViewer("LearningTip", [
           "category","subtitle","summary","bulletPoints","followUpQuestion",
+        ]);
+        
+        this.MilestoneEnhancementOutput = this.tb.classViewer("MilestoneEnhancementOutput", [
+          "bulletPoints","followUpQuestion","summary",
         ]);
         
         this.MilestoneExplanationOutput = this.tb.classViewer("MilestoneExplanationOutput", [

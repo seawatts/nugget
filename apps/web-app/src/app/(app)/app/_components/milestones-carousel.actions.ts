@@ -11,6 +11,11 @@ import {
   Slot,
 } from '@nugget/content-rules';
 import { DbCache } from '@nugget/content-rules/db-cache-adapter';
+import {
+  aiTextBaml,
+  bamlCall,
+  resolveAIProps,
+} from '@nugget/content-rules/dynamic-baml';
 import { createMilestonesProgram } from '@nugget/content-rules/milestones-program';
 import { db } from '@nugget/db/client';
 import { Activities, Milestones } from '@nugget/db/schema';
@@ -35,10 +40,15 @@ export interface MilestoneCardData {
   ageLabel: string;
   suggestedDay?: number;
   isCompleted: boolean;
+  bulletPoints: string[];
+  followUpQuestion: string;
+  summary?: string;
 }
 
 interface MilestonesCarouselData {
   milestones: MilestoneCardData[];
+  babyName: string;
+  ageInDays: number;
 }
 
 /**
@@ -100,7 +110,13 @@ export async function getMilestonesCarouselContent(
       .sort((a, b) => b.priority - a.priority);
 
     // Convert matching rules to milestone cards
-    const milestones: MilestoneCardData[] = [];
+    const baseMilestones: Array<{
+      title: string;
+      description: string;
+      type: 'physical' | 'cognitive' | 'social' | 'language' | 'self_care';
+      ageLabel: string;
+      suggestedDay?: number;
+    }> = [];
 
     for (const rule of matchingRules) {
       if (rule.render.template === 'Card.Milestone') {
@@ -117,25 +133,47 @@ export async function getMilestonesCarouselContent(
           continue;
         }
 
-        milestones.push({
-          ageLabel: props.ageLabel,
-          description: props.description,
-          id: `milestone-${milestones.length}-${props.title.toLowerCase().replace(/\s+/g, '-')}`,
-          isCompleted: false,
-          suggestedDay: props.suggestedDay,
-          title: props.title,
-          type: props.type,
-        });
+        baseMilestones.push(props);
 
         // Limit to 5 milestones
-        if (milestones.length >= 5) break;
+        if (baseMilestones.length >= 5) break;
       }
     }
 
-    return { milestones };
+    // Calculate baby's age in days
+    const ageInDays = baby.birthDate
+      ? differenceInDays(new Date(), baby.birthDate)
+      : undefined;
+
+    // Return base milestones immediately with placeholder content
+    // AI enhancement will happen progressively on the client side
+    const milestones: MilestoneCardData[] = baseMilestones.map(
+      (props, index) => ({
+        ageLabel: props.ageLabel,
+        bulletPoints: [
+          props.description,
+          'Every baby develops at their own pace.',
+          'Consult your pediatrician if you have concerns.',
+        ],
+        description: props.description,
+        followUpQuestion: `What have you noticed about ${baby.firstName ?? 'your baby'}'s development recently?`,
+        id: `milestone-${index}-${props.title.toLowerCase().replace(/\s+/g, '-')}`,
+        isCompleted: false,
+        suggestedDay: props.suggestedDay,
+        summary: props.description,
+        title: props.title,
+        type: props.type,
+      }),
+    );
+
+    return {
+      ageInDays: ageInDays ?? 0,
+      babyName: baby.firstName ?? 'Baby',
+      milestones,
+    };
   } catch (error) {
     console.error('Error fetching milestones carousel content:', error);
-    return { milestones: [] };
+    return { ageInDays: 0, babyName: 'Baby', milestones: [] };
   }
 }
 
@@ -240,6 +278,135 @@ export const completeMilestoneAction = action
       milestone: milestone[0],
       success: true,
     };
+  });
+
+/**
+ * Enhance a single milestone with AI-generated content
+ * This is called progressively on the client side
+ * Uses database caching to avoid regenerating content
+ */
+export const enhanceMilestoneAction = action
+  .schema(
+    z.object({
+      ageInDays: z.number().optional(),
+      ageLabel: z.string(),
+      babyId: z.string(),
+      description: z.string(),
+      title: z.string(),
+      type: z.enum([
+        'physical',
+        'cognitive',
+        'social',
+        'language',
+        'self_care',
+      ]),
+    }),
+  )
+  .action(async ({ parsedInput: input }) => {
+    const { userId } = await auth();
+    if (!userId) throw new Error('Unauthorized');
+
+    // Get baby info for AI context
+    const api = await getApi();
+    const baby = await api.babies.getById({ id: input.babyId });
+
+    if (!baby) {
+      throw new Error('Baby not found');
+    }
+
+    // Create database-backed cache (same pattern as learning carousel)
+    const cache = new DbCache(db, baby.id, baby.familyId, userId);
+
+    // Build rule context for caching
+    const context = buildRuleContext(baby);
+
+    try {
+      // Generate cache key
+      const cacheKey = `milestone:${baby.id}:${input.type}:${input.title.toLowerCase().replace(/\s+/g, '-')}`;
+
+      console.log(`[Milestone Cache] Checking cache for key: ${cacheKey}`);
+
+      // Check cache manually first to log the result
+      const cached = await cache.get(cacheKey);
+      if (cached && cached.exp > Date.now()) {
+        console.log(`[Milestone Cache] ✓ Cache HIT for "${input.title}"`);
+        const enhancement = cached.val as {
+          bulletPoints: string[];
+          followUpQuestion: string;
+          summary: string;
+        };
+        return {
+          bulletPoints: enhancement.bulletPoints,
+          followUpQuestion: enhancement.followUpQuestion,
+          success: true,
+          summary: enhancement.summary,
+        };
+      }
+
+      console.log(
+        `[Milestone Cache] ✗ Cache MISS for "${input.title}" - generating new content`,
+      );
+
+      // Structure the enhancement as an aiTextBaml prop for caching
+      const enhancementProp = aiTextBaml({
+        call: () =>
+          bamlCall(
+            () => {
+              console.log(
+                `[Milestone Cache] Calling BAML for "${input.title}"`,
+              );
+              return b.EnhanceMilestone(
+                input.title,
+                input.description,
+                input.type,
+                input.ageLabel,
+                baby.firstName ?? null,
+                input.ageInDays ?? null,
+              );
+            },
+            (output) => output,
+          ),
+        // Cache key includes milestone title and type to uniquely identify content
+        key: () => cacheKey,
+        // Cache for 7 days (milestones don't change frequently)
+        ttl: '7d',
+      });
+
+      // Resolve the prop using cache (will use cached value if available)
+      const resolved = await resolveAIProps(
+        { enhancement: enhancementProp },
+        context,
+        cache,
+      );
+
+      const enhancement = resolved.enhancement as {
+        bulletPoints: string[];
+        followUpQuestion: string;
+        summary: string;
+      };
+
+      console.log(
+        `[Milestone Cache] Successfully enhanced milestone "${input.title}" with ${enhancement.bulletPoints.length} bullet points`,
+      );
+
+      return {
+        bulletPoints: enhancement.bulletPoints,
+        followUpQuestion: enhancement.followUpQuestion,
+        success: true,
+        summary: enhancement.summary,
+      };
+    } catch (error) {
+      console.error(`Error enhancing milestone "${input.title}":`, error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
+      // Return null to indicate enhancement failed - component will use fallback
+      return {
+        success: false,
+      };
+    }
   });
 
 /**

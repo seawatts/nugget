@@ -56,18 +56,6 @@
     },
     {
       "console": "integratedTerminal",
-      "env": {
-        "NODE_OPTIONS": "--unhandled-rejections=strict"
-      },
-      "name": "Debug cli.js",
-      "program": "${workspaceFolder}/apps/cli/bin/cli.js",
-      "request": "launch",
-      "runtimeArgs": ["--inspect-brk"],
-      "stopOnEntry": false,
-      "type": "node"
-    },
-    {
-      "console": "integratedTerminal",
       "cwd": "${workspaceFolder}/packages/mcp-server",
       "env": {
         "DEBUG": "*",

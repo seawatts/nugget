@@ -24,7 +24,7 @@ import { b } from '../index';
 import type { Check, Checked  } from "../types";
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml";
 
-import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningTip,  MilestoneExplanationOutput,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "../types"
+import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningTip,  MilestoneEnhancementOutput,  MilestoneExplanationOutput,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "../types"
 
 import type * as types from "../types"
 
@@ -156,6 +156,40 @@ export const DailyCheckInQuestions = async (
     avgFeedingsPerDay,
     avgSleepHoursPerDay,
     avgDiaperChangesPerDay,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "EnhanceMilestone" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { string } milestoneTitle - Input parameter.
+ * @param { string } milestoneDescription - Input parameter.
+ * @param { string } milestoneType - Input parameter.
+ * @param { string } ageLabel - Input parameter.
+ * @param { string | null } babyName (optional) - Input parameter.
+ * @param { number | null } ageInDays (optional) - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const EnhanceMilestone = async (
+  milestoneTitle: string,
+  milestoneDescription: string,
+  milestoneType: string,
+  ageLabel: string,
+  babyName?: string | null,
+  ageInDays?: number | null,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.EnhanceMilestone(
+    milestoneTitle,
+    milestoneDescription,
+    milestoneType,
+    ageLabel,
+    babyName,
+    ageInDays,
   );
   return Promise.resolve(stream.toStreamable());
 };

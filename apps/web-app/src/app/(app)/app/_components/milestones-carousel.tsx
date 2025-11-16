@@ -4,13 +4,31 @@ import { H2, P } from '@nugget/ui/custom/typography';
 import { Award } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useState } from 'react';
+import { AIGeneratingCard } from '~/components';
+import type { GeneratingMessage } from '~/components/ai-generating-card.types';
 import { MilestoneCard } from './milestone-card';
 import { MilestoneCompletionDialog } from './milestone-completion-dialog';
 import {
   completeMilestoneAction,
+  enhanceMilestoneAction,
   getMilestonesCarouselContent,
   type MilestoneCardData,
 } from './milestones-carousel.actions';
+
+/**
+ * Milestone-specific loading messages for AI content generation
+ */
+const milestoneLoadingMessages: GeneratingMessage[] = [
+  (name: string, age: number) =>
+    `Analyzing ${name}'s development at ${age} ${age === 1 ? 'day' : 'days'}`,
+  (name: string) => `Reviewing ${name}'s physical milestones`,
+  (name: string) => `Studying ${name}'s cognitive growth`,
+  (name: string) => `Tracking ${name}'s social development`,
+  (name: string) => `Evaluating ${name}'s language skills`,
+  () => 'Consulting developmental guidelines',
+  (name: string) => `Creating personalized milestones for ${name}`,
+  (_name: string, age: number) => `Tailoring tracking for day ${age}`,
+];
 
 interface MilestonesCarouselProps {
   babyId: string;
@@ -18,24 +36,91 @@ interface MilestonesCarouselProps {
 
 export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
   const [milestones, setMilestones] = useState<MilestoneCardData[]>([]);
+  const [babyName, setBabyName] = useState<string>('Baby');
+  const [ageInDays, setAgeInDays] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMilestone, setSelectedMilestone] =
     useState<MilestoneCardData | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [enhancingIds, setEnhancingIds] = useState<Set<string>>(new Set());
 
   const { executeAsync: completeMilestone } = useAction(
     completeMilestoneAction,
   );
+  const { executeAsync: enhanceMilestone } = useAction(enhanceMilestoneAction);
 
   useEffect(() => {
     async function loadMilestones() {
       try {
         setIsLoading(true);
         setError(null);
+
+        // Load base milestone data (fast, no AI)
         const data = await getMilestonesCarouselContent(babyId);
         setMilestones(data.milestones);
+        setBabyName(data.babyName);
+        setAgeInDays(data.ageInDays);
         setIsLoading(false);
+
+        // Start progressive AI enhancement in the background
+        if (data.milestones.length > 0) {
+          // Mark all milestones as enhancing
+          setEnhancingIds(new Set(data.milestones.map((m) => m.id)));
+
+          // Enhance each milestone progressively
+          for (const milestone of data.milestones) {
+            // Run enhancement in background
+            enhanceMilestone({
+              ageInDays: data.ageInDays,
+              ageLabel: milestone.ageLabel,
+              babyId,
+              description: milestone.description,
+              title: milestone.title,
+              type: milestone.type,
+            })
+              .then((result) => {
+                if (result?.data?.success && result.data.bulletPoints) {
+                  // Update the milestone with enhanced content
+                  setMilestones((prev) =>
+                    prev.map((m) =>
+                      m.id === milestone.id
+                        ? {
+                            ...m,
+                            bulletPoints:
+                              result.data.bulletPoints ?? m.bulletPoints,
+                            followUpQuestion:
+                              result.data.followUpQuestion ??
+                              m.followUpQuestion,
+                            summary: result.data.summary ?? m.summary,
+                          }
+                        : m,
+                    ),
+                  );
+                }
+
+                // Remove from enhancing set
+                setEnhancingIds((prev) => {
+                  const next = new Set(prev);
+                  next.delete(milestone.id);
+                  return next;
+                });
+              })
+              .catch((error) => {
+                console.error(
+                  `Failed to enhance milestone "${milestone.title}":`,
+                  error,
+                );
+
+                // Remove from enhancing set even on error
+                setEnhancingIds((prev) => {
+                  const next = new Set(prev);
+                  next.delete(milestone.id);
+                  return next;
+                });
+              });
+          }
+        }
       } catch (error) {
         console.error('Error loading milestones:', error);
         setError(
@@ -46,7 +131,7 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
     }
 
     void loadMilestones();
-  }, [babyId]);
+  }, [babyId, enhanceMilestone]);
 
   const handleMarkComplete = (milestone: MilestoneCardData) => {
     setSelectedMilestone(milestone);
@@ -92,27 +177,14 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
         <div className="flex items-center gap-2 mb-4">
           <Award className="size-5 text-primary" />
           <H2 className="text-xl">Milestones</H2>
-          <P className="text-xs text-muted-foreground ml-auto">Loading...</P>
+          <P className="text-xs text-muted-foreground ml-auto">Generating...</P>
         </div>
-        <div className="relative">
-          <div
-            className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide"
-            style={{
-              msOverflowStyle: 'none',
-              scrollbarWidth: 'none',
-            }}
-          >
-            {[1, 2, 3].map((i) => (
-              <div
-                className="min-w-[280px] h-[440px] rounded-lg bg-muted/50 animate-pulse snap-start"
-                key={i}
-              />
-            ))}
-          </div>
-          {/* Gradient fade on edges */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-background to-transparent" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent" />
-        </div>
+        <AIGeneratingCard
+          ageInDays={ageInDays}
+          babyName={babyName}
+          messages={milestoneLoadingMessages}
+          variant="info"
+        />
       </div>
     );
   }
@@ -163,14 +235,31 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
               <div className="snap-start" key={milestone.id}>
                 <MilestoneCard
                   ageLabel={milestone.ageLabel}
+                  babyId={babyId}
+                  bulletPoints={milestone.bulletPoints}
                   description={milestone.description}
+                  followUpQuestion={milestone.followUpQuestion}
                   isCompleted={milestone.isCompleted}
+                  isEnhancing={enhancingIds.has(milestone.id)}
                   onMarkComplete={() => handleMarkComplete(milestone)}
+                  summary={milestone.summary}
                   title={milestone.title}
                   type={milestone.type}
                 />
               </div>
             ))}
+
+            {/* Show AI generating card while enhancing */}
+            {enhancingIds.size > 0 && (
+              <div className="snap-start">
+                <AIGeneratingCard
+                  ageInDays={ageInDays}
+                  babyName={babyName}
+                  messages={milestoneLoadingMessages}
+                  variant="info"
+                />
+              </div>
+            )}
           </div>
 
           {/* Gradient fade on edges */}

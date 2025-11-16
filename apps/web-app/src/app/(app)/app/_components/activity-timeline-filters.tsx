@@ -43,8 +43,13 @@ interface FamilyMember {
 
 interface ActivityTimelineFiltersProps {
   activityTypes: ActivityType[];
-  onFilterChange: (userIds: string[], activityTypes: string[]) => void;
+  onFilterChange: (
+    userIds: string[],
+    itemTypes: string[],
+    activityTypes: string[],
+  ) => void;
   selectedActivityTypes: string[];
+  selectedItemTypes: string[];
   selectedUserIds: string[];
 }
 
@@ -52,11 +57,14 @@ export function ActivityTimelineFilters({
   activityTypes,
   onFilterChange,
   selectedActivityTypes,
+  selectedItemTypes,
   selectedUserIds,
 }: ActivityTimelineFiltersProps) {
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [localUserIds, setLocalUserIds] = useState<string[]>(selectedUserIds);
+  const [localItemTypes, setLocalItemTypes] =
+    useState<string[]>(selectedItemTypes);
   const [localActivityTypes, setLocalActivityTypes] = useState<string[]>(
     selectedActivityTypes,
   );
@@ -65,8 +73,9 @@ export function ActivityTimelineFilters({
   // Sync local state with parent props
   useEffect(() => {
     setLocalUserIds(selectedUserIds);
+    setLocalItemTypes(selectedItemTypes);
     setLocalActivityTypes(selectedActivityTypes);
-  }, [selectedUserIds, selectedActivityTypes]);
+  }, [selectedUserIds, selectedItemTypes, selectedActivityTypes]);
 
   useEffect(() => {
     async function loadFamilyMembers() {
@@ -94,6 +103,14 @@ export function ActivityTimelineFilters({
     );
   };
 
+  const handleItemTypeToggle = (itemType: string) => {
+    setLocalItemTypes((prev) =>
+      prev.includes(itemType)
+        ? prev.filter((type) => type !== itemType)
+        : [...prev, itemType],
+    );
+  };
+
   const handleActivityTypeToggle = (activityType: string) => {
     setLocalActivityTypes((prev) =>
       prev.includes(activityType)
@@ -103,18 +120,22 @@ export function ActivityTimelineFilters({
   };
 
   const handleApply = () => {
-    onFilterChange(localUserIds, localActivityTypes);
+    onFilterChange(localUserIds, localItemTypes, localActivityTypes);
     setIsOpen(false);
   };
 
   const handleClear = () => {
     setLocalUserIds([]);
+    setLocalItemTypes([]);
     setLocalActivityTypes([]);
-    onFilterChange([], []);
+    onFilterChange([], [], []);
     setIsOpen(false);
   };
 
-  const totalFilters = selectedUserIds.length + selectedActivityTypes.length;
+  const totalFilters =
+    selectedUserIds.length +
+    selectedItemTypes.length +
+    selectedActivityTypes.length;
   const isDesktop = useMediaQuery({ query: '(min-width: 768px)' });
 
   const filterContent = (
@@ -179,6 +200,34 @@ export function ActivityTimelineFilters({
             ))}
           </div>
         )}
+      </div>
+
+      <Separator />
+
+      {/* Item Types Filter */}
+      <div className="flex flex-col gap-3">
+        <Label className="text-sm font-semibold">Item Types</Label>
+        <div className="flex flex-col gap-2">
+          {[
+            { id: 'activity', label: 'Activities' },
+            { id: 'milestone', label: 'Milestones' },
+            { id: 'chat', label: 'Chats' },
+          ].map((itemType) => (
+            <div className="flex items-center gap-2" key={itemType.id}>
+              <Checkbox
+                checked={localItemTypes.includes(itemType.id)}
+                id={`item-${itemType.id}`}
+                onCheckedChange={() => handleItemTypeToggle(itemType.id)}
+              />
+              <Label
+                className="text-sm cursor-pointer flex-1"
+                htmlFor={`item-${itemType.id}`}
+              >
+                {itemType.label}
+              </Label>
+            </div>
+          ))}
+        </div>
       </div>
 
       <Separator />
@@ -250,9 +299,9 @@ export function ActivityTimelineFilters({
     return (
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <DialogTrigger asChild>{triggerButton}</DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Filter Activities</DialogTitle>
+            <DialogTitle>Filter Timeline</DialogTitle>
           </DialogHeader>
           {filterContent}
         </DialogContent>
@@ -265,9 +314,11 @@ export function ActivityTimelineFilters({
       <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle>Filter Activities</DrawerTitle>
+          <DrawerTitle>Filter Timeline</DrawerTitle>
         </DrawerHeader>
-        <div className="px-4 pb-4">{filterContent}</div>
+        <div className="px-4 pb-4 max-h-[80vh] overflow-y-auto">
+          {filterContent}
+        </div>
       </DrawerContent>
     </Drawer>
   );

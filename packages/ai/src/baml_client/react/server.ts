@@ -24,7 +24,7 @@ import { b } from '../index';
 import type { Check, Checked  } from "../types";
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml";
 
-import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningTip,  MilestoneExplanationOutput,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "../types"
+import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningTip,  MilestoneEnhancementOutput,  MilestoneExplanationOutput,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "../types"
 
 import type * as types from "../types"
 
@@ -152,6 +152,39 @@ export const DailyCheckInQuestions = async (
     avgFeedingsPerDay,
     avgSleepHoursPerDay,
     avgDiaperChangesPerDay,
+  );
+};
+
+/**
+ * Executes the "EnhanceMilestone" BAML action.
+ *
+ * This server action calls the underlying BAML function "EnhanceMilestone"
+ * with the specified parameters.
+ *
+ * @param { string } milestoneTitle - Input parameter.
+ * @param { string } milestoneDescription - Input parameter.
+ * @param { string } milestoneType - Input parameter.
+ * @param { string } ageLabel - Input parameter.
+ * @param { string | null } babyName (optional) - Input parameter.
+ * @param { number | null } ageInDays (optional) - Input parameter.
+ *
+ * @returns {Promise<types.MilestoneEnhancementOutput>} A promise that resolves with the result of the action.
+ */
+export const EnhanceMilestone = async (
+  milestoneTitle: string,
+  milestoneDescription: string,
+  milestoneType: string,
+  ageLabel: string,
+  babyName?: string | null,
+  ageInDays?: number | null,
+): Promise<types.MilestoneEnhancementOutput> => {
+  return b.EnhanceMilestone(
+    milestoneTitle,
+    milestoneDescription,
+    milestoneType,
+    ageLabel,
+    babyName,
+    ageInDays,
   );
 };
 

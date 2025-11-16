@@ -205,12 +205,11 @@ export const getInProgressSleepActivityAction = action
       });
 
       // Find the most recent sleep activity without an endTime
+      // Note: We only check for endTime, not duration, because duration could be 0
+      // (e.g., if sleep is less than a minute) and still be complete
       const inProgressSleep = activities.find(
         (activity) =>
-          activity.type === 'sleep' &&
-          activity.startTime &&
-          !activity.endTime &&
-          !activity.duration,
+          activity.type === 'sleep' && activity.startTime && !activity.endTime,
       );
 
       return { activity: inProgressSleep || null };

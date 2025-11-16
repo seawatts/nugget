@@ -13,10 +13,12 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
+  Award,
   Baby,
   Bath,
   Droplet,
   Droplets,
+  MessageSquare,
   Milk,
   Moon,
   Pill,
@@ -29,7 +31,10 @@ import {
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityDrawer } from '~/app/(app)/app/_components/activity-drawer';
 import { ActivityTimelineFilters } from '~/app/(app)/app/_components/activity-timeline-filters';
-import { getActivitiesAction } from './activity-timeline.actions';
+import {
+  getActivitiesAction,
+  type TimelineItem,
+} from './activity-timeline.actions';
 import { getDisplayNotes } from './activity-utils';
 import { formatVolumeDisplay, getVolumeUnit } from './volume-utils';
 
@@ -142,9 +147,11 @@ const activityIcons: Record<string, typeof Moon> = {
   activity: Activity,
   bath: Bath,
   bottle: Milk,
+  chat: MessageSquare,
   diaper: Baby,
   growth: Scale,
   medicine: Pill,
+  milestone: Award,
   nursing: Droplet,
   potty: Toilet,
   pumping: Droplets,
@@ -158,9 +165,11 @@ const activityColors: Record<string, string> = {
   activity: 'border-l-[oklch(0.70_0.16_150)]',
   bath: 'border-l-[oklch(0.62_0.18_260)]',
   bottle: 'border-l-[oklch(0.68_0.18_35)]',
+  chat: 'border-l-[oklch(0.60_0.20_220)]',
   diaper: 'border-l-[oklch(0.78_0.14_60)]',
   growth: 'border-l-[oklch(0.62_0.18_260)]',
   medicine: 'border-l-[oklch(0.68_0.18_10)]',
+  milestone: 'border-l-[oklch(0.75_0.18_85)]',
   nursing: 'border-l-[oklch(0.68_0.18_35)]',
   potty: 'border-l-[oklch(0.78_0.14_60)]',
   pumping: 'border-l-[oklch(0.65_0.18_280)]',
@@ -174,9 +183,11 @@ const activityIconColors: Record<string, string> = {
   activity: 'text-[oklch(0.70_0.16_150)]',
   bath: 'text-[oklch(0.62_0.18_260)]',
   bottle: 'text-[oklch(0.68_0.18_35)]',
+  chat: 'text-[oklch(0.60_0.20_220)]',
   diaper: 'text-[oklch(0.78_0.14_60)]',
   growth: 'text-[oklch(0.62_0.18_260)]',
   medicine: 'text-[oklch(0.68_0.18_10)]',
+  milestone: 'text-[oklch(0.75_0.18_85)]',
   nursing: 'text-[oklch(0.68_0.18_35)]',
   potty: 'text-[oklch(0.78_0.14_60)]',
   pumping: 'text-[oklch(0.65_0.18_280)]',
@@ -186,27 +197,27 @@ const activityIconColors: Record<string, string> = {
   'tummy-time': 'text-[oklch(0.70_0.16_150)]',
 };
 
-function groupActivitiesByDay(
-  activities: Array<typeof Activities.$inferSelect>,
-): Map<string, Array<typeof Activities.$inferSelect>> {
-  const grouped = new Map<string, Array<typeof Activities.$inferSelect>>();
+function groupTimelineItemsByDay(
+  items: TimelineItem[],
+): Map<string, TimelineItem[]> {
+  const grouped = new Map<string, TimelineItem[]>();
 
-  for (const activity of activities) {
-    const activityDate = new Date(activity.startTime);
+  for (const item of items) {
+    const itemDate = item.timestamp;
     let dayLabel: string;
 
-    if (isToday(activityDate)) {
+    if (isToday(itemDate)) {
       dayLabel = 'Today';
-    } else if (isYesterday(activityDate)) {
+    } else if (isYesterday(itemDate)) {
       dayLabel = 'Yesterday';
     } else {
-      dayLabel = format(activityDate, 'EEEE, MMMM d');
+      dayLabel = format(itemDate, 'EEEE, MMMM d');
     }
 
     if (!grouped.has(dayLabel)) {
       grouped.set(dayLabel, []);
     }
-    grouped.get(dayLabel)?.push(activity);
+    grouped.get(dayLabel)?.push(item);
   }
 
   return grouped;
@@ -228,9 +239,7 @@ export function ActivityTimeline({
   optimisticActivities = [],
   refreshTrigger = 0,
 }: ActivityTimelineProps) {
-  const [activitiesData, setActivitiesData] = useState<
-    Array<typeof Activities.$inferSelect>
-  >([]);
+  const [timelineItems, setTimelineItems] = useState<TimelineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -240,6 +249,7 @@ export function ActivityTimeline({
     typeof Activities.$inferSelect | null
   >(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [selectedItemTypes, setSelectedItemTypes] = useState<string[]>([]);
   const [selectedActivityTypes, setSelectedActivityTypes] = useState<string[]>(
     [],
   );
@@ -265,17 +275,21 @@ export function ActivityTimeline({
             selectedActivityTypes.length > 0
               ? selectedActivityTypes
               : undefined,
+          itemTypes:
+            selectedItemTypes.length > 0
+              ? (selectedItemTypes as Array<'activity' | 'milestone' | 'chat'>)
+              : undefined,
           limit: 30,
           offset,
           userIds: selectedUserIds.length > 0 ? selectedUserIds : undefined,
         });
 
         if (result?.data) {
-          const { activities: newActivities, hasMore: more } = result.data;
+          const { items: newItems, hasMore: more } = result.data;
           if (append) {
-            setActivitiesData((prev) => [...prev, ...newActivities]);
+            setTimelineItems((prev) => [...prev, ...newItems]);
           } else {
-            setActivitiesData(newActivities);
+            setTimelineItems(newItems);
           }
           setHasMore(more);
           // Disable animations after initial load if skipAnimation is true
@@ -287,14 +301,14 @@ export function ActivityTimeline({
         }
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : 'Failed to load activities',
+          err instanceof Error ? err.message : 'Failed to load timeline items',
         );
       } finally {
         setLoading(false);
         setLoadingMore(false);
       }
     },
-    [selectedUserIds, selectedActivityTypes, isInitialLoad],
+    [selectedUserIds, selectedItemTypes, selectedActivityTypes, isInitialLoad],
   );
 
   // Initial load
@@ -318,7 +332,7 @@ export function ActivityTimeline({
     observerRef.current = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting && !loadingMore && hasMore) {
-          loadActivities(activitiesData.length, true, true);
+          loadActivities(timelineItems.length, true, true);
         }
       },
       { threshold: 0.1 },
@@ -333,11 +347,14 @@ export function ActivityTimeline({
         observerRef.current.disconnect();
       }
     };
-  }, [activitiesData.length, hasMore, loadActivities, loadingMore]);
+  }, [timelineItems.length, hasMore, loadActivities, loadingMore]);
 
-  const handleActivityClick = (activity: typeof Activities.$inferSelect) => {
-    setEditingActivity(activity);
-    setOpenDrawer(activity.type);
+  const handleItemClick = (item: TimelineItem) => {
+    if (item.type === 'activity') {
+      setEditingActivity(item.data);
+      setOpenDrawer(item.data.type);
+    }
+    // For milestones and chats, we can add handlers later
   };
 
   const handleDrawerClose = () => {
@@ -349,11 +366,18 @@ export function ActivityTimeline({
     updatedActivity: typeof Activities.$inferSelect,
   ) => {
     // Optimistically update the local state
-    setActivitiesData((prev) => {
-      const existingIndex = prev.findIndex((a) => a.id === updatedActivity.id);
+    setTimelineItems((prev) => {
+      const existingIndex = prev.findIndex(
+        (item) =>
+          item.type === 'activity' && item.data.id === updatedActivity.id,
+      );
       if (existingIndex !== -1) {
         const updated = [...prev];
-        updated[existingIndex] = updatedActivity;
+        updated[existingIndex] = {
+          data: updatedActivity,
+          timestamp: new Date(updatedActivity.startTime),
+          type: 'activity',
+        };
         return updated;
       }
       return prev;
@@ -365,28 +389,39 @@ export function ActivityTimeline({
     loadActivities(0, false, true);
   };
 
-  const handleFilterChange = (userIds: string[], activityTypes: string[]) => {
+  const handleFilterChange = (
+    userIds: string[],
+    itemTypes: string[],
+    activityTypes: string[],
+  ) => {
     setSelectedUserIds(userIds);
+    setSelectedItemTypes(itemTypes);
     setSelectedActivityTypes(activityTypes);
     // Reload activities from the beginning (with animation since it's a user action)
     loadActivities(0, false, false);
   };
 
-  // Merge optimistic activities with fetched activities
+  // Merge optimistic activities with fetched timeline items
   // Optimistic activities override fetched activities with the same ID
-  const allActivities = React.useMemo(() => {
+  const allItems = React.useMemo(() => {
     const optimisticIds = new Set(optimisticActivities.map((a) => a.id));
-    const mergedActivities = [
-      ...optimisticActivities,
-      ...activitiesData.filter((a) => !optimisticIds.has(a.id)),
-    ];
-    return mergedActivities.sort(
-      (a, b) =>
-        new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
-    );
-  }, [optimisticActivities, activitiesData]);
+    const optimisticItems: TimelineItem[] = optimisticActivities.map((a) => ({
+      data: a,
+      timestamp: new Date(a.startTime),
+      type: 'activity' as const,
+    }));
 
-  const groupedActivities = groupActivitiesByDay(allActivities);
+    const filteredItems = timelineItems.filter(
+      (item) => !(item.type === 'activity' && optimisticIds.has(item.data.id)),
+    );
+
+    const mergedItems = [...optimisticItems, ...filteredItems];
+    return mergedItems.sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
+    );
+  }, [optimisticActivities, timelineItems]);
+
+  const groupedItems = groupTimelineItemsByDay(allItems);
 
   if (loading) {
     return (
@@ -406,13 +441,13 @@ export function ActivityTimeline({
     );
   }
 
-  if (activitiesData.length === 0) {
+  if (timelineItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4">
         <div className="rounded-full bg-muted/30 p-4 mb-4">
           <Baby className="size-8 text-muted-foreground" />
         </div>
-        <h3 className="font-semibold text-lg mb-1">No activities yet</h3>
+        <h3 className="font-semibold text-lg mb-1">No timeline items yet</h3>
         <p className="text-sm text-muted-foreground text-center">
           Start tracking by tapping a quick action button above
         </p>
@@ -422,8 +457,8 @@ export function ActivityTimeline({
 
   return (
     <div className="flex flex-col gap-6">
-      {Array.from(groupedActivities.entries()).map(
-        ([dayLabel, dayActivities], groupIndex) => (
+      {Array.from(groupedItems.entries()).map(
+        ([dayLabel, dayItems], groupIndex) => (
           <div
             className={isInitialLoad ? 'animate-in fade-in duration-300' : ''}
             key={dayLabel}
@@ -437,75 +472,101 @@ export function ActivityTimeline({
                   activityTypes={activities}
                   onFilterChange={handleFilterChange}
                   selectedActivityTypes={selectedActivityTypes}
+                  selectedItemTypes={selectedItemTypes}
                   selectedUserIds={selectedUserIds}
                 />
               )}
             </div>
             <div className="flex flex-col gap-2.5">
-              {dayActivities.map((activity, index) => {
-                const Icon = activityIcons[activity.type] || Baby;
+              {dayItems.map((item, index) => {
+                // Determine item type and extract data
+                // For activities, use the activity type (nursing, sleep, etc.)
+                // For milestones and chats, use the item type
+                const iconKey =
+                  item.type === 'activity' ? item.data.type : item.type;
+                const Icon = activityIcons[iconKey] || Baby;
                 const colorClass =
-                  activityColors[activity.type] || 'border-l-primary';
+                  activityColors[iconKey] || 'border-l-primary';
                 const iconColorClass =
-                  activityIconColors[activity.type] || 'text-primary';
-                const activityDate = new Date(activity.startTime);
-                const absoluteTime = format(activityDate, 'h:mm a');
-                const relativeTime = formatDistanceToNow(activityDate, {
+                  activityIconColors[iconKey] || 'text-primary';
+                const itemDate = item.timestamp;
+                const absoluteTime = format(itemDate, 'h:mm a');
+                const relativeTime = formatDistanceToNow(itemDate, {
                   addSuffix: true,
                 });
-                const isOptimistic = activity.id.startsWith(
-                  'activity-optimistic',
-                );
+                const isOptimistic =
+                  item.type === 'activity' &&
+                  item.data.id.startsWith('activity-optimistic');
 
-                // Build activity details string
+                // Build item details string based on type
                 const details: string[] = [];
-                if (activity.duration) {
-                  details.push(`${activity.duration} min`);
-                }
-                if (activity.amount) {
-                  details.push(
-                    formatVolumeDisplay(activity.amount, userUnitPref, true),
-                  );
-                }
+                let itemTitle = '';
+                let itemNotes = '';
+                let itemId = '';
 
-                // Add diaper type details
-                if (activity.type === 'diaper' && activity.details) {
-                  const diaperDetails = activity.details as {
-                    type?: string;
-                    wet?: boolean;
-                    dirty?: boolean;
-                  };
-                  if (diaperDetails.type === 'wet') {
-                    details.push('Pee');
-                  } else if (diaperDetails.type === 'dirty') {
-                    details.push('Poop');
-                  } else if (diaperDetails.type === 'both') {
-                    details.push('Both');
-                  } else if (diaperDetails.wet && diaperDetails.dirty) {
-                    details.push('Both');
-                  } else if (diaperDetails.wet) {
-                    details.push('Pee');
-                  } else if (diaperDetails.dirty) {
-                    details.push('Poop');
+                if (item.type === 'activity') {
+                  const activity = item.data;
+                  itemTitle = activity.type.replace('-', ' ');
+                  itemNotes = activity.notes || '';
+                  itemId = activity.id;
+
+                  if (activity.duration) {
+                    details.push(`${activity.duration} min`);
                   }
+                  if (activity.amount) {
+                    details.push(
+                      formatVolumeDisplay(activity.amount, userUnitPref, true),
+                    );
+                  }
+
+                  // Add diaper type details
+                  if (activity.type === 'diaper' && activity.details) {
+                    const diaperDetails = activity.details as {
+                      type?: string;
+                      wet?: boolean;
+                      dirty?: boolean;
+                    };
+                    if (diaperDetails.type === 'wet') {
+                      details.push('Pee');
+                    } else if (diaperDetails.type === 'dirty') {
+                      details.push('Poop');
+                    } else if (diaperDetails.type === 'both') {
+                      details.push('Both');
+                    } else if (diaperDetails.wet && diaperDetails.dirty) {
+                      details.push('Both');
+                    } else if (diaperDetails.wet) {
+                      details.push('Pee');
+                    } else if (diaperDetails.dirty) {
+                      details.push('Poop');
+                    }
+                  }
+                } else if (item.type === 'milestone') {
+                  const milestone = item.data;
+                  itemTitle = milestone.title;
+                  itemNotes = milestone.description || '';
+                  itemId = milestone.id;
+                } else if (item.type === 'chat') {
+                  const chat = item.data;
+                  itemTitle = 'Chat';
+                  itemNotes =
+                    chat.content.length > 100
+                      ? `${chat.content.slice(0, 100)}...`
+                      : chat.content;
+                  itemId = chat.id;
                 }
 
                 const detailsText =
                   details.length > 0 ? ` / ${details.join(', ')}` : '';
 
-                // Calculate time gap from previous activity
-                const previousActivity =
-                  index > 0 ? dayActivities[index - 1] : null;
-                const timeGapMinutes = previousActivity
-                  ? differenceInMinutes(
-                      new Date(previousActivity.startTime),
-                      activityDate,
-                    )
+                // Calculate time gap from previous item
+                const previousItem = index > 0 ? dayItems[index - 1] : null;
+                const timeGapMinutes = previousItem
+                  ? differenceInMinutes(previousItem.timestamp, itemDate)
                   : 0;
                 const showTimeGap = timeGapMinutes >= 15;
 
                 return (
-                  <div key={activity.id}>
+                  <div key={itemId}>
                     {showTimeGap && (
                       <div className="flex items-center gap-3 py-2">
                         <div className="h-px bg-border/50 flex-1" />
@@ -521,10 +582,8 @@ export function ActivityTimeline({
                           ? 'opacity-100 animate-pulse cursor-not-allowed'
                           : 'opacity-60 hover:opacity-90 cursor-pointer'
                       } transition-all duration-200 hover:scale-[1.01] hover:shadow-sm ${isInitialLoad ? 'animate-in slide-in-from-bottom-2' : ''} w-full text-left`}
-                      disabled={isOptimistic}
-                      onClick={() =>
-                        !isOptimistic && handleActivityClick(activity)
-                      }
+                      disabled={isOptimistic || item.type !== 'activity'}
+                      onClick={() => !isOptimistic && handleItemClick(item)}
                       style={
                         isInitialLoad
                           ? {
@@ -548,9 +607,9 @@ export function ActivityTimeline({
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <h4
-                              className={`text-sm font-medium capitalize ${isOptimistic ? 'text-foreground' : ''}`}
+                              className={`text-sm font-medium ${item.type === 'activity' ? 'capitalize' : ''} ${isOptimistic ? 'text-foreground' : ''}`}
                             >
-                              {activity.type.replace('-', ' ')}
+                              {itemTitle}
                               {detailsText && (
                                 <span className="text-muted-foreground font-normal">
                                   {detailsText}
@@ -567,9 +626,9 @@ export function ActivityTimeline({
                             </span>
                           </div>
                         </div>
-                        {getDisplayNotes(activity.notes) && (
+                        {getDisplayNotes(itemNotes) && (
                           <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-                            {getDisplayNotes(activity.notes)}
+                            {getDisplayNotes(itemNotes)}
                           </p>
                         )}
                         {isOptimistic && (
@@ -596,10 +655,10 @@ export function ActivityTimeline({
         </div>
       )}
 
-      {!hasMore && activitiesData.length > 0 && (
+      {!hasMore && timelineItems.length > 0 && (
         <div className="flex justify-center py-6">
           <p className="text-xs text-muted-foreground">
-            That's all your activities from the past week
+            That's all your timeline items
           </p>
         </div>
       )}

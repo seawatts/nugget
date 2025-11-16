@@ -2,10 +2,10 @@
 
 import { Badge } from '@nugget/ui/badge';
 import { Button } from '@nugget/ui/button';
-import { Card, CardContent, CardFooter, CardHeader } from '@nugget/ui/card';
 import { H3, H4, P } from '@nugget/ui/custom/typography';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { FeatureCard } from '~/components/feature-card';
 
 interface LearningTip {
   title: string;
@@ -30,17 +30,17 @@ export function LearningCardCTA({
   const legacySubtext = typeof subtext === 'string' ? subtext : null;
 
   return (
-    <Card className="min-w-[280px] h-[440px] snap-start border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 flex flex-col">
-      <CardHeader className="pb-3">
+    <FeatureCard variant="primary">
+      <FeatureCard.Header className="pt-6 px-6">
         {ageLabel && (
-          <div className="mb-2 inline-block w-fit rounded-full bg-primary/20 px-3 py-1">
+          <FeatureCard.Badge className="mb-2">
             <P className="text-xs font-medium text-primary">{ageLabel}</P>
-          </div>
+          </FeatureCard.Badge>
         )}
         <H3 className="text-lg">{headline}</H3>
-      </CardHeader>
+      </FeatureCard.Header>
       {subtext && (
-        <CardContent className="pb-3 flex-1 overflow-y-auto">
+        <FeatureCard.Content className="px-6">
           {legacySubtext === '[AI_PENDING]' || (tips && tips.length === 0) ? (
             <div className="space-y-2">
               <div className="h-3 bg-muted/50 rounded animate-pulse" />
@@ -67,16 +67,16 @@ export function LearningCardCTA({
           ) : (
             <P className="text-sm text-muted-foreground">{legacySubtext}</P>
           )}
-        </CardContent>
+        </FeatureCard.Content>
       )}
-      <CardFooter>
+      <FeatureCard.Footer className="px-6 pb-6">
         <Button asChild className="w-full group" size="sm">
           <Link href={deeplink}>
             Learn More
             <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </Button>
-      </CardFooter>
-    </Card>
+      </FeatureCard.Footer>
+    </FeatureCard>
   );
 }

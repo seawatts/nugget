@@ -4,6 +4,8 @@ import { Button } from '@nugget/ui/button';
 import { P } from '@nugget/ui/custom/typography';
 import { MessageCircle } from 'lucide-react';
 import { useState } from 'react';
+import { FeatureCard } from '~/components/feature-card';
+import type { ColorConfig } from '~/components/feature-card.types';
 import { getCategoryConfig } from './learning-card-categories';
 import type { LearningTip } from './learning-carousel.actions';
 import { QuickChatDialog } from './quick-chat-dialog';
@@ -23,34 +25,50 @@ export function LearningCardInfo({
 
   // Handle loading state when tip is undefined or being resolved
   if (!tip) {
+    const loadingColorConfig: ColorConfig = {
+      border: 'border-blue-500/20',
+      card: 'bg-blue-500/5',
+      icon: 'text-blue-700 dark:text-blue-300',
+      text: 'text-blue-700 dark:text-blue-300',
+    };
+
     return (
-      <div className="min-w-[280px] h-[440px] snap-start rounded-lg border border-blue-500/20 bg-blue-500/5 overflow-hidden flex flex-col">
-        <div className="flex items-center gap-3 p-4 bg-blue-500/10 text-blue-700 dark:text-blue-300">
+      <FeatureCard colorConfig={loadingColorConfig} variant="custom">
+        <FeatureCard.Header
+          className="flex items-center gap-3 bg-blue-500/10 p-4 pb-4"
+          colorConfig={loadingColorConfig}
+        >
           <div className="size-6 bg-muted/50 rounded animate-pulse shrink-0" />
           <div className="min-w-0 flex-1 space-y-2">
             <div className="h-4 bg-muted/50 rounded animate-pulse w-32" />
             <div className="h-3 bg-muted/50 rounded animate-pulse w-16" />
           </div>
-        </div>
-        <div className="p-4 space-y-3 flex-1">
+        </FeatureCard.Header>
+        <FeatureCard.Content className="space-y-3 p-4">
           <div className="h-4 bg-muted/50 rounded animate-pulse" />
           <div className="h-4 bg-muted/50 rounded animate-pulse w-5/6" />
           <div className="h-4 bg-muted/50 rounded animate-pulse w-4/6" />
-        </div>
-      </div>
+        </FeatureCard.Content>
+      </FeatureCard>
     );
   }
 
   const categoryConfig = getCategoryConfig(tip.category);
   const Icon = categoryConfig.icon;
 
+  const colorConfig: ColorConfig = {
+    border: categoryConfig.borderColor,
+    card: categoryConfig.bgColor,
+    icon: categoryConfig.color,
+    text: categoryConfig.color,
+  };
+
   return (
-    <div
-      className={`min-w-[280px] h-[440px] snap-start rounded-lg border ${categoryConfig.borderColor} ${categoryConfig.bgColor} overflow-hidden flex flex-col`}
-    >
+    <FeatureCard colorConfig={colorConfig} variant="custom">
       {/* Header */}
-      <div
-        className={`flex items-center gap-3 p-4 ${categoryConfig.bgColor} ${categoryConfig.color}`}
+      <FeatureCard.Header
+        className={`flex items-center gap-3 ${categoryConfig.bgColor} p-4 pb-4`}
+        colorConfig={colorConfig}
       >
         <Icon className="size-6 shrink-0" />
         <div className="min-w-0 flex-1">
@@ -59,10 +77,10 @@ export function LearningCardInfo({
             {categoryConfig.label}
           </p>
         </div>
-      </div>
+      </FeatureCard.Header>
 
       {/* Scrollable Content Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <FeatureCard.Content className="space-y-3 p-4">
         {/* Summary */}
         <P className="text-sm text-muted-foreground">{tip.summary}</P>
 
@@ -75,14 +93,15 @@ export function LearningCardInfo({
             </li>
           ))}
         </ul>
-      </div>
+      </FeatureCard.Content>
 
       {/* Sticky Footer with Question and Answer Button */}
-      <div
-        className={`border-t ${categoryConfig.borderColor} ${categoryConfig.bgColor} p-4 space-y-3`}
+      <FeatureCard.Footer
+        className={`border-t ${categoryConfig.borderColor} ${categoryConfig.bgColor} flex-col gap-3 p-4 pt-4`}
+        colorConfig={colorConfig}
       >
         {/* Question */}
-        <div className="flex gap-2 items-start">
+        <div className="flex gap-2 items-start w-full">
           <MessageCircle className="size-4 shrink-0 text-primary mt-0.5" />
           <P className="text-sm font-medium text-foreground">
             {tip.followUpQuestion}
@@ -99,7 +118,7 @@ export function LearningCardInfo({
           <MessageCircle className="size-4 mr-2" />
           Answer
         </Button>
-      </div>
+      </FeatureCard.Footer>
 
       {/* Chat Dialog */}
       {babyId && tip && (
@@ -121,6 +140,6 @@ export function LearningCardInfo({
           trigger={<span style={{ display: 'none' }} />}
         />
       )}
-    </div>
+    </FeatureCard>
   );
 }

@@ -160,15 +160,19 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="size-5 text-primary" />
           <H2 className="text-xl">Learning</H2>
+          <P className="text-xs text-muted-foreground ml-auto">Generating...</P>
         </div>
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-          {[1, 2, 3].map((i) => (
-            <div
-              className="min-w-[280px] h-[240px] rounded-lg bg-muted/50 animate-pulse"
-              key={i}
-            />
-          ))}
-        </div>
+        <LearningCardLoading
+          ageInDays={
+            baby?.birthDate
+              ? Math.floor(
+                  (Date.now() - baby.birthDate.getTime()) /
+                    (1000 * 60 * 60 * 24),
+                )
+              : 0
+          }
+          babyName={baby?.firstName ?? 'Baby'}
+        />
       </div>
     );
   }
@@ -213,21 +217,19 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
               </div>
             ))}
 
-          {/* Loading card while AI is being resolved */}
-          {isResolvingAI && baby && (
-            <div className="snap-start">
-              <LearningCardLoading
-                ageInDays={
-                  baby.birthDate
-                    ? Math.floor(
-                        (Date.now() - baby.birthDate.getTime()) /
-                          (1000 * 60 * 60 * 24),
-                      )
-                    : 0
-                }
-                babyName={baby.firstName}
-              />
-            </div>
+          {/* Show full-width loading card when AI is being resolved */}
+          {isResolvingAI && baby && cards.length === 0 && (
+            <LearningCardLoading
+              ageInDays={
+                baby.birthDate
+                  ? Math.floor(
+                      (Date.now() - baby.birthDate.getTime()) /
+                        (1000 * 60 * 60 * 24),
+                    )
+                  : 0
+              }
+              babyName={baby.firstName}
+            />
           )}
 
           {/* Check Back card at the end */}

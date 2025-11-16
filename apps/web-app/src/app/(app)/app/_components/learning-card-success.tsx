@@ -1,10 +1,10 @@
 'use client';
 
 import { Button } from '@nugget/ui/button';
-import { Card, CardContent, CardFooter, CardHeader } from '@nugget/ui/card';
 import { H3, P } from '@nugget/ui/custom/typography';
 import { CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
+import { FeatureCard } from '~/components/feature-card';
 
 interface LearningCardSuccessProps {
   title: string;
@@ -20,30 +20,38 @@ export function LearningCardSuccess({
   ageLabel,
 }: LearningCardSuccessProps) {
   return (
-    <Card className="min-w-[280px] h-[440px] snap-start border-green-500/20 bg-gradient-to-br from-green-500/5 to-emerald-500/10 flex flex-col">
-      <CardHeader className="pb-3">
+    <FeatureCard variant="success">
+      <FeatureCard.Header className="pt-6 px-6">
         <div className="flex items-center gap-2 mb-2">
           <CheckCircle2 className="size-5 text-green-600 dark:text-green-400" />
           {ageLabel && (
-            <div className="inline-block w-fit rounded-full bg-green-500/20 px-3 py-1">
+            <FeatureCard.Badge
+              colorConfig={{
+                badge: 'bg-green-500/20',
+                border: '',
+                card: '',
+                text: '',
+              }}
+              variant="custom"
+            >
               <P className="text-xs font-medium text-green-600 dark:text-green-400">
                 {ageLabel}
               </P>
-            </div>
+            </FeatureCard.Badge>
           )}
         </div>
         <H3 className="text-lg">{title}</H3>
-      </CardHeader>
-      <CardContent className="pb-3 flex-1 overflow-y-auto">
+      </FeatureCard.Header>
+      <FeatureCard.Content className="px-6">
         <P className="text-sm text-foreground/80 leading-relaxed">{body}</P>
-      </CardContent>
+      </FeatureCard.Content>
       {deeplink && (
-        <CardFooter>
+        <FeatureCard.Footer className="px-6 pb-6">
           <Button asChild className="w-full" size="sm" variant="outline">
             <Link href={deeplink}>View Details</Link>
           </Button>
-        </CardFooter>
+        </FeatureCard.Footer>
       )}
-    </Card>
+    </FeatureCard>
   );
 }

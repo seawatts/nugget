@@ -166,6 +166,11 @@ export function ActivityDrawer({
         }
       });
     }
+
+    // Reset activeActivityId when drawer closes
+    if (!isOpen) {
+      setActiveActivityId(null);
+    }
   }, [isOpen, activity.id, existingActivity]);
 
   const handleTimerStart = async () => {
@@ -217,9 +222,6 @@ export function ActivityDrawer({
             }
           : undefined;
 
-      // Close drawer immediately for better UX
-      onClose();
-
       // Update the in-progress activity with endTime and duration
       startTransition(async () => {
         try {
@@ -233,12 +235,17 @@ export function ActivityDrawer({
           });
 
           if (result?.data?.activity) {
+            // Clear the active activity first
+            setActiveActivityId(null);
+
             // Update with real data from server
             onActivityUpdated?.(result.data.activity);
             // Notify that save completed successfully (triggers refresh)
             onActivitySaved?.();
             toast.success('Sleep saved successfully');
-            setActiveActivityId(null);
+
+            // Close drawer after successful save
+            onClose();
           } else if (result?.serverError) {
             toast.error(result.serverError);
           }
@@ -560,7 +567,13 @@ export function ActivityDrawer({
               disabled={isPending}
               onClick={handleSave}
             >
-              {isPending ? 'Saving...' : isEditing ? 'Update' : 'Save'}
+              {isPending
+                ? 'Saving...'
+                : activeActivityId && !existingActivity
+                  ? 'Save'
+                  : isEditing
+                    ? 'Update'
+                    : 'Save'}
             </Button>
           </div>
         </div>
