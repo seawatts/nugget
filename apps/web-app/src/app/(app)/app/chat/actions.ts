@@ -15,6 +15,7 @@ import {
   Chats,
   type NewChat,
   type NewChatMessage,
+  Users,
 } from '@nugget/db/schema';
 import {
   differenceInDays,
@@ -575,6 +576,73 @@ export async function sendChatMessageStreamingAction(input: {
     userMessageId: savedUserMessage.id,
   };
 }
+
+/**
+ * Get chat reply information for a specific context
+ * Returns user information if a family member has replied in the chat
+ */
+export const getContextChatReplyAction = action
+  .schema(
+    z.object({
+      babyId: z.string(),
+      contextId: z.string(),
+      contextType: z.string(),
+    }),
+  )
+  .action(async ({ parsedInput }) => {
+    const { userId: currentUserId } = await auth();
+    if (!currentUserId) throw new Error('Unauthorized');
+
+    // Get baby to retrieve familyId
+    const baby = await db.query.Babies.findFirst({
+      where: eq(Babies.id, parsedInput.babyId),
+    });
+
+    if (!baby) throw new Error('Baby not found');
+
+    // Find chats with this context for all family members
+    const chats = await db.query.Chats.findMany({
+      where: and(
+        eq(Chats.babyId, parsedInput.babyId),
+        eq(Chats.contextType, parsedInput.contextType),
+        eq(Chats.contextId, parsedInput.contextId),
+      ),
+      with: {
+        messages: {
+          orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+          where: eq(ChatMessages.role, 'user'),
+        },
+      },
+    });
+
+    // Find chats with user messages and get user information
+    const repliers = [];
+    for (const chat of chats) {
+      if (chat.messages.length > 0) {
+        // Get user information
+        const user = await db.query.Users.findFirst({
+          columns: {
+            avatarUrl: true,
+            firstName: true,
+            id: true,
+            lastName: true,
+          },
+          where: eq(Users.id, chat.userId),
+        });
+
+        if (user) {
+          repliers.push({
+            avatarUrl: user.avatarUrl,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            userId: user.id,
+          });
+        }
+      }
+    }
+
+    return repliers;
+  });
 
 /**
  * Generate a chat title based on the first exchange

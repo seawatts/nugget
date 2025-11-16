@@ -153,7 +153,10 @@ export const getActivitiesAction = action
           const chatMessages = await db.query.ChatMessages.findMany({
             limit: fetchLimit,
             orderBy: desc(ChatMessagesTable.createdAt),
-            where: inArray(ChatMessagesTable.chatId, chatIds),
+            where: and(
+              inArray(ChatMessagesTable.chatId, chatIds),
+              eq(ChatMessagesTable.role, 'user'), // Only show user messages
+            ),
             with: {
               chat: true,
             },

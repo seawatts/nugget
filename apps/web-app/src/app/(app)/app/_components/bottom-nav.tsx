@@ -1,6 +1,7 @@
 'use client';
 
 import { api } from '@nugget/api/react';
+import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
 import { NuggetAvatar } from '@nugget/ui/custom/nugget-avatar';
 import { cn } from '@nugget/ui/lib/utils';
@@ -37,11 +38,15 @@ import {
   Utensils,
   X,
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { KeyboardEvent } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type FamilyTabMember,
+  getFamilyTabsDataAction,
+} from './family-tabs.actions';
 import { useScroll } from './scroll-provider';
 
 function getUserJourneyStage() {
@@ -260,14 +265,97 @@ const navGroups = [
   },
 ];
 
+const familyMenuContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      delayChildren: 0.05,
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const familyAvatarItem = {
+  hidden: {
+    opacity: 0,
+    scale: 0.8,
+    y: 20,
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      damping: 30,
+      stiffness: 400,
+      type: 'spring',
+    },
+    y: 0,
+  },
+};
+
+function LiveBabyAge({ birthDate }: { birthDate: Date }) {
+  const [age, setAge] = useState('');
+
+  useEffect(() => {
+    function updateAge() {
+      const now = new Date();
+      const birth = new Date(birthDate);
+      const diffMs = now.getTime() - birth.getTime();
+
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor(
+        (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+      );
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+      if (days > 0) {
+        setAge(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+      } else if (hours > 0) {
+        setAge(`${hours}h ${minutes}m ${seconds}s`);
+      } else if (minutes > 0) {
+        setAge(`${minutes}m ${seconds}s`);
+      } else {
+        setAge(`${seconds}s`);
+      }
+    }
+
+    updateAge();
+    const interval = setInterval(updateAge, 1000);
+
+    return () => clearInterval(interval);
+  }, [birthDate]);
+
+  return <>{age}</>;
+}
+
+function getRoleLabel(
+  role?: 'primary' | 'partner' | 'caregiver' | null,
+): string {
+  if (!role) return 'Member';
+
+  const roleLabels = {
+    caregiver: 'Caregiver',
+    partner: 'Partner',
+    primary: 'Primary',
+  };
+
+  return roleLabels[role];
+}
+
 export function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const { scrollY } = useScroll();
   const [showDrawer, setShowDrawer] = useState(false);
+  const [showFamilyMenu, setShowFamilyMenu] = useState(false);
+  const [familyMembers, setFamilyMembers] = useState<FamilyTabMember[]>([]);
   const [journeyStage, setJourneyStage] = useState<string | null>(null);
   const [babyName, setBabyName] = useState('Baby');
   const [ageDisplay, setAgeDisplay] = useState<string | undefined>(undefined);
   const [babyPhotoUrl, setBabyPhotoUrl] = useState<string | null>(null);
+  const familyMenuRef = useRef<HTMLDivElement>(null);
 
   // Fetch baby data to get profile picture
   const { data: babies = [] } = api.babies.list.useQuery();
@@ -330,6 +418,42 @@ export function BottomNav() {
       setBabyPhotoUrl(mostRecentBaby.photoUrl);
     }
   }, [mostRecentBaby?.photoUrl]);
+
+  // Fetch family members data
+  useEffect(() => {
+    async function loadFamilyMembers() {
+      try {
+        const result = await getFamilyTabsDataAction();
+        if (result?.data) {
+          setFamilyMembers(result.data);
+        }
+      } catch (error) {
+        console.error('Failed to load family members:', error);
+      }
+    }
+
+    loadFamilyMembers();
+  }, []);
+
+  // Handle click outside to close family menu
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        familyMenuRef.current &&
+        !familyMenuRef.current.contains(event.target as Node) &&
+        showFamilyMenu
+      ) {
+        setShowFamilyMenu(false);
+      }
+    }
+
+    if (showFamilyMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showFamilyMenu]);
 
   if (isOnboarding) return null;
 
@@ -470,6 +594,115 @@ export function BottomNav() {
         </>
       )}
 
+      {/* Family Avatar Selector */}
+      <AnimatePresence>
+        {showFamilyMenu && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              animate={{ opacity: 1 }}
+              className="fixed inset-0 bg-background/60 backdrop-blur-sm z-40"
+              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
+              onClick={() => setShowFamilyMenu(false)}
+              transition={{ duration: 0.2 }}
+            />
+
+            {/* Family Avatars Container */}
+            <motion.div
+              animate="visible"
+              className="fixed left-1/2 -translate-x-1/2 z-50"
+              exit="hidden"
+              initial="hidden"
+              ref={familyMenuRef}
+              style={{
+                bottom: '100px', // Position above the nav bar
+              }}
+              variants={familyMenuContainer}
+            >
+              <div className="flex flex-col-reverse items-center gap-3">
+                {familyMembers.map((member) => {
+                  const displayName = member.firstName;
+                  const initials = displayName
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2);
+
+                  return (
+                    <motion.div
+                      className="flex items-center gap-2 bg-card/95 backdrop-blur-lg rounded-full pl-2 py-2 shadow-xl border border-border/50 hover:scale-105 transition-transform"
+                      key={member.id}
+                      variants={familyAvatarItem}
+                    >
+                      <button
+                        className="flex items-center gap-3 flex-1 cursor-pointer pr-2"
+                        onClick={() => {
+                          router.push(`/app/${member.userId}`);
+                          setShowFamilyMenu(false);
+                        }}
+                        type="button"
+                      >
+                        <div className="flex items-center justify-center">
+                          {member.type === 'baby' ? (
+                            <div className="relative flex items-center justify-center size-12 rounded-full bg-linear-to-br from-primary to-primary/80 p-[2px] shadow-lg shadow-primary/30">
+                              <div className="size-full rounded-full bg-card flex items-center justify-center p-1">
+                                <NuggetAvatar
+                                  image={member.avatarUrl || undefined}
+                                  name={displayName}
+                                  size="sm"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <Avatar className="size-12">
+                              <AvatarImage
+                                alt={displayName}
+                                src={member.avatarUrl || ''}
+                              />
+                              <AvatarFallback className="text-sm">
+                                {initials}
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-start">
+                          <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                            {displayName}
+                          </span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap font-mono">
+                            {member.type === 'baby' && member.birthDate ? (
+                              <LiveBabyAge birthDate={member.birthDate} />
+                            ) : member.type === 'user' ? (
+                              getRoleLabel(member.role)
+                            ) : null}
+                          </span>
+                        </div>
+                      </button>
+                      <Link
+                        className="flex items-center justify-center size-8 rounded-full hover:bg-muted/50 transition-colors mr-1"
+                        href={
+                          member.type === 'baby'
+                            ? `/app/settings?tab=profile&babyId=${member.id}`
+                            : '/app/settings'
+                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowFamilyMenu(false);
+                        }}
+                      >
+                        <Settings className="size-4 text-muted-foreground" />
+                      </Link>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Bottom Navigation Bar */}
       <nav className="fixed bottom-0 left-0 right-0 bg-linear-to-t from-card via-card to-card/95 backdrop-blur-lg border-t border-border/50 z-40 shadow-lg">
         <motion.div
@@ -489,7 +722,11 @@ export function BottomNav() {
             className="absolute left-1/2 -translate-x-1/2 z-50"
             transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
           >
-            <Link className="block relative" href="/app/settings">
+            <button
+              className="block relative"
+              onClick={() => setShowFamilyMenu(!showFamilyMenu)}
+              type="button"
+            >
               <div className="relative group">
                 {/* Glow effect */}
                 <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl group-hover:bg-primary/30 transition-all pointer-events-none" />
@@ -505,7 +742,7 @@ export function BottomNav() {
                   </div>
                 </div>
               </div>
-            </Link>
+            </button>
           </motion.div>
 
           {/* Navigation Items Grid */}

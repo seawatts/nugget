@@ -13,6 +13,9 @@ export interface FamilyTabMember {
   avatarUrl: string | null;
   type: 'baby' | 'user';
   isCurrentUser?: boolean;
+  role?: 'primary' | 'partner' | 'caregiver' | null;
+  birthDate?: Date | null;
+  dueDate?: Date | null;
 }
 
 /**
@@ -37,6 +40,8 @@ export const getFamilyTabsDataAction = action.action(async () => {
   for (const baby of babies) {
     tabs.push({
       avatarUrl: baby.photoUrl,
+      birthDate: baby.birthDate,
+      dueDate: baby.dueDate,
       firstName: baby.firstName,
       id: baby.id,
       type: 'baby',
@@ -52,6 +57,7 @@ export const getFamilyTabsDataAction = action.action(async () => {
       firstName: member.user?.firstName || member.user?.email || 'Unknown',
       id: member.id,
       isCurrentUser,
+      role: member.role,
       type: 'user',
       userId: member.userId,
     });

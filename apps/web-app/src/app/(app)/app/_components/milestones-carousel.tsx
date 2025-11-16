@@ -217,9 +217,6 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
         <div className="flex items-center gap-2 mb-4">
           <Award className="size-5 text-primary" />
           <H2 className="text-xl">Milestones</H2>
-          <P className="text-xs text-muted-foreground ml-auto">
-            {milestones.filter((m) => !m.isCompleted).length} to track
-          </P>
         </div>
 
         {/* Horizontal scrolling container */}

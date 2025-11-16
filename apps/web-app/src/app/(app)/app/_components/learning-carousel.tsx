@@ -186,9 +186,6 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="size-5 text-primary" />
         <H2 className="text-xl">Learning</H2>
-        <P className="text-xs text-muted-foreground ml-auto">
-          {cards.length} {cards.length === 1 ? 'tip' : 'tips'} for you
-        </P>
       </div>
 
       {/* Horizontal scrolling container */}

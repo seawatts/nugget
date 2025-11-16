@@ -1,5 +1,6 @@
 'use client';
 
+import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
 import { H4, P } from '@nugget/ui/custom/typography';
 import type { LucideIcon } from 'lucide-react';
@@ -13,9 +14,11 @@ import {
   Sparkles,
   Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useAction } from 'next-safe-action/hooks';
+import { useCallback, useEffect, useState } from 'react';
 import { FeatureCard } from '~/components/feature-card';
 import type { ColorConfig } from '~/components/feature-card.types';
+import { getContextChatReplyAction } from '../chat/actions';
 import { QuickChatDialog } from './quick-chat-dialog';
 
 interface MilestoneCardProps {
@@ -29,6 +32,13 @@ interface MilestoneCardProps {
   followUpQuestion: string;
   summary?: string;
   babyId?: string;
+}
+
+interface ChatReplier {
+  userId: string;
+  firstName: string | null;
+  lastName: string | null;
+  avatarUrl: string | null;
 }
 
 interface TypeConfig {
@@ -97,8 +107,46 @@ export function MilestoneCard({
   babyId,
 }: MilestoneCardProps) {
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [repliers, setRepliers] = useState<ChatReplier[]>([]);
+  const { executeAsync: fetchRepliers } = useAction(getContextChatReplyAction);
   const config = typeConfig[type];
   const Icon = config.icon;
+
+  // Function to fetch repliers
+  const loadRepliers = useCallback(() => {
+    if (babyId && followUpQuestion) {
+      fetchRepliers({
+        babyId,
+        contextId: `${type}-${title}`,
+        contextType: 'milestone',
+      })
+        // biome-ignore lint/suspicious/noExplicitAny: action result type
+        .then((result: any) => {
+          if (result?.data) {
+            setRepliers(result.data);
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching repliers:', error);
+        });
+    }
+  }, [babyId, followUpQuestion, type, title, fetchRepliers]);
+
+  // Fetch repliers when component mounts
+  useEffect(() => {
+    loadRepliers();
+  }, [loadRepliers]);
+
+  // Refetch repliers when chat dialog closes
+  useEffect(() => {
+    if (!isChatOpen) {
+      // Add a small delay to ensure the message has been saved
+      const timer = setTimeout(() => {
+        loadRepliers();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isChatOpen, loadRepliers]);
 
   const colorConfig: ColorConfig = {
     border: config.borderColor,
@@ -196,13 +244,41 @@ export function MilestoneCard({
             <div className="flex flex-col gap-2 w-full">
               {babyId && followUpQuestion && (
                 <Button
-                  className="w-full"
+                  className="w-full justify-center"
                   onClick={() => setIsChatOpen(true)}
                   size="sm"
                   variant="default"
                 >
                   <MessageCircle className="size-4 mr-2" />
                   Answer
+                  {repliers.length > 0 && (
+                    <div className="flex -space-x-2 ml-2">
+                      {repliers.slice(0, 3).map((replier) => {
+                        const initials = `${replier.firstName?.[0] || ''}${replier.lastName?.[0] || ''}`;
+                        return (
+                          <Avatar
+                            className="size-5 border-2 border-primary"
+                            key={replier.userId}
+                          >
+                            <AvatarImage
+                              alt={`${replier.firstName || ''} ${replier.lastName || ''}`}
+                              src={replier.avatarUrl || undefined}
+                            />
+                            <AvatarFallback className="text-xs">
+                              {initials}
+                            </AvatarFallback>
+                          </Avatar>
+                        );
+                      })}
+                      {repliers.length > 3 && (
+                        <div className="size-5 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center">
+                          <span className="text-[8px] font-medium">
+                            +{repliers.length - 3}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </Button>
               )}
               <Button className="w-full" size="sm" variant="outline">
