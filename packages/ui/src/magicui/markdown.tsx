@@ -150,11 +150,12 @@ function MarkdownComponent({
         className,
       )}
     >
-      {blocks.map((block) => (
+      {blocks.map((block, index) => (
         <MemoizedMarkdownBlock
           components={components}
           content={block}
-          key={`${blockId}-${block.slice(0, 50)}`}
+          // biome-ignore lint/suspicious/noArrayIndexKey: index is stable for parsed markdown blocks
+          key={`${blockId}-block-${index}`}
         />
       ))}
     </div>
