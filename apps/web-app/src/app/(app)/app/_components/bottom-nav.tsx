@@ -288,7 +288,7 @@ const familyAvatarItem = {
     transition: {
       damping: 30,
       stiffness: 400,
-      type: 'spring',
+      type: 'spring' as const,
     },
     y: 0,
   },
