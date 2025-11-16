@@ -1,7 +1,8 @@
 'use server';
 
+import { auth } from '@clerk/nextjs/server';
 import { WellnessScreening } from '@nugget/ai/react/server';
-import { getApi } from '@nugget/api/server';
+import { db } from '@nugget/db/client';
 import { ParentCheckIns, WellnessAssessments } from '@nugget/db/schema';
 import { differenceInDays } from 'date-fns';
 import { and, desc, eq } from 'drizzle-orm';
@@ -49,16 +50,16 @@ export const getWellnessAssessmentAction = action
     z.object({ triggered: z.boolean().default(false), userId: z.string() }),
   )
   .action(async ({ parsedInput }): Promise<WellnessScreeningOutput> => {
-    const api = await getApi();
+    const authResult = await auth();
 
-    if (!ctx.auth?.orgId) {
+    if (!authResult?.orgId) {
       throw new Error('Authentication required.');
     }
 
-    const { orgId } = ctx.auth;
+    const { orgId } = authResult;
 
     // Get baby data
-    const baby = await api.db.query.Babies.findFirst({
+    const baby = await db.query.Babies.findFirst({
       orderBy: (babies, { desc }) => [desc(babies.birthDate)],
       where: (babies, { eq }) => eq(babies.familyId, orgId),
     });
@@ -78,7 +79,7 @@ export const getWellnessAssessmentAction = action
     const ageInDays = ppDay;
 
     // Get previous check-ins for context
-    const checkIns = await api.db.query.ParentCheckIns.findMany({
+    const checkIns = await db.query.ParentCheckIns.findMany({
       limit: 5,
       orderBy: [desc(ParentCheckIns.date)],
       where: and(
@@ -94,7 +95,7 @@ export const getWellnessAssessmentAction = action
     }));
 
     // Determine first pregnancy
-    const allBabies = await api.db.query.Babies.findMany({
+    const allBabies = await db.query.Babies.findMany({
       where: (babies, { eq }) => eq(babies.familyId, orgId),
     });
     const firstPregnancy = allBabies.length === 1;
@@ -154,13 +155,13 @@ const submitWellnessSchema = z.object({
 export const submitWellnessResponsesAction = action
   .schema(submitWellnessSchema)
   .action(async ({ parsedInput }) => {
-    const api = await getApi();
+    const authResult = await auth();
 
-    if (!ctx.auth?.orgId) {
+    if (!authResult?.orgId) {
       throw new Error('Authentication required.');
     }
 
-    const { orgId } = ctx.auth;
+    const { orgId } = authResult;
 
     // Calculate risk score
     let riskScore = 0;
@@ -201,7 +202,7 @@ export const submitWellnessResponsesAction = action
     }
 
     // Save assessment
-    const [assessment] = await api.db
+    const [assessment] = await db
       .insert(WellnessAssessments)
       .values({
         assessmentType: parsedInput.assessmentType,
@@ -233,18 +234,18 @@ export const submitWellnessResponsesAction = action
 export const getWellnessTrendsAction = action
   .schema(z.object({ days: z.number().default(90), userId: z.string() }))
   .action(async ({ parsedInput }): Promise<WellnessTrend[]> => {
-    const api = await getApi();
+    const authResult = await auth();
 
-    if (!ctx.auth?.orgId) {
+    if (!authResult?.orgId) {
       throw new Error('Authentication required.');
     }
 
-    const { orgId } = ctx.auth;
+    const { orgId } = authResult;
 
     const since = new Date();
     since.setDate(since.getDate() - parsedInput.days);
 
-    const assessments = await api.db.query.WellnessAssessments.findMany({
+    const assessments = await db.query.WellnessAssessments.findMany({
       orderBy: [desc(WellnessAssessments.date)],
       where: and(
         eq(WellnessAssessments.familyId, orgId),

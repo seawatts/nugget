@@ -1,7 +1,8 @@
 'use server';
 
+import { auth } from '@clerk/nextjs/server';
 import { DailyCheckInQuestions } from '@nugget/ai/react/server';
-import { getApi } from '@nugget/api/server';
+import { db } from '@nugget/db/client';
 import { ParentCheckIns } from '@nugget/db/schema';
 import { differenceInDays, subDays } from 'date-fns';
 import { and, desc, eq, gte } from 'drizzle-orm';
@@ -49,16 +50,16 @@ export interface CheckInHistoryItem {
 export const getDailyCheckInQuestionsAction = action
   .schema(z.object({ userId: z.string() }))
   .action(async ({ parsedInput }): Promise<CheckInQuestionsOutput> => {
-    const api = await getApi();
+    const authResult = await auth();
 
-    if (!ctx.auth?.orgId) {
+    if (!authResult?.orgId) {
       throw new Error('Authentication required.');
     }
 
-    const { orgId } = ctx.auth;
+    const { orgId } = authResult;
 
     // Get baby data
-    const baby = await api.db.query.Babies.findFirst({
+    const baby = await db.query.Babies.findFirst({
       orderBy: (babies, { desc }) => [desc(babies.birthDate)],
       where: (babies, { eq }) => eq(babies.familyId, orgId),
     });
@@ -71,7 +72,7 @@ export const getDailyCheckInQuestionsAction = action
     }
 
     // Get parent's role from family members
-    const familyMember = await api.db.query.FamilyMembers.findFirst({
+    const familyMember = await db.query.FamilyMembers.findFirst({
       where: (members, { and, eq }) =>
         and(
           eq(members.userId, parsedInput.userId),
@@ -88,7 +89,7 @@ export const getDailyCheckInQuestionsAction = action
 
     // Get parent's recent sleep data
     const oneDayAgo = subDays(new Date(), 1);
-    const sleepActivities = await api.db.query.Activities.findMany({
+    const sleepActivities = await db.query.Activities.findMany({
       where: (activities, { and, eq, gte }) =>
         and(
           eq(activities.familyId, orgId),
@@ -103,7 +104,7 @@ export const getDailyCheckInQuestionsAction = action
 
     // Get baby's activity patterns
     const sevenDaysAgo = subDays(new Date(), 7);
-    const recentActivities = await api.db.query.Activities.findMany({
+    const recentActivities = await db.query.Activities.findMany({
       where: (activities, { and, eq, gte }) =>
         and(
           eq(activities.familyId, orgId),
@@ -133,7 +134,7 @@ export const getDailyCheckInQuestionsAction = action
     const avgDiaperChanges = diaperCount / 7;
 
     // Determine first pregnancy status
-    const allBabies = await api.db.query.Babies.findMany({
+    const allBabies = await db.query.Babies.findMany({
       where: (babies, { eq }) => eq(babies.familyId, orgId),
     });
     const firstPregnancy = allBabies.length === 1;
@@ -197,22 +198,22 @@ const submitCheckInSchema = z.object({
 export const submitCheckInResponsesAction = action
   .schema(submitCheckInSchema)
   .action(async ({ parsedInput }) => {
-    const api = await getApi();
+    const authResult = await auth();
 
-    if (!ctx.auth?.orgId) {
+    if (!authResult?.orgId) {
       throw new Error('Authentication required.');
     }
 
-    const { orgId } = ctx.auth;
+    const { orgId } = authResult;
 
     // Get baby data for context
-    const baby = await api.db.query.Babies.findFirst({
+    const baby = await db.query.Babies.findFirst({
       orderBy: (babies, { desc }) => [desc(babies.birthDate)],
       where: (babies, { eq }) => eq(babies.familyId, orgId),
     });
 
     // Get parent's role
-    const familyMember = await api.db.query.FamilyMembers.findFirst({
+    const familyMember = await db.query.FamilyMembers.findFirst({
       where: (members, { and, eq }) =>
         and(
           eq(members.userId, parsedInput.userId),
@@ -230,7 +231,7 @@ export const submitCheckInResponsesAction = action
 
     // Get parent's recent sleep
     const oneDayAgo = subDays(new Date(), 1);
-    const sleepActivities = await api.db.query.Activities.findMany({
+    const sleepActivities = await db.query.Activities.findMany({
       where: (activities, { and, eq, gte }) =>
         and(
           eq(activities.familyId, orgId),
@@ -244,7 +245,7 @@ export const submitCheckInResponsesAction = action
       sleepActivities.reduce((sum, a) => sum + (a.duration || 0), 0) / 3600;
 
     // Save check-in
-    const [checkIn] = await api.db
+    const [checkIn] = await db
       .insert(ParentCheckIns)
       .values({
         aiGeneratedQuestions: true,
@@ -276,17 +277,17 @@ export const submitCheckInResponsesAction = action
 export const getCheckInHistoryAction = action
   .schema(z.object({ days: z.number().default(7), userId: z.string() }))
   .action(async ({ parsedInput }): Promise<CheckInHistoryItem[]> => {
-    const api = await getApi();
+    const authResult = await auth();
 
-    if (!ctx.auth?.orgId) {
+    if (!authResult?.orgId) {
       throw new Error('Authentication required.');
     }
 
-    const { orgId } = ctx.auth;
+    const { orgId } = authResult;
 
     const since = subDays(new Date(), parsedInput.days);
 
-    const checkIns = await api.db.query.ParentCheckIns.findMany({
+    const checkIns = await db.query.ParentCheckIns.findMany({
       orderBy: [desc(ParentCheckIns.date)],
       where: and(
         eq(ParentCheckIns.familyId, orgId),

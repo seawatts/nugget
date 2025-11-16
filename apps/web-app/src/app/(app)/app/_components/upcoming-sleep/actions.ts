@@ -93,6 +93,8 @@ export const quickLogSleepAction = action
     async ({
       parsedInput,
     }): Promise<{ activity: typeof Activities.$inferSelect }> => {
+      const api = await getApi();
+
       // Verify authentication
       const authResult = await auth();
       if (!authResult.userId) {

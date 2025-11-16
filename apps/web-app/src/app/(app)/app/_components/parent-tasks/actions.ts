@@ -1,7 +1,8 @@
 'use server';
 
+import { auth } from '@clerk/nextjs/server';
 import { PersonalizedTasks } from '@nugget/ai/react/server';
-import { getApi } from '@nugget/api/server';
+import { db } from '@nugget/db/client';
 import { ParentTasks } from '@nugget/db/schema';
 import { differenceInDays } from 'date-fns';
 import { and, desc, eq } from 'drizzle-orm';
@@ -53,16 +54,16 @@ export const getPersonalizedTasksAction = action
     }),
   )
   .action(async ({ parsedInput }): Promise<TasksOutput> => {
-    const api = await getApi();
+    const authResult = await auth();
 
-    if (!ctx.auth?.orgId) {
+    if (!authResult?.orgId) {
       throw new Error('Authentication required.');
     }
 
-    const { orgId } = ctx.auth;
+    const { orgId } = authResult;
 
     // Get baby data
-    const baby = await api.db.query.Babies.findFirst({
+    const baby = await db.query.Babies.findFirst({
       orderBy: (babies, { desc }) => [desc(babies.birthDate)],
       where: (babies, { eq }) => eq(babies.familyId, orgId),
     });
@@ -92,7 +93,7 @@ export const getPersonalizedTasksAction = action
     // Save tasks to database
     const savedTasks = await Promise.all(
       bamlResult.tasks.map(async (task) => {
-        const savedTaskArray = await api.db
+        const savedTaskArray = await db
           .insert(ParentTasks)
           .values({
             category: task.category as ParentTask['category'],
@@ -145,18 +146,18 @@ export const getPersonalizedTasksAction = action
 export const getTodaysTasksAction = action
   .schema(z.object({ userId: z.string() }))
   .action(async ({ parsedInput }): Promise<ParentTask[]> => {
-    const api = await getApi();
+    const authResult = await auth();
 
-    if (!ctx.auth?.orgId) {
+    if (!authResult?.orgId) {
       throw new Error('Authentication required.');
     }
 
-    const { orgId } = ctx.auth;
+    const { orgId } = authResult;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const tasks = await api.db.query.ParentTasks.findMany({
+    const tasks = await db.query.ParentTasks.findMany({
       limit: 20,
       orderBy: [desc(ParentTasks.priority), desc(ParentTasks.generatedDate)],
       where: and(
@@ -185,15 +186,15 @@ export const getTodaysTasksAction = action
 export const completeTaskAction = action
   .schema(z.object({ taskId: z.string() }))
   .action(async ({ parsedInput }) => {
-    const api = await getApi();
+    const authResult = await auth();
 
-    if (!ctx.auth?.userId || !ctx.auth?.orgId) {
+    if (!authResult?.userId || !authResult?.orgId) {
       throw new Error('Authentication required.');
     }
 
-    const { userId, orgId: _orgId } = ctx.auth;
+    const { userId, orgId: _orgId } = authResult;
 
-    await api.db
+    await db
       .update(ParentTasks)
       .set({
         completed: true,
@@ -215,15 +216,15 @@ export const completeTaskAction = action
 export const uncompleteTaskAction = action
   .schema(z.object({ taskId: z.string() }))
   .action(async ({ parsedInput }) => {
-    const api = await getApi();
+    const authResult = await auth();
 
-    if (!ctx.auth?.userId || !ctx.auth?.orgId) {
+    if (!authResult?.userId || !authResult?.orgId) {
       throw new Error('Authentication required.');
     }
 
-    const { userId, orgId: _orgId } = ctx.auth;
+    const { userId, orgId: _orgId } = authResult;
 
-    await api.db
+    await db
       .update(ParentTasks)
       .set({
         completed: false,
@@ -245,18 +246,18 @@ export const uncompleteTaskAction = action
 export const getTaskCompletionStatsAction = action
   .schema(z.object({ days: z.number().default(7), userId: z.string() }))
   .action(async ({ parsedInput }) => {
-    const api = await getApi();
+    const authResult = await auth();
 
-    if (!ctx.auth?.orgId) {
+    if (!authResult?.orgId) {
       throw new Error('Authentication required.');
     }
 
-    const { orgId } = ctx.auth;
+    const { orgId } = authResult;
 
     const since = new Date();
     since.setDate(since.getDate() - parsedInput.days);
 
-    const tasks = await api.db.query.ParentTasks.findMany({
+    const tasks = await db.query.ParentTasks.findMany({
       where: and(
         eq(ParentTasks.familyId, orgId),
         eq(ParentTasks.userId, parsedInput.userId),

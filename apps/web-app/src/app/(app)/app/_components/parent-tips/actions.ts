@@ -1,7 +1,8 @@
 'use server';
 
+import { auth } from '@clerk/nextjs/server';
 import { RoleSpecificTips } from '@nugget/ai/react/server';
-import { getApi } from '@nugget/api/server';
+import { db } from '@nugget/db/client';
 import { ParentCheckIns } from '@nugget/db/schema';
 import { differenceInDays, subDays } from 'date-fns';
 import { and, eq, gte } from 'drizzle-orm';
@@ -49,16 +50,16 @@ export const getRoleSpecificTipsAction = action
     }),
   )
   .action(async ({ parsedInput }): Promise<TipsOutput> => {
-    const api = await getApi();
+    const authResult = await auth();
 
-    if (!ctx.auth?.orgId) {
+    if (!authResult?.orgId) {
       throw new Error('Authentication required.');
     }
 
-    const { orgId } = ctx.auth;
+    const { orgId } = authResult;
 
     // Get baby data
-    const baby = await api.db.query.Babies.findFirst({
+    const baby = await db.query.Babies.findFirst({
       orderBy: (babies, { desc }) => [desc(babies.birthDate)],
       where: (babies, { eq }) => eq(babies.familyId, orgId),
     });
@@ -73,7 +74,7 @@ export const getRoleSpecificTipsAction = action
     const ppDay = babyAgeInDays;
 
     // Get parent's role
-    const familyMember = await api.db.query.FamilyMembers.findFirst({
+    const familyMember = await db.query.FamilyMembers.findFirst({
       where: (members, { and, eq }) =>
         and(
           eq(members.userId, parsedInput.userId),
@@ -85,7 +86,7 @@ export const getRoleSpecificTipsAction = action
 
     // Get parent's recent sleep hours
     const sevenDaysAgo = subDays(new Date(), 7);
-    const sleepActivities = await api.db.query.Activities.findMany({
+    const sleepActivities = await db.query.Activities.findMany({
       where: (activities, { and, eq, gte }) =>
         and(
           eq(activities.familyId, orgId),
@@ -99,7 +100,7 @@ export const getRoleSpecificTipsAction = action
       sleepActivities.reduce((sum, a) => sum + (a.duration || 0), 0) / 3600;
 
     // Get recent concerns from check-ins
-    const recentCheckIns = await api.db.query.ParentCheckIns.findMany({
+    const recentCheckIns = await db.query.ParentCheckIns.findMany({
       limit: 5,
       orderBy: (checkIns, { desc }) => [desc(checkIns.date)],
       where: and(

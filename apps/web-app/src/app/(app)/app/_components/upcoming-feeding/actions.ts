@@ -31,6 +31,8 @@ export interface UpcomingFeedingData {
  */
 export const getUpcomingFeedingAction = action.action(
   async (): Promise<UpcomingFeedingData> => {
+    const api = await getApi();
+
     // Verify authentication
     const authResult = await auth();
     if (!authResult.userId || !authResult.orgId) {

@@ -2,6 +2,7 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { getApi } from '@nugget/api/server';
+import { db } from '@nugget/db/client';
 import { Activities } from '@nugget/db/schema';
 import { and, eq, gte } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -37,12 +38,13 @@ export const logParentSleepAction = action
       parsedInput: { userId, startTime, endTime, duration, notes },
     }) => {
       const api = await getApi();
+      const authResult = await auth();
 
-      if (!ctx.auth?.orgId) {
+      if (!authResult?.orgId) {
         throw new Error('Authentication required');
       }
 
-      const { orgId } = ctx.auth;
+      const { orgId } = authResult;
 
       // Get primary baby (required for activities table)
       const babies = await api.babies.list.fetch();
@@ -53,7 +55,7 @@ export const logParentSleepAction = action
       }
 
       // Create sleep activity for the parent
-      const [activity] = await ctx.db
+      const [activity] = await db
         .insert(Activities)
         .values({
           babyId: primaryBaby.id,
@@ -82,13 +84,11 @@ export const logParentSleepAction = action
 export const getParentSleepDataAction = action
   .schema(z.object({ userId: z.string() }))
   .action(async ({ parsedInput: { userId } }) => {
-    const api = await getApi();
-
     // Get the last 24 hours
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     // Get all sleep activities for this user in the last 24 hours
-    const sleepActivities = await api.db.query.Activities.findMany({
+    const sleepActivities = await db.query.Activities.findMany({
       orderBy: (activities, { desc }) => [desc(activities.startTime)],
       where: and(
         eq(Activities.userId, userId),
@@ -151,7 +151,7 @@ export const quickLogParentSleepAction = action
     const startTime = new Date(endTime.getTime() - durationSeconds * 1000);
 
     // Create sleep activity for the parent
-    const [activity] = await ctx.db
+    const [activity] = await db
       .insert(Activities)
       .values({
         babyId: primaryBaby.id,
