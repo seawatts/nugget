@@ -94,7 +94,7 @@ function FeatureCardRoot({
   return (
     <Card
       className={cn(
-        'min-w-[280px] h-[440px] snap-start flex flex-col relative overflow-hidden p-0',
+        'min-w-[280px] h-[560px] snap-start flex flex-col relative overflow-hidden p-0',
         colorConfig.border,
         colorConfig.card,
         className,

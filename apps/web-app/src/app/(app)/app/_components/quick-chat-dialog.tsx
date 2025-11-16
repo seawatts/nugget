@@ -1,7 +1,9 @@
 'use client';
 
-import { useAuth } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
+import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
+import { NuggetAvatar } from '@nugget/ui/custom/nugget-avatar';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +20,7 @@ import {
 } from '@nugget/ui/drawer';
 import { useMediaQuery } from '@nugget/ui/hooks/use-media-query';
 import { cn } from '@nugget/ui/lib/utils';
+import { Markdown } from '@nugget/ui/magicui/markdown';
 import { MessageSquare, Send, Sparkles } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -47,7 +50,7 @@ interface QuickChatDialogContentProps {
   contextId?: string; // e.g., tip ID
 }
 
-function QuickChatDialogContent({
+export function QuickChatDialogContent({
   babyId,
   systemPrompt,
   initialMessages = [],
@@ -57,6 +60,7 @@ function QuickChatDialogContent({
   contextId,
 }: QuickChatDialogContentProps) {
   const { userId } = useAuth();
+  const { user } = useUser();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -262,8 +266,8 @@ function QuickChatDialogContent({
             key={message.id}
           >
             {message.role === 'assistant' && (
-              <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-primary" />
+              <div className="shrink-0">
+                <NuggetAvatar letter="N" name="Nugget" size="sm" />
               </div>
             )}
             <div
@@ -274,26 +278,29 @@ function QuickChatDialogContent({
                   : 'bg-muted',
               )}
             >
-              <p className="text-sm whitespace-pre-wrap select-text">
-                {message.content}
-              </p>
+              {message.role === 'assistant' ? (
+                <Markdown prose>{message.content}</Markdown>
+              ) : (
+                <p className="text-sm whitespace-pre-wrap select-text">
+                  {message.content}
+                </p>
+              )}
             </div>
+            {message.role === 'user' && (
+              <Avatar className="size-8 shrink-0">
+                <AvatarImage
+                  alt={user?.firstName || 'User'}
+                  src={user?.imageUrl}
+                />
+                <AvatarFallback className="bg-secondary text-secondary-foreground text-sm font-semibold">
+                  {user?.firstName?.[0] ||
+                    user?.emailAddresses?.[0]?.emailAddress?.[0] ||
+                    'U'}
+                </AvatarFallback>
+              </Avatar>
+            )}
           </div>
         ))}
-        {isSending && (
-          <div className="flex gap-2 justify-start">
-            <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-            </div>
-            <div className="bg-muted rounded-2xl px-4 py-2">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 bg-foreground/30 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                <span className="w-2 h-2 bg-foreground/30 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                <span className="w-2 h-2 bg-foreground/30 rounded-full animate-bounce" />
-              </div>
-            </div>
-          </div>
-        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -417,7 +424,10 @@ export function QuickChatDialog({
         {!open && <DialogTrigger asChild>{defaultTrigger}</DialogTrigger>}
         <DialogContent className="sm:max-w-2xl p-0">
           <DialogHeader className="px-6 pt-6">
-            <DialogTitle>{title}</DialogTitle>
+            <div className="flex items-center gap-2">
+              <NuggetAvatar letter="N" name="Nugget" size="sm" />
+              <DialogTitle>{title}</DialogTitle>
+            </div>
           </DialogHeader>
           {commonContent}
         </DialogContent>
@@ -430,7 +440,10 @@ export function QuickChatDialog({
       {!open && <DrawerTrigger asChild>{defaultTrigger}</DrawerTrigger>}
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle>{title}</DrawerTitle>
+          <div className="flex items-center gap-2">
+            <NuggetAvatar letter="N" name="Nugget" size="sm" />
+            <DrawerTitle>{title}</DrawerTitle>
+          </div>
         </DrawerHeader>
         {commonContent}
       </DrawerContent>

@@ -4,6 +4,7 @@ import { billingRouter } from './router/billing';
 import { familyRouter } from './router/family';
 import { familyMembersRouter } from './router/family-members';
 import { invitationsRouter } from './router/invitations';
+import { milestonesRouter } from './router/milestones';
 import { onboardingRouter } from './router/onboarding';
 import { supplyInventoryRouter } from './router/supply-inventory';
 import { supplyTransactionsRouter } from './router/supply-transactions';
@@ -17,6 +18,7 @@ export const appRouter = createTRPCRouter({
   family: familyRouter,
   familyMembers: familyMembersRouter,
   invitations: invitationsRouter,
+  milestones: milestonesRouter,
   onboarding: onboardingRouter,
   supplyInventory: supplyInventoryRouter,
   supplyTransactions: supplyTransactionsRouter,

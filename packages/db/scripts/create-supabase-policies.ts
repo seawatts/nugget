@@ -209,6 +209,14 @@ const policyConfigs: Record<string, PolicyConfig> = {
     policies: [createUserOwnershipPolicy('ALL', 'userId')],
     tableName: 'milestones',
   },
+  parentCheckIns: {
+    policies: [createUserOwnershipPolicy('ALL', 'userId')],
+    tableName: 'parentCheckIns',
+  },
+  parentTasks: {
+    policies: [createUserOwnershipPolicy('ALL', 'userId')],
+    tableName: 'parentTasks',
+  },
   pushSubscriptions: {
     policies: [createUserOwnershipPolicy('ALL', 'userId')],
     tableName: 'pushSubscriptions',
@@ -245,6 +253,10 @@ const policyConfigs: Record<string, PolicyConfig> = {
       },
     ],
     tableName: 'users',
+  },
+  wellnessAssessments: {
+    policies: [createUserOwnershipPolicy('ALL', 'userId')],
+    tableName: 'wellnessAssessments',
   },
 };
 

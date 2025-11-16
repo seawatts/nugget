@@ -476,7 +476,7 @@ export function ActivityTimeline({
             className={isInitialLoad ? 'animate-in fade-in duration-300' : ''}
             key={dayLabel}
           >
-            <div className="sticky top-18 bg-background/95 backdrop-blur-sm py-2 mb-3 z-10 border-b border-border/50 flex items-center justify-between">
+            <div className="sticky top-0 bg-background/95 backdrop-blur-sm py-2 mb-3 z-10 border-b border-border/50 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide">
                 {dayLabel}
               </h3>

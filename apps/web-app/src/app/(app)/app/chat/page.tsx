@@ -1,9 +1,12 @@
 'use client';
 
-import { useAuth } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
+import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
+import { NuggetAvatar } from '@nugget/ui/custom/nugget-avatar';
 import { H3, P } from '@nugget/ui/custom/typography';
 import { cn } from '@nugget/ui/lib/utils';
+import { Markdown } from '@nugget/ui/magicui/markdown';
 import {
   Sheet,
   SheetContent,
@@ -32,6 +35,7 @@ interface Message {
 
 export default function ChatPage() {
   const { userId: _userId } = useAuth();
+  const { user } = useUser();
   const [question, setQuestion] = useQueryState('question');
   const [babyId, setBabyId] = useState<string | null>(null);
   const [chats, setChats] = useState<
@@ -300,6 +304,7 @@ export default function ChatPage() {
               </div>
             </SheetContent>
           </Sheet>
+          <NuggetAvatar letter="N" name="Nugget" size="sm" />
           <H3 className="font-semibold">Nugget AI</H3>
         </div>
       </div>
@@ -308,7 +313,7 @@ export default function ChatPage() {
       <main className="flex-1 overflow-y-auto px-4 pt-4 pb-32">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-6 text-center px-6">
-            <div className="size-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+            <div className="size-20 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center">
               <Sparkles className="size-10 text-primary-foreground" />
             </div>
             <div>
@@ -351,8 +356,8 @@ export default function ChatPage() {
                 key={message.id}
               >
                 {message.role === 'assistant' && (
-                  <div className="size-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
-                    <Sparkles className="size-4 text-primary-foreground" />
+                  <div className="shrink-0">
+                    <NuggetAvatar letter="N" name="Nugget" size="sm" />
                   </div>
                 )}
                 <div
@@ -363,40 +368,36 @@ export default function ChatPage() {
                       : 'bg-card text-foreground',
                   )}
                 >
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap select-text">
-                    {message.content}
-                  </p>
+                  {message.role === 'assistant' ? (
+                    <Markdown prose>{message.content}</Markdown>
+                  ) : (
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap select-text">
+                      {message.content}
+                    </p>
+                  )}
                 </div>
                 {message.role === 'user' && (
-                  <div className="size-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                    <span className="text-sm font-semibold text-secondary-foreground">
-                      You
-                    </span>
-                  </div>
+                  <Avatar className="size-8 shrink-0">
+                    <AvatarImage
+                      alt={user?.firstName || 'User'}
+                      src={user?.imageUrl}
+                    />
+                    <AvatarFallback className="bg-secondary text-secondary-foreground text-sm font-semibold">
+                      {user?.firstName?.[0] ||
+                        user?.emailAddresses?.[0]?.emailAddress?.[0] ||
+                        'U'}
+                    </AvatarFallback>
+                  </Avatar>
                 )}
               </div>
             ))}
-            {isSending && (
-              <div className="flex gap-3 justify-start">
-                <div className="size-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
-                  <Sparkles className="size-4 text-primary-foreground" />
-                </div>
-                <div className="bg-card rounded-2xl px-4 py-3">
-                  <div className="flex gap-1">
-                    <div className="size-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:-0.3s]" />
-                    <div className="size-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:-0.15s]" />
-                    <div className="size-2 bg-muted-foreground rounded-full animate-bounce" />
-                  </div>
-                </div>
-              </div>
-            )}
             <div ref={messagesEndRef} />
           </div>
         )}
       </main>
 
       {/* Input */}
-      <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 bg-gradient-to-t from-background via-background to-transparent pt-6">
+      <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 bg-linear-to-t from-background via-background to-transparent pt-6">
         <form className="max-w-3xl mx-auto" onSubmit={handleSubmit}>
           <div className="flex gap-2 bg-card rounded-2xl p-2 shadow-lg border border-border">
             <input

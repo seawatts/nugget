@@ -12,7 +12,7 @@ import {
   type Milestones,
   Milestones as MilestonesTable,
 } from '@nugget/db/schema';
-import { and, desc, eq, inArray, isNotNull } from 'drizzle-orm';
+import { and, asc, desc, eq, isNotNull } from 'drizzle-orm';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';
 
@@ -142,40 +142,44 @@ export const getActivitiesAction = action
 
       // Fetch chat messages if needed
       if (shouldFetchChats) {
-        // First get all chats for this baby
+        // Get all chats for this baby, ordered by most recent
         const chats = await db.query.Chats.findMany({
+          limit: fetchLimit,
+          orderBy: desc(Chats.createdAt),
           where: eq(Chats.babyId, baby.id),
         });
 
-        const chatIds = chats.map((chat) => chat.id);
+        // For each chat, get the first message
+        const firstMessages = await Promise.all(
+          chats.map(async (chat) => {
+            const firstMessage = await db.query.ChatMessages.findFirst({
+              orderBy: asc(ChatMessagesTable.createdAt),
+              where: eq(ChatMessagesTable.chatId, chat.id),
+            });
 
-        if (chatIds.length > 0) {
-          const chatMessages = await db.query.ChatMessages.findMany({
-            limit: fetchLimit,
-            orderBy: desc(ChatMessagesTable.createdAt),
-            where: and(
-              inArray(ChatMessagesTable.chatId, chatIds),
-              eq(ChatMessagesTable.role, 'user'), // Only show user messages
+            if (firstMessage) {
+              return {
+                ...firstMessage,
+                chat,
+              };
+            }
+            return null;
+          }),
+        );
+
+        allItems.push(
+          ...firstMessages
+            .filter((msg): msg is NonNullable<typeof msg> => msg !== null)
+            .map(
+              (message): TimelineChatMessage => ({
+                data: message as typeof message & {
+                  chat: typeof ChatsType.$inferSelect;
+                },
+                timestamp: new Date(message.createdAt),
+                type: 'chat',
+              }),
             ),
-            with: {
-              chat: true,
-            },
-          });
-
-          allItems.push(
-            ...chatMessages
-              .filter((msg) => msg.chat)
-              .map(
-                (message): TimelineChatMessage => ({
-                  data: message as typeof message & {
-                    chat: typeof ChatsType.$inferSelect;
-                  },
-                  timestamp: new Date(message.createdAt),
-                  type: 'chat',
-                }),
-              ),
-          );
-        }
+        );
       }
 
       // Sort all items by timestamp (most recent first)

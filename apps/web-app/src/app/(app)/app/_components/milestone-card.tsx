@@ -2,7 +2,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
-import { H4, P } from '@nugget/ui/custom/typography';
+import { P } from '@nugget/ui/custom/typography';
 import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
@@ -156,20 +156,24 @@ export function MilestoneCard({
   };
 
   return (
-    <FeatureCard colorConfig={colorConfig} variant="custom">
-      {/* Completed overlay */}
-      <FeatureCard.Overlay show={isCompleted}>
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center size-16 rounded-full bg-green-100 dark:bg-green-900 mb-3">
-            <Check className="size-8 text-green-600 dark:text-green-400" />
-          </div>
-          <H4 className="text-green-700 dark:text-green-300">Completed!</H4>
+    <FeatureCard
+      className={
+        isCompleted ? 'relative border-green-500/30 bg-green-500/5' : ''
+      }
+      colorConfig={colorConfig}
+      variant="custom"
+    >
+      {/* Completed Badge */}
+      {isCompleted && (
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 rounded-full bg-green-500 px-2 py-1 shadow-sm">
+          <Check className="size-3 text-white" />
+          <span className="text-xs font-medium text-white">Done</span>
         </div>
-      </FeatureCard.Overlay>
+      )}
 
       {/* Header with icon and type */}
       <FeatureCard.Header
-        className={`flex items-center gap-3 ${config.bgColor} p-4 pb-4`}
+        className={`flex items-center gap-3 ${config.bgColor} p-5`}
         colorConfig={colorConfig}
       >
         <Icon className="size-6 shrink-0" />
@@ -185,7 +189,7 @@ export function MilestoneCard({
       </FeatureCard.Header>
 
       {/* Scrollable Content Area */}
-      <FeatureCard.Content className="space-y-3 p-4">
+      <FeatureCard.Content className="space-y-4 p-5 pb-3">
         {/* Summary */}
         {summary && (
           <P
@@ -199,15 +203,15 @@ export function MilestoneCard({
 
         {/* Bullet Points */}
         {bulletPoints && bulletPoints.length > 0 && (
-          <ul className="space-y-2">
+          <ul className="space-y-2.5">
             {bulletPoints.map((point, index) => (
               <li
-                className={`flex gap-2 text-sm text-foreground/80 ${
+                className={`flex gap-2.5 text-sm text-foreground/80 leading-relaxed ${
                   isEnhancing ? 'animate-pulse' : ''
                 }`}
                 key={`${point.slice(0, 20)}-${index}`}
               >
-                <span className="text-muted-foreground shrink-0">•</span>
+                <span className="text-muted-foreground shrink-0 mt-0.5">•</span>
                 <span>{point}</span>
               </li>
             ))}
@@ -225,85 +229,71 @@ export function MilestoneCard({
 
       {/* Footer with question and buttons */}
       <FeatureCard.Footer
-        className={`border-t ${config.borderColor} ${config.bgColor} flex-col gap-3 p-4 pt-4`}
+        className={`border-t ${config.borderColor} ${config.bgColor} flex-col gap-4 p-5`}
         colorConfig={colorConfig}
       >
-        {!isCompleted ? (
-          <>
-            {/* Follow-up Question */}
-            {followUpQuestion && (
-              <div className="flex gap-2 items-start w-full">
-                <MessageCircle className="size-4 shrink-0 text-primary mt-0.5" />
-                <P className="text-sm font-medium text-foreground">
-                  {followUpQuestion}
-                </P>
-              </div>
-            )}
-
-            {/* Buttons */}
-            <div className="flex flex-col gap-2 w-full">
-              {babyId && followUpQuestion && (
-                <Button
-                  className="w-full justify-center"
-                  onClick={() => setIsChatOpen(true)}
-                  size="sm"
-                  variant="default"
-                >
-                  <MessageCircle className="size-4 mr-2" />
-                  Answer
-                  {repliers.length > 0 && (
-                    <div className="flex -space-x-2 ml-2">
-                      {repliers.slice(0, 3).map((replier) => {
-                        const initials = `${replier.firstName?.[0] || ''}${replier.lastName?.[0] || ''}`;
-                        return (
-                          <Avatar
-                            className="size-5 border-2 border-primary"
-                            key={replier.userId}
-                          >
-                            <AvatarImage
-                              alt={`${replier.firstName || ''} ${replier.lastName || ''}`}
-                              src={replier.avatarUrl || undefined}
-                            />
-                            <AvatarFallback className="text-xs">
-                              {initials}
-                            </AvatarFallback>
-                          </Avatar>
-                        );
-                      })}
-                      {repliers.length > 3 && (
-                        <div className="size-5 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center">
-                          <span className="text-[8px] font-medium">
-                            +{repliers.length - 3}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </Button>
-              )}
-              <Button className="w-full" size="sm" variant="outline">
-                <Sparkles className="size-4 mr-2" />
-                Learn More
-              </Button>
-              <Button
-                className="w-full"
-                onClick={onMarkComplete}
-                size="sm"
-                variant="outline"
-              >
-                <Check className="size-4 mr-2" />
-                Mark Complete
-              </Button>
-            </div>
-          </>
-        ) : (
-          <div className="flex items-center justify-center gap-2 w-full py-2">
-            <Check className="size-4 text-green-600 dark:text-green-400" />
-            <P className="text-sm font-medium text-green-700 dark:text-green-300">
-              Completed!
+        {/* Follow-up Question */}
+        {followUpQuestion && (
+          <div className="flex gap-2 items-start w-full">
+            <MessageCircle className="size-4 shrink-0 text-primary mt-0.5" />
+            <P className="text-sm font-medium text-foreground leading-snug">
+              {followUpQuestion}
             </P>
           </div>
         )}
+
+        {/* Buttons */}
+        <div className="flex flex-col gap-2.5 w-full">
+          {babyId && followUpQuestion && (
+            <Button
+              className="w-full justify-center"
+              onClick={() => setIsChatOpen(true)}
+              size="sm"
+              variant="default"
+            >
+              <MessageCircle className="size-4 mr-2" />
+              Answer
+              {repliers.length > 0 && (
+                <div className="flex -space-x-2 ml-2">
+                  {repliers.slice(0, 3).map((replier) => {
+                    const initials = `${replier.firstName?.[0] || ''}${replier.lastName?.[0] || ''}`;
+                    return (
+                      <Avatar
+                        className="size-5 border-2 border-primary"
+                        key={replier.userId}
+                      >
+                        <AvatarImage
+                          alt={`${replier.firstName || ''} ${replier.lastName || ''}`}
+                          src={replier.avatarUrl || undefined}
+                        />
+                        <AvatarFallback className="text-xs">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                    );
+                  })}
+                  {repliers.length > 3 && (
+                    <div className="size-5 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center">
+                      <span className="text-[8px] font-medium">
+                        +{repliers.length - 3}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </Button>
+          )}
+          <Button
+            className="w-full"
+            disabled={isCompleted}
+            onClick={onMarkComplete}
+            size="sm"
+            variant={isCompleted ? 'default' : 'outline'}
+          >
+            <Check className="size-4 mr-2" />
+            {isCompleted ? 'Completed' : 'Mark Complete'}
+          </Button>
+        </div>
       </FeatureCard.Footer>
 
       {/* Chat Dialog */}

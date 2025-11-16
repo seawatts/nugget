@@ -2,18 +2,19 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { getApi } from '@nugget/api/server';
-import type { Activities } from '@nugget/db/schema';
+import type { Activities, Milestone } from '@nugget/db/schema';
 import { startOfDay } from 'date-fns';
 import { createSafeActionClient } from 'next-safe-action';
 
 const action = createSafeActionClient();
 
 /**
- * Fetch all activities from today for the current user's baby
+ * Fetch all activities and milestones from today for the current user's baby
  */
 export const getTodaySummaryAction = action.action(
   async (): Promise<{
     activities: Array<typeof Activities.$inferSelect>;
+    milestones: Array<Milestone>;
   }> => {
     // Verify authentication
     const authResult = await auth();
@@ -28,7 +29,7 @@ export const getTodaySummaryAction = action.action(
     const baby = await api.babies.getMostRecent();
 
     if (!baby) {
-      return { activities: [] };
+      return { activities: [], milestones: [] };
     }
 
     // Fetch all activities from today, filtering out scheduled ones
@@ -45,6 +46,14 @@ export const getTodaySummaryAction = action.action(
       return activityDate >= todayStart;
     });
 
-    return { activities: todayActivities };
+    // Fetch milestones achieved today
+    const milestones = await api.milestones.list({ babyId: baby.id });
+    const todayMilestones = milestones.filter((milestone) => {
+      if (!milestone.achievedDate) return false;
+      const achievedDate = new Date(milestone.achievedDate);
+      return achievedDate >= todayStart;
+    });
+
+    return { activities: todayActivities, milestones: todayMilestones };
   },
 );

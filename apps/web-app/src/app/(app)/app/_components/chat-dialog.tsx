@@ -1,7 +1,9 @@
 'use client';
 
-import { useAuth } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
+import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
+import { NuggetAvatar } from '@nugget/ui/custom/nugget-avatar';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +18,7 @@ import {
 } from '@nugget/ui/drawer';
 import { useMediaQuery } from '@nugget/ui/hooks/use-media-query';
 import { cn } from '@nugget/ui/lib/utils';
+import { Markdown } from '@nugget/ui/magicui/markdown';
 import { Send, Sparkles } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -53,6 +56,7 @@ export function ChatDialogContent({
   compact = false,
 }: Omit<ChatDialogProps, 'open' | 'onOpenChange'>) {
   useAuth();
+  const { user } = useUser();
   const [activeChat, setActiveChat] = useState<string | null>(chatId || null);
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState('');
@@ -232,8 +236,8 @@ export function ChatDialogContent({
                 key={message.id}
               >
                 {message.role === 'assistant' && (
-                  <div className="size-7 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
-                    <Sparkles className="size-3.5 text-primary-foreground" />
+                  <div className="shrink-0">
+                    <NuggetAvatar letter="N" name="Nugget" size="sm" />
                   </div>
                 )}
                 <div
@@ -245,16 +249,26 @@ export function ChatDialogContent({
                       : 'bg-card text-foreground border border-border',
                   )}
                 >
-                  <p className="leading-relaxed whitespace-pre-wrap select-text">
-                    {message.content}
-                  </p>
+                  {message.role === 'assistant' ? (
+                    <Markdown prose>{message.content}</Markdown>
+                  ) : (
+                    <p className="leading-relaxed whitespace-pre-wrap select-text">
+                      {message.content}
+                    </p>
+                  )}
                 </div>
                 {message.role === 'user' && (
-                  <div className="size-7 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                    <span className="text-xs font-semibold text-secondary-foreground">
-                      U
-                    </span>
-                  </div>
+                  <Avatar className="size-7 shrink-0">
+                    <AvatarImage
+                      alt={user?.firstName || 'User'}
+                      src={user?.imageUrl}
+                    />
+                    <AvatarFallback className="bg-secondary text-secondary-foreground text-xs font-semibold">
+                      {user?.firstName?.[0] ||
+                        user?.emailAddresses?.[0]?.emailAddress?.[0] ||
+                        'U'}
+                    </AvatarFallback>
+                  </Avatar>
                 )}
               </div>
             ))}
@@ -332,7 +346,10 @@ export function ChatDialog({
       <Dialog onOpenChange={onOpenChange} open={open}>
         <DialogContent className="sm:max-w-2xl p-0">
           <DialogHeader className="px-6 pt-6">
-            <DialogTitle>Nugget AI</DialogTitle>
+            <div className="flex items-center gap-2">
+              <NuggetAvatar letter="N" name="Nugget" size="sm" />
+              <DialogTitle>Nugget AI</DialogTitle>
+            </div>
           </DialogHeader>
           <ChatDialogContent
             babyId={babyId}
@@ -350,7 +367,10 @@ export function ChatDialog({
     <Drawer onOpenChange={onOpenChange} open={open}>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle>Nugget AI</DrawerTitle>
+          <div className="flex items-center gap-2">
+            <NuggetAvatar letter="N" name="Nugget" size="sm" />
+            <DrawerTitle>Nugget AI</DrawerTitle>
+          </div>
         </DrawerHeader>
         <ChatDialogContent
           babyId={babyId}

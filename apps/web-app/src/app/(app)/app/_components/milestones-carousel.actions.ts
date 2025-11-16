@@ -49,6 +49,17 @@ interface MilestonesCarouselData {
   milestones: MilestoneCardData[];
   babyName: string;
   ageInDays: number;
+  nextMilestoneDay?: number;
+  baby: {
+    id: string;
+    firstName: string;
+    middleName: string | null;
+    lastName: string | null;
+    birthDate: Date | null;
+    dueDate: Date | null;
+    journeyStage: string | null;
+    gender: string | null;
+  } | null;
 }
 
 /**
@@ -61,7 +72,7 @@ export async function getMilestonesCarouselContent(
     // Verify authentication
     const authResult = await auth();
     if (!authResult.userId) {
-      return { ageInDays: 0, babyName: '', milestones: [] };
+      return { ageInDays: 0, baby: null, babyName: '', milestones: [] };
     }
 
     // Create tRPC API helper
@@ -71,7 +82,7 @@ export async function getMilestonesCarouselContent(
     const baby = await api.babies.getById({ id: babyId });
 
     if (!baby) {
-      return { ageInDays: 0, babyName: '', milestones: [] };
+      return { ageInDays: 0, baby: null, babyName: '', milestones: [] };
     }
 
     // Get completed milestones for this baby
@@ -128,11 +139,6 @@ export async function getMilestonesCarouselContent(
           suggestedDay?: number;
         };
 
-        // Skip if already completed
-        if (completedTitles.has(props.title)) {
-          continue;
-        }
-
         baseMilestones.push(props);
 
         // Limit to 5 milestones
@@ -158,7 +164,7 @@ export async function getMilestonesCarouselContent(
         description: props.description,
         followUpQuestion: `What have you noticed about ${baby.firstName ?? 'your baby'}'s development recently?`,
         id: `milestone-${index}-${props.title.toLowerCase().replace(/\s+/g, '-')}`,
-        isCompleted: false,
+        isCompleted: completedTitles.has(props.title),
         suggestedDay: props.suggestedDay,
         summary: props.description,
         title: props.title,
@@ -166,14 +172,48 @@ export async function getMilestonesCarouselContent(
       }),
     );
 
+    // Find the next upcoming milestone
+    let nextMilestoneDay: number | undefined;
+    if (ageInDays !== undefined) {
+      // Get all milestone rules (not just matching ones)
+      const allMilestoneRules = rules.filter(
+        (r) =>
+          r.screen === Screen.Milestones &&
+          r.slot === Slot.Header &&
+          r.render.template === 'Card.Milestone',
+      );
+
+      // Filter for future milestones with suggestedDay
+      const futureMilestones = allMilestoneRules
+        .map((rule) => {
+          const props = rule.render.props as {
+            suggestedDay?: number;
+          };
+          return props.suggestedDay;
+        })
+        .filter((day): day is number => day !== undefined && day > ageInDays)
+        .sort((a, b) => a - b);
+
+      // Take the first (soonest) future milestone
+      nextMilestoneDay = futureMilestones[0];
+    }
+
     return {
       ageInDays: ageInDays ?? 0,
+      baby,
       babyName: baby.firstName ?? 'Baby',
       milestones,
+      nextMilestoneDay,
     };
   } catch (error) {
     console.error('Error fetching milestones carousel content:', error);
-    return { ageInDays: 0, babyName: 'Baby', milestones: [] };
+    return {
+      ageInDays: 0,
+      baby: null,
+      babyName: 'Baby',
+      milestones: [],
+      nextMilestoneDay: undefined,
+    };
   }
 }
 

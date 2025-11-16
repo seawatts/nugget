@@ -18,7 +18,7 @@ import {
 import { useMediaQuery } from '@nugget/ui/hooks/use-media-query';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { ChatDialogContent } from './chat-dialog';
+import { QuickChatDialogContent } from './quick-chat-dialog';
 
 interface MilestoneCompletionDialogProps {
   open: boolean;
@@ -34,29 +34,34 @@ export function MilestoneCompletionDialog({
   onOpenChange,
   babyId,
   milestoneTitle,
-  milestoneType: _milestoneType,
+  milestoneType,
   onComplete,
 }: MilestoneCompletionDialogProps) {
   const isDesktop = useMediaQuery({ query: '(min-width: 768px)' });
   const [isCompleting, setIsCompleting] = useState(false);
-  const [note, setNote] = useState('');
 
-  // Generate initial AI question about the milestone
+  // Generate initial assistant messages
   const initialMessages = [
     {
-      content: `Tell me more about "${milestoneTitle}". What does this milestone mean for my baby's development?`,
+      content: milestoneTitle,
       createdAt: new Date(),
-      id: 'initial-question',
-      role: 'user' as const,
+      id: 'milestone-title',
+      role: 'assistant' as const,
+    },
+    {
+      content:
+        'Do you have any questions, comments or concerns around this milestone?',
+      createdAt: new Date(),
+      id: 'follow-up-question',
+      role: 'assistant' as const,
     },
   ];
 
   const handleComplete = async () => {
     setIsCompleting(true);
     try {
-      await onComplete({ note: note || undefined });
+      await onComplete({});
       onOpenChange(false);
-      setNote('');
     } catch (error) {
       console.error('Error completing milestone:', error);
     } finally {
@@ -65,35 +70,14 @@ export function MilestoneCompletionDialog({
   };
 
   const content = (
-    <div className="flex flex-col h-full">
-      {/* AI Chat Section */}
-      <div className="flex-1 min-h-0">
-        <ChatDialogContent
-          babyId={babyId}
-          compact={true}
-          initialMessages={initialMessages}
-        />
-      </div>
-
-      {/* Optional Note Section */}
-      <div className="border-t border-border p-4 space-y-3">
-        <div className="space-y-2">
-          <label
-            className="text-sm font-medium text-foreground"
-            htmlFor="milestone-note"
-          >
-            Add a note (optional)
-          </label>
-          <textarea
-            className="w-full min-h-[80px] rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-            id="milestone-note"
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Any thoughts or observations about this milestone?"
-            value={note}
-          />
-        </div>
-      </div>
-    </div>
+    <QuickChatDialogContent
+      babyId={babyId}
+      contextId={`${milestoneType}-${milestoneTitle}`}
+      contextType="milestone"
+      initialMessages={initialMessages}
+      placeholder="Share your thoughts..."
+      title={milestoneTitle}
+    />
   );
 
   const footer = (
@@ -143,6 +127,3 @@ export function MilestoneCompletionDialog({
     </Drawer>
   );
 }
-
-// Export ChatDialogContent for reuse
-export { ChatDialogContent };

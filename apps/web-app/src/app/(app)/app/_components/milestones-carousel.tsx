@@ -1,12 +1,14 @@
 'use client';
 
+import type { Baby } from '@nugget/db/schema';
 import { H2, P } from '@nugget/ui/custom/typography';
 import { Award } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AIGeneratingCard } from '~/components';
 import type { GeneratingMessage } from '~/components/ai-generating-card.types';
 import { MilestoneCard } from './milestone-card';
+import { MilestoneCardCheckBack } from './milestone-card-check-back';
 import { MilestoneCompletionDialog } from './milestone-completion-dialog';
 import {
   completeMilestoneAction,
@@ -36,14 +38,19 @@ interface MilestonesCarouselProps {
 
 export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
   const [milestones, setMilestones] = useState<MilestoneCardData[]>([]);
+  const [baby, setBaby] = useState<Baby | null>(null);
   const [babyName, setBabyName] = useState<string>('Baby');
   const [ageInDays, setAgeInDays] = useState<number>(0);
+  const [nextMilestoneDay, setNextMilestoneDay] = useState<number | undefined>(
+    undefined,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMilestone, setSelectedMilestone] =
     useState<MilestoneCardData | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [enhancingIds, setEnhancingIds] = useState<Set<string>>(new Set());
+  const milestoneRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const { executeAsync: completeMilestone } = useAction(
     completeMilestoneAction,
@@ -59,8 +66,10 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
         // Load base milestone data (fast, no AI)
         const data = await getMilestonesCarouselContent(babyId);
         setMilestones(data.milestones);
+        setBaby(data.baby);
         setBabyName(data.babyName);
         setAgeInDays(data.ageInDays);
+        setNextMilestoneDay(data.nextMilestoneDay);
         setIsLoading(false);
 
         // Start progressive AI enhancement in the background
@@ -132,6 +141,26 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
 
     void loadMilestones();
   }, [babyId, enhanceMilestone]);
+
+  // Auto-scroll to first incomplete milestone
+  useEffect(() => {
+    if (!isLoading && milestones.length > 0) {
+      const firstIncomplete = milestones.find((m) => !m.isCompleted);
+      if (firstIncomplete) {
+        const element = milestoneRefs.current.get(firstIncomplete.id);
+        if (element) {
+          // Use a slight delay to ensure DOM is ready
+          setTimeout(() => {
+            element.scrollIntoView({
+              behavior: 'smooth',
+              block: 'nearest',
+              inline: 'start',
+            });
+          }, 300);
+        }
+      }
+    }
+  }, [isLoading, milestones]);
 
   const handleMarkComplete = (milestone: MilestoneCardData) => {
     setSelectedMilestone(milestone);
@@ -229,7 +258,17 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
             }}
           >
             {milestones.map((milestone) => (
-              <div className="snap-start" key={milestone.id}>
+              <div
+                className="snap-start"
+                key={milestone.id}
+                ref={(el) => {
+                  if (el) {
+                    milestoneRefs.current.set(milestone.id, el);
+                  } else {
+                    milestoneRefs.current.delete(milestone.id);
+                  }
+                }}
+              >
                 <MilestoneCard
                   ageLabel={milestone.ageLabel}
                   babyId={babyId}
@@ -256,6 +295,21 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
                 />
               </div>
             )}
+
+            {/* Check Back card at the end */}
+            {!isLoading &&
+              !error &&
+              milestones.length > 0 &&
+              enhancingIds.size === 0 &&
+              baby && (
+                <div className="snap-start">
+                  <MilestoneCardCheckBack
+                    baby={baby}
+                    currentAgeInDays={ageInDays}
+                    nextMilestoneDay={nextMilestoneDay}
+                  />
+                </div>
+              )}
           </div>
 
           {/* Gradient fade on edges */}

@@ -356,6 +356,7 @@ export function BottomNav() {
   const [ageDisplay, setAgeDisplay] = useState<string | undefined>(undefined);
   const [babyPhotoUrl, setBabyPhotoUrl] = useState<string | null>(null);
   const familyMenuRef = useRef<HTMLDivElement>(null);
+  const avatarButtonRef = useRef<HTMLButtonElement>(null);
 
   // Fetch baby data to get profile picture
   const { data: babies = [] } = api.babies.list.useQuery();
@@ -441,6 +442,8 @@ export function BottomNav() {
       if (
         familyMenuRef.current &&
         !familyMenuRef.current.contains(event.target as Node) &&
+        avatarButtonRef.current &&
+        !avatarButtonRef.current.contains(event.target as Node) &&
         showFamilyMenu
       ) {
         setShowFamilyMenu(false);
@@ -725,6 +728,7 @@ export function BottomNav() {
             <button
               className="block relative"
               onClick={() => setShowFamilyMenu(!showFamilyMenu)}
+              ref={avatarButtonRef}
               type="button"
             >
               <div className="relative group">

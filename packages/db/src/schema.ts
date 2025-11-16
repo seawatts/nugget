@@ -1239,7 +1239,7 @@ export const selectChatMessageSchema = createSelectSchema(ChatMessages);
 
 // Parent Check-Ins - Daily wellness check-ins for parents
 export const ParentCheckIns = pgTable(
-  'parent_check_ins',
+  'parentCheckIns',
   {
     aiGeneratedQuestions: boolean('aiGeneratedQuestions').default(true),
     concernsRaised: json('concernsRaised').$type<string[]>().default([]),
@@ -1284,15 +1284,15 @@ export const ParentCheckIns = pgTable(
       .references(() => Users.id, { onDelete: 'cascade' }),
   },
   (table) => ({
-    dateIdx: index('parent_check_ins_date_idx').on(table.date),
-    familyIdx: index('parent_check_ins_family_idx').on(table.familyId),
-    userIdx: index('parent_check_ins_user_idx').on(table.userId),
+    dateIdx: index('parentCheckIns_date_idx').on(table.date),
+    familyIdx: index('parentCheckIns_family_idx').on(table.familyId),
+    userIdx: index('parentCheckIns_user_idx').on(table.userId),
   }),
 );
 
 // Parent Tasks - Personalized daily tasks for parents
 export const ParentTasks = pgTable(
-  'parent_tasks',
+  'parentTasks',
   {
     category: taskCategoryEnum('category').notNull(),
     completed: boolean('completed').default(false).notNull(),
@@ -1328,18 +1328,18 @@ export const ParentTasks = pgTable(
     whyItMatters: text('whyItMatters'), // Explanation of importance
   },
   (table) => ({
-    completedIdx: index('parent_tasks_completed_idx').on(table.completed),
-    familyIdx: index('parent_tasks_family_idx').on(table.familyId),
-    generatedDateIdx: index('parent_tasks_generated_date_idx').on(
+    completedIdx: index('parentTasks_completed_idx').on(table.completed),
+    familyIdx: index('parentTasks_family_idx').on(table.familyId),
+    generatedDateIdx: index('parentTasks_generated_date_idx').on(
       table.generatedDate,
     ),
-    userIdx: index('parent_tasks_user_idx').on(table.userId),
+    userIdx: index('parentTasks_user_idx').on(table.userId),
   }),
 );
 
 // Wellness Assessments - Mental health screening assessments
 export const WellnessAssessments = pgTable(
-  'wellness_assessments',
+  'wellnessAssessments',
   {
     assessmentType: varchar('assessmentType', { length: 64 }).notNull(), // routine, triggered, self_initiated
     createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
@@ -1383,12 +1383,12 @@ export const WellnessAssessments = pgTable(
       .references(() => Users.id, { onDelete: 'cascade' }),
   },
   (table) => ({
-    dateIdx: index('wellness_assessments_date_idx').on(table.date),
-    familyIdx: index('wellness_assessments_family_idx').on(table.familyId),
-    riskScoreIdx: index('wellness_assessments_risk_score_idx').on(
+    dateIdx: index('wellnessAssessments_date_idx').on(table.date),
+    familyIdx: index('wellnessAssessments_family_idx').on(table.familyId),
+    riskScoreIdx: index('wellnessAssessments_risk_score_idx').on(
       table.riskScore,
     ),
-    userIdx: index('wellness_assessments_user_idx').on(table.userId),
+    userIdx: index('wellnessAssessments_user_idx').on(table.userId),
   }),
 );
 

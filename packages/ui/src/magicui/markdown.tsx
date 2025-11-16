@@ -15,6 +15,11 @@ export type MarkdownProps = {
   id?: string;
   className?: string;
   components?: Partial<Components>;
+  /**
+   * Apply prose styling for rich text rendering (optimized for chat)
+   * @default false
+   */
+  prose?: boolean;
 };
 
 function parseMarkdownIntoBlocks(markdown: string): string[] {
@@ -30,6 +35,23 @@ function extractLanguage(className?: string): string {
 }
 
 const INITIAL_COMPONENTS: Partial<Components> = {
+  a: function LinkComponent({
+    children,
+    href,
+    ...props
+  }: PropsWithChildren<ExtraProps & { href?: string }>) {
+    return (
+      <a
+        className="text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
+        href={href}
+        rel="noopener noreferrer"
+        target="_blank"
+        {...props}
+      >
+        {children}
+      </a>
+    );
+  },
   code: function CodeComponent({
     className,
     children,
@@ -41,15 +63,15 @@ const INITIAL_COMPONENTS: Partial<Components> = {
 
     if (isInline) {
       return (
-        <span
+        <code
           className={cn(
-            'bg-primary-foreground rounded-sm px-1 font-mono text-sm',
+            'bg-muted text-foreground rounded-md px-1.5 py-0.5 font-mono text-[0.875em]',
             className,
           )}
           {...props}
         >
           {children}
-        </span>
+        </code>
       );
     }
 
@@ -95,18 +117,44 @@ function MarkdownComponent({
   id,
   className,
   components = INITIAL_COMPONENTS,
+  prose = false,
 }: MarkdownProps) {
   const generatedId = useId();
   const blockId = id ?? generatedId;
   const blocks = useMemo(() => parseMarkdownIntoBlocks(children), [children]);
 
   return (
-    <div className={className}>
+    <div
+      className={cn(
+        prose && [
+          'prose prose-sm dark:prose-invert max-w-none',
+          // Optimize spacing for chat
+          'prose-p:my-2 prose-p:leading-relaxed',
+          'prose-headings:mt-4 prose-headings:mb-2 prose-headings:font-semibold',
+          'prose-h1:text-xl prose-h2:text-lg prose-h3:text-base',
+          'prose-ul:my-2 prose-ol:my-2',
+          'prose-li:my-0.5',
+          'prose-blockquote:my-2 prose-blockquote:border-l-primary',
+          'prose-code:text-foreground prose-code:bg-muted',
+          'prose-pre:my-2 prose-pre:bg-card prose-pre:border prose-pre:border-border',
+          'prose-table:my-2',
+          'prose-img:my-2 prose-img:rounded-lg',
+          // Link styling
+          'prose-a:text-primary prose-a:no-underline hover:prose-a:underline',
+          // Strong and emphasis
+          'prose-strong:font-semibold prose-strong:text-foreground',
+          'prose-em:italic',
+          // HR
+          'prose-hr:my-4 prose-hr:border-border',
+        ],
+        className,
+      )}
+    >
       {blocks.map((block) => (
         <MemoizedMarkdownBlock
           components={components}
           content={block}
-          key={`${blockId}-block`}
+          key={`${blockId}-${block.slice(0, 50)}`}
         />
       ))}
     </div>

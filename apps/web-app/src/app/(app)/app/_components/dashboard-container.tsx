@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { useParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
@@ -12,6 +13,7 @@ import { TodaySummaryCard } from '~/app/(app)/app/_components/today-summary-card
 export function DashboardContainer() {
   const params = useParams();
   const babyId = params.userId as string;
+  const { data: baby } = api.babies.getById.useQuery({ id: babyId });
   const [optimisticActivities, setOptimisticActivities] = useState<
     Array<typeof Activities.$inferSelect>
   >([]);
@@ -54,15 +56,12 @@ export function DashboardContainer() {
 
   return (
     <main className="px-4 pt-4 pb-8 min-h-screen">
-      {/* Learning Carousel - Educational content based on baby's age */}
-      <LearningCarousel babyId={babyId} />
-
-      {/* Milestones Carousel - Track baby's developmental milestones */}
-      <MilestonesCarousel babyId={babyId} />
-
       {/* Today's Summary */}
       <div className="mb-6">
         <TodaySummaryCard
+          babyBirthDate={baby?.birthDate}
+          babyName={baby?.firstName}
+          babyPhotoUrl={baby?.photoUrl}
           optimisticActivities={optimisticActivities}
           refreshTrigger={refreshTrigger}
         />
@@ -76,6 +75,12 @@ export function DashboardContainer() {
           onOptimisticActivity={handleOptimisticActivity}
         />
       </div>
+
+      {/* Learning Carousel - Educational content based on baby's age */}
+      <LearningCarousel babyId={babyId} />
+
+      {/* Milestones Carousel - Track baby's developmental milestones */}
+      <MilestonesCarousel babyId={babyId} />
 
       {/* Timeline */}
       <ActivityTimeline

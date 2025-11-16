@@ -112,6 +112,13 @@
       "tag": "0015_loud_eddie_brock",
       "version": "7",
       "when": 1763282504737
+    },
+    {
+      "breakpoints": true,
+      "idx": 16,
+      "tag": "0016_stiff_risque",
+      "version": "7",
+      "when": 1763330719022
     }
   ],
   "version": "7"

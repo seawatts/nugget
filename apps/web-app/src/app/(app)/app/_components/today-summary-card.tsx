@@ -1,10 +1,12 @@
 'use client';
 
 import { api } from '@nugget/api/react';
-import type { Activities } from '@nugget/db/schema';
+import type { Activities, Milestone } from '@nugget/db/schema';
+import { NuggetAvatar } from '@nugget/ui/custom/nugget-avatar';
 import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
+  Award,
   Baby,
   Bath,
   Droplet,
@@ -30,6 +32,7 @@ const activityIcons: Record<string, LucideIcon> = {
   feeding: Milk,
   growth: Scale,
   medicine: Pill,
+  milestone: Award,
   nursing: Droplet,
   potty: Toilet,
   pumping: Droplets,
@@ -47,6 +50,7 @@ const activityColors: Record<string, string> = {
   feeding: 'text-[oklch(0.68_0.18_35)]',
   growth: 'text-[oklch(0.62_0.18_260)]',
   medicine: 'text-[oklch(0.68_0.18_10)]',
+  milestone: 'text-[oklch(0.75_0.18_140)]',
   nursing: 'text-[oklch(0.68_0.18_35)]',
   potty: 'text-[oklch(0.78_0.14_60)]',
   pumping: 'text-[oklch(0.65_0.18_280)]',
@@ -64,6 +68,7 @@ const activityLabels: Record<string, string> = {
   feeding: 'Feeding',
   growth: 'Growth',
   medicine: 'Medicine',
+  milestone: 'Milestones',
   nursing: 'Nursing',
   potty: 'Potty',
   pumping: 'Pumping',
@@ -74,6 +79,9 @@ const activityLabels: Record<string, string> = {
 };
 
 interface TodaySummaryCardProps {
+  babyBirthDate?: Date | null;
+  babyName?: string;
+  babyPhotoUrl?: string | null;
   optimisticActivities?: Array<typeof Activities.$inferSelect>;
   refreshTrigger?: number;
 }
@@ -113,18 +121,63 @@ function formatTotal(
       if (totalAmount === 0) return unitPref === 'OZ' ? '0 oz' : '0 ml';
       return formatVolumeDisplay(totalAmount, unitPref, true);
     }
+    case 'tummy-time': {
+      if (totalDuration === 0) return '0 min';
+      return formatDuration(totalDuration);
+    }
+    case 'bath':
+    case 'milestone': {
+      return `${count} ${count === 1 ? 'time' : 'times'}`;
+    }
     default:
-      return '';
+      return `${count}`;
   }
 }
 
+function LiveBabyAge({ birthDate }: { birthDate: Date }) {
+  const [age, setAge] = useState('');
+
+  useEffect(() => {
+    function updateAge() {
+      const now = new Date();
+      const birth = new Date(birthDate);
+      const diffMs = now.getTime() - birth.getTime();
+
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor(
+        (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+      );
+
+      if (days > 0) {
+        setAge(`${days}d ${hours}h`);
+      } else if (hours > 0) {
+        setAge(`${hours}h`);
+      } else {
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        setAge(`${minutes}m`);
+      }
+    }
+
+    updateAge();
+    const interval = setInterval(updateAge, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [birthDate]);
+
+  return <>{age}</>;
+}
+
 export function TodaySummaryCard({
+  babyBirthDate,
+  babyName,
+  babyPhotoUrl,
   optimisticActivities = [],
   refreshTrigger = 0,
 }: TodaySummaryCardProps) {
   const [activitiesData, setActivitiesData] = useState<
     Array<typeof Activities.$inferSelect>
   >([]);
+  const [milestonesData, setMilestonesData] = useState<Array<Milestone>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -139,6 +192,7 @@ export function TodaySummaryCard({
 
       if (result?.data) {
         setActivitiesData(result.data.activities);
+        setMilestonesData(result.data.milestones);
       } else if (result?.serverError) {
         setError(result.serverError);
       }
@@ -206,23 +260,48 @@ export function TodaySummaryCard({
   );
 
   // Define the fixed categories to display
-  const displayCategories = ['feeding', 'sleep', 'diaper', 'pumping'];
+  const displayCategories = [
+    'feeding',
+    'sleep',
+    'diaper',
+    'tummy-time',
+    'pumping',
+    'milestone',
+  ];
 
   // Ensure all categories exist with default values
-  const categorySummaries = displayCategories.map((category) => ({
-    category,
-    summary: activitySummaries[category] || {
-      count: 0,
-      totalAmount: 0,
-      totalDuration: 0,
-    },
-  }));
+  const categorySummaries = displayCategories.map((category) => {
+    // Special handling for milestones
+    if (category === 'milestone') {
+      return {
+        category,
+        summary: {
+          count: milestonesData.length,
+          totalAmount: 0,
+          totalDuration: 0,
+        },
+      };
+    }
+
+    return {
+      category,
+      summary: activitySummaries[category] || {
+        count: 0,
+        totalAmount: 0,
+        totalDuration: 0,
+      },
+    };
+  });
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-border bg-card/50 p-4 animate-pulse">
+      <div className="rounded-xl border border-border bg-card/50 p-5 animate-pulse">
         <div className="h-6 bg-muted/30 rounded w-32 mb-4" />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+          <div className="h-16 bg-muted/30 rounded" />
+          <div className="h-16 bg-muted/30 rounded" />
+          <div className="h-16 bg-muted/30 rounded" />
+          <div className="h-16 bg-muted/30 rounded" />
           <div className="h-16 bg-muted/30 rounded" />
           <div className="h-16 bg-muted/30 rounded" />
         </div>
@@ -241,16 +320,34 @@ export function TodaySummaryCard({
   return (
     <div className="rounded-xl border border-border bg-linear-to-br from-card/50 to-card/80 backdrop-blur-sm p-5 shadow-sm">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-foreground">
-          Today's Summary
-        </h2>
+        <div className="flex items-center gap-2.5">
+          <div className="relative flex items-center justify-center size-9 rounded-full bg-linear-to-br from-primary to-primary/80 p-[2px] shadow-md shadow-primary/20">
+            <div className="size-full rounded-full bg-card flex items-center justify-center p-0.5">
+              <NuggetAvatar
+                image={babyPhotoUrl || undefined}
+                name={babyName}
+                size="sm"
+              />
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <h2 className="text-lg font-semibold text-foreground leading-tight">
+              {babyName ? `${babyName}'s Day` : "Today's Summary"}
+            </h2>
+            {babyBirthDate && (
+              <span className="text-xs text-muted-foreground font-mono leading-tight">
+                <LiveBabyAge birthDate={babyBirthDate} />
+              </span>
+            )}
+          </div>
+        </div>
         <span className="text-sm text-muted-foreground font-medium">
           {allActivities.length}{' '}
           {allActivities.length === 1 ? 'activity' : 'activities'}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
         {categorySummaries.map(({ category, summary }) => {
           const Icon = activityIcons[category] || Baby;
           const colorClass = activityColors[category] || 'text-primary';
