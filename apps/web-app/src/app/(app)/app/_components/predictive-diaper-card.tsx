@@ -213,7 +213,6 @@ export function PredictiveDiaperCard({
                   </div>
                   {prediction.lastDiaperTime && (
                     <div className="text-sm opacity-60">
-                      Last changed{' '}
                       {formatDistanceToNow(prediction.lastDiaperTime, {
                         addSuffix: true,
                       })}{' '}
@@ -258,11 +257,11 @@ export function PredictiveDiaperCard({
 
       {/* Info Drawer */}
       <Drawer onOpenChange={setShowInfoDrawer} open={showInfoDrawer}>
-        <DrawerContent>
+        <DrawerContent className="max-h-[90vh]">
           <DrawerHeader>
             <DrawerTitle>Diaper Details</DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-6 space-y-4">
+          <div className="px-4 pb-6 space-y-4 overflow-y-auto">
             {/* Learning Section */}
             {learningContent && (
               <LearningSection

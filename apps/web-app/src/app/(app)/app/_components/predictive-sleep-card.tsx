@@ -275,7 +275,6 @@ export function PredictiveSleepCard({
                   </div>
                   {prediction.lastSleepTime && (
                     <div className="text-sm opacity-60">
-                      Last slept{' '}
                       {formatDistanceToNow(prediction.lastSleepTime, {
                         addSuffix: true,
                       })}{' '}
@@ -321,11 +320,11 @@ export function PredictiveSleepCard({
 
       {/* Info Drawer */}
       <Drawer onOpenChange={setShowInfoDrawer} open={showInfoDrawer}>
-        <DrawerContent>
+        <DrawerContent className="max-h-[90vh]">
           <DrawerHeader>
             <DrawerTitle>Sleep Details</DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-6 space-y-4">
+          <div className="px-4 pb-6 space-y-4 overflow-y-auto">
             {/* Learning Section */}
             {learningContent && (
               <LearningSection

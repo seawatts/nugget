@@ -7,16 +7,24 @@
 
 export enum Screen {
   Learning = 'learning',
+  Milestones = 'milestones',
   Pregnancy = 'pregnancy',
   Hospital = 'hospital',
   Nursery = 'nursery',
   AiChat = 'ai_chat',
+  ParentDashboard = 'parent_dashboard',
+  MomWellness = 'mom_wellness',
+  PartnerSupport = 'partner_support',
 }
 
 export enum Slot {
   Header = 'header',
   Callout = 'callout',
   Carousel = 'carousel',
+  DailyCheckIn = 'daily_checkin',
+  WeeklyAssessment = 'weekly_assessment',
+  TaskSuggestions = 'task_suggestions',
+  QuickTips = 'quick_tips',
 }
 
 export enum Scope {
@@ -49,6 +57,9 @@ export interface RuleContext {
   baby?: {
     sex?: string;
     ageInDays?: number;
+    firstName?: string;
+    middleName?: string | null;
+    lastName?: string | null;
   };
   traits?: {
     userId?: string;
@@ -57,6 +68,45 @@ export interface RuleContext {
     cSectionPlanned?: boolean;
   };
   season?: string;
+  enhancedBabyData?: {
+    baby: {
+      ageInDays: number;
+      ageInWeeks: number;
+      currentWeightOz?: number;
+      birthWeightOz?: number;
+      height?: number;
+      headCircumference?: number;
+    };
+    activities24h: {
+      feedingCount: number;
+      sleepCount: number;
+      diaperCount: number;
+      avgFeedingInterval: number;
+      totalSleepHours: number;
+    };
+    weeklyPatterns: {
+      avgFeedingsPerDay: number;
+      avgSleepHours: number;
+      avgDiaperChanges: number;
+    };
+  };
+  parent?: {
+    userId: string;
+    role: 'primary' | 'partner' | 'caregiver';
+    isMom: boolean;
+    isDad: boolean;
+    sleepHours24h?: number;
+    sleepHours7d?: number;
+    lastCheckInDate?: Date;
+    checkInStreak?: number;
+    lastWellnessScore?: number;
+    lastWellnessDate?: Date;
+    checkInHistory?: Array<{
+      date: Date;
+      moodScore: number;
+      concernsRaised: string[];
+    }>;
+  };
 }
 
 // ============================================================================
@@ -77,6 +127,14 @@ export type Condition =
   | { type: 'done'; key: DoneKey }
   | { type: 'notDone'; key: DoneKey }
   | { type: 'stale'; key: string; minutes: number }
+  | { type: 'parent.role'; value: 'primary' | 'partner' | 'caregiver' }
+  | { type: 'parent.isMom'; value: boolean }
+  | { type: 'parent.isDad'; value: boolean }
+  | { type: 'parent.sleepBelow'; hours: number; days: number }
+  | { type: 'parent.checkInOverdue'; hours: number }
+  | { type: 'parent.wellnessScoreBelow'; score: number }
+  | { type: 'parent.firstCheckIn'; value: boolean }
+  | { type: 'parent.concernRaised'; concern: string }
   | { type: 'and'; conditions: Condition[] }
   | { type: 'or'; conditions: Condition[] }
   | { type: 'not'; condition: Condition };
@@ -122,6 +180,37 @@ export const stale = (key: string, minutes: number): Condition => ({
   type: 'stale',
 });
 
+// Parent condition builders
+export const parent = {
+  checkInOverdue: (hours: number): Condition => ({
+    hours,
+    type: 'parent.checkInOverdue',
+  }),
+  concernRaised: (concern: string): Condition => ({
+    concern,
+    type: 'parent.concernRaised',
+  }),
+  firstCheckIn: (value: boolean): Condition => ({
+    type: 'parent.firstCheckIn',
+    value,
+  }),
+  isDad: (value: boolean): Condition => ({ type: 'parent.isDad', value }),
+  isMom: (value: boolean): Condition => ({ type: 'parent.isMom', value }),
+  role: (value: 'primary' | 'partner' | 'caregiver'): Condition => ({
+    type: 'parent.role',
+    value,
+  }),
+  sleepBelow: (hours: number, days: number): Condition => ({
+    days,
+    hours,
+    type: 'parent.sleepBelow',
+  }),
+  wellnessScoreBelow: (score: number): Condition => ({
+    score,
+    type: 'parent.wellnessScoreBelow',
+  }),
+};
+
 // Combinators
 export const and = (...conditions: Condition[]): Condition => ({
   conditions,
@@ -147,7 +236,8 @@ export type ComputeFn<T> = (ctx: RuleContext) => T;
 export type PropValue<T = unknown> =
   | T
   | { _type: 'compute'; fn: ComputeFn<T> }
-  | { _type: 'aiTextBaml'; config: unknown }; // Unknown until we define aiTextBaml
+  | { _type: 'aiTextBaml'; config: unknown }
+  | { _type: 'bamlConfig'; config: unknown }; // BAML call with args
 
 export interface CTAGoToProps {
   headline: PropValue<string>;
@@ -184,12 +274,62 @@ export interface CarouselPromptListProps {
   prompts: PropValue<string[] | string>;
 }
 
+export interface CardMilestoneProps {
+  title: PropValue<string>;
+  description: PropValue<string>;
+  type: PropValue<
+    'physical' | 'cognitive' | 'social' | 'language' | 'self_care'
+  >;
+  ageLabel: PropValue<string>;
+  suggestedDay?: PropValue<number>;
+}
+
+export interface CheckInDailyProps {
+  title: PropValue<string>;
+  questions: PropValue;
+}
+
+export interface AssessmentWellnessProps {
+  title: PropValue<string>;
+  questions: PropValue;
+  urgent?: PropValue<boolean>;
+  supportResources?: PropValue<boolean>;
+}
+
+export interface TasksListProps {
+  tasks: PropValue;
+  headline?: PropValue<string>;
+  category?: PropValue<string>;
+}
+
+export interface TipsSleepSupportProps {
+  tips: PropValue;
+}
+
+export interface TipsCarouselProps {
+  tips: PropValue;
+}
+
+export interface TipsMentalHealthSupportProps {
+  tips: PropValue;
+}
+
 export type RenderTemplate =
   | { template: 'CTA.GoTo'; props: CTAGoToProps }
   | { template: 'Card.Progress'; props: CardProgressProps }
   | { template: 'Card.WeekSummary'; props: CardWeekSummaryProps }
   | { template: 'Card.Success'; props: CardSuccessProps }
   | { template: 'Card.Hidden'; props: Record<string, never> }
+  | { template: 'Card.Milestone'; props: CardMilestoneProps }
+  | { template: 'CheckIn.Daily'; props: CheckInDailyProps }
+  | { template: 'Assessment.Wellness'; props: AssessmentWellnessProps }
+  | { template: 'Tasks.List'; props: TasksListProps }
+  | { template: 'Tips.SleepSupport'; props: TipsSleepSupportProps }
+  | { template: 'Tips.Carousel'; props: TipsCarouselProps }
+  | {
+      template: 'Tips.MentalHealthSupport';
+      props: TipsMentalHealthSupportProps;
+    }
   | { template: 'Nav.Directive'; props: NavDirectiveProps }
   | { template: 'Carousel.PromptList'; props: CarouselPromptListProps };
 
@@ -338,6 +478,34 @@ export function evalCond(cond: Condition, ctx: RuleContext): boolean {
       const now = Date.now();
       const minutesAgo = (now - lastUpdate) / 1000 / 60;
       return minutesAgo >= cond.minutes;
+    }
+    case 'parent.role':
+      return ctx.parent?.role === cond.value;
+    case 'parent.isMom':
+      return ctx.parent?.isMom === cond.value;
+    case 'parent.isDad':
+      return ctx.parent?.isDad === cond.value;
+    case 'parent.sleepBelow': {
+      if (!ctx.parent?.sleepHours7d) return false;
+      const avgSleepPerDay = ctx.parent.sleepHours7d / cond.days;
+      return avgSleepPerDay < cond.hours;
+    }
+    case 'parent.checkInOverdue': {
+      if (!ctx.parent?.lastCheckInDate) return true; // Never checked in
+      const now = Date.now();
+      const lastCheckIn = ctx.parent.lastCheckInDate.getTime();
+      const hoursAgo = (now - lastCheckIn) / 1000 / 60 / 60;
+      return hoursAgo >= cond.hours;
+    }
+    case 'parent.wellnessScoreBelow':
+      return (ctx.parent?.lastWellnessScore ?? 100) < cond.score;
+    case 'parent.firstCheckIn':
+      return (ctx.parent?.checkInHistory?.length === 0) === cond.value;
+    case 'parent.concernRaised': {
+      if (!ctx.parent?.checkInHistory) return false;
+      return ctx.parent.checkInHistory.some((check) =>
+        check.concernsRaised.includes(cond.concern),
+      );
     }
     case 'and':
       return cond.conditions.every((c) => evalCond(c, ctx));

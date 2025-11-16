@@ -15,12 +15,16 @@ import { Calendar, Clock, X } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
 import { ActivityDrawerContent } from '~/app/(app)/app/_components/drawers/activity-drawer-content';
 import { BathDrawer } from '~/app/(app)/app/_components/drawers/bath-drawer';
-import { DiaperDrawerContent } from '~/app/(app)/app/_components/drawers/diaper-drawer';
+import {
+  DiaperDrawerContent,
+  type DiaperFormData,
+} from '~/app/(app)/app/_components/drawers/diaper-drawer';
 import type { FeedingFormData } from '~/app/(app)/app/_components/drawers/feeding-drawer';
 import { FeedingDrawerContent } from '~/app/(app)/app/_components/drawers/feeding-drawer';
 import { GrowthDrawer } from '~/app/(app)/app/_components/drawers/growth-drawer';
 import { MedicineDrawer } from '~/app/(app)/app/_components/drawers/medicine-drawer';
 import { PottyDrawer } from '~/app/(app)/app/_components/drawers/potty-drawer';
+import { PumpingDrawerContent } from '~/app/(app)/app/_components/drawers/pumping-drawer';
 import { SleepDrawerContent } from '~/app/(app)/app/_components/drawers/sleep-drawer';
 import { TemperatureDrawer } from '~/app/(app)/app/_components/drawers/temperature-drawer';
 import { TummyTimeDrawer } from '~/app/(app)/app/_components/drawers/tummy-time-drawer';
@@ -60,9 +64,35 @@ export function ActivityDrawer({
   const [notes, setNotes] = useState('');
   const [feedingFormData, setFeedingFormData] =
     useState<FeedingFormData | null>(null);
+  const [diaperFormData, setDiaperFormData] = useState<DiaperFormData | null>(
+    null,
+  );
   const [isPending, startTransition] = useTransition();
   const [activeActivityId, setActiveActivityId] = useState<string | null>(null);
   const isEditing = Boolean(existingActivity) || Boolean(activeActivityId);
+  const [sleepQuality, setSleepQuality] = useState<
+    'peaceful' | 'restless' | 'fussy' | 'crying' | undefined
+  >();
+  const [sleepLocation, setSleepLocation] = useState<
+    | 'crib'
+    | 'bassinet'
+    | 'bed'
+    | 'car_seat'
+    | 'stroller'
+    | 'arms'
+    | 'swing'
+    | 'bouncer'
+    | undefined
+  >();
+  const [wakeReason, setWakeReason] = useState<
+    | 'hungry'
+    | 'diaper'
+    | 'crying'
+    | 'naturally'
+    | 'noise'
+    | 'unknown'
+    | undefined
+  >();
 
   // Update state when existingActivity changes
   useEffect(() => {
@@ -78,21 +108,17 @@ export function ActivityDrawer({
         setDuration(existingActivity.duration * 60); // Convert minutes to seconds
       }
       if (existingActivity.notes) {
-        // Parse sleep type from notes if present
-        const sleepTypeMatch = existingActivity.notes.match(
-          /^\[sleepType:(nap|night)\]/,
-        );
-        if (sleepTypeMatch) {
-          setSleepType(sleepTypeMatch[1] as 'nap' | 'night');
-          // Remove the sleep type marker from displayed notes
-          const cleanNotes = existingActivity.notes.replace(
-            /^\[sleepType:(nap|night)\]\s*/,
-            '',
-          );
-          setNotes(cleanNotes);
-        } else {
-          setNotes(existingActivity.notes);
-        }
+        setNotes(existingActivity.notes);
+      }
+      // Parse sleep details from details field
+      if (
+        existingActivity.details &&
+        existingActivity.details.type === 'sleep'
+      ) {
+        setSleepType(existingActivity.details.sleepType);
+        setSleepQuality(existingActivity.details.quality);
+        setSleepLocation(existingActivity.details.location);
+        setWakeReason(existingActivity.details.wakeReason);
       }
     }
 
@@ -101,6 +127,9 @@ export function ActivityDrawer({
       setDuration(0);
       setSleepType('nap');
       setNotes('');
+      setSleepQuality(undefined);
+      setSleepLocation(undefined);
+      setWakeReason(undefined);
     }
   }, [existingActivity, activity.id]);
 
@@ -115,21 +144,18 @@ export function ActivityDrawer({
             setActiveActivityId(inProgressActivity.id);
             setStartTime(new Date(inProgressActivity.startTime));
 
-            // Parse sleep type from notes if present
+            // Parse sleep details from details field
             if (inProgressActivity.notes) {
-              const sleepTypeMatch = inProgressActivity.notes.match(
-                /^\[sleepType:(nap|night)\]/,
-              );
-              if (sleepTypeMatch) {
-                setSleepType(sleepTypeMatch[1] as 'nap' | 'night');
-                const cleanNotes = inProgressActivity.notes.replace(
-                  /^\[sleepType:(nap|night)\]\s*/,
-                  '',
-                );
-                setNotes(cleanNotes);
-              } else {
-                setNotes(inProgressActivity.notes);
-              }
+              setNotes(inProgressActivity.notes);
+            }
+            if (
+              inProgressActivity.details &&
+              inProgressActivity.details.type === 'sleep'
+            ) {
+              setSleepType(inProgressActivity.details.sleepType);
+              setSleepQuality(inProgressActivity.details.quality);
+              setSleepLocation(inProgressActivity.details.location);
+              setWakeReason(inProgressActivity.details.wakeReason);
             }
           } else {
             // No in-progress activity
@@ -146,11 +172,16 @@ export function ActivityDrawer({
     // Create sleep activity immediately when timer starts
     startTransition(async () => {
       try {
-        const sleepNotes = `[sleepType:${sleepType}]${notes ? ` ${notes}` : ''}`;
-
         const result = await createActivityWithDetailsAction({
           activityType: 'sleep',
-          notes: sleepNotes || undefined,
+          details: {
+            location: sleepLocation,
+            quality: sleepQuality,
+            sleepType: sleepType,
+            type: 'sleep' as const,
+            wakeReason: wakeReason,
+          },
+          notes: notes || undefined,
           startTime: startTime,
         });
 
@@ -174,11 +205,17 @@ export function ActivityDrawer({
       // Calculate end time from duration
       const endTime = new Date(startTime.getTime() + duration * 1000);
 
-      // For sleep, encode sleep type in notes with a marker
-      const sleepNotes =
+      // For sleep, create details object
+      const sleepDetails =
         activity.id === 'sleep'
-          ? `[sleepType:${sleepType}]${notes ? ` ${notes}` : ''}`
-          : notes;
+          ? {
+              location: sleepLocation,
+              quality: sleepQuality,
+              sleepType: sleepType,
+              type: 'sleep' as const,
+              wakeReason: wakeReason,
+            }
+          : undefined;
 
       // Close drawer immediately for better UX
       onClose();
@@ -187,10 +224,11 @@ export function ActivityDrawer({
       startTransition(async () => {
         try {
           const result = await updateActivityAction({
+            details: sleepDetails,
             duration: Math.floor(duration / 60), // Convert seconds to minutes
             endTime,
             id: activeActivityId,
-            notes: sleepNotes || undefined,
+            notes: notes || undefined,
             startTime,
           });
 
@@ -214,20 +252,27 @@ export function ActivityDrawer({
       // Calculate end time from duration
       const endTime = new Date(startTime.getTime() + duration * 1000);
 
-      // For sleep, encode sleep type in notes with a marker
-      const sleepNotes =
+      // For sleep, create details object
+      const sleepDetails =
         activity.id === 'sleep'
-          ? `[sleepType:${sleepType}]${notes ? ` ${notes}` : ''}`
-          : notes;
+          ? {
+              location: sleepLocation,
+              quality: sleepQuality,
+              sleepType: sleepType,
+              type: 'sleep' as const,
+              wakeReason: wakeReason,
+            }
+          : undefined;
 
       // Create optimistic update data
       const optimisticActivity = {
         ...existingActivity,
+        details: sleepDetails,
         duration: Math.floor(duration / 60), // Convert seconds to minutes
         endTime,
-        notes: sleepNotes || null,
+        notes: notes || null,
         startTime,
-      };
+      } as typeof Activities.$inferSelect;
 
       // Update UI optimistically
       onActivityUpdated?.(optimisticActivity);
@@ -239,10 +284,11 @@ export function ActivityDrawer({
       startTransition(async () => {
         try {
           const result = await updateActivityAction({
+            details: sleepDetails,
             duration: Math.floor(duration / 60), // Convert seconds to minutes
             endTime,
             id: existingActivity.id,
-            notes: sleepNotes || undefined,
+            notes: notes || undefined,
             startTime,
           });
 
@@ -279,10 +325,31 @@ export function ActivityDrawer({
             duration?: number;
             notes?: string;
             startTime?: Date;
+            details?: {
+              type: string;
+              sleepType?: string;
+              quality?: string;
+              location?: string;
+              wakeReason?: string;
+              size?: string;
+              color?: string;
+              consistency?: string;
+            };
           } = {
             activityType: activity.id,
             startTime: new Date(),
           };
+
+          // Add sleep-specific fields
+          if (activity.id === 'sleep') {
+            const sleepNotes = `[sleepType:${sleepType}]${notes ? ` ${notes}` : ''}`;
+            activityData = {
+              ...activityData,
+              duration: Math.floor(duration / 60), // Convert seconds to minutes
+              notes: sleepNotes || undefined,
+              startTime,
+            };
+          }
 
           // Add feeding-specific fields
           if (feedingFormData) {
@@ -310,7 +377,28 @@ export function ActivityDrawer({
             }
           }
 
-          const result = await createActivityWithDetailsAction(activityData);
+          // Add diaper-specific fields
+          if (diaperFormData?.type) {
+            activityData = {
+              ...activityData,
+              activityType: diaperFormData.type,
+              details: {
+                type: diaperFormData.type,
+                ...(diaperFormData.size && { size: diaperFormData.size }),
+                ...(diaperFormData.color && { color: diaperFormData.color }),
+                ...(diaperFormData.consistency && {
+                  consistency: diaperFormData.consistency,
+                }),
+              },
+              notes: diaperFormData.notes || undefined,
+            };
+          }
+
+          const result = await createActivityWithDetailsAction(
+            activityData as Parameters<
+              typeof createActivityWithDetailsAction
+            >[0],
+          );
 
           if (result?.data?.activity) {
             // Notify that save completed successfully (triggers refresh)
@@ -341,29 +429,36 @@ export function ActivityDrawer({
             onTimerStart={handleTimerStart}
             setDuration={setDuration}
             setNotes={setNotes}
+            setSleepLocation={setSleepLocation}
+            setSleepQuality={setSleepQuality}
             setSleepType={setSleepType}
             setStartTime={setStartTime}
+            setWakeReason={setWakeReason}
+            sleepLocation={sleepLocation}
+            sleepQuality={sleepQuality}
             sleepType={sleepType}
             startTime={startTime}
+            wakeReason={wakeReason}
           />
         );
       case 'feeding':
       case 'nursing':
       case 'bottle':
       case 'solids':
-      case 'pumping':
         return (
           <FeedingDrawerContent
             existingActivityType={
               activity.id === 'feeding'
                 ? null
-                : (activity.id as 'bottle' | 'nursing' | 'solids' | 'pumping')
+                : (activity.id as 'bottle' | 'nursing' | 'solids')
             }
             onFormDataChange={setFeedingFormData}
           />
         );
+      case 'pumping':
+        return <PumpingDrawerContent />;
       case 'diaper':
-        return <DiaperDrawerContent />;
+        return <DiaperDrawerContent onDataChange={setDiaperFormData} />;
       case 'potty':
         return <PottyDrawer />;
       case 'activity':

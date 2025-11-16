@@ -98,12 +98,92 @@ export const measurementUnitEnum = pgEnum('measurementUnit', [
   'imperial',
   'metric',
 ]);
+export const checkInResponseTypeEnum = pgEnum('checkInResponseType', [
+  'emoji_scale',
+  'yes_no',
+  'rating_1_5',
+  'text_short',
+]);
+export const checkInCategoryEnum = pgEnum('checkInCategory', [
+  'physical',
+  'emotional',
+  'support',
+  'baby_concern',
+  'self_care',
+]);
+export const taskCategoryEnum = pgEnum('taskCategory', [
+  'baby_care',
+  'household',
+  'self_care',
+  'relationship',
+  'preparation',
+]);
+export const taskPriorityEnum = pgEnum('taskPriority', [
+  'high',
+  'medium',
+  'low',
+]);
+export const wellnessQuestionCategoryEnum = pgEnum('wellnessQuestionCategory', [
+  'mood',
+  'anxiety',
+  'bonding',
+  'coping',
+  'thoughts',
+]);
+export const diaperSizeEnum = pgEnum('diaperSize', [
+  'little',
+  'medium',
+  'large',
+]);
+export const diaperConsistencyEnum = pgEnum('diaperConsistency', [
+  'solid',
+  'loose',
+  'runny',
+  'mucousy',
+  'hard',
+  'pebbles',
+  'diarrhea',
+]);
+export const diaperColorEnum = pgEnum('diaperColor', [
+  'yellow',
+  'brown',
+  'green',
+  'black',
+  'red',
+  'white',
+  'orange',
+]);
 export const temperatureUnitEnum = pgEnum('temperatureUnit', [
   'fahrenheit',
   'celsius',
 ]);
 export const timeFormatEnum = pgEnum('timeFormat', ['12h', '24h']);
 export const themeEnum = pgEnum('theme', ['light', 'dark', 'system']);
+export const sleepQualityEnum = pgEnum('sleepQuality', [
+  'peaceful',
+  'restless',
+  'fussy',
+  'crying',
+]);
+export const sleepLocationEnum = pgEnum('sleepLocation', [
+  'crib',
+  'bassinet',
+  'bed',
+  'car_seat',
+  'stroller',
+  'arms',
+  'swing',
+  'bouncer',
+]);
+export const wakeReasonEnum = pgEnum('wakeReason', [
+  'hungry',
+  'diaper',
+  'crying',
+  'naturally',
+  'noise',
+  'unknown',
+]);
+export const messageRoleEnum = pgEnum('messageRole', ['user', 'assistant']);
 
 // Zod enum types
 export const UserRoleType = z.enum(userRoleEnum.enumValues).enum;
@@ -126,6 +206,10 @@ export const MeasurementUnitType = z.enum(measurementUnitEnum.enumValues).enum;
 export const TemperatureUnitType = z.enum(temperatureUnitEnum.enumValues).enum;
 export const TimeFormatType = z.enum(timeFormatEnum.enumValues).enum;
 export const ThemeType = z.enum(themeEnum.enumValues).enum;
+export const SleepQualityType = z.enum(sleepQualityEnum.enumValues).enum;
+export const SleepLocationType = z.enum(sleepLocationEnum.enumValues).enum;
+export const WakeReasonType = z.enum(wakeReasonEnum.enumValues).enum;
+export const MessageRoleType = z.enum(messageRoleEnum.enumValues).enum;
 
 // ============================================================================
 // Tables - Users & Families
@@ -153,7 +237,6 @@ export const Users = pgTable('users', {
     .notNull(),
   theme: themeEnum('theme').default('system').notNull(),
   timeFormat: timeFormatEnum('timeFormat').default('12h').notNull(),
-  unitPref: unitPrefEnum('unitPref').default('ML').notNull(), // User's preferred unit for display
   updatedAt: timestamp('updatedAt', {
     mode: 'date',
     withTimezone: true,
@@ -344,8 +427,9 @@ export const diaperDetailsSchema = z.object({
     .enum(['yellow', 'brown', 'green', 'black', 'red', 'white', 'orange'])
     .optional(),
   consistency: z
-    .enum(['liquid', 'soft', 'firm', 'hard', 'seedy', 'mucus'])
+    .enum(['solid', 'loose', 'runny', 'mucousy', 'hard', 'pebbles', 'diarrhea'])
     .optional(),
+  size: z.enum(['little', 'medium', 'large']).optional(),
 });
 
 // Medicine details
@@ -356,6 +440,7 @@ export const medicineDetailsSchema = z.object({
 
 // Pumping details (separate amounts for each breast)
 export const pumpingDetailsSchema = z.object({
+  isColostrum: z.boolean().optional(),
   leftBreastMl: z.number().optional(),
   rightBreastMl: z.number().optional(),
 });
@@ -391,6 +476,27 @@ export const temperatureDetailsSchema = z.object({
   temperatureFahrenheit: z.number(),
 });
 
+// Sleep details
+export const sleepDetailsSchema = z.object({
+  location: z
+    .enum([
+      'crib',
+      'bassinet',
+      'bed',
+      'car_seat',
+      'stroller',
+      'arms',
+      'swing',
+      'bouncer',
+    ])
+    .optional(),
+  quality: z.enum(['peaceful', 'restless', 'fussy', 'crying']).optional(),
+  sleepType: z.enum(['nap', 'night']),
+  wakeReason: z
+    .enum(['hungry', 'diaper', 'crying', 'naturally', 'noise', 'unknown'])
+    .optional(),
+});
+
 // Discriminated union for all activity details
 export const activityDetailsSchema = z
   .discriminatedUnion('type', [
@@ -406,6 +512,7 @@ export const activityDetailsSchema = z
       type: z.literal('temperature'),
       ...temperatureDetailsSchema.shape,
     }),
+    z.object({ type: z.literal('sleep'), ...sleepDetailsSchema.shape }),
   ])
   .nullable();
 
@@ -418,6 +525,7 @@ export type MedicineDetails = z.infer<typeof medicineDetailsSchema>;
 export type PumpingDetails = z.infer<typeof pumpingDetailsSchema>;
 export type SolidFoodDetails = z.infer<typeof solidFoodDetailsSchema>;
 export type TemperatureDetails = z.infer<typeof temperatureDetailsSchema>;
+export type SleepDetails = z.infer<typeof sleepDetailsSchema>;
 
 // ============================================================================
 // Tables - Baby Tracking
@@ -521,7 +629,7 @@ export const MedicalRecords = pgTable('medicalRecords', {
 });
 
 export const Milestones = pgTable('milestones', {
-  achievedDate: timestamp('achievedDate', { mode: 'date' }).notNull(),
+  achievedDate: timestamp('achievedDate', { mode: 'date' }), // Nullable - null means not yet completed
   babyId: varchar('babyId', { length: 128 })
     .notNull()
     .references(() => Babies.id, { onDelete: 'cascade' }),
@@ -534,8 +642,10 @@ export const Milestones = pgTable('milestones', {
   id: varchar('id', { length: 128 })
     .primaryKey()
     .$defaultFn(() => createId({ prefix: 'milestone' })),
+  isSuggested: boolean('isSuggested').default(false).notNull(), // True for system-suggested milestones
   metadata: json('metadata').$type<Record<string, unknown>>(),
   photoUrl: text('photoUrl'),
+  suggestedDay: integer('suggestedDay'), // Which postpartum day this milestone is suggested for (null for user-created)
   title: text('title').notNull(),
   type: milestoneTypeEnum('type').notNull(),
   updatedAt: timestamp('updatedAt', { mode: 'date' })
@@ -677,6 +787,85 @@ export const ContentCache = pgTable(
 );
 
 // ============================================================================
+// Tables - AI Chat
+// ============================================================================
+
+export const Chats = pgTable(
+  'chats',
+  {
+    babyId: varchar('babyId', { length: 128 })
+      .notNull()
+      .references(() => Babies.id, { onDelete: 'cascade' }),
+    contextId: varchar('contextId', { length: 256 }), // Identifier for context (e.g., learning tip ID, milestone ID)
+    contextType: varchar('contextType', { length: 64 }), // Type of context (e.g., 'learning_tip', 'milestone', 'general')
+    createdAt: timestamp('createdAt', {
+      mode: 'date',
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+    familyId: varchar('familyId', { length: 128 })
+      .notNull()
+      .references(() => Families.id, { onDelete: 'cascade' })
+      .default(requestingFamilyId()),
+    id: varchar('id', { length: 128 })
+      .$defaultFn(() => createId({ prefix: 'chat' }))
+      .notNull()
+      .primaryKey(),
+    title: text('title').notNull().default('New Chat'),
+    updatedAt: timestamp('updatedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }).$onUpdateFn(() => new Date()),
+    userId: varchar('userId', { length: 128 })
+      .notNull()
+      .default(requestingUserId()),
+  },
+  (table) => [
+    // Index for efficient baby + family lookups
+    index('chats_babyId_familyId_idx').on(table.babyId, table.familyId),
+    // Index for sorting by updated time
+    index('chats_updatedAt_idx').on(table.updatedAt),
+    // Index for context lookups
+    index('chats_contextType_contextId_idx').on(
+      table.contextType,
+      table.contextId,
+    ),
+  ],
+);
+
+export const ChatMessages = pgTable(
+  'chatMessages',
+  {
+    chatId: varchar('chatId', { length: 128 })
+      .notNull()
+      .references(() => Chats.id, { onDelete: 'cascade' }),
+    content: text('content').notNull(),
+    createdAt: timestamp('createdAt', {
+      mode: 'date',
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+    id: varchar('id', { length: 128 })
+      .$defaultFn(() => createId({ prefix: 'msg' }))
+      .notNull()
+      .primaryKey(),
+    role: messageRoleEnum('role').notNull(),
+    userId: varchar('userId', { length: 128 }).references(() => Users.id, {
+      onDelete: 'set null',
+    }),
+  },
+  (table) => [
+    // Index for efficient chat message lookups
+    index('chatMessages_chatId_createdAt_idx').on(
+      table.chatId,
+      table.createdAt,
+    ),
+  ],
+);
+
+// ============================================================================
 // Relations
 // ============================================================================
 
@@ -736,6 +925,7 @@ export const InvitationsRelations = relations(Invitations, ({ one }) => ({
 
 export const BabiesRelations = relations(Babies, ({ one, many }) => ({
   activities: many(Activities),
+  chats: many(Chats),
   contentCache: many(ContentCache),
   family: one(Families, {
     fields: [Babies.familyId],
@@ -863,6 +1053,33 @@ export const ContentCacheRelations = relations(ContentCache, ({ one }) => ({
   }),
 }));
 
+export const ChatsRelations = relations(Chats, ({ one, many }) => ({
+  baby: one(Babies, {
+    fields: [Chats.babyId],
+    references: [Babies.id],
+  }),
+  family: one(Families, {
+    fields: [Chats.familyId],
+    references: [Families.id],
+  }),
+  messages: many(ChatMessages),
+  user: one(Users, {
+    fields: [Chats.userId],
+    references: [Users.id],
+  }),
+}));
+
+export const ChatMessagesRelations = relations(ChatMessages, ({ one }) => ({
+  chat: one(Chats, {
+    fields: [ChatMessages.chatId],
+    references: [Chats.id],
+  }),
+  user: one(Users, {
+    fields: [ChatMessages.userId],
+    references: [Users.id],
+  }),
+}));
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -897,6 +1114,10 @@ export type SupplyTransaction = typeof SupplyTransactions.$inferSelect;
 export type NewSupplyTransaction = typeof SupplyTransactions.$inferInsert;
 export type ContentCacheType = typeof ContentCache.$inferSelect;
 export type NewContentCache = typeof ContentCache.$inferInsert;
+export type Chat = typeof Chats.$inferSelect;
+export type NewChat = typeof Chats.$inferInsert;
+export type ChatMessage = typeof ChatMessages.$inferSelect;
+export type NewChatMessage = typeof ChatMessages.$inferInsert;
 
 // ============================================================================
 // Zod Schemas
@@ -990,6 +1211,263 @@ export const updateFamilyMemberSchema = insertFamilyMemberSchema.partial();
 export const insertContentCacheSchema = createInsertSchema(ContentCache);
 export const selectContentCacheSchema = createSelectSchema(ContentCache);
 export const updateContentCacheSchema = insertContentCacheSchema.partial();
+
+export const insertChatSchema = createInsertSchema(Chats).omit({
+  createdAt: true,
+  familyId: true,
+  id: true,
+  updatedAt: true,
+  userId: true,
+});
+export const selectChatSchema = createSelectSchema(Chats);
+export const updateChatSchema = createUpdateSchema(Chats).omit({
+  createdAt: true,
+  familyId: true,
+  id: true,
+  userId: true,
+});
+
+export const insertChatMessageSchema = createInsertSchema(ChatMessages).omit({
+  createdAt: true,
+  id: true,
+});
+export const selectChatMessageSchema = createSelectSchema(ChatMessages);
+
+// ============================================================================
+// Tables - Parent Wellness & Support
+// ============================================================================
+
+// Parent Check-Ins - Daily wellness check-ins for parents
+export const ParentCheckIns = pgTable(
+  'parent_check_ins',
+  {
+    aiGeneratedQuestions: boolean('aiGeneratedQuestions').default(true),
+    concernsRaised: json('concernsRaised').$type<string[]>().default([]),
+    createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+    date: timestamp('date', { mode: 'date' }).notNull().defaultNow(),
+    familyId: varchar('familyId', { length: 128 })
+      .notNull()
+      .references(() => Families.id, { onDelete: 'cascade' })
+      .default(requestingFamilyId()),
+    id: varchar('id', { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId({ prefix: 'checkin' })),
+    moodScore: integer('moodScore'), // 1-5 scale
+    questionContext: json('questionContext').$type<{
+      ppDay?: number;
+      parentRole?: string;
+      parentSleepHours?: number;
+      babyAgeInDays?: number;
+    }>(),
+    responses: json('responses')
+      .$type<
+        Array<{
+          questionId: string;
+          question: string;
+          response: string | number | boolean;
+          responseType: 'emoji_scale' | 'yes_no' | 'rating_1_5' | 'text_short';
+          category:
+            | 'physical'
+            | 'emotional'
+            | 'support'
+            | 'baby_concern'
+            | 'self_care';
+        }>
+      >()
+      .notNull(),
+    updatedAt: timestamp('updatedAt', { mode: 'date' })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+    userId: varchar('userId', { length: 128 })
+      .notNull()
+      .references(() => Users.id, { onDelete: 'cascade' }),
+  },
+  (table) => ({
+    dateIdx: index('parent_check_ins_date_idx').on(table.date),
+    familyIdx: index('parent_check_ins_family_idx').on(table.familyId),
+    userIdx: index('parent_check_ins_user_idx').on(table.userId),
+  }),
+);
+
+// Parent Tasks - Personalized daily tasks for parents
+export const ParentTasks = pgTable(
+  'parent_tasks',
+  {
+    category: taskCategoryEnum('category').notNull(),
+    completed: boolean('completed').default(false).notNull(),
+    completedAt: timestamp('completedAt', { mode: 'date' }),
+    context: json('context').$type<{
+      babyAgeInDays?: number;
+      ppWeek?: number;
+      timeOfDay?: string;
+      feedingMethod?: string;
+    }>(),
+    createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+    estimatedMinutes: integer('estimatedMinutes'),
+    familyId: varchar('familyId', { length: 128 })
+      .notNull()
+      .references(() => Families.id, { onDelete: 'cascade' })
+      .default(requestingFamilyId()),
+    generatedDate: timestamp('generatedDate', { mode: 'date' })
+      .notNull()
+      .defaultNow(),
+    id: varchar('id', { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId({ prefix: 'task' })),
+    priority: taskPriorityEnum('priority').notNull().default('medium'),
+    suggestedTime: varchar('suggestedTime', { length: 64 }), // morning, afternoon, evening, anytime
+    taskText: text('taskText').notNull(),
+    updatedAt: timestamp('updatedAt', { mode: 'date' })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+    userId: varchar('userId', { length: 128 })
+      .notNull()
+      .references(() => Users.id, { onDelete: 'cascade' }),
+    whyItMatters: text('whyItMatters'), // Explanation of importance
+  },
+  (table) => ({
+    completedIdx: index('parent_tasks_completed_idx').on(table.completed),
+    familyIdx: index('parent_tasks_family_idx').on(table.familyId),
+    generatedDateIdx: index('parent_tasks_generated_date_idx').on(
+      table.generatedDate,
+    ),
+    userIdx: index('parent_tasks_user_idx').on(table.userId),
+  }),
+);
+
+// Wellness Assessments - Mental health screening assessments
+export const WellnessAssessments = pgTable(
+  'wellness_assessments',
+  {
+    assessmentType: varchar('assessmentType', { length: 64 }).notNull(), // routine, triggered, self_initiated
+    createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+    date: timestamp('date', { mode: 'date' }).notNull().defaultNow(),
+    familyId: varchar('familyId', { length: 128 })
+      .notNull()
+      .references(() => Families.id, { onDelete: 'cascade' })
+      .default(requestingFamilyId()),
+    followUpScheduled: timestamp('followUpScheduled', { mode: 'date' }),
+    id: varchar('id', { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId({ prefix: 'wellness' })),
+    notes: text('notes'),
+    questions: json('questions')
+      .$type<
+        Array<{
+          question: string;
+          responseType: string;
+          category: string;
+          weight: number;
+          reverseScore: boolean;
+        }>
+      >()
+      .notNull(),
+    recommendations: json('recommendations').$type<string[]>(),
+    responses: json('responses')
+      .$type<
+        Array<{
+          questionId: number;
+          response: number | string;
+        }>
+      >()
+      .notNull(),
+    riskScore: integer('riskScore'), // Calculated score (e.g., EPDS score)
+    updatedAt: timestamp('updatedAt', { mode: 'date' })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+    userId: varchar('userId', { length: 128 })
+      .notNull()
+      .references(() => Users.id, { onDelete: 'cascade' }),
+  },
+  (table) => ({
+    dateIdx: index('wellness_assessments_date_idx').on(table.date),
+    familyIdx: index('wellness_assessments_family_idx').on(table.familyId),
+    riskScoreIdx: index('wellness_assessments_risk_score_idx').on(
+      table.riskScore,
+    ),
+    userIdx: index('wellness_assessments_user_idx').on(table.userId),
+  }),
+);
+
+// ============================================================================
+// Relations - Parent Wellness & Support
+// ============================================================================
+
+export const ParentCheckInsRelations = relations(ParentCheckIns, ({ one }) => ({
+  family: one(Families, {
+    fields: [ParentCheckIns.familyId],
+    references: [Families.id],
+  }),
+  user: one(Users, {
+    fields: [ParentCheckIns.userId],
+    references: [Users.id],
+  }),
+}));
+
+export const ParentTasksRelations = relations(ParentTasks, ({ one }) => ({
+  family: one(Families, {
+    fields: [ParentTasks.familyId],
+    references: [Families.id],
+  }),
+  user: one(Users, {
+    fields: [ParentTasks.userId],
+    references: [Users.id],
+  }),
+}));
+
+export const WellnessAssessmentsRelations = relations(
+  WellnessAssessments,
+  ({ one }) => ({
+    family: one(Families, {
+      fields: [WellnessAssessments.familyId],
+      references: [Families.id],
+    }),
+    user: one(Users, {
+      fields: [WellnessAssessments.userId],
+      references: [Users.id],
+    }),
+  }),
+);
+
+// ============================================================================
+// Zod Schemas - Parent Wellness & Support
+// ============================================================================
+
+export const insertParentCheckInSchema = createInsertSchema(
+  ParentCheckIns,
+).omit({
+  createdAt: true,
+  familyId: true,
+  id: true,
+  updatedAt: true,
+});
+export const selectParentCheckInSchema = createSelectSchema(ParentCheckIns);
+export const updateParentCheckInSchema = insertParentCheckInSchema.partial();
+
+export const insertParentTaskSchema = createInsertSchema(ParentTasks).omit({
+  createdAt: true,
+  familyId: true,
+  id: true,
+  updatedAt: true,
+});
+export const selectParentTaskSchema = createSelectSchema(ParentTasks);
+export const updateParentTaskSchema = insertParentTaskSchema.partial();
+
+export const insertWellnessAssessmentSchema = createInsertSchema(
+  WellnessAssessments,
+).omit({
+  createdAt: true,
+  familyId: true,
+  id: true,
+  updatedAt: true,
+});
+export const selectWellnessAssessmentSchema =
+  createSelectSchema(WellnessAssessments);
+export const updateWellnessAssessmentSchema =
+  insertWellnessAssessmentSchema.partial();
 
 // ============================================================================
 // Backward compatibility exports (deprecated - use Families/FamilyMembers)

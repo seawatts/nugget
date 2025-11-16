@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Icons } from '@nugget/ui/custom/icons';
 import {
@@ -30,6 +31,7 @@ import { ActivityDrawer } from '~/app/(app)/app/_components/activity-drawer';
 import { ActivityTimelineFilters } from '~/app/(app)/app/_components/activity-timeline-filters';
 import { getActivitiesAction } from './activity-timeline.actions';
 import { getDisplayNotes } from './activity-utils';
+import { formatVolumeDisplay, getVolumeUnit } from './volume-utils';
 
 const activities = [
   {
@@ -245,6 +247,10 @@ export function ActivityTimeline({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
+  // Fetch user preferences for volume display
+  const { data: user } = api.user.current.useQuery();
+  const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
+
   const loadActivities = useCallback(
     async (offset = 0, append = false, skipAnimation = false) => {
       try {
@@ -457,8 +463,33 @@ export function ActivityTimeline({
                   details.push(`${activity.duration} min`);
                 }
                 if (activity.amount) {
-                  details.push(`${activity.amount} oz`);
+                  details.push(
+                    formatVolumeDisplay(activity.amount, userUnitPref, true),
+                  );
                 }
+
+                // Add diaper type details
+                if (activity.type === 'diaper' && activity.details) {
+                  const diaperDetails = activity.details as {
+                    type?: string;
+                    wet?: boolean;
+                    dirty?: boolean;
+                  };
+                  if (diaperDetails.type === 'wet') {
+                    details.push('Pee');
+                  } else if (diaperDetails.type === 'dirty') {
+                    details.push('Poop');
+                  } else if (diaperDetails.type === 'both') {
+                    details.push('Both');
+                  } else if (diaperDetails.wet && diaperDetails.dirty) {
+                    details.push('Both');
+                  } else if (diaperDetails.wet) {
+                    details.push('Pee');
+                  } else if (diaperDetails.dirty) {
+                    details.push('Poop');
+                  }
+                }
+
                 const detailsText =
                   details.length > 0 ? ` / ${details.join(', ')}` : '';
 

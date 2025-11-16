@@ -49,6 +49,25 @@ export function BottleDrawerContent({
 
   return (
     <div className="space-y-6">
+      {/* Quick Amounts - Moved to top */}
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-muted-foreground">
+          Quick Select
+        </p>
+        <div className="grid grid-cols-4 gap-2">
+          {quickSelectValues.map((value) => (
+            <Button
+              className="h-12 bg-transparent"
+              key={value}
+              onClick={() => setAmount(value)}
+              variant="outline"
+            >
+              {value} {unitPref === 'OZ' ? 'oz' : 'ml'}
+            </Button>
+          ))}
+        </div>
+      </div>
+
       {/* Amount Selector */}
       <div className="bg-card rounded-2xl p-8">
         <div className="flex items-center justify-center gap-6">
@@ -74,25 +93,6 @@ export function BottleDrawerContent({
           >
             <Plus className="h-6 w-6" />
           </Button>
-        </div>
-      </div>
-
-      {/* Quick Amounts */}
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-muted-foreground">
-          Quick Select
-        </p>
-        <div className="grid grid-cols-4 gap-2">
-          {quickSelectValues.map((value) => (
-            <Button
-              className="h-12 bg-transparent"
-              key={value}
-              onClick={() => setAmount(value)}
-              variant="outline"
-            >
-              {value} {unitPref === 'OZ' ? 'oz' : 'ml'}
-            </Button>
-          ))}
         </div>
       </div>
 

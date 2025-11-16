@@ -29,39 +29,81 @@ export default class TypeBuilder {
     
     AppointmentNudgeOutput: ClassViewer<'AppointmentNudgeOutput', "text">;
     
+    BabyAssistantChatOutput: ClassViewer<'BabyAssistantChatOutput', "response">;
+    
+    BabyContext: ClassViewer<'BabyContext', "babyName" | "ageInDays" | "ageInWeeks" | "currentWeightOz" | "birthWeightOz" | "feedingCount24h" | "avgFeedingInterval" | "sleepCount24h" | "totalSleepHours24h" | "diaperCount24h">;
+    
     BabyVisitExplainerOutput: ClassViewer<'BabyVisitExplainerOutput', "text">;
     
     BirthPlanHeadlineOutput: ClassViewer<'BirthPlanHeadlineOutput', "text">;
+    
+    ChatMessage: ClassViewer<'ChatMessage', "role" | "content">;
+    
+    ChatTitleOutput: ClassViewer<'ChatTitleOutput', "title">;
+    
+    CheckInQuestion: ClassViewer<'CheckInQuestion', "question" | "responseType" | "category" | "priority" | "followUpPrompt">;
+    
+    ContextualMilestonesOutput: ClassViewer<'ContextualMilestonesOutput', "milestones">;
+    
+    DailyCheckInQuestionsOutput: ClassViewer<'DailyCheckInQuestionsOutput', "questions">;
     
     HospitalPackAdviceOutput: ClassViewer<'HospitalPackAdviceOutput', "headline" | "subtext">;
     
     ImprovementSuggestions: ClassViewer<'ImprovementSuggestions', "seo" | "accessibility" | "performance" | "overall_priority">;
     
-    NewbornMilestoneOutput: ClassViewer<'NewbornMilestoneOutput', "text">;
+    LearningTip: ClassViewer<'LearningTip', "category" | "subtitle" | "summary" | "bulletPoints" | "followUpQuestion">;
     
-    PostpartumTipsOutput: ClassViewer<'PostpartumTipsOutput', "text">;
+    MilestoneExplanationOutput: ClassViewer<'MilestoneExplanationOutput', "explanation" | "whyItMatters" | "whatToExpect" | "tips" | "reassurance">;
+    
+    MilestoneSuggestion: ClassViewer<'MilestoneSuggestion', "title" | "type" | "description" | "ageLabel" | "relevance">;
+    
+    NewbornMilestoneOutput: ClassViewer<'NewbornMilestoneOutput', "tips">;
+    
+    ParentTask: ClassViewer<'ParentTask', "taskText" | "category" | "priority" | "suggestedTime" | "estimatedMinutes" | "whyItMatters">;
+    
+    ParentTip: ClassViewer<'ParentTip', "title" | "content" | "actionItems" | "relevantToRole">;
+    
+    PersonalizedTasksOutput: ClassViewer<'PersonalizedTasksOutput', "tasks" | "motivationalMessage">;
+    
+    PostpartumTipsOutput: ClassViewer<'PostpartumTipsOutput', "tips">;
     
     PregnancyWeekSummaryOutput: ClassViewer<'PregnancyWeekSummaryOutput', "text">;
     
-    SleepRegressionTipsOutput: ClassViewer<'SleepRegressionTipsOutput', "snippet">;
+    RoleSpecificTipsOutput: ClassViewer<'RoleSpecificTipsOutput', "tips">;
+    
+    SleepRegressionTipsOutput: ClassViewer<'SleepRegressionTipsOutput', "tips">;
     
     StalePromptsOutput: ClassViewer<'StalePromptsOutput', "list">;
     
+    WellnessQuestion: ClassViewer<'WellnessQuestion', "question" | "responseType" | "category" | "weight" | "reverseScore">;
+    
+    WellnessScreeningOutput: ClassViewer<'WellnessScreeningOutput', "questions" | "scoringGuidance" | "supportResources">;
+    
+    
+    ResponseType: EnumViewer<'ResponseType', "EMOJI_SCALE" | "YES_NO" | "RATING_1_5" | "TEXT_SHORT">;
     
 
     constructor() {
         this.tb = new _TypeBuilder({
           classes: new Set([
-            "AppointmentNudgeOutput","BabyVisitExplainerOutput","BirthPlanHeadlineOutput","HospitalPackAdviceOutput","ImprovementSuggestions","NewbornMilestoneOutput","PostpartumTipsOutput","PregnancyWeekSummaryOutput","SleepRegressionTipsOutput","StalePromptsOutput",
+            "AppointmentNudgeOutput","BabyAssistantChatOutput","BabyContext","BabyVisitExplainerOutput","BirthPlanHeadlineOutput","ChatMessage","ChatTitleOutput","CheckInQuestion","ContextualMilestonesOutput","DailyCheckInQuestionsOutput","HospitalPackAdviceOutput","ImprovementSuggestions","LearningTip","MilestoneExplanationOutput","MilestoneSuggestion","NewbornMilestoneOutput","ParentTask","ParentTip","PersonalizedTasksOutput","PostpartumTipsOutput","PregnancyWeekSummaryOutput","RoleSpecificTipsOutput","SleepRegressionTipsOutput","StalePromptsOutput","WellnessQuestion","WellnessScreeningOutput",
           ]),
           enums: new Set([
-            
+            "ResponseType",
           ]),
           runtime: DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME
         });
         
         this.AppointmentNudgeOutput = this.tb.classViewer("AppointmentNudgeOutput", [
           "text",
+        ]);
+        
+        this.BabyAssistantChatOutput = this.tb.classViewer("BabyAssistantChatOutput", [
+          "response",
+        ]);
+        
+        this.BabyContext = this.tb.classViewer("BabyContext", [
+          "babyName","ageInDays","ageInWeeks","currentWeightOz","birthWeightOz","feedingCount24h","avgFeedingInterval","sleepCount24h","totalSleepHours24h","diaperCount24h",
         ]);
         
         this.BabyVisitExplainerOutput = this.tb.classViewer("BabyVisitExplainerOutput", [
@@ -72,6 +114,26 @@ export default class TypeBuilder {
           "text",
         ]);
         
+        this.ChatMessage = this.tb.classViewer("ChatMessage", [
+          "role","content",
+        ]);
+        
+        this.ChatTitleOutput = this.tb.classViewer("ChatTitleOutput", [
+          "title",
+        ]);
+        
+        this.CheckInQuestion = this.tb.classViewer("CheckInQuestion", [
+          "question","responseType","category","priority","followUpPrompt",
+        ]);
+        
+        this.ContextualMilestonesOutput = this.tb.classViewer("ContextualMilestonesOutput", [
+          "milestones",
+        ]);
+        
+        this.DailyCheckInQuestionsOutput = this.tb.classViewer("DailyCheckInQuestionsOutput", [
+          "questions",
+        ]);
+        
         this.HospitalPackAdviceOutput = this.tb.classViewer("HospitalPackAdviceOutput", [
           "headline","subtext",
         ]);
@@ -80,26 +142,66 @@ export default class TypeBuilder {
           "seo","accessibility","performance","overall_priority",
         ]);
         
+        this.LearningTip = this.tb.classViewer("LearningTip", [
+          "category","subtitle","summary","bulletPoints","followUpQuestion",
+        ]);
+        
+        this.MilestoneExplanationOutput = this.tb.classViewer("MilestoneExplanationOutput", [
+          "explanation","whyItMatters","whatToExpect","tips","reassurance",
+        ]);
+        
+        this.MilestoneSuggestion = this.tb.classViewer("MilestoneSuggestion", [
+          "title","type","description","ageLabel","relevance",
+        ]);
+        
         this.NewbornMilestoneOutput = this.tb.classViewer("NewbornMilestoneOutput", [
-          "text",
+          "tips",
+        ]);
+        
+        this.ParentTask = this.tb.classViewer("ParentTask", [
+          "taskText","category","priority","suggestedTime","estimatedMinutes","whyItMatters",
+        ]);
+        
+        this.ParentTip = this.tb.classViewer("ParentTip", [
+          "title","content","actionItems","relevantToRole",
+        ]);
+        
+        this.PersonalizedTasksOutput = this.tb.classViewer("PersonalizedTasksOutput", [
+          "tasks","motivationalMessage",
         ]);
         
         this.PostpartumTipsOutput = this.tb.classViewer("PostpartumTipsOutput", [
-          "text",
+          "tips",
         ]);
         
         this.PregnancyWeekSummaryOutput = this.tb.classViewer("PregnancyWeekSummaryOutput", [
           "text",
         ]);
         
+        this.RoleSpecificTipsOutput = this.tb.classViewer("RoleSpecificTipsOutput", [
+          "tips",
+        ]);
+        
         this.SleepRegressionTipsOutput = this.tb.classViewer("SleepRegressionTipsOutput", [
-          "snippet",
+          "tips",
         ]);
         
         this.StalePromptsOutput = this.tb.classViewer("StalePromptsOutput", [
           "list",
         ]);
         
+        this.WellnessQuestion = this.tb.classViewer("WellnessQuestion", [
+          "question","responseType","category","weight","reverseScore",
+        ]);
+        
+        this.WellnessScreeningOutput = this.tb.classViewer("WellnessScreeningOutput", [
+          "questions","scoringGuidance","supportResources",
+        ]);
+        
+        
+        this.ResponseType = this.tb.enumViewer("ResponseType", [
+          "EMOJI_SCALE","YES_NO","RATING_1_5","TEXT_SHORT",
+        ]);
         
     }
 

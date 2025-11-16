@@ -3,25 +3,19 @@
 import { api } from '@nugget/api/react';
 import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
-import {
-  ArrowLeft,
-  Droplet,
-  Droplets,
-  Milk,
-  UtensilsCrossed,
-} from 'lucide-react';
+import { ArrowLeft, Droplet, Milk, UtensilsCrossed } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { getVolumeUnit } from '../volume-utils';
 import type { BottleFormData } from './bottle-drawer';
 import { BottleDrawerContent } from './bottle-drawer';
 import type { NursingFormData } from './nursing-drawer';
 import { NursingDrawerContent } from './nursing-drawer';
-import { PumpingDrawerContent } from './pumping-drawer';
 import { SolidsDrawerContent } from './solids-drawer';
 
-type FeedingType = 'bottle' | 'nursing' | 'solids' | 'pumping' | null;
+type FeedingType = 'bottle' | 'nursing' | 'solids' | null;
 
 export interface FeedingFormData {
-  type: 'bottle' | 'nursing' | 'solids' | 'pumping';
+  type: 'bottle' | 'nursing' | 'solids';
   amountMl?: number;
   bottleType?: 'breast_milk' | 'formula' | null;
   leftDuration?: number;
@@ -31,7 +25,7 @@ export interface FeedingFormData {
 
 interface FeedingDrawerContentProps {
   onTypeSelect?: (type: FeedingType) => void;
-  existingActivityType?: 'bottle' | 'nursing' | 'solids' | 'pumping' | null;
+  existingActivityType?: 'bottle' | 'nursing' | 'solids' | null;
   onFormDataChange?: (data: FeedingFormData | null) => void;
 }
 
@@ -60,14 +54,6 @@ const feedingTypes = [
     label: 'Solids',
     textColor: 'text-white',
   },
-  {
-    color: 'bg-[oklch(0.65_0.18_280)]',
-    description: 'Breast milk expression',
-    icon: Droplets,
-    id: 'pumping' as const,
-    label: 'Pumping',
-    textColor: 'text-white',
-  },
 ];
 
 export function FeedingDrawerContent({
@@ -81,7 +67,7 @@ export function FeedingDrawerContent({
 
   // Fetch user preferences
   const { data: user } = api.user.current.useQuery();
-  const userUnitPref = user?.unitPref || 'ML';
+  const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
 
   // If editing an existing feeding activity, skip selection and show the form
   useEffect(() => {
@@ -153,7 +139,6 @@ export function FeedingDrawerContent({
           <NursingDrawerContent onDataChange={setNursingData} />
         )}
         {selectedType === 'solids' && <SolidsDrawerContent />}
-        {selectedType === 'pumping' && <PumpingDrawerContent />}
       </div>
     );
   }
@@ -170,24 +155,24 @@ export function FeedingDrawerContent({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         {feedingTypes.map((type) => {
           const Icon = type.icon;
           return (
             <button
               className={cn(
-                'p-6 rounded-2xl border-2 border-transparent transition-all hover:scale-[1.02] active:scale-[0.98]',
+                'p-4 rounded-xl border-2 border-transparent transition-all hover:scale-[1.02] active:scale-[0.98]',
                 type.color,
               )}
               key={type.id}
               onClick={() => handleTypeSelect(type.id)}
               type="button"
             >
-              <Icon className={cn('h-12 w-12 mx-auto mb-3', type.textColor)} />
-              <p className={cn('font-semibold text-lg mb-1', type.textColor)}>
+              <Icon className={cn('h-8 w-8 mx-auto mb-2', type.textColor)} />
+              <p className={cn('font-semibold text-sm mb-1', type.textColor)}>
                 {type.label}
               </p>
-              <p className={cn('text-sm opacity-80', type.textColor)}>
+              <p className={cn('text-xs opacity-80', type.textColor)}>
                 {type.description}
               </p>
             </button>

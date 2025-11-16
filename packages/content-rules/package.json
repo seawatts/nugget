@@ -13,7 +13,8 @@
     "./cache-adapter": "./src/cache-adapter.ts",
     "./db-cache-adapter": "./src/db-cache-adapter.ts",
     "./dynamic-baml": "./src/dynamic-baml.ts",
-    "./example-program": "./src/example-program.ts"
+    "./example-program": "./src/example-program.ts",
+    "./milestones-program": "./src/milestones-program.ts"
   },
   "license": "MIT",
   "name": "@nugget/content-rules",

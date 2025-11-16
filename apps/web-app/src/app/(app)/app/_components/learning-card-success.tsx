@@ -20,7 +20,7 @@ export function LearningCardSuccess({
   ageLabel,
 }: LearningCardSuccessProps) {
   return (
-    <Card className="min-w-[280px] snap-start border-green-500/20 bg-gradient-to-br from-green-500/5 to-emerald-500/10">
+    <Card className="min-w-[280px] h-[440px] snap-start border-green-500/20 bg-gradient-to-br from-green-500/5 to-emerald-500/10 flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2 mb-2">
           <CheckCircle2 className="size-5 text-green-600 dark:text-green-400" />
@@ -34,7 +34,7 @@ export function LearningCardSuccess({
         </div>
         <H3 className="text-lg">{title}</H3>
       </CardHeader>
-      <CardContent className="pb-3">
+      <CardContent className="pb-3 flex-1 overflow-y-auto">
         <P className="text-sm text-foreground/80 leading-relaxed">{body}</P>
       </CardContent>
       {deeplink && (

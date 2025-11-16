@@ -142,11 +142,35 @@ export function createExampleProgram(b: BamlAsyncClient) {
       .show({
         props: {
           body: aiTextBaml({
-            call: ({ traits }) => {
+            call: ({ baby, traits, enhancedBabyData }) => {
+              const babyName = baby?.firstName || 'your baby';
               const firstPregnancy = !!traits?.firstPregnancy;
+              const babyCtx = enhancedBabyData?.baby;
+              const activities = enhancedBabyData?.activities24h;
+              const weekly = enhancedBabyData?.weeklyPatterns;
+
               return bamlCall(
-                () => b.PostpartumTips(day, firstPregnancy),
-                (out) => out.text,
+                () =>
+                  b.PostpartumTips(
+                    babyName,
+                    day,
+                    firstPregnancy,
+                    babyCtx?.ageInDays ?? day,
+                    babyCtx?.ageInWeeks ?? 0,
+                    babyCtx?.currentWeightOz ?? null,
+                    babyCtx?.birthWeightOz ?? null,
+                    babyCtx?.height ?? null,
+                    babyCtx?.headCircumference ?? null,
+                    activities?.feedingCount ?? null,
+                    activities?.avgFeedingInterval ?? null,
+                    activities?.sleepCount ?? null,
+                    activities?.totalSleepHours ?? null,
+                    activities?.diaperCount ?? null,
+                    weekly?.avgFeedingsPerDay ?? null,
+                    weekly?.avgSleepHours ?? null,
+                    weekly?.avgDiaperChanges ?? null,
+                  ),
+                (out) => out.tips,
               );
             },
             key: ({ traits }) => `pp-tip:${traits?.userId ?? 'anon'}:d${day}`,
@@ -169,12 +193,29 @@ export function createExampleProgram(b: BamlAsyncClient) {
       .show({
         props: {
           body: aiTextBaml({
-            call: ({ baby, traits }) => {
+            call: ({ baby, traits, enhancedBabyData }) => {
+              const babyName = baby?.firstName || 'your baby';
               const babySex = baby?.sex ?? 'U';
               const firstPregnancy = !!traits?.firstPregnancy;
+              const babyCtx = enhancedBabyData?.baby;
+              const activities = enhancedBabyData?.activities24h;
+
               return bamlCall(
-                () => b.NewbornWeekMilestone(w, babySex, firstPregnancy),
-                (o) => o.text,
+                () =>
+                  b.NewbornWeekMilestone(
+                    babyName,
+                    w,
+                    babySex,
+                    firstPregnancy,
+                    babyCtx?.ageInDays ?? w * 7,
+                    babyCtx?.currentWeightOz ?? null,
+                    babyCtx?.birthWeightOz ?? null,
+                    babyCtx?.height ?? null,
+                    babyCtx?.headCircumference ?? null,
+                    activities?.feedingCount ?? null,
+                    activities?.sleepCount ?? null,
+                  ),
+                (o) => o.tips,
               );
             },
             key: () => `baby-week:${w}`,
@@ -330,11 +371,28 @@ export function createExampleProgram(b: BamlAsyncClient) {
             deeplink: 'nugget://learning/sleep',
             headline: `Sleep tips for week ${w}`,
             subtext: aiTextBaml({
-              call: () =>
-                bamlCall(
-                  () => b.SleepRegressionTips(w),
-                  (o) => o.snippet,
-                ),
+              call: ({ baby, enhancedBabyData }) => {
+                const babyName = baby?.firstName || 'your baby';
+                const babyCtx = enhancedBabyData?.baby;
+                const activities = enhancedBabyData?.activities24h;
+                const weekly = enhancedBabyData?.weeklyPatterns;
+
+                return bamlCall(
+                  () =>
+                    b.SleepRegressionTips(
+                      babyName,
+                      w,
+                      babyCtx?.ageInDays ?? w * 7,
+                      babyCtx?.currentWeightOz ?? null,
+                      babyCtx?.birthWeightOz ?? null,
+                      activities?.sleepCount ?? null,
+                      activities?.totalSleepHours ?? null,
+                      weekly?.avgSleepHours ?? null,
+                      activities?.feedingCount ?? null,
+                    ),
+                  (o) => o.tips,
+                );
+              },
               key: () => `sleep-reg:${w}`,
               ttl: '14d',
             }),

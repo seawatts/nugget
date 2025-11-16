@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import { Card } from '@nugget/ui/card';
 import { Icons } from '@nugget/ui/custom/icons';
 import { cn } from '@nugget/ui/lib/utils';
@@ -10,6 +11,7 @@ import {
   type ActivityStats,
   getActivityStatsAction,
 } from './activity-stats.actions';
+import { formatVolumeDisplay, getVolumeUnit } from './volume-utils';
 
 interface QuickActionCardProps {
   activityType: 'pumping' | 'solids' | 'potty' | 'tummy_time';
@@ -34,6 +36,10 @@ export function QuickActionCard({
 }: QuickActionCardProps) {
   const [stats, setStats] = useState<ActivityStats | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Fetch user preferences for volume display
+  const { data: user } = api.user.current.useQuery();
+  const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
 
   const loadStats = useCallback(async () => {
     try {
@@ -84,10 +90,9 @@ export function QuickActionCard({
       return `${minutes} min`;
     }
 
-    // Amount-based activities (pumping - ml to oz)
+    // Amount-based activities (pumping - respects user preference)
     if (activityType === 'pumping' && lastAmount && lastAmount > 0) {
-      const amountOz = Math.round(lastAmount / 30);
-      return `${amountOz}oz`;
+      return formatVolumeDisplay(lastAmount, userUnitPref, true);
     }
 
     return null;
@@ -95,52 +100,69 @@ export function QuickActionCard({
 
   const metric = formatMetric();
 
+  if (loading) {
+    return (
+      <Card
+        className={cn(
+          'relative overflow-hidden border-0 p-6 animate-pulse',
+          color,
+          fullWidth && 'col-span-2',
+        )}
+      >
+        <div className="flex items-center gap-4">
+          <div className={cn('opacity-30', textColor)}>
+            <Icons.Spinner className="h-12 w-12 animate-spin" />
+          </div>
+          <div className="flex-1">
+            <div
+              className={cn('h-7 rounded w-32 mb-2', textColor, 'opacity-20')}
+            />
+            <div className={cn('h-4 rounded w-24', textColor, 'opacity-20')} />
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card
       className={cn(
         'relative overflow-hidden border-0 p-6 transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer',
         color,
         fullWidth && 'col-span-2',
-        loading && 'opacity-70 pointer-events-none',
       )}
       onClick={handleCardClick}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className={cn('opacity-30', textColor)}>
-            {loading ? (
-              <Icons.Spinner className="h-12 w-12 animate-spin" />
-            ) : (
-              <Icon className="h-12 w-12" strokeWidth={1.5} />
-            )}
+            <Icon className="h-12 w-12" strokeWidth={1.5} />
           </div>
           <div>
             <h2 className={cn('text-2xl font-bold', textColor)}>{label}</h2>
-            {!loading && (
-              <div className="flex items-center gap-2 mt-1">
-                <span
-                  className={cn('text-sm font-medium', textColor, 'opacity-70')}
-                >
-                  {timeAgo}
-                </span>
-                {stats && stats.todayCount > 0 && (
-                  <>
-                    <span className={cn(textColor, 'opacity-40')}>•</span>
-                    <span className={cn('text-sm', textColor, 'opacity-60')}>
-                      {stats.todayCount} today
-                    </span>
-                  </>
-                )}
-                {metric && (
-                  <>
-                    <span className={cn(textColor, 'opacity-40')}>•</span>
-                    <span className={cn('text-sm', textColor, 'opacity-60')}>
-                      {metric}
-                    </span>
-                  </>
-                )}
-              </div>
-            )}
+            <div className="flex items-center gap-2 mt-1">
+              <span
+                className={cn('text-sm font-medium', textColor, 'opacity-70')}
+              >
+                {timeAgo}
+              </span>
+              {stats && stats.todayCount > 0 && (
+                <>
+                  <span className={cn(textColor, 'opacity-40')}>•</span>
+                  <span className={cn('text-sm', textColor, 'opacity-60')}>
+                    {stats.todayCount} today
+                  </span>
+                </>
+              )}
+              {metric && (
+                <>
+                  <span className={cn(textColor, 'opacity-40')}>•</span>
+                  <span className={cn('text-sm', textColor, 'opacity-60')}>
+                    {metric}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>

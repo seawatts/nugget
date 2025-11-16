@@ -82,6 +82,48 @@ export const createActivityAction = action
 const createActivityWithDetailsInputSchema = z.object({
   activityType: z.string(),
   amount: z.number().optional(),
+  details: z
+    .union([
+      z.object({
+        location: z
+          .enum([
+            'crib',
+            'bassinet',
+            'bed',
+            'car_seat',
+            'stroller',
+            'arms',
+            'swing',
+            'bouncer',
+          ])
+          .optional(),
+        quality: z.enum(['peaceful', 'restless', 'fussy', 'crying']).optional(),
+        sleepType: z.enum(['nap', 'night']),
+        type: z.literal('sleep'),
+        wakeReason: z
+          .enum(['hungry', 'diaper', 'crying', 'naturally', 'noise', 'unknown'])
+          .optional(),
+      }),
+      z.object({
+        color: z
+          .enum(['yellow', 'brown', 'green', 'black', 'red', 'white', 'orange'])
+          .optional(),
+        consistency: z
+          .enum([
+            'solid',
+            'loose',
+            'runny',
+            'mucousy',
+            'hard',
+            'pebbles',
+            'diarrhea',
+          ])
+          .optional(),
+        size: z.enum(['little', 'medium', 'large']).optional(),
+        type: z.enum(['diaper', 'wet', 'dirty', 'both']),
+      }),
+    ])
+    .optional(),
   duration: z.number().optional(),
   feedingSource: z.enum(['direct', 'pumped', 'formula', 'donor']).optional(),
   notes: z.string().optional(),
@@ -118,7 +160,7 @@ export const createActivityWithDetailsAction = action
       const activity = await caller.activities.create({
         amount: parsedInput.amount,
         babyId: baby.id,
-        details: null,
+        details: parsedInput.details || null,
         duration: parsedInput.duration,
         feedingSource: parsedInput.feedingSource,
         notes: parsedInput.notes,
@@ -160,7 +202,7 @@ export const getInProgressSleepActivityAction = action
       }
 
       // Find in-progress sleep activity (has startTime but no endTime)
-      const activities = await caller.activities.getRecent({
+      const activities = await caller.activities.list({
         babyId: baby.id,
         limit: 50,
       });

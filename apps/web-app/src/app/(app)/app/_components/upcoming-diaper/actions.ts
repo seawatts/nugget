@@ -125,9 +125,7 @@ export const quickLogDiaperAction = action
       const activity = await caller.activities.create({
         babyId: baby.id,
         details: {
-          dirty: diaperType === 'dirty' || diaperType === 'both',
           type: diaperType,
-          wet: diaperType === 'wet' || diaperType === 'both',
         },
         isScheduled: false,
         startTime: parsedInput.time ? new Date(parsedInput.time) : new Date(),

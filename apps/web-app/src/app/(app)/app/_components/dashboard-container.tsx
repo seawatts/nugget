@@ -1,13 +1,17 @@
 'use client';
 
 import type { Activities } from '@nugget/db/schema';
+import { useParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import { ActivityCards } from '~/app/(app)/app/_components/activity-cards';
 import { ActivityTimeline } from '~/app/(app)/app/_components/activity-timeline';
 import { LearningCarousel } from '~/app/(app)/app/_components/learning-carousel';
+import { MilestonesCarousel } from '~/app/(app)/app/_components/milestones-carousel';
 import { TodaySummaryCard } from '~/app/(app)/app/_components/today-summary-card';
 
 export function DashboardContainer() {
+  const params = useParams();
+  const babyId = params.userId as string;
   const [optimisticActivities, setOptimisticActivities] = useState<
     Array<typeof Activities.$inferSelect>
   >([]);
@@ -51,7 +55,10 @@ export function DashboardContainer() {
   return (
     <main className="px-4 pt-4 pb-8 min-h-screen">
       {/* Learning Carousel - Educational content based on baby's age */}
-      <LearningCarousel />
+      <LearningCarousel babyId={babyId} />
+
+      {/* Milestones Carousel - Track baby's developmental milestones */}
+      <MilestonesCarousel babyId={babyId} />
 
       {/* Today's Summary */}
       <div className="mb-6">

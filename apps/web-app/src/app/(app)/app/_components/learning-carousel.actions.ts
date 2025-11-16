@@ -13,7 +13,14 @@ import {
 import { DbCache } from '@nugget/content-rules/db-cache-adapter';
 import { resolveAIProps } from '@nugget/content-rules/dynamic-baml';
 import { createExampleProgram } from '@nugget/content-rules/example-program';
-import { differenceInDays, differenceInWeeks } from 'date-fns';
+import { Activities, type Baby, GrowthRecords } from '@nugget/db/schema';
+import {
+  differenceInDays,
+  differenceInWeeks,
+  subDays,
+  subWeeks,
+} from 'date-fns';
+import { and, desc, eq, gte } from 'drizzle-orm';
 
 interface LearningCard {
   id: string;
@@ -23,28 +30,86 @@ interface LearningCard {
   slot: Slot;
 }
 
+interface BabyContext {
+  ageInDays: number;
+  ageInWeeks: number;
+  currentWeightOz?: number;
+  birthWeightOz?: number;
+  height?: number;
+  headCircumference?: number;
+}
+
+interface ActivitySummary {
+  feedingCount: number;
+  sleepCount: number;
+  diaperCount: number;
+  avgFeedingInterval: number;
+  totalSleepHours: number;
+}
+
+interface WeeklyPatterns {
+  avgFeedingsPerDay: number;
+  avgSleepHours: number;
+  avgDiaperChanges: number;
+}
+
+interface EnhancedBabyData {
+  baby: BabyContext;
+  activities24h: ActivitySummary;
+  weeklyPatterns: WeeklyPatterns;
+}
+
+export interface LearningTip {
+  category:
+    | 'feeding'
+    | 'sleep'
+    | 'diaper'
+    | 'development'
+    | 'health'
+    | 'postpartum';
+  subtitle: string;
+  summary: string;
+  bulletPoints: string[];
+  followUpQuestion: string;
+}
+
+export interface LearningCarouselData {
+  cards: LearningCard[];
+  baby: Baby | null;
+}
+
 /**
  * Fetch learning carousel content based on baby's age and family context
  */
-export async function getLearningCarouselContent(): Promise<LearningCard[]> {
+export async function getLearningCarouselContent(
+  babyId: string,
+): Promise<LearningCarouselData> {
   try {
     // Verify authentication
     const authResult = await auth();
     if (!authResult.userId) {
-      return [];
+      return { baby: null, cards: [] };
     }
 
     // Create tRPC caller
     const ctx = await createTRPCContext();
     const caller = createCaller(ctx);
 
-    // Get the primary baby for the family
-    const babies = await caller.babies.list();
-    const baby = babies[0];
+    // Get the specific baby by ID
+    const baby = await caller.babies.getById({ id: babyId });
 
     if (!baby) {
-      return [];
+      return { baby: null, cards: [] };
     }
+
+    // Get enhanced baby data (growth records, activities, patterns)
+    const enhancedData = await getEnhancedBabyData(
+      baby.id,
+      baby.birthDate,
+      baby.birthWeightOz,
+      baby.currentWeightOz,
+      ctx,
+    );
 
     // Create database-backed cache for this baby
     const cache = new DbCache(
@@ -54,8 +119,8 @@ export async function getLearningCarouselContent(): Promise<LearningCard[]> {
       authResult.userId,
     );
 
-    // Build rule context
-    const context = buildRuleContext(baby);
+    // Build rule context with enhanced data
+    const context = buildRuleContext(baby, enhancedData);
 
     // Create the rules program with BAML client
     const program = createExampleProgram(b);
@@ -74,7 +139,7 @@ export async function getLearningCarouselContent(): Promise<LearningCard[]> {
     ];
 
     for (const { screen, slot } of slots) {
-      if (cards.length >= 5) break;
+      if (cards.length >= 10) break; // Allow more cards since we're expanding tip arrays
 
       const result = await pickForSlot(rules, screen, slot, context, cache);
 
@@ -100,14 +165,14 @@ export async function getLearningCarouselContent(): Promise<LearningCard[]> {
           }
         }
 
-        // Add age label based on context
-        const ageLabel = getAgeLabel(context);
+        // Add age in days based on context (for display in card header)
+        const ageInDays = context.baby?.ageInDays;
 
         cards.push({
           id: `${screen}-${slot}-${cards.length}`,
           props: {
             ...quickResolvedProps,
-            ageLabel,
+            ageInDays,
           },
           screen,
           slot,
@@ -116,23 +181,29 @@ export async function getLearningCarouselContent(): Promise<LearningCard[]> {
       }
     }
 
-    return cards;
+    return { baby, cards };
   } catch (error) {
     console.error('Error fetching learning carousel content:', error);
-    return [];
+    return { baby: null, cards: [] };
   }
 }
 
 /**
- * Build rule context from baby data
+ * Build rule context from baby data with enhanced information
  */
-function buildRuleContext(baby: {
-  id: string;
-  birthDate: Date | null;
-  dueDate: Date | null;
-  journeyStage: string | null;
-  gender: string | null;
-}): RuleContext {
+function buildRuleContext(
+  baby: {
+    id: string;
+    firstName: string;
+    middleName: string | null;
+    lastName: string | null;
+    birthDate: Date | null;
+    dueDate: Date | null;
+    journeyStage: string | null;
+    gender: string | null;
+  },
+  enhancedData: EnhancedBabyData,
+): RuleContext {
   const now = new Date();
   let scope: Scope | undefined;
   let week: number | undefined;
@@ -159,11 +230,16 @@ function buildRuleContext(baby: {
       ageInDays: baby.birthDate
         ? differenceInDays(now, baby.birthDate)
         : undefined,
+      firstName: baby.firstName,
+      lastName: baby.lastName,
+      middleName: baby.middleName,
       sex: baby.gender || 'U',
     },
     done: {
       nursery_setup: false, // TODO: Get from actual completion tracking
     },
+    // Enhanced baby context
+    enhancedBabyData: enhancedData,
     ppDay,
     ppWeek,
     progress: {
@@ -193,9 +269,170 @@ function getSeason(): string {
 }
 
 /**
+ * Fetch enhanced baby data including growth records, activities, and patterns
+ */
+async function getEnhancedBabyData(
+  babyId: string,
+  birthDate: Date | null,
+  birthWeightOz: number | null,
+  currentWeightOz: number | null,
+  ctx: Awaited<ReturnType<typeof createTRPCContext>>,
+): Promise<EnhancedBabyData> {
+  const now = new Date();
+  const ageInDays = birthDate ? differenceInDays(now, birthDate) : 0;
+  const ageInWeeks = birthDate ? differenceInWeeks(now, birthDate) : 0;
+
+  // Fetch latest growth record
+  const latestGrowth = await ctx.db.query.GrowthRecords.findFirst({
+    orderBy: [desc(GrowthRecords.date)],
+    where: eq(GrowthRecords.babyId, babyId),
+  });
+
+  // Fetch activities from last 24 hours
+  const twentyFourHoursAgo = subDays(now, 1);
+  const recentActivities = await ctx.db.query.Activities.findMany({
+    orderBy: [desc(Activities.startTime)],
+    where: and(
+      eq(Activities.babyId, babyId),
+      gte(Activities.startTime, twentyFourHoursAgo),
+      eq(Activities.isScheduled, false),
+    ),
+  });
+
+  // Fetch activities from last 7 days for weekly patterns
+  const sevenDaysAgo = subWeeks(now, 1);
+  const weeklyActivities = await ctx.db.query.Activities.findMany({
+    orderBy: [desc(Activities.startTime)],
+    where: and(
+      eq(Activities.babyId, babyId),
+      gte(Activities.startTime, sevenDaysAgo),
+      eq(Activities.isScheduled, false),
+    ),
+  });
+
+  // Calculate 24h activity summary
+  const activities24h = calculateActivitySummary(recentActivities);
+
+  // Calculate weekly patterns
+  const weeklyPatterns = calculateWeeklyPatterns(weeklyActivities);
+
+  return {
+    activities24h,
+    baby: {
+      ageInDays,
+      ageInWeeks,
+      birthWeightOz: birthWeightOz ?? undefined,
+      currentWeightOz: currentWeightOz ?? undefined,
+      headCircumference: latestGrowth?.headCircumference ?? undefined,
+      height: latestGrowth?.height ?? undefined,
+    },
+    weeklyPatterns,
+  };
+}
+
+/**
+ * Calculate activity summary for a given period
+ */
+function calculateActivitySummary(
+  activities: Array<{
+    type: string;
+    startTime: Date;
+    endTime: Date | null;
+  }>,
+): ActivitySummary {
+  const feedingActivities = activities.filter((a) =>
+    ['feeding', 'bottle', 'nursing'].includes(a.type),
+  );
+  const sleepActivities = activities.filter((a) => a.type === 'sleep');
+  const diaperActivities = activities.filter((a) =>
+    ['diaper', 'wet', 'dirty', 'both'].includes(a.type),
+  );
+
+  // Calculate average feeding interval
+  let avgFeedingInterval = 0;
+  if (feedingActivities.length > 1) {
+    const intervals: number[] = [];
+    for (let i = 1; i < feedingActivities.length; i++) {
+      const prevActivity = feedingActivities[i - 1];
+      const currActivity = feedingActivities[i];
+      if (prevActivity?.startTime && currActivity?.startTime) {
+        const interval = differenceInDays(
+          prevActivity.startTime,
+          currActivity.startTime,
+        );
+        intervals.push(interval * 24); // Convert to hours
+      }
+    }
+    avgFeedingInterval =
+      intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
+  }
+
+  // Calculate total sleep hours
+  let totalSleepHours = 0;
+  for (const activity of sleepActivities) {
+    if (activity.endTime) {
+      const hours =
+        (activity.endTime.getTime() - activity.startTime.getTime()) /
+        (1000 * 60 * 60);
+      totalSleepHours += hours;
+    }
+  }
+
+  return {
+    avgFeedingInterval: Number(avgFeedingInterval.toFixed(1)),
+    diaperCount: diaperActivities.length,
+    feedingCount: feedingActivities.length,
+    sleepCount: sleepActivities.length,
+    totalSleepHours: Number(totalSleepHours.toFixed(1)),
+  };
+}
+
+/**
+ * Calculate weekly patterns from activities
+ */
+function calculateWeeklyPatterns(
+  activities: Array<{
+    type: string;
+    startTime: Date;
+    endTime: Date | null;
+  }>,
+): WeeklyPatterns {
+  const feedingActivities = activities.filter((a) =>
+    ['feeding', 'bottle', 'nursing'].includes(a.type),
+  );
+  const sleepActivities = activities.filter((a) => a.type === 'sleep');
+  const diaperActivities = activities.filter((a) =>
+    ['diaper', 'wet', 'dirty', 'both'].includes(a.type),
+  );
+
+  // Calculate average per day (over 7 days)
+  const avgFeedingsPerDay = feedingActivities.length / 7;
+
+  // Calculate total sleep hours
+  let totalSleepHours = 0;
+  for (const activity of sleepActivities) {
+    if (activity.endTime) {
+      const hours =
+        (activity.endTime.getTime() - activity.startTime.getTime()) /
+        (1000 * 60 * 60);
+      totalSleepHours += hours;
+    }
+  }
+  const avgSleepHours = totalSleepHours / 7;
+
+  const avgDiaperChanges = diaperActivities.length / 7;
+
+  return {
+    avgDiaperChanges: Number(avgDiaperChanges.toFixed(1)),
+    avgFeedingsPerDay: Number(avgFeedingsPerDay.toFixed(1)),
+    avgSleepHours: Number(avgSleepHours.toFixed(1)),
+  };
+}
+
+/**
  * Get age label for display
  */
-function getAgeLabel(context: RuleContext): string | undefined {
+function _getAgeLabel(context: RuleContext): string | undefined {
   if (context.scope === Scope.Postpartum) {
     if (context.ppDay !== undefined && context.ppDay <= 14) {
       return `Day ${context.ppDay}`;
@@ -236,6 +473,15 @@ export async function resolveCardAIContent(
       return null;
     }
 
+    // Get enhanced baby data (growth records, activities, patterns)
+    const enhancedData = await getEnhancedBabyData(
+      baby.id,
+      baby.birthDate,
+      baby.birthWeightOz,
+      baby.currentWeightOz,
+      ctx,
+    );
+
     // Create database-backed cache for this baby
     const cache = new DbCache(
       ctx.db,
@@ -244,8 +490,8 @@ export async function resolveCardAIContent(
       authResult.userId,
     );
 
-    // Build rule context
-    const context = buildRuleContext(baby);
+    // Build rule context with enhanced data
+    const context = buildRuleContext(baby, enhancedData);
 
     // Create the rules program with BAML client
     const program = createExampleProgram(b);

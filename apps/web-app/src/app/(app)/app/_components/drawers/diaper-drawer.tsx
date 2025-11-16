@@ -4,40 +4,128 @@ import { Button } from '@nugget/ui/button';
 import { Baby, Droplets, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-export function DiaperDrawerContent() {
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const [babyAgeDays, setBabyAgeDays] = useState<number | null>(null);
+export interface DiaperFormData {
+  type: 'wet' | 'dirty' | 'both' | null;
+  size: 'little' | 'medium' | 'large' | null;
+  color:
+    | 'yellow'
+    | 'brown'
+    | 'green'
+    | 'black'
+    | 'red'
+    | 'white'
+    | 'orange'
+    | null;
+  consistency:
+    | 'solid'
+    | 'loose'
+    | 'runny'
+    | 'mucousy'
+    | 'hard'
+    | 'pebbles'
+    | 'diarrhea'
+    | null;
+  hasRash: boolean;
+  notes: string;
+}
 
+interface DiaperDrawerContentProps {
+  onDataChange?: (data: DiaperFormData) => void;
+}
+
+export function DiaperDrawerContent({
+  onDataChange,
+}: DiaperDrawerContentProps) {
+  const [selectedType, setSelectedType] = useState<
+    'wet' | 'dirty' | 'both' | null
+  >(null);
+  const [size, setSize] = useState<'little' | 'medium' | 'large' | null>(null);
+  const [color, setColor] = useState<
+    'yellow' | 'brown' | 'green' | 'black' | 'red' | 'white' | 'orange' | null
+  >(null);
+  const [consistency, setConsistency] = useState<
+    | 'solid'
+    | 'loose'
+    | 'runny'
+    | 'mucousy'
+    | 'hard'
+    | 'pebbles'
+    | 'diarrhea'
+    | null
+  >(null);
+  const [hasRash, setHasRash] = useState(false);
+  const [notes, setNotes] = useState('');
+
+  // Call onDataChange whenever form data changes
   useEffect(() => {
-    const onboardingData = localStorage.getItem('onboardingData');
-    if (onboardingData) {
-      const data = JSON.parse(onboardingData);
-      if (data.birthDate) {
-        const birth = new Date(data.birthDate);
-        const now = new Date();
-        const diffTime = Math.abs(now.getTime() - birth.getTime());
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        setBabyAgeDays(diffDays);
-      }
-    }
-  }, []);
-
-  const getConditionOptions = () => {
-    if (babyAgeDays !== null && babyAgeDays <= 3) {
-      return ['Meconium (Black/Tar)', 'Transitional', 'Seedy Yellow'];
-    }
-    return ['Normal', 'Runny', 'Hard', 'Unusual'];
-  };
+    onDataChange?.({
+      color,
+      consistency,
+      hasRash,
+      notes,
+      size,
+      type: selectedType,
+    });
+  }, [selectedType, size, color, consistency, hasRash, notes, onDataChange]);
 
   const types = [
-    { color: 'text-blue-500', icon: Droplets, id: 'wet', label: 'Wet' },
-    { color: 'text-amber-600', icon: Trash2, id: 'dirty', label: 'Dirty' },
-    { color: 'text-purple-500', icon: Baby, id: 'both', label: 'Both' },
+    {
+      color: 'text-blue-500',
+      icon: Droplets,
+      id: 'wet' as const,
+      label: 'Pee',
+    },
+    {
+      color: 'text-amber-600',
+      icon: Trash2,
+      id: 'dirty' as const,
+      label: 'Poop',
+    },
+    {
+      color: 'text-purple-500',
+      icon: Baby,
+      id: 'both' as const,
+      label: 'Both',
+    },
   ];
 
-  const toggleType = (id: string) => {
-    setSelectedTypes([id]);
+  const sizes = [
+    { id: 'little' as const, label: 'Little' },
+    { id: 'medium' as const, label: 'Medium' },
+    { id: 'large' as const, label: 'Large' },
+  ];
+
+  const colors = [
+    { dotColor: 'bg-yellow-400', id: 'yellow' as const, label: 'Yellow' },
+    { dotColor: 'bg-amber-700', id: 'brown' as const, label: 'Brown' },
+    { dotColor: 'bg-green-600', id: 'green' as const, label: 'Green' },
+    { dotColor: 'bg-gray-900', id: 'black' as const, label: 'Black' },
+    { dotColor: 'bg-red-600', id: 'red' as const, label: 'Red' },
+    {
+      dotColor: 'bg-gray-100 border-2 border-gray-300',
+      id: 'white' as const,
+      label: 'White',
+    },
+    { dotColor: 'bg-orange-500', id: 'orange' as const, label: 'Orange' },
+  ];
+
+  const consistencies = [
+    { id: 'solid' as const, label: 'Solid' },
+    { id: 'loose' as const, label: 'Loose' },
+    { id: 'runny' as const, label: 'Runny' },
+    { id: 'mucousy' as const, label: 'Mucousy' },
+    { id: 'hard' as const, label: 'Hard' },
+    { id: 'pebbles' as const, label: 'Pebbles' },
+    { id: 'diarrhea' as const, label: 'Diarrhea' },
+  ];
+
+  const toggleType = (id: 'wet' | 'dirty' | 'both') => {
+    setSelectedType(id);
   };
+
+  const showSize = selectedType !== null;
+  const showColorAndConsistency =
+    selectedType === 'dirty' || selectedType === 'both';
 
   return (
     <div className="space-y-6">
@@ -47,7 +135,7 @@ export function DiaperDrawerContent() {
         <div className="grid grid-cols-3 gap-3">
           {types.map((type) => {
             const Icon = type.icon;
-            const isSelected = selectedTypes.includes(type.id);
+            const isSelected = selectedType === type.id;
             return (
               <button
                 className={`p-6 rounded-2xl border-2 transition-all ${
@@ -67,25 +155,76 @@ export function DiaperDrawerContent() {
         </div>
       </div>
 
-      {/* Condition */}
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-muted-foreground">
-          {babyAgeDays !== null && babyAgeDays <= 3
-            ? 'Stool Type'
-            : 'Condition'}
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          {getConditionOptions().map((condition) => (
-            <Button
-              className="h-12 bg-transparent text-sm"
-              key={condition}
-              variant="outline"
-            >
-              {condition}
-            </Button>
-          ))}
+      {/* Size Selector - Shows for all types when selected */}
+      {showSize && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">Size</p>
+          <div className="grid grid-cols-3 gap-3">
+            {sizes.map((sizeOption) => (
+              <Button
+                className={`h-12 ${
+                  size === sizeOption.id
+                    ? 'border-[oklch(0.78_0.14_60)] bg-[oklch(0.78_0.14_60)]/10'
+                    : 'bg-transparent'
+                }`}
+                key={sizeOption.id}
+                onClick={() => setSize(sizeOption.id)}
+                variant="outline"
+              >
+                {sizeOption.label}
+              </Button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Color Selector - Shows for Poop and Both */}
+      {showColorAndConsistency && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">Color</p>
+          <div className="grid grid-cols-7 gap-3">
+            {colors.map((colorOption) => (
+              <button
+                aria-label={colorOption.label}
+                className={`h-12 w-12 rounded-full transition-all ${colorOption.dotColor} ${
+                  color === colorOption.id
+                    ? 'ring-4 ring-[oklch(0.78_0.14_60)] ring-offset-2'
+                    : 'hover:ring-2 hover:ring-border hover:ring-offset-2'
+                }`}
+                key={colorOption.id}
+                onClick={() => setColor(colorOption.id)}
+                title={colorOption.label}
+                type="button"
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Consistency Selector - Shows for Poop and Both */}
+      {showColorAndConsistency && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">
+            Consistency
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {consistencies.map((consistencyOption) => (
+              <Button
+                className={`h-12 ${
+                  consistency === consistencyOption.id
+                    ? 'border-[oklch(0.78_0.14_60)] bg-[oklch(0.78_0.14_60)]/10'
+                    : 'bg-transparent'
+                }`}
+                key={consistencyOption.id}
+                onClick={() => setConsistency(consistencyOption.id)}
+                variant="outline"
+              >
+                {consistencyOption.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Rash */}
       <div className="space-y-3">
@@ -93,10 +232,26 @@ export function DiaperDrawerContent() {
           Diaper Rash?
         </p>
         <div className="grid grid-cols-2 gap-3">
-          <Button className="h-12 bg-transparent" variant="outline">
+          <Button
+            className={`h-12 ${
+              !hasRash
+                ? 'border-[oklch(0.78_0.14_60)] bg-[oklch(0.78_0.14_60)]/10'
+                : 'bg-transparent'
+            }`}
+            onClick={() => setHasRash(false)}
+            variant="outline"
+          >
             No Rash
           </Button>
-          <Button className="h-12 bg-transparent" variant="outline">
+          <Button
+            className={`h-12 ${
+              hasRash
+                ? 'border-[oklch(0.78_0.14_60)] bg-[oklch(0.78_0.14_60)]/10'
+                : 'bg-transparent'
+            }`}
+            onClick={() => setHasRash(true)}
+            variant="outline"
+          >
             Has Rash
           </Button>
         </div>
@@ -109,7 +264,9 @@ export function DiaperDrawerContent() {
         </p>
         <textarea
           className="w-full h-24 p-4 rounded-xl bg-card border border-border resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+          onChange={(e) => setNotes(e.target.value)}
           placeholder="Add any notes about this diaper change..."
+          value={notes}
         />
       </div>
     </div>

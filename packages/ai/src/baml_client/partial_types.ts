@@ -20,7 +20,7 @@ $ pnpm add @boundaryml/baml
 
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml"
 import type { Checked, Check } from "./types"
-import type {  AppointmentNudgeOutput,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  NewbornMilestoneOutput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  SleepRegressionTipsOutput,  StalePromptsOutput } from "./types"
+import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningTip,  MilestoneExplanationOutput,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "./types"
 import type * as types from "./types"
 
 /******************************************************************************
@@ -39,11 +39,46 @@ export namespace partial_types {
     export interface AppointmentNudgeOutput {
       text?: string | null
     }
+    export interface BabyAssistantChatOutput {
+      response?: string | null
+    }
+    export interface BabyContext {
+      babyName?: string | null
+      ageInDays?: number | null
+      ageInWeeks?: number | null
+      currentWeightOz?: number | null
+      birthWeightOz?: number | null
+      feedingCount24h?: number | null
+      avgFeedingInterval?: number | null
+      sleepCount24h?: number | null
+      totalSleepHours24h?: number | null
+      diaperCount24h?: number | null
+    }
     export interface BabyVisitExplainerOutput {
       text?: string | null
     }
     export interface BirthPlanHeadlineOutput {
       text?: string | null
+    }
+    export interface ChatMessage {
+      role?: string | null
+      content?: string | null
+    }
+    export interface ChatTitleOutput {
+      title?: string | null
+    }
+    export interface CheckInQuestion {
+      question?: string | null
+      responseType?: types.ResponseType | null
+      category?: string | null
+      priority?: string | null
+      followUpPrompt?: string | null
+    }
+    export interface ContextualMilestonesOutput {
+      milestones: MilestoneSuggestion[]
+    }
+    export interface DailyCheckInQuestionsOutput {
+      questions: CheckInQuestion[]
     }
     export interface HospitalPackAdviceOutput {
       headline?: string | null
@@ -55,19 +90,73 @@ export namespace partial_types {
       performance: string[]
       overall_priority: string[]
     }
+    export interface LearningTip {
+      category?: string | null
+      subtitle?: string | null
+      summary?: string | null
+      bulletPoints: string[]
+      followUpQuestion?: string | null
+    }
+    export interface MilestoneExplanationOutput {
+      explanation?: string | null
+      whyItMatters?: string | null
+      whatToExpect?: string | null
+      tips: string[]
+      reassurance?: string | null
+    }
+    export interface MilestoneSuggestion {
+      title?: string | null
+      type?: string | null
+      description?: string | null
+      ageLabel?: string | null
+      relevance?: string | null
+    }
     export interface NewbornMilestoneOutput {
-      text?: string | null
+      tips: LearningTip[]
+    }
+    export interface ParentTask {
+      taskText?: string | null
+      category?: string | null
+      priority?: string | null
+      suggestedTime?: string | null
+      estimatedMinutes?: number | null
+      whyItMatters?: string | null
+    }
+    export interface ParentTip {
+      title?: string | null
+      content?: string | null
+      actionItems: string[]
+      relevantToRole?: string | null
+    }
+    export interface PersonalizedTasksOutput {
+      tasks: ParentTask[]
+      motivationalMessage?: string | null
     }
     export interface PostpartumTipsOutput {
-      text?: string | null
+      tips: LearningTip[]
     }
     export interface PregnancyWeekSummaryOutput {
       text?: string | null
     }
+    export interface RoleSpecificTipsOutput {
+      tips: ParentTip[]
+    }
     export interface SleepRegressionTipsOutput {
-      snippet?: string | null
+      tips: LearningTip[]
     }
     export interface StalePromptsOutput {
       list: string[]
+    }
+    export interface WellnessQuestion {
+      question?: string | null
+      responseType?: string | null
+      category?: string | null
+      weight?: number | null
+      reverseScore?: boolean | null
+    }
+    export interface WellnessScreeningOutput {
+      questions: WellnessQuestion[]
+      scoringGuidance?: string | null
+      supportResources: string[]
     }
 }

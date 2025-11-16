@@ -398,6 +398,62 @@ export function useAppointmentNudge(
   }
 }
 /**
+ * A specialized hook for the BabyAssistantChat BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - conversationHistory: types.ChatMessage[]
+ *
+ * - babyContext: types.BabyContext
+ *
+ * - userQuestion: string
+ *
+ * - systemPrompt (optional): string | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.BabyAssistantChatOutput
+ * - **Streaming Partial:** BabyAssistantChatOutput
+ * - **Streaming Final:** types.BabyAssistantChatOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useBabyAssistantChat({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useBabyAssistantChat({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useBabyAssistantChat(props: HookInput<'BabyAssistantChat', { stream: false }>): HookOutput<'BabyAssistantChat', { stream: false }>
+export function useBabyAssistantChat(props?: HookInput<'BabyAssistantChat', { stream?: true }>): HookOutput<'BabyAssistantChat', { stream: true }>
+export function useBabyAssistantChat(
+  props: HookInput<'BabyAssistantChat', { stream?: boolean }> = {},
+): HookOutput<'BabyAssistantChat', { stream: true }> | HookOutput<'BabyAssistantChat', { stream: false }> {
+  let action: ServerAction = Actions.BabyAssistantChat;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.BabyAssistantChat;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'BabyAssistantChat', { stream: false }>)
+  }
+}
+/**
  * A specialized hook for the BabyVisitExplainer BAML function that supports both streaming and non‑streaming responses.
  *
  * **Input Types:**
@@ -498,6 +554,204 @@ export function useBirthPlanHeadline(
   }
 }
 /**
+ * A specialized hook for the DailyCheckInQuestions BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - ppDay: number
+ *
+ * - parentRole: string
+ *
+ * - parentSleepHours (optional): number | null
+ *
+ * - ageInDays: number
+ *
+ * - ageInWeeks: number
+ *
+ * - firstPregnancy: boolean
+ *
+ * - avgFeedingsPerDay (optional): number | null
+ *
+ * - avgSleepHoursPerDay (optional): number | null
+ *
+ * - avgDiaperChangesPerDay (optional): number | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.DailyCheckInQuestionsOutput
+ * - **Streaming Partial:** DailyCheckInQuestionsOutput
+ * - **Streaming Final:** types.DailyCheckInQuestionsOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useDailyCheckInQuestions({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useDailyCheckInQuestions({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useDailyCheckInQuestions(props: HookInput<'DailyCheckInQuestions', { stream: false }>): HookOutput<'DailyCheckInQuestions', { stream: false }>
+export function useDailyCheckInQuestions(props?: HookInput<'DailyCheckInQuestions', { stream?: true }>): HookOutput<'DailyCheckInQuestions', { stream: true }>
+export function useDailyCheckInQuestions(
+  props: HookInput<'DailyCheckInQuestions', { stream?: boolean }> = {},
+): HookOutput<'DailyCheckInQuestions', { stream: true }> | HookOutput<'DailyCheckInQuestions', { stream: false }> {
+  let action: ServerAction = Actions.DailyCheckInQuestions;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.DailyCheckInQuestions;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'DailyCheckInQuestions', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the GenerateChatTitle BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - firstUserMessage: string
+ *
+ * - firstAssistantResponse: string
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.ChatTitleOutput
+ * - **Streaming Partial:** ChatTitleOutput
+ * - **Streaming Final:** types.ChatTitleOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useGenerateChatTitle({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useGenerateChatTitle({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useGenerateChatTitle(props: HookInput<'GenerateChatTitle', { stream: false }>): HookOutput<'GenerateChatTitle', { stream: false }>
+export function useGenerateChatTitle(props?: HookInput<'GenerateChatTitle', { stream?: true }>): HookOutput<'GenerateChatTitle', { stream: true }>
+export function useGenerateChatTitle(
+  props: HookInput<'GenerateChatTitle', { stream?: boolean }> = {},
+): HookOutput<'GenerateChatTitle', { stream: true }> | HookOutput<'GenerateChatTitle', { stream: false }> {
+  let action: ServerAction = Actions.GenerateChatTitle;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.GenerateChatTitle;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'GenerateChatTitle', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the GenerateContextualMilestones BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - babyName: string
+ *
+ * - ageInDays: number
+ *
+ * - ageInWeeks: number
+ *
+ * - currentWeightOz (optional): number | null
+ *
+ * - birthWeightOz (optional): number | null
+ *
+ * - height (optional): number | null
+ *
+ * - feedingCount24h (optional): number | null
+ *
+ * - avgFeedingInterval (optional): number | null
+ *
+ * - sleepCount24h (optional): number | null
+ *
+ * - totalSleepHours24h (optional): number | null
+ *
+ * - diaperCount24h (optional): number | null
+ *
+ * - avgFeedingsPerDay (optional): number | null
+ *
+ * - avgSleepHoursPerDay (optional): number | null
+ *
+ * - avgDiaperChangesPerDay (optional): number | null
+ *
+ * - recentDiaperColors (optional): string | null
+ *
+ * - hasTummyTimeActivity (optional): boolean | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.ContextualMilestonesOutput
+ * - **Streaming Partial:** ContextualMilestonesOutput
+ * - **Streaming Final:** types.ContextualMilestonesOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useGenerateContextualMilestones({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useGenerateContextualMilestones({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useGenerateContextualMilestones(props: HookInput<'GenerateContextualMilestones', { stream: false }>): HookOutput<'GenerateContextualMilestones', { stream: false }>
+export function useGenerateContextualMilestones(props?: HookInput<'GenerateContextualMilestones', { stream?: true }>): HookOutput<'GenerateContextualMilestones', { stream: true }>
+export function useGenerateContextualMilestones(
+  props: HookInput<'GenerateContextualMilestones', { stream?: boolean }> = {},
+): HookOutput<'GenerateContextualMilestones', { stream: true }> | HookOutput<'GenerateContextualMilestones', { stream: false }> {
+  let action: ServerAction = Actions.GenerateContextualMilestones;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.GenerateContextualMilestones;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'GenerateContextualMilestones', { stream: false }>)
+  }
+}
+/**
  * A specialized hook for the HospitalPackAdvice BAML function that supports both streaming and non‑streaming responses.
  *
  * **Input Types:**
@@ -548,15 +802,99 @@ export function useHospitalPackAdvice(
   }
 }
 /**
+ * A specialized hook for the MilestoneExplanation BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - milestoneTitle: string
+ *
+ * - milestoneType: string
+ *
+ * - babyName: string
+ *
+ * - ageInDays: number
+ *
+ * - ageInWeeks: number
+ *
+ * - currentWeightOz (optional): number | null
+ *
+ * - birthWeightOz (optional): number | null
+ *
+ * - feedingCount24h (optional): number | null
+ *
+ * - sleepCount24h (optional): number | null
+ *
+ * - diaperCount24h (optional): number | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.MilestoneExplanationOutput
+ * - **Streaming Partial:** MilestoneExplanationOutput
+ * - **Streaming Final:** types.MilestoneExplanationOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useMilestoneExplanation({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useMilestoneExplanation({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useMilestoneExplanation(props: HookInput<'MilestoneExplanation', { stream: false }>): HookOutput<'MilestoneExplanation', { stream: false }>
+export function useMilestoneExplanation(props?: HookInput<'MilestoneExplanation', { stream?: true }>): HookOutput<'MilestoneExplanation', { stream: true }>
+export function useMilestoneExplanation(
+  props: HookInput<'MilestoneExplanation', { stream?: boolean }> = {},
+): HookOutput<'MilestoneExplanation', { stream: true }> | HookOutput<'MilestoneExplanation', { stream: false }> {
+  let action: ServerAction = Actions.MilestoneExplanation;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.MilestoneExplanation;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'MilestoneExplanation', { stream: false }>)
+  }
+}
+/**
  * A specialized hook for the NewbornWeekMilestone BAML function that supports both streaming and non‑streaming responses.
  *
  * **Input Types:**
+ *
+ * - babyName: string
  *
  * - week: number
  *
  * - babySex (optional): string | null
  *
  * - firstPregnancy: boolean
+ *
+ * - ageInDays: number
+ *
+ * - currentWeightOz (optional): number | null
+ *
+ * - birthWeightOz (optional): number | null
+ *
+ * - height (optional): number | null
+ *
+ * - headCircumference (optional): number | null
+ *
+ * - feedingCount24h (optional): number | null
+ *
+ * - sleepCount24h (optional): number | null
  *
  *
  * **Return Type:**
@@ -602,13 +940,99 @@ export function useNewbornWeekMilestone(
   }
 }
 /**
+ * A specialized hook for the PersonalizedTasks BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - babyAgeInDays: number
+ *
+ * - ppWeek: number
+ *
+ * - timeOfDay: string
+ *
+ * - feedingMethod: string
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.PersonalizedTasksOutput
+ * - **Streaming Partial:** PersonalizedTasksOutput
+ * - **Streaming Final:** types.PersonalizedTasksOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = usePersonalizedTasks({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = usePersonalizedTasks({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function usePersonalizedTasks(props: HookInput<'PersonalizedTasks', { stream: false }>): HookOutput<'PersonalizedTasks', { stream: false }>
+export function usePersonalizedTasks(props?: HookInput<'PersonalizedTasks', { stream?: true }>): HookOutput<'PersonalizedTasks', { stream: true }>
+export function usePersonalizedTasks(
+  props: HookInput<'PersonalizedTasks', { stream?: boolean }> = {},
+): HookOutput<'PersonalizedTasks', { stream: true }> | HookOutput<'PersonalizedTasks', { stream: false }> {
+  let action: ServerAction = Actions.PersonalizedTasks;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.PersonalizedTasks;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'PersonalizedTasks', { stream: false }>)
+  }
+}
+/**
  * A specialized hook for the PostpartumTips BAML function that supports both streaming and non‑streaming responses.
  *
  * **Input Types:**
  *
+ * - babyName: string
+ *
  * - day: number
  *
  * - firstPregnancy: boolean
+ *
+ * - ageInDays: number
+ *
+ * - ageInWeeks: number
+ *
+ * - currentWeightOz (optional): number | null
+ *
+ * - birthWeightOz (optional): number | null
+ *
+ * - height (optional): number | null
+ *
+ * - headCircumference (optional): number | null
+ *
+ * - feedingCount24h (optional): number | null
+ *
+ * - avgFeedingInterval (optional): number | null
+ *
+ * - sleepCount24h (optional): number | null
+ *
+ * - totalSleepHours24h (optional): number | null
+ *
+ * - diaperCount24h (optional): number | null
+ *
+ * - avgFeedingsPerDay (optional): number | null
+ *
+ * - avgSleepHoursPerDay (optional): number | null
+ *
+ * - avgDiaperChangesPerDay (optional): number | null
  *
  *
  * **Return Type:**
@@ -704,11 +1128,87 @@ export function usePregnancyWeekSummary(
   }
 }
 /**
+ * A specialized hook for the RoleSpecificTips BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - parentRole: string
+ *
+ * - ppDay (optional): number | null
+ *
+ * - babyAgeInDays: number
+ *
+ * - topic: string
+ *
+ * - recentSleepHours (optional): number | null
+ *
+ * - concerns (optional): string[] | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.RoleSpecificTipsOutput
+ * - **Streaming Partial:** RoleSpecificTipsOutput
+ * - **Streaming Final:** types.RoleSpecificTipsOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useRoleSpecificTips({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useRoleSpecificTips({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useRoleSpecificTips(props: HookInput<'RoleSpecificTips', { stream: false }>): HookOutput<'RoleSpecificTips', { stream: false }>
+export function useRoleSpecificTips(props?: HookInput<'RoleSpecificTips', { stream?: true }>): HookOutput<'RoleSpecificTips', { stream: true }>
+export function useRoleSpecificTips(
+  props: HookInput<'RoleSpecificTips', { stream?: boolean }> = {},
+): HookOutput<'RoleSpecificTips', { stream: true }> | HookOutput<'RoleSpecificTips', { stream: false }> {
+  let action: ServerAction = Actions.RoleSpecificTips;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.RoleSpecificTips;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'RoleSpecificTips', { stream: false }>)
+  }
+}
+/**
  * A specialized hook for the SleepRegressionTips BAML function that supports both streaming and non‑streaming responses.
  *
  * **Input Types:**
  *
+ * - babyName: string
+ *
  * - week: number
+ *
+ * - ageInDays: number
+ *
+ * - currentWeightOz (optional): number | null
+ *
+ * - birthWeightOz (optional): number | null
+ *
+ * - sleepCount24h (optional): number | null
+ *
+ * - totalSleepHours24h (optional): number | null
+ *
+ * - avgSleepHoursPerDay (optional): number | null
+ *
+ * - feedingCount24h (optional): number | null
  *
  *
  * **Return Type:**
@@ -857,5 +1357,65 @@ export function useSuggestImprovements(
     return useBamlAction(action, props)
   } else {
     return useBamlAction(action, props as HookInput<'SuggestImprovements', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the WellnessScreening BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - ppDay: number
+ *
+ * - ppWeek (optional): number | null
+ *
+ * - firstPregnancy: boolean
+ *
+ * - babyFirstName: string
+ *
+ * - ageInDays: number
+ *
+ * - previousCheckIns: string
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.WellnessScreeningOutput
+ * - **Streaming Partial:** WellnessScreeningOutput
+ * - **Streaming Final:** types.WellnessScreeningOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useWellnessScreening({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useWellnessScreening({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useWellnessScreening(props: HookInput<'WellnessScreening', { stream: false }>): HookOutput<'WellnessScreening', { stream: false }>
+export function useWellnessScreening(props?: HookInput<'WellnessScreening', { stream?: true }>): HookOutput<'WellnessScreening', { stream: true }>
+export function useWellnessScreening(
+  props: HookInput<'WellnessScreening', { stream?: boolean }> = {},
+): HookOutput<'WellnessScreening', { stream: true }> | HookOutput<'WellnessScreening', { stream: false }> {
+  let action: ServerAction = Actions.WellnessScreening;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.WellnessScreening;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'WellnessScreening', { stream: false }>)
   }
 }

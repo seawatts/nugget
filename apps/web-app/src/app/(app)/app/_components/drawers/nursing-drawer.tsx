@@ -70,15 +70,9 @@ export function NursingDrawerContent({
 
   const handleQuickAdd = (minutes: number) => {
     const seconds = minutes * 60;
-    if (activeSide === 'left') {
-      setLeftDuration(seconds);
-    } else if (activeSide === 'right') {
-      setRightDuration(seconds);
-    } else {
-      // If no side is selected, default to left side
-      setActiveSide('left');
-      setLeftDuration(seconds);
-    }
+    // Add duration to BOTH sides simultaneously
+    setLeftDuration(seconds);
+    setRightDuration(seconds);
   };
 
   const toggleTimer = () => {
@@ -101,6 +95,25 @@ export function NursingDrawerContent({
 
   return (
     <div className="space-y-6">
+      {/* Quick Duration - Moved to top */}
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-muted-foreground">
+          Quick Add Duration
+        </p>
+        <div className="grid grid-cols-4 gap-2">
+          {[5, 10, 15, 20].map((min) => (
+            <Button
+              className="h-12 bg-transparent"
+              key={min}
+              onClick={() => handleQuickAdd(min)}
+              variant="outline"
+            >
+              {min}m
+            </Button>
+          ))}
+        </div>
+      </div>
+
       {/* Side Selection */}
       <div className="grid grid-cols-2 gap-4">
         <button
@@ -170,25 +183,6 @@ export function NursingDrawerContent({
           </div>
         </div>
       )}
-
-      {/* Quick Duration */}
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-muted-foreground">
-          Quick Add Duration
-        </p>
-        <div className="grid grid-cols-4 gap-2">
-          {[5, 10, 15, 20].map((min) => (
-            <Button
-              className="h-12 bg-transparent"
-              key={min}
-              onClick={() => handleQuickAdd(min)}
-              variant="outline"
-            >
-              {min}m
-            </Button>
-          ))}
-        </div>
-      </div>
 
       {/* Notes */}
       <div className="space-y-3">

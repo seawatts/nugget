@@ -135,8 +135,12 @@ export function UpcomingFeedingCard({
     suggestedMember,
     guidanceMessage,
     familyMemberCount,
+    babyAgeDays,
   } = data;
-  const feedingStatus = getFeedingStatus(prediction.nextFeedingTime);
+  const feedingStatus = getFeedingStatus(
+    prediction.nextFeedingTime,
+    babyAgeDays,
+  );
   const isAssignedToCurrentUser = assignedMember?.userId === user?.id;
 
   // Only show assignment section if there are multiple family members

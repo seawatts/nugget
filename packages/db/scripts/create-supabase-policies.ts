@@ -139,6 +139,24 @@ const policyConfigs: Record<string, PolicyConfig> = {
     policies: [createUserOwnershipPolicy('ALL', 'userId')],
     tableName: 'babies',
   },
+  chatMessages: {
+    policies: [
+      {
+        name: 'Family members can manage chat messages',
+        operation: 'ALL',
+        using: `"chatMessages"."chatId" IN (
+          SELECT "chats"."id"
+          FROM "chats"
+          WHERE "chats"."familyId" = (SELECT requesting_family_id())
+        )`,
+      },
+    ],
+    tableName: 'chatMessages',
+  },
+  chats: {
+    policies: [createFamilyOwnershipPolicy('ALL', 'familyId')],
+    tableName: 'chats',
+  },
   contentCache: {
     policies: [createUserOwnershipPolicy('ALL', 'userId')],
     tableName: 'contentCache',

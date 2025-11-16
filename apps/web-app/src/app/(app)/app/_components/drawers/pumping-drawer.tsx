@@ -1,94 +1,89 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import { Button } from '@nugget/ui/button';
-import { Droplets, Minus, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { Droplets, Info, Minus, Plus } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+  calculateBabyAgeDays,
+  calculatePumpingVolumes,
+  isColostrumPhase,
+  mlToOz,
+} from './pumping-volume-calculator';
 
 export function PumpingDrawerContent() {
+  // Fetch baby data and user preferences
+  const { data: babies = [] } = api.babies.list.useQuery();
+  const { data: user } = api.user.current.useQuery();
+  const baby = babies[0]; // Use first baby
+  const measurementUnit = user?.measurementUnit || 'metric';
+  const userUnitPref = measurementUnit === 'imperial' ? 'OZ' : 'ML';
+
+  // State - use default values that will be updated based on user preference
   const [leftAmount, setLeftAmount] = useState(2);
   const [rightAmount, setRightAmount] = useState(2);
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<
     'electric' | 'manual' | null
   >(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // Calculate baby age
+  const babyAgeDays = baby?.birthDate
+    ? calculateBabyAgeDays(new Date(baby.birthDate))
+    : null;
+
+  // Check if in colostrum phase
+  const showColostrumBadge =
+    babyAgeDays !== null && isColostrumPhase(babyAgeDays);
+
+  // Initialize amounts based on user preference when data loads
+  useEffect(() => {
+    if (user && !hasInitialized) {
+      const defaultAmount = userUnitPref === 'OZ' ? 2 : 60;
+      setLeftAmount(defaultAmount);
+      setRightAmount(defaultAmount);
+      setHasInitialized(true);
+    }
+  }, [user, userUnitPref, hasInitialized]);
+
+  // Auto-calculate volumes when duration is selected
+  useEffect(() => {
+    if (selectedDuration !== null && babyAgeDays !== null) {
+      const volumes = calculatePumpingVolumes(
+        babyAgeDays,
+        selectedDuration,
+        baby?.mlPerPump,
+      );
+
+      // Convert to user's preferred unit
+      if (userUnitPref === 'OZ') {
+        setLeftAmount(mlToOz(volumes.leftMl));
+        setRightAmount(mlToOz(volumes.rightMl));
+      } else {
+        setLeftAmount(Math.round(volumes.leftMl));
+        setRightAmount(Math.round(volumes.rightMl));
+      }
+    }
+  }, [selectedDuration, babyAgeDays, baby?.mlPerPump, userUnitPref]);
+
+  // Get step size and min value based on user preference
+  const step = userUnitPref === 'OZ' ? 0.5 : 30;
+  const minAmount = userUnitPref === 'OZ' ? 0.5 : 30;
+  const unit = userUnitPref === 'OZ' ? 'oz' : 'ml';
 
   return (
     <div className="space-y-6">
-      {/* Amount Selectors */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Left Side */}
-        <div className="bg-card rounded-2xl p-6">
-          <p className="text-sm font-medium text-muted-foreground mb-4 text-center">
-            Left
-          </p>
-          <div className="flex items-center justify-center gap-3">
-            <Button
-              className="h-10 w-10 rounded-full bg-transparent"
-              onClick={() => setLeftAmount(Math.max(0, leftAmount - 0.5))}
-              size="icon"
-              variant="outline"
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <div className="text-center min-w-[60px]">
-              <div className="text-3xl font-bold">{leftAmount}</div>
-              <p className="text-xs text-muted-foreground">oz</p>
-            </div>
-            <Button
-              className="h-10 w-10 rounded-full bg-transparent"
-              onClick={() => setLeftAmount(leftAmount + 0.5)}
-              size="icon"
-              variant="outline"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Right Side */}
-        <div className="bg-card rounded-2xl p-6">
-          <p className="text-sm font-medium text-muted-foreground mb-4 text-center">
-            Right
-          </p>
-          <div className="flex items-center justify-center gap-3">
-            <Button
-              className="h-10 w-10 rounded-full bg-transparent"
-              onClick={() => setRightAmount(Math.max(0, rightAmount - 0.5))}
-              size="icon"
-              variant="outline"
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <div className="text-center min-w-[60px]">
-              <div className="text-3xl font-bold">{rightAmount}</div>
-              <p className="text-xs text-muted-foreground">oz</p>
-            </div>
-            <Button
-              className="h-10 w-10 rounded-full bg-transparent"
-              onClick={() => setRightAmount(rightAmount + 0.5)}
-              size="icon"
-              variant="outline"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Total */}
-      <div className="bg-[oklch(0.65_0.18_280)]/10 rounded-2xl p-6 border-2 border-[oklch(0.65_0.18_280)]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Droplets className="h-5 w-5 text-[oklch(0.65_0.18_280)]" />
-            <p className="font-semibold">Total Amount</p>
-          </div>
-          <p className="text-2xl font-bold">{leftAmount + rightAmount} oz</p>
-        </div>
-      </div>
-
-      {/* Duration */}
+      {/* Duration - Moved to top */}
       <div className="space-y-3">
-        <p className="text-sm font-medium text-muted-foreground">Duration</p>
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">Duration</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            {babyAgeDays !== null
+              ? "Volumes will auto-fill based on your baby's age"
+              : 'Select duration to auto-fill suggested volumes'}
+          </p>
+        </div>
         <div className="grid grid-cols-4 gap-2">
           {[10, 15, 20, 30].map((min) => (
             <Button
@@ -106,6 +101,102 @@ export function PumpingDrawerContent() {
           ))}
         </div>
       </div>
+
+      {/* Amount Selectors */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Left Side */}
+        <div className="bg-card rounded-2xl p-6">
+          <p className="text-sm font-medium text-muted-foreground mb-4 text-center">
+            Left
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <Button
+              className="h-10 w-10 rounded-full bg-transparent"
+              onClick={() =>
+                setLeftAmount(Math.max(minAmount, leftAmount - step))
+              }
+              size="icon"
+              variant="outline"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <div className="text-center min-w-[60px]">
+              <div className="text-3xl font-bold">{leftAmount}</div>
+              <p className="text-xs text-muted-foreground">{unit}</p>
+            </div>
+            <Button
+              className="h-10 w-10 rounded-full bg-transparent"
+              onClick={() => setLeftAmount(leftAmount + step)}
+              size="icon"
+              variant="outline"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Right Side */}
+        <div className="bg-card rounded-2xl p-6">
+          <p className="text-sm font-medium text-muted-foreground mb-4 text-center">
+            Right
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <Button
+              className="h-10 w-10 rounded-full bg-transparent"
+              onClick={() =>
+                setRightAmount(Math.max(minAmount, rightAmount - step))
+              }
+              size="icon"
+              variant="outline"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <div className="text-center min-w-[60px]">
+              <div className="text-3xl font-bold">{rightAmount}</div>
+              <p className="text-xs text-muted-foreground">{unit}</p>
+            </div>
+            <Button
+              className="h-10 w-10 rounded-full bg-transparent"
+              onClick={() => setRightAmount(rightAmount + step)}
+              size="icon"
+              variant="outline"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Total */}
+      <div className="bg-[oklch(0.65_0.18_280)]/10 rounded-2xl p-6 border-2 border-[oklch(0.65_0.18_280)]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Droplets className="h-5 w-5 text-[oklch(0.65_0.18_280)]" />
+            <p className="font-semibold">Total Amount</p>
+          </div>
+          <p className="text-2xl font-bold">
+            {leftAmount + rightAmount} {unit}
+          </p>
+        </div>
+      </div>
+
+      {/* Colostrum Badge */}
+      {showColostrumBadge && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <Info className="size-5 text-amber-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-amber-900">
+                Colostrum Phase
+              </p>
+              <p className="text-xs text-amber-700 mt-1">
+                Small volumes are completely normal in the first few days. Your
+                body is producing nutrient-rich colostrum.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Method */}
       <div className="space-y-3">

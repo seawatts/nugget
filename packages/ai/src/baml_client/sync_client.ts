@@ -22,7 +22,7 @@ import type { BamlRuntime, FunctionResult, BamlCtxManager, Image, Audio, Pdf, Vi
 import { toBamlError, BamlAbortError, type HTTPRequest } from "@boundaryml/baml"
 import type { Checked, Check, RecursivePartialNull as MovedRecursivePartialNull } from "./types"
 import type * as types from "./types"
-import type {AppointmentNudgeOutput, BabyVisitExplainerOutput, BirthPlanHeadlineOutput, HospitalPackAdviceOutput, ImprovementSuggestions, NewbornMilestoneOutput, PostpartumTipsOutput, PregnancyWeekSummaryOutput, SleepRegressionTipsOutput, StalePromptsOutput} from "./types"
+import type {AppointmentNudgeOutput, BabyAssistantChatOutput, BabyContext, BabyVisitExplainerOutput, BirthPlanHeadlineOutput, ChatMessage, ChatTitleOutput, CheckInQuestion, ContextualMilestonesOutput, DailyCheckInQuestionsOutput, HospitalPackAdviceOutput, ImprovementSuggestions, LearningTip, MilestoneExplanationOutput, MilestoneSuggestion, NewbornMilestoneOutput, ParentTask, ParentTip, PersonalizedTasksOutput, PostpartumTipsOutput, PregnancyWeekSummaryOutput, ResponseType, RoleSpecificTipsOutput, SleepRegressionTipsOutput, StalePromptsOutput, WellnessQuestion, WellnessScreeningOutput} from "./types"
 import type TypeBuilder from "./type_builder"
 import { HttpRequest, HttpStreamRequest } from "./sync_request"
 import { LlmResponseParser, LlmStreamParser } from "./parser"
@@ -138,6 +138,48 @@ export class BamlSyncClient {
     }
   }
   
+  BabyAssistantChat(
+      conversationHistory: types.ChatMessage[],babyContext: types.BabyContext,userQuestion: string,systemPrompt?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): types.BabyAssistantChatOutput {
+    try {
+      const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+      const signal = options.signal;
+
+      if (signal?.aborted) {
+        throw new BamlAbortError('Operation was aborted', signal.reason);
+      }
+
+      // Check if onTick is provided and reject for sync operations
+      if (options.onTick) {
+        throw new Error("onTick is not supported for synchronous functions. Please use the async client instead.");
+      }
+
+      const collector = options.collector ? (Array.isArray(options.collector) ? options.collector : [options.collector]) : [];
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      const raw = this.runtime.callFunctionSync(
+        "BabyAssistantChat",
+        {
+          "conversationHistory": conversationHistory,"babyContext": babyContext,"userQuestion": userQuestion,"systemPrompt": systemPrompt?? null
+        },
+        this.ctxManager.cloneContext(),
+        options.tb?.__tb(),
+        options.clientRegistry,
+        collector,
+        options.tags || {},
+        env,
+        signal,
+        options.watchers,
+      )
+      return raw.parsed(false) as types.BabyAssistantChatOutput
+    } catch (error: any) {
+      throw toBamlError(error);
+    }
+  }
+  
   BabyVisitExplainer(
       ageWeeks: number,
       __baml_options__?: BamlCallOptions<never>
@@ -222,6 +264,132 @@ export class BamlSyncClient {
     }
   }
   
+  DailyCheckInQuestions(
+      ppDay: number,parentRole: string,parentSleepHours?: number | null,ageInDays: number,ageInWeeks: number,firstPregnancy: boolean,avgFeedingsPerDay?: number | null,avgSleepHoursPerDay?: number | null,avgDiaperChangesPerDay?: number | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): types.DailyCheckInQuestionsOutput {
+    try {
+      const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+      const signal = options.signal;
+
+      if (signal?.aborted) {
+        throw new BamlAbortError('Operation was aborted', signal.reason);
+      }
+
+      // Check if onTick is provided and reject for sync operations
+      if (options.onTick) {
+        throw new Error("onTick is not supported for synchronous functions. Please use the async client instead.");
+      }
+
+      const collector = options.collector ? (Array.isArray(options.collector) ? options.collector : [options.collector]) : [];
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      const raw = this.runtime.callFunctionSync(
+        "DailyCheckInQuestions",
+        {
+          "ppDay": ppDay,"parentRole": parentRole,"parentSleepHours": parentSleepHours?? null,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"firstPregnancy": firstPregnancy,"avgFeedingsPerDay": avgFeedingsPerDay?? null,"avgSleepHoursPerDay": avgSleepHoursPerDay?? null,"avgDiaperChangesPerDay": avgDiaperChangesPerDay?? null
+        },
+        this.ctxManager.cloneContext(),
+        options.tb?.__tb(),
+        options.clientRegistry,
+        collector,
+        options.tags || {},
+        env,
+        signal,
+        options.watchers,
+      )
+      return raw.parsed(false) as types.DailyCheckInQuestionsOutput
+    } catch (error: any) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateChatTitle(
+      firstUserMessage: string,firstAssistantResponse: string,
+      __baml_options__?: BamlCallOptions<never>
+  ): types.ChatTitleOutput {
+    try {
+      const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+      const signal = options.signal;
+
+      if (signal?.aborted) {
+        throw new BamlAbortError('Operation was aborted', signal.reason);
+      }
+
+      // Check if onTick is provided and reject for sync operations
+      if (options.onTick) {
+        throw new Error("onTick is not supported for synchronous functions. Please use the async client instead.");
+      }
+
+      const collector = options.collector ? (Array.isArray(options.collector) ? options.collector : [options.collector]) : [];
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      const raw = this.runtime.callFunctionSync(
+        "GenerateChatTitle",
+        {
+          "firstUserMessage": firstUserMessage,"firstAssistantResponse": firstAssistantResponse
+        },
+        this.ctxManager.cloneContext(),
+        options.tb?.__tb(),
+        options.clientRegistry,
+        collector,
+        options.tags || {},
+        env,
+        signal,
+        options.watchers,
+      )
+      return raw.parsed(false) as types.ChatTitleOutput
+    } catch (error: any) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateContextualMilestones(
+      babyName: string,ageInDays: number,ageInWeeks: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,diaperCount24h?: number | null,avgFeedingsPerDay?: number | null,avgSleepHoursPerDay?: number | null,avgDiaperChangesPerDay?: number | null,recentDiaperColors?: string | null,hasTummyTimeActivity?: boolean | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): types.ContextualMilestonesOutput {
+    try {
+      const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+      const signal = options.signal;
+
+      if (signal?.aborted) {
+        throw new BamlAbortError('Operation was aborted', signal.reason);
+      }
+
+      // Check if onTick is provided and reject for sync operations
+      if (options.onTick) {
+        throw new Error("onTick is not supported for synchronous functions. Please use the async client instead.");
+      }
+
+      const collector = options.collector ? (Array.isArray(options.collector) ? options.collector : [options.collector]) : [];
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      const raw = this.runtime.callFunctionSync(
+        "GenerateContextualMilestones",
+        {
+          "babyName": babyName,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"totalSleepHours24h": totalSleepHours24h?? null,"diaperCount24h": diaperCount24h?? null,"avgFeedingsPerDay": avgFeedingsPerDay?? null,"avgSleepHoursPerDay": avgSleepHoursPerDay?? null,"avgDiaperChangesPerDay": avgDiaperChangesPerDay?? null,"recentDiaperColors": recentDiaperColors?? null,"hasTummyTimeActivity": hasTummyTimeActivity?? null
+        },
+        this.ctxManager.cloneContext(),
+        options.tb?.__tb(),
+        options.clientRegistry,
+        collector,
+        options.tags || {},
+        env,
+        signal,
+        options.watchers,
+      )
+      return raw.parsed(false) as types.ContextualMilestonesOutput
+    } catch (error: any) {
+      throw toBamlError(error);
+    }
+  }
+  
   HospitalPackAdvice(
       progress: number,
       __baml_options__?: BamlCallOptions<never>
@@ -264,8 +432,50 @@ export class BamlSyncClient {
     }
   }
   
+  MilestoneExplanation(
+      milestoneTitle: string,milestoneType: string,babyName: string,ageInDays: number,ageInWeeks: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): types.MilestoneExplanationOutput {
+    try {
+      const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+      const signal = options.signal;
+
+      if (signal?.aborted) {
+        throw new BamlAbortError('Operation was aborted', signal.reason);
+      }
+
+      // Check if onTick is provided and reject for sync operations
+      if (options.onTick) {
+        throw new Error("onTick is not supported for synchronous functions. Please use the async client instead.");
+      }
+
+      const collector = options.collector ? (Array.isArray(options.collector) ? options.collector : [options.collector]) : [];
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      const raw = this.runtime.callFunctionSync(
+        "MilestoneExplanation",
+        {
+          "milestoneTitle": milestoneTitle,"milestoneType": milestoneType,"babyName": babyName,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null
+        },
+        this.ctxManager.cloneContext(),
+        options.tb?.__tb(),
+        options.clientRegistry,
+        collector,
+        options.tags || {},
+        env,
+        signal,
+        options.watchers,
+      )
+      return raw.parsed(false) as types.MilestoneExplanationOutput
+    } catch (error: any) {
+      throw toBamlError(error);
+    }
+  }
+  
   NewbornWeekMilestone(
-      week: number,babySex?: string | null,firstPregnancy: boolean,
+      babyName: string,week: number,babySex?: string | null,firstPregnancy: boolean,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,headCircumference?: number | null,feedingCount24h?: number | null,sleepCount24h?: number | null,
       __baml_options__?: BamlCallOptions<never>
   ): types.NewbornMilestoneOutput {
     try {
@@ -289,7 +499,7 @@ export class BamlSyncClient {
       const raw = this.runtime.callFunctionSync(
         "NewbornWeekMilestone",
         {
-          "week": week,"babySex": babySex?? null,"firstPregnancy": firstPregnancy
+          "babyName": babyName,"week": week,"babySex": babySex?? null,"firstPregnancy": firstPregnancy,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"headCircumference": headCircumference?? null,"feedingCount24h": feedingCount24h?? null,"sleepCount24h": sleepCount24h?? null
         },
         this.ctxManager.cloneContext(),
         options.tb?.__tb(),
@@ -306,8 +516,50 @@ export class BamlSyncClient {
     }
   }
   
+  PersonalizedTasks(
+      babyAgeInDays: number,ppWeek: number,timeOfDay: string,feedingMethod: string,
+      __baml_options__?: BamlCallOptions<never>
+  ): types.PersonalizedTasksOutput {
+    try {
+      const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+      const signal = options.signal;
+
+      if (signal?.aborted) {
+        throw new BamlAbortError('Operation was aborted', signal.reason);
+      }
+
+      // Check if onTick is provided and reject for sync operations
+      if (options.onTick) {
+        throw new Error("onTick is not supported for synchronous functions. Please use the async client instead.");
+      }
+
+      const collector = options.collector ? (Array.isArray(options.collector) ? options.collector : [options.collector]) : [];
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      const raw = this.runtime.callFunctionSync(
+        "PersonalizedTasks",
+        {
+          "babyAgeInDays": babyAgeInDays,"ppWeek": ppWeek,"timeOfDay": timeOfDay,"feedingMethod": feedingMethod
+        },
+        this.ctxManager.cloneContext(),
+        options.tb?.__tb(),
+        options.clientRegistry,
+        collector,
+        options.tags || {},
+        env,
+        signal,
+        options.watchers,
+      )
+      return raw.parsed(false) as types.PersonalizedTasksOutput
+    } catch (error: any) {
+      throw toBamlError(error);
+    }
+  }
+  
   PostpartumTips(
-      day: number,firstPregnancy: boolean,
+      babyName: string,day: number,firstPregnancy: boolean,ageInDays: number,ageInWeeks: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,headCircumference?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,diaperCount24h?: number | null,avgFeedingsPerDay?: number | null,avgSleepHoursPerDay?: number | null,avgDiaperChangesPerDay?: number | null,
       __baml_options__?: BamlCallOptions<never>
   ): types.PostpartumTipsOutput {
     try {
@@ -331,7 +583,7 @@ export class BamlSyncClient {
       const raw = this.runtime.callFunctionSync(
         "PostpartumTips",
         {
-          "day": day,"firstPregnancy": firstPregnancy
+          "babyName": babyName,"day": day,"firstPregnancy": firstPregnancy,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"headCircumference": headCircumference?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"totalSleepHours24h": totalSleepHours24h?? null,"diaperCount24h": diaperCount24h?? null,"avgFeedingsPerDay": avgFeedingsPerDay?? null,"avgSleepHoursPerDay": avgSleepHoursPerDay?? null,"avgDiaperChangesPerDay": avgDiaperChangesPerDay?? null
         },
         this.ctxManager.cloneContext(),
         options.tb?.__tb(),
@@ -390,8 +642,50 @@ export class BamlSyncClient {
     }
   }
   
+  RoleSpecificTips(
+      parentRole: string,ppDay?: number | null,babyAgeInDays: number,topic: string,recentSleepHours?: number | null,concerns?: string[] | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): types.RoleSpecificTipsOutput {
+    try {
+      const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+      const signal = options.signal;
+
+      if (signal?.aborted) {
+        throw new BamlAbortError('Operation was aborted', signal.reason);
+      }
+
+      // Check if onTick is provided and reject for sync operations
+      if (options.onTick) {
+        throw new Error("onTick is not supported for synchronous functions. Please use the async client instead.");
+      }
+
+      const collector = options.collector ? (Array.isArray(options.collector) ? options.collector : [options.collector]) : [];
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      const raw = this.runtime.callFunctionSync(
+        "RoleSpecificTips",
+        {
+          "parentRole": parentRole,"ppDay": ppDay?? null,"babyAgeInDays": babyAgeInDays,"topic": topic,"recentSleepHours": recentSleepHours?? null,"concerns": concerns?? null
+        },
+        this.ctxManager.cloneContext(),
+        options.tb?.__tb(),
+        options.clientRegistry,
+        collector,
+        options.tags || {},
+        env,
+        signal,
+        options.watchers,
+      )
+      return raw.parsed(false) as types.RoleSpecificTipsOutput
+    } catch (error: any) {
+      throw toBamlError(error);
+    }
+  }
+  
   SleepRegressionTips(
-      week: number,
+      babyName: string,week: number,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,avgSleepHoursPerDay?: number | null,feedingCount24h?: number | null,
       __baml_options__?: BamlCallOptions<never>
   ): types.SleepRegressionTipsOutput {
     try {
@@ -415,7 +709,7 @@ export class BamlSyncClient {
       const raw = this.runtime.callFunctionSync(
         "SleepRegressionTips",
         {
-          "week": week
+          "babyName": babyName,"week": week,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"sleepCount24h": sleepCount24h?? null,"totalSleepHours24h": totalSleepHours24h?? null,"avgSleepHoursPerDay": avgSleepHoursPerDay?? null,"feedingCount24h": feedingCount24h?? null
         },
         this.ctxManager.cloneContext(),
         options.tb?.__tb(),
@@ -511,6 +805,48 @@ export class BamlSyncClient {
         options.watchers,
       )
       return raw.parsed(false) as types.ImprovementSuggestions
+    } catch (error: any) {
+      throw toBamlError(error);
+    }
+  }
+  
+  WellnessScreening(
+      ppDay: number,ppWeek?: number | null,firstPregnancy: boolean,babyFirstName: string,ageInDays: number,previousCheckIns: string,
+      __baml_options__?: BamlCallOptions<never>
+  ): types.WellnessScreeningOutput {
+    try {
+      const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+      const signal = options.signal;
+
+      if (signal?.aborted) {
+        throw new BamlAbortError('Operation was aborted', signal.reason);
+      }
+
+      // Check if onTick is provided and reject for sync operations
+      if (options.onTick) {
+        throw new Error("onTick is not supported for synchronous functions. Please use the async client instead.");
+      }
+
+      const collector = options.collector ? (Array.isArray(options.collector) ? options.collector : [options.collector]) : [];
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      const raw = this.runtime.callFunctionSync(
+        "WellnessScreening",
+        {
+          "ppDay": ppDay,"ppWeek": ppWeek?? null,"firstPregnancy": firstPregnancy,"babyFirstName": babyFirstName,"ageInDays": ageInDays,"previousCheckIns": previousCheckIns
+        },
+        this.ctxManager.cloneContext(),
+        options.tb?.__tb(),
+        options.clientRegistry,
+        collector,
+        options.tags || {},
+        env,
+        signal,
+        options.watchers,
+      )
+      return raw.parsed(false) as types.WellnessScreeningOutput
     } catch (error: any) {
       throw toBamlError(error);
     }

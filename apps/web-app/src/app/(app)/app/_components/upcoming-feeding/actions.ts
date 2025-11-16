@@ -297,8 +297,9 @@ export const quickLogFeedingAction = action
 
       // Create the feeding activity
       const activity = await caller.activities.create({
+        amount: parsedInput.amount,
         babyId: baby.id,
-        details: parsedInput.amount ? { amount: parsedInput.amount } : null,
+        details: null,
         isScheduled: false,
         startTime: parsedInput.time ? new Date(parsedInput.time) : new Date(),
         type: parsedInput.type || 'bottle',

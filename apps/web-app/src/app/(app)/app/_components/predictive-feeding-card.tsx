@@ -123,7 +123,7 @@ export function PredictiveFeedingCard({
     return (
       <Card
         className={cn(
-          'relative overflow-hidden border-0 p-6 animate-pulse bg-[oklch(0.68_0.18_35)] text-white',
+          'relative overflow-hidden border-0 p-6 animate-pulse bg-[oklch(0.68_0.18_35)] text-white col-span-2',
         )}
       >
         <div className="flex items-center gap-4">
@@ -267,7 +267,6 @@ export function PredictiveFeedingCard({
                   </div>
                   {prediction.lastFeedingTime && (
                     <div className="text-sm opacity-60">
-                      Last fed{' '}
                       {formatDistanceToNow(prediction.lastFeedingTime, {
                         addSuffix: true,
                       })}{' '}
@@ -380,11 +379,11 @@ export function PredictiveFeedingCard({
 
       {/* Info Drawer */}
       <Drawer onOpenChange={setShowInfoDrawer} open={showInfoDrawer}>
-        <DrawerContent>
+        <DrawerContent className="max-h-[90vh]">
           <DrawerHeader>
             <DrawerTitle>Feeding Details</DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-6 space-y-4">
+          <div className="px-4 pb-6 space-y-4 overflow-y-auto">
             {/* Learning Section */}
             {learningContent && (
               <LearningSection

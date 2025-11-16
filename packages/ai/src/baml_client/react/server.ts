@@ -24,7 +24,7 @@ import { b } from '../index';
 import type { Check, Checked  } from "../types";
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml";
 
-import type {  AppointmentNudgeOutput,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  NewbornMilestoneOutput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  SleepRegressionTipsOutput,  StalePromptsOutput } from "../types"
+import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningTip,  MilestoneExplanationOutput,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "../types"
 
 import type * as types from "../types"
 
@@ -47,6 +47,33 @@ export const AppointmentNudge = async (
 ): Promise<types.AppointmentNudgeOutput> => {
   return b.AppointmentNudge(
     type,
+  );
+};
+
+/**
+ * Executes the "BabyAssistantChat" BAML action.
+ *
+ * This server action calls the underlying BAML function "BabyAssistantChat"
+ * with the specified parameters.
+ *
+ * @param { types.ChatMessage[] } conversationHistory - Input parameter.
+ * @param { types.BabyContext } babyContext - Input parameter.
+ * @param { string } userQuestion - Input parameter.
+ * @param { string | null } systemPrompt (optional) - Input parameter.
+ *
+ * @returns {Promise<types.BabyAssistantChatOutput>} A promise that resolves with the result of the action.
+ */
+export const BabyAssistantChat = async (
+  conversationHistory: types.ChatMessage[],
+  babyContext: types.BabyContext,
+  userQuestion: string,
+  systemPrompt?: string | null,
+): Promise<types.BabyAssistantChatOutput> => {
+  return b.BabyAssistantChat(
+    conversationHistory,
+    babyContext,
+    userQuestion,
+    systemPrompt,
   );
 };
 
@@ -87,6 +114,132 @@ export const BirthPlanHeadline = async (
 };
 
 /**
+ * Executes the "DailyCheckInQuestions" BAML action.
+ *
+ * This server action calls the underlying BAML function "DailyCheckInQuestions"
+ * with the specified parameters.
+ *
+ * @param { number } ppDay - Input parameter.
+ * @param { string } parentRole - Input parameter.
+ * @param { number | null } parentSleepHours (optional) - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { number } ageInWeeks - Input parameter.
+ * @param { boolean } firstPregnancy - Input parameter.
+ * @param { number | null } avgFeedingsPerDay (optional) - Input parameter.
+ * @param { number | null } avgSleepHoursPerDay (optional) - Input parameter.
+ * @param { number | null } avgDiaperChangesPerDay (optional) - Input parameter.
+ *
+ * @returns {Promise<types.DailyCheckInQuestionsOutput>} A promise that resolves with the result of the action.
+ */
+export const DailyCheckInQuestions = async (
+  ppDay: number,
+  parentRole: string,
+  parentSleepHours?: number | null,
+  ageInDays: number,
+  ageInWeeks: number,
+  firstPregnancy: boolean,
+  avgFeedingsPerDay?: number | null,
+  avgSleepHoursPerDay?: number | null,
+  avgDiaperChangesPerDay?: number | null,
+): Promise<types.DailyCheckInQuestionsOutput> => {
+  return b.DailyCheckInQuestions(
+    ppDay,
+    parentRole,
+    parentSleepHours,
+    ageInDays,
+    ageInWeeks,
+    firstPregnancy,
+    avgFeedingsPerDay,
+    avgSleepHoursPerDay,
+    avgDiaperChangesPerDay,
+  );
+};
+
+/**
+ * Executes the "GenerateChatTitle" BAML action.
+ *
+ * This server action calls the underlying BAML function "GenerateChatTitle"
+ * with the specified parameters.
+ *
+ * @param { string } firstUserMessage - Input parameter.
+ * @param { string } firstAssistantResponse - Input parameter.
+ *
+ * @returns {Promise<types.ChatTitleOutput>} A promise that resolves with the result of the action.
+ */
+export const GenerateChatTitle = async (
+  firstUserMessage: string,
+  firstAssistantResponse: string,
+): Promise<types.ChatTitleOutput> => {
+  return b.GenerateChatTitle(
+    firstUserMessage,
+    firstAssistantResponse,
+  );
+};
+
+/**
+ * Executes the "GenerateContextualMilestones" BAML action.
+ *
+ * This server action calls the underlying BAML function "GenerateContextualMilestones"
+ * with the specified parameters.
+ *
+ * @param { string } babyName - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { number } ageInWeeks - Input parameter.
+ * @param { number | null } currentWeightOz (optional) - Input parameter.
+ * @param { number | null } birthWeightOz (optional) - Input parameter.
+ * @param { number | null } height (optional) - Input parameter.
+ * @param { number | null } feedingCount24h (optional) - Input parameter.
+ * @param { number | null } avgFeedingInterval (optional) - Input parameter.
+ * @param { number | null } sleepCount24h (optional) - Input parameter.
+ * @param { number | null } totalSleepHours24h (optional) - Input parameter.
+ * @param { number | null } diaperCount24h (optional) - Input parameter.
+ * @param { number | null } avgFeedingsPerDay (optional) - Input parameter.
+ * @param { number | null } avgSleepHoursPerDay (optional) - Input parameter.
+ * @param { number | null } avgDiaperChangesPerDay (optional) - Input parameter.
+ * @param { string | null } recentDiaperColors (optional) - Input parameter.
+ * @param { boolean | null } hasTummyTimeActivity (optional) - Input parameter.
+ *
+ * @returns {Promise<types.ContextualMilestonesOutput>} A promise that resolves with the result of the action.
+ */
+export const GenerateContextualMilestones = async (
+  babyName: string,
+  ageInDays: number,
+  ageInWeeks: number,
+  currentWeightOz?: number | null,
+  birthWeightOz?: number | null,
+  height?: number | null,
+  feedingCount24h?: number | null,
+  avgFeedingInterval?: number | null,
+  sleepCount24h?: number | null,
+  totalSleepHours24h?: number | null,
+  diaperCount24h?: number | null,
+  avgFeedingsPerDay?: number | null,
+  avgSleepHoursPerDay?: number | null,
+  avgDiaperChangesPerDay?: number | null,
+  recentDiaperColors?: string | null,
+  hasTummyTimeActivity?: boolean | null,
+): Promise<types.ContextualMilestonesOutput> => {
+  return b.GenerateContextualMilestones(
+    babyName,
+    ageInDays,
+    ageInWeeks,
+    currentWeightOz,
+    birthWeightOz,
+    height,
+    feedingCount24h,
+    avgFeedingInterval,
+    sleepCount24h,
+    totalSleepHours24h,
+    diaperCount24h,
+    avgFeedingsPerDay,
+    avgSleepHoursPerDay,
+    avgDiaperChangesPerDay,
+    recentDiaperColors,
+    hasTummyTimeActivity,
+  );
+};
+
+/**
  * Executes the "HospitalPackAdvice" BAML action.
  *
  * This server action calls the underlying BAML function "HospitalPackAdvice"
@@ -105,26 +258,122 @@ export const HospitalPackAdvice = async (
 };
 
 /**
+ * Executes the "MilestoneExplanation" BAML action.
+ *
+ * This server action calls the underlying BAML function "MilestoneExplanation"
+ * with the specified parameters.
+ *
+ * @param { string } milestoneTitle - Input parameter.
+ * @param { string } milestoneType - Input parameter.
+ * @param { string } babyName - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { number } ageInWeeks - Input parameter.
+ * @param { number | null } currentWeightOz (optional) - Input parameter.
+ * @param { number | null } birthWeightOz (optional) - Input parameter.
+ * @param { number | null } feedingCount24h (optional) - Input parameter.
+ * @param { number | null } sleepCount24h (optional) - Input parameter.
+ * @param { number | null } diaperCount24h (optional) - Input parameter.
+ *
+ * @returns {Promise<types.MilestoneExplanationOutput>} A promise that resolves with the result of the action.
+ */
+export const MilestoneExplanation = async (
+  milestoneTitle: string,
+  milestoneType: string,
+  babyName: string,
+  ageInDays: number,
+  ageInWeeks: number,
+  currentWeightOz?: number | null,
+  birthWeightOz?: number | null,
+  feedingCount24h?: number | null,
+  sleepCount24h?: number | null,
+  diaperCount24h?: number | null,
+): Promise<types.MilestoneExplanationOutput> => {
+  return b.MilestoneExplanation(
+    milestoneTitle,
+    milestoneType,
+    babyName,
+    ageInDays,
+    ageInWeeks,
+    currentWeightOz,
+    birthWeightOz,
+    feedingCount24h,
+    sleepCount24h,
+    diaperCount24h,
+  );
+};
+
+/**
  * Executes the "NewbornWeekMilestone" BAML action.
  *
  * This server action calls the underlying BAML function "NewbornWeekMilestone"
  * with the specified parameters.
  *
+ * @param { string } babyName - Input parameter.
  * @param { number } week - Input parameter.
  * @param { string | null } babySex (optional) - Input parameter.
  * @param { boolean } firstPregnancy - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { number | null } currentWeightOz (optional) - Input parameter.
+ * @param { number | null } birthWeightOz (optional) - Input parameter.
+ * @param { number | null } height (optional) - Input parameter.
+ * @param { number | null } headCircumference (optional) - Input parameter.
+ * @param { number | null } feedingCount24h (optional) - Input parameter.
+ * @param { number | null } sleepCount24h (optional) - Input parameter.
  *
  * @returns {Promise<types.NewbornMilestoneOutput>} A promise that resolves with the result of the action.
  */
 export const NewbornWeekMilestone = async (
+  babyName: string,
   week: number,
   babySex?: string | null,
   firstPregnancy: boolean,
+  ageInDays: number,
+  currentWeightOz?: number | null,
+  birthWeightOz?: number | null,
+  height?: number | null,
+  headCircumference?: number | null,
+  feedingCount24h?: number | null,
+  sleepCount24h?: number | null,
 ): Promise<types.NewbornMilestoneOutput> => {
   return b.NewbornWeekMilestone(
+    babyName,
     week,
     babySex,
     firstPregnancy,
+    ageInDays,
+    currentWeightOz,
+    birthWeightOz,
+    height,
+    headCircumference,
+    feedingCount24h,
+    sleepCount24h,
+  );
+};
+
+/**
+ * Executes the "PersonalizedTasks" BAML action.
+ *
+ * This server action calls the underlying BAML function "PersonalizedTasks"
+ * with the specified parameters.
+ *
+ * @param { number } babyAgeInDays - Input parameter.
+ * @param { number } ppWeek - Input parameter.
+ * @param { string } timeOfDay - Input parameter.
+ * @param { string } feedingMethod - Input parameter.
+ *
+ * @returns {Promise<types.PersonalizedTasksOutput>} A promise that resolves with the result of the action.
+ */
+export const PersonalizedTasks = async (
+  babyAgeInDays: number,
+  ppWeek: number,
+  timeOfDay: string,
+  feedingMethod: string,
+): Promise<types.PersonalizedTasksOutput> => {
+  return b.PersonalizedTasks(
+    babyAgeInDays,
+    ppWeek,
+    timeOfDay,
+    feedingMethod,
   );
 };
 
@@ -134,18 +383,63 @@ export const NewbornWeekMilestone = async (
  * This server action calls the underlying BAML function "PostpartumTips"
  * with the specified parameters.
  *
+ * @param { string } babyName - Input parameter.
  * @param { number } day - Input parameter.
  * @param { boolean } firstPregnancy - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { number } ageInWeeks - Input parameter.
+ * @param { number | null } currentWeightOz (optional) - Input parameter.
+ * @param { number | null } birthWeightOz (optional) - Input parameter.
+ * @param { number | null } height (optional) - Input parameter.
+ * @param { number | null } headCircumference (optional) - Input parameter.
+ * @param { number | null } feedingCount24h (optional) - Input parameter.
+ * @param { number | null } avgFeedingInterval (optional) - Input parameter.
+ * @param { number | null } sleepCount24h (optional) - Input parameter.
+ * @param { number | null } totalSleepHours24h (optional) - Input parameter.
+ * @param { number | null } diaperCount24h (optional) - Input parameter.
+ * @param { number | null } avgFeedingsPerDay (optional) - Input parameter.
+ * @param { number | null } avgSleepHoursPerDay (optional) - Input parameter.
+ * @param { number | null } avgDiaperChangesPerDay (optional) - Input parameter.
  *
  * @returns {Promise<types.PostpartumTipsOutput>} A promise that resolves with the result of the action.
  */
 export const PostpartumTips = async (
+  babyName: string,
   day: number,
   firstPregnancy: boolean,
+  ageInDays: number,
+  ageInWeeks: number,
+  currentWeightOz?: number | null,
+  birthWeightOz?: number | null,
+  height?: number | null,
+  headCircumference?: number | null,
+  feedingCount24h?: number | null,
+  avgFeedingInterval?: number | null,
+  sleepCount24h?: number | null,
+  totalSleepHours24h?: number | null,
+  diaperCount24h?: number | null,
+  avgFeedingsPerDay?: number | null,
+  avgSleepHoursPerDay?: number | null,
+  avgDiaperChangesPerDay?: number | null,
 ): Promise<types.PostpartumTipsOutput> => {
   return b.PostpartumTips(
+    babyName,
     day,
     firstPregnancy,
+    ageInDays,
+    ageInWeeks,
+    currentWeightOz,
+    birthWeightOz,
+    height,
+    headCircumference,
+    feedingCount24h,
+    avgFeedingInterval,
+    sleepCount24h,
+    totalSleepHours24h,
+    diaperCount24h,
+    avgFeedingsPerDay,
+    avgSleepHoursPerDay,
+    avgDiaperChangesPerDay,
   );
 };
 
@@ -168,20 +462,77 @@ export const PregnancyWeekSummary = async (
 };
 
 /**
+ * Executes the "RoleSpecificTips" BAML action.
+ *
+ * This server action calls the underlying BAML function "RoleSpecificTips"
+ * with the specified parameters.
+ *
+ * @param { string } parentRole - Input parameter.
+ * @param { number | null } ppDay (optional) - Input parameter.
+ * @param { number } babyAgeInDays - Input parameter.
+ * @param { string } topic - Input parameter.
+ * @param { number | null } recentSleepHours (optional) - Input parameter.
+ * @param { string[] | null } concerns (optional) - Input parameter.
+ *
+ * @returns {Promise<types.RoleSpecificTipsOutput>} A promise that resolves with the result of the action.
+ */
+export const RoleSpecificTips = async (
+  parentRole: string,
+  ppDay?: number | null,
+  babyAgeInDays: number,
+  topic: string,
+  recentSleepHours?: number | null,
+  concerns?: string[] | null,
+): Promise<types.RoleSpecificTipsOutput> => {
+  return b.RoleSpecificTips(
+    parentRole,
+    ppDay,
+    babyAgeInDays,
+    topic,
+    recentSleepHours,
+    concerns,
+  );
+};
+
+/**
  * Executes the "SleepRegressionTips" BAML action.
  *
  * This server action calls the underlying BAML function "SleepRegressionTips"
  * with the specified parameters.
  *
+ * @param { string } babyName - Input parameter.
  * @param { number } week - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { number | null } currentWeightOz (optional) - Input parameter.
+ * @param { number | null } birthWeightOz (optional) - Input parameter.
+ * @param { number | null } sleepCount24h (optional) - Input parameter.
+ * @param { number | null } totalSleepHours24h (optional) - Input parameter.
+ * @param { number | null } avgSleepHoursPerDay (optional) - Input parameter.
+ * @param { number | null } feedingCount24h (optional) - Input parameter.
  *
  * @returns {Promise<types.SleepRegressionTipsOutput>} A promise that resolves with the result of the action.
  */
 export const SleepRegressionTips = async (
+  babyName: string,
   week: number,
+  ageInDays: number,
+  currentWeightOz?: number | null,
+  birthWeightOz?: number | null,
+  sleepCount24h?: number | null,
+  totalSleepHours24h?: number | null,
+  avgSleepHoursPerDay?: number | null,
+  feedingCount24h?: number | null,
 ): Promise<types.SleepRegressionTipsOutput> => {
   return b.SleepRegressionTips(
+    babyName,
     week,
+    ageInDays,
+    currentWeightOz,
+    birthWeightOz,
+    sleepCount24h,
+    totalSleepHours24h,
+    avgSleepHoursPerDay,
+    feedingCount24h,
   );
 };
 
@@ -227,5 +578,38 @@ export const SuggestImprovements = async (
     seo,
     accessibility,
     structure,
+  );
+};
+
+/**
+ * Executes the "WellnessScreening" BAML action.
+ *
+ * This server action calls the underlying BAML function "WellnessScreening"
+ * with the specified parameters.
+ *
+ * @param { number } ppDay - Input parameter.
+ * @param { number | null } ppWeek (optional) - Input parameter.
+ * @param { boolean } firstPregnancy - Input parameter.
+ * @param { string } babyFirstName - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { string } previousCheckIns - Input parameter.
+ *
+ * @returns {Promise<types.WellnessScreeningOutput>} A promise that resolves with the result of the action.
+ */
+export const WellnessScreening = async (
+  ppDay: number,
+  ppWeek?: number | null,
+  firstPregnancy: boolean,
+  babyFirstName: string,
+  ageInDays: number,
+  previousCheckIns: string,
+): Promise<types.WellnessScreeningOutput> => {
+  return b.WellnessScreening(
+    ppDay,
+    ppWeek,
+    firstPregnancy,
+    babyFirstName,
+    ageInDays,
+    previousCheckIns,
   );
 };

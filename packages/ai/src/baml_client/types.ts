@@ -47,8 +47,34 @@ export function all_succeeded<CheckName extends string>(checks: Record<CheckName
 export function get_checks<CheckName extends string>(checks: Record<CheckName, Check>): Check[] {
     return Object.values(checks)
 }
+export enum ResponseType {
+  EMOJI_SCALE = "EMOJI_SCALE",
+  YES_NO = "YES_NO",
+  RATING_1_5 = "RATING_1_5",
+  TEXT_SHORT = "TEXT_SHORT",
+}
+
 export interface AppointmentNudgeOutput {
   text: string
+  
+}
+
+export interface BabyAssistantChatOutput {
+  response: string
+  
+}
+
+export interface BabyContext {
+  babyName: string
+  ageInDays: number
+  ageInWeeks: number
+  currentWeightOz?: number | null
+  birthWeightOz?: number | null
+  feedingCount24h?: number | null
+  avgFeedingInterval?: number | null
+  sleepCount24h?: number | null
+  totalSleepHours24h?: number | null
+  diaperCount24h?: number | null
   
 }
 
@@ -59,6 +85,36 @@ export interface BabyVisitExplainerOutput {
 
 export interface BirthPlanHeadlineOutput {
   text: string
+  
+}
+
+export interface ChatMessage {
+  role: string
+  content: string
+  
+}
+
+export interface ChatTitleOutput {
+  title: string
+  
+}
+
+export interface CheckInQuestion {
+  question: string
+  responseType: ResponseType
+  category: string
+  priority: string
+  followUpPrompt?: string | null
+  
+}
+
+export interface ContextualMilestonesOutput {
+  milestones: MilestoneSuggestion[]
+  
+}
+
+export interface DailyCheckInQuestionsOutput {
+  questions: CheckInQuestion[]
   
 }
 
@@ -76,13 +132,64 @@ export interface ImprovementSuggestions {
   
 }
 
+export interface LearningTip {
+  category: string
+  subtitle: string
+  summary: string
+  bulletPoints: string[]
+  followUpQuestion: string
+  
+}
+
+export interface MilestoneExplanationOutput {
+  explanation: string
+  whyItMatters: string
+  whatToExpect: string
+  tips: string[]
+  reassurance: string
+  
+}
+
+export interface MilestoneSuggestion {
+  title: string
+  type: string
+  description: string
+  ageLabel: string
+  relevance: string
+  
+}
+
 export interface NewbornMilestoneOutput {
-  text: string
+  tips: LearningTip[]
+  
+}
+
+export interface ParentTask {
+  taskText: string
+  category: string
+  priority: string
+  suggestedTime: string
+  estimatedMinutes: number
+  whyItMatters: string
+  
+}
+
+export interface ParentTip {
+  title: string
+  content: string
+  actionItems: string[]
+  relevantToRole: string
+  
+}
+
+export interface PersonalizedTasksOutput {
+  tasks: ParentTask[]
+  motivationalMessage: string
   
 }
 
 export interface PostpartumTipsOutput {
-  text: string
+  tips: LearningTip[]
   
 }
 
@@ -91,12 +198,33 @@ export interface PregnancyWeekSummaryOutput {
   
 }
 
+export interface RoleSpecificTipsOutput {
+  tips: ParentTip[]
+  
+}
+
 export interface SleepRegressionTipsOutput {
-  snippet: string
+  tips: LearningTip[]
   
 }
 
 export interface StalePromptsOutput {
   list: string[]
+  
+}
+
+export interface WellnessQuestion {
+  question: string
+  responseType: string
+  category: string
+  weight: number
+  reverseScore: boolean
+  
+}
+
+export interface WellnessScreeningOutput {
+  questions: WellnessQuestion[]
+  scoringGuidance: string
+  supportResources: string[]
   
 }

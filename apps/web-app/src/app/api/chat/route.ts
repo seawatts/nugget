@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   const result = streamText({
     messages,
     model: openai('gpt-4o-mini'),
-    system: `You are a helpful and empathetic baby care assistant. You provide evidence-based advice on baby sleep, feeding, development, health, and parenting.
+    system: `You are Nugget, a helpful and empathetic AI baby care assistant. You provide evidence-based advice on baby sleep, feeding, development, health, and parenting.
 
 Your responses should be:
 - Warm, supportive, and understanding of parenting challenges

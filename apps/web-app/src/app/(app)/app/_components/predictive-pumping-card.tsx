@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
 import { toast } from '@nugget/ui/components/sonner';
@@ -13,7 +14,9 @@ import {
 import { cn } from '@nugget/ui/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Droplets, Info } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { InfoCard } from './info-card';
 import { LearningSection } from './learning-section';
 import {
   getUpcomingPumpingAction,
@@ -21,6 +24,7 @@ import {
   type UpcomingPumpingData,
 } from './upcoming-pumping/actions';
 import { getPumpingLearningContent } from './upcoming-pumping/learning-content';
+import { formatVolumeDisplay, getVolumeUnit } from './volume-utils';
 
 interface PredictivePumpingCardProps {
   refreshTrigger?: number;
@@ -31,11 +35,16 @@ export function PredictivePumpingCard({
   refreshTrigger = 0,
   onCardClick,
 }: PredictivePumpingCardProps) {
+  const router = useRouter();
   const [data, setData] = useState<UpcomingPumpingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [quickLogging, setQuickLogging] = useState(false);
+
+  // Fetch user preferences for volume display
+  const { data: user } = api.user.current.useQuery();
+  const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
 
   const loadData = useCallback(async () => {
     try {
@@ -150,11 +159,10 @@ export function PredictivePumpingCard({
     }
   };
 
-  // Format amount for display (ml to oz)
+  // Format amount for display based on user preference
   const formatAmount = (ml: number | null) => {
     if (!ml) return null;
-    const oz = Math.round(ml / 30);
-    return `${oz}oz`;
+    return formatVolumeDisplay(ml, userUnitPref, true);
   };
 
   return (
@@ -211,7 +219,6 @@ export function PredictivePumpingCard({
                   </div>
                   {prediction.lastPumpingTime && (
                     <div className="text-sm opacity-60">
-                      Last pumped{' '}
                       {formatDistanceToNow(prediction.lastPumpingTime, {
                         addSuffix: true,
                       })}{' '}
@@ -256,11 +263,11 @@ export function PredictivePumpingCard({
 
       {/* Info Drawer */}
       <Drawer onOpenChange={setShowInfoDrawer} open={showInfoDrawer}>
-        <DrawerContent>
+        <DrawerContent className="max-h-[90vh]">
           <DrawerHeader>
             <DrawerTitle>Pumping Details</DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-6 space-y-4">
+          <div className="px-4 pb-6 space-y-4 overflow-y-auto">
             {/* Learning Section */}
             {learningContent && (
               <LearningSection
@@ -272,6 +279,76 @@ export function PredictivePumpingCard({
                 icon={Droplets}
                 tips={learningContent.tips}
               />
+            )}
+
+            {/* Volume Calculation Explanation */}
+            {babyAgeDays !== null && (
+              <InfoCard
+                actions={
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      className="w-full bg-transparent hover:bg-[oklch(0.65_0.18_280)]/10"
+                      onClick={() => {
+                        setShowInfoDrawer(false);
+                        router.push('/app/nutrition#pumping-tips');
+                      }}
+                      size="sm"
+                      variant="outline"
+                    >
+                      Learn More
+                    </Button>
+                    <Button
+                      className="w-full bg-[oklch(0.65_0.18_280)] hover:bg-[oklch(0.65_0.18_280)]/90 text-white"
+                      onClick={() => {
+                        setShowInfoDrawer(false);
+                        router.push('/app/settings?tab=baby');
+                      }}
+                      size="sm"
+                    >
+                      Update Settings
+                    </Button>
+                  </div>
+                }
+                babyAgeDays={babyAgeDays}
+                bgColor="bg-[oklch(0.65_0.18_280)]/5"
+                borderColor="border-[oklch(0.65_0.18_280)]/20"
+                color="bg-[oklch(0.65_0.18_280)]/10 text-[oklch(0.65_0.18_280)]"
+                icon={Info}
+                title="Smart Volume Calculation"
+              >
+                <p className="text-sm text-foreground/90">
+                  When you select a duration in the pumping drawer, we
+                  automatically calculate expected volumes based on your baby's
+                  age.
+                </p>
+                <ul className="text-sm text-foreground/80 space-y-1.5">
+                  <li className="flex gap-2">
+                    <span className="text-muted-foreground">•</span>
+                    <span>
+                      Early days (1-3): Small colostrum volumes (
+                      {userUnitPref === 'OZ' ? '0.2-0.7oz' : '5-20ml'})
+                    </span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-muted-foreground">•</span>
+                    <span>
+                      Week 1-2: Transitional milk increases (
+                      {userUnitPref === 'OZ' ? '1-3oz' : '30-90ml'})
+                    </span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-muted-foreground">•</span>
+                    <span>After 1 month: Uses your personalized settings</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-muted-foreground">•</span>
+                    <span>
+                      Duration matters: Longer sessions = proportionally more
+                      volume
+                    </span>
+                  </li>
+                </ul>
+              </InfoCard>
             )}
 
             {/* Recent Pattern */}

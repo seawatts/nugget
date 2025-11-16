@@ -21,20 +21,28 @@ $ pnpm add @boundaryml/baml
 import type { Check, Checked  } from "../types";
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml";
 
-import type {  AppointmentNudgeOutput,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  NewbornMilestoneOutput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  SleepRegressionTipsOutput,  StalePromptsOutput } from "../types"
+import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningTip,  MilestoneExplanationOutput,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "../types"
 
 import type * as types from "../types"
 import type { partial_types }from "../partial_types";
 
 export type StreamingServerTypes = {
   AppointmentNudge: AppointmentNudgeOutput,
+  BabyAssistantChat: BabyAssistantChatOutput,
   BabyVisitExplainer: BabyVisitExplainerOutput,
   BirthPlanHeadline: BirthPlanHeadlineOutput,
+  DailyCheckInQuestions: DailyCheckInQuestionsOutput,
+  GenerateChatTitle: ChatTitleOutput,
+  GenerateContextualMilestones: ContextualMilestonesOutput,
   HospitalPackAdvice: HospitalPackAdviceOutput,
+  MilestoneExplanation: MilestoneExplanationOutput,
   NewbornWeekMilestone: NewbornMilestoneOutput,
+  PersonalizedTasks: PersonalizedTasksOutput,
   PostpartumTips: PostpartumTipsOutput,
   PregnancyWeekSummary: PregnancyWeekSummaryOutput,
+  RoleSpecificTips: RoleSpecificTipsOutput,
   SleepRegressionTips: SleepRegressionTipsOutput,
   StalePrompts: StalePromptsOutput,
   SuggestImprovements: ImprovementSuggestions,
+  WellnessScreening: WellnessScreeningOutput,
 }

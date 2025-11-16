@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getTodaySummaryAction } from './today-summary.actions';
+import { formatVolumeDisplay, getVolumeUnit } from './volume-utils';
 
 const activityIcons: Record<string, LucideIcon> = {
   activity: Activity,
@@ -93,12 +95,12 @@ function formatTotal(
   totalAmount: number,
   totalDuration: number,
   count: number,
+  unitPref: 'ML' | 'OZ' = 'ML',
 ): string {
   switch (type) {
     case 'feeding': {
-      if (totalAmount === 0) return '0 oz';
-      const amountOz = Math.round(totalAmount / 30); // Convert ml to oz
-      return `${amountOz} oz`;
+      if (totalAmount === 0) return unitPref === 'OZ' ? '0 oz' : '0 ml';
+      return formatVolumeDisplay(totalAmount, unitPref, true);
     }
     case 'sleep': {
       if (totalDuration === 0) return '0 min';
@@ -108,9 +110,8 @@ function formatTotal(
       return `${count} ${count === 1 ? 'change' : 'changes'}`;
     }
     case 'pumping': {
-      if (totalAmount === 0) return '0 oz';
-      const amountOz = Math.round(totalAmount / 30); // Convert ml to oz
-      return `${amountOz} oz`;
+      if (totalAmount === 0) return unitPref === 'OZ' ? '0 oz' : '0 ml';
+      return formatVolumeDisplay(totalAmount, unitPref, true);
     }
     default:
       return '';
@@ -126,6 +127,10 @@ export function TodaySummaryCard({
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch user preferences for volume display
+  const { data: user } = api.user.current.useQuery();
+  const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
 
   const loadTodaySummary = useCallback(async () => {
     try {
@@ -255,6 +260,7 @@ export function TodaySummaryCard({
             summary.totalAmount,
             summary.totalDuration,
             summary.count,
+            userUnitPref,
           );
 
           return (
