@@ -1,6 +1,5 @@
 'use client';
 
-import type { Baby } from '@nugget/db/schema';
 import { H2, P } from '@nugget/ui/custom/typography';
 import { Award } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
@@ -16,6 +15,17 @@ import {
   getMilestonesCarouselContent,
   type MilestoneCardData,
 } from './milestones-carousel.actions';
+
+type PartialBaby = {
+  id: string;
+  firstName: string;
+  middleName: string | null;
+  lastName: string | null;
+  birthDate: Date | null;
+  dueDate: Date | null;
+  journeyStage: string | null;
+  gender: string | null;
+};
 
 /**
  * Milestone-specific loading messages for AI content generation
@@ -38,7 +48,7 @@ interface MilestonesCarouselProps {
 
 export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
   const [milestones, setMilestones] = useState<MilestoneCardData[]>([]);
-  const [baby, setBaby] = useState<Baby | null>(null);
+  const [baby, setBaby] = useState<PartialBaby | null>(null);
   const [babyName, setBabyName] = useState<string>('Baby');
   const [ageInDays, setAgeInDays] = useState<number>(0);
   const [nextMilestoneDay, setNextMilestoneDay] = useState<number | undefined>(

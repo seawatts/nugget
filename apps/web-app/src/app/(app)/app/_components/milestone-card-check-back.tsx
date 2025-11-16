@@ -1,12 +1,13 @@
 'use client';
 
-import type { Baby } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { H3, P } from '@nugget/ui/custom/typography';
 import { Award, Calendar } from 'lucide-react';
 
 interface MilestoneCardCheckBackProps {
-  baby: Baby;
+  baby: {
+    firstName: string;
+  };
   nextMilestoneDay?: number;
   currentAgeInDays: number;
 }
