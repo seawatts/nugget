@@ -42,7 +42,7 @@ export default async function InviteAcceptPage(props: {
 
   // Fetch invitation details (public, no auth required)
   const api = await getApi();
-  let invitation: Awaited<ReturnType<typeof api.invitations.get.fetch>>;
+  let invitation: Awaited<ReturnType<typeof api.invitations.get>>;
   try {
     invitation = await api.invitations.get({ code: params.code });
   } catch (_error) {
