@@ -210,7 +210,7 @@ export const completeFeedingAction = action
       const api = await getApi();
 
       // Update the activity to mark as completed
-      const activity = await api.activities.update.fetch({
+      const activity = await api.activities.update.mutate({
         id: parsedInput.activityId,
         isScheduled: false,
         startTime: new Date(), // Update to actual completion time
@@ -246,7 +246,7 @@ export const unclaimFeedingAction = action
       const api = await getApi();
 
       // Update the activity to remove assignment
-      const activity = await api.activities.update.fetch({
+      const activity = await api.activities.update.mutate({
         assignedUserId: null,
         id: parsedInput.activityId,
       });
@@ -290,7 +290,7 @@ export const quickLogFeedingAction = action
       }
 
       // Create the feeding activity
-      const activity = await api.activities.create.fetch({
+      const activity = await api.activities.create.mutate({
         amount: parsedInput.amount,
         babyId: baby.id,
         details: null,

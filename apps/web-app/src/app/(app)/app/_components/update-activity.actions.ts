@@ -61,7 +61,7 @@ export const updateActivityAction = action
       const { id, ...updateData } = parsedInput;
 
       // Update the activity
-      const activity = await api.activities.update.fetch({
+      const activity = await api.activities.update.mutate({
         id,
         ...updateData,
       });

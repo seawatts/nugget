@@ -63,7 +63,7 @@ export const createActivityAction = action
       );
 
       // Create the activity
-      const activity = await api.activities.create.fetch({
+      const activity = await api.activities.create.mutate({
         babyId: baby.id,
         details: null,
         ...defaultData,
@@ -155,7 +155,7 @@ export const createActivityWithDetailsAction = action
       }
 
       // Create the activity with provided details
-      const activity = await api.activities.create.fetch({
+      const activity = await api.activities.create.mutate({
         amount: parsedInput.amount,
         babyId: baby.id,
         details: parsedInput.details || null,

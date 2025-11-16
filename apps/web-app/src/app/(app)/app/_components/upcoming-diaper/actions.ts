@@ -119,7 +119,7 @@ export const quickLogDiaperAction = action
 
       // Create the diaper activity with type details
       const diaperType = parsedInput.type || 'wet';
-      const activity = await api.activities.create({
+      const activity = await api.activities.create.mutate({
         babyId: baby.id,
         details: {
           type: diaperType,
