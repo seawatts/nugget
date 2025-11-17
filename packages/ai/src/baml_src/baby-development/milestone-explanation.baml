@@ -6,11 +6,11 @@
 // ============================================================================
 
 class MilestoneExplanationOutput {
-  explanation string @description("A warm, informative explanation of what this milestone means (2-3 concise sentences, max 60 words)")
-  whyItMatters string @description("Why this milestone is important for development (1-2 sentences, max 40 words)")
-  whatToExpect string @description("What parents might observe or what happens next (1-2 sentences, max 40 words)")
-  tips string[] @description("2-3 practical tips or things to watch for (each max 20 words)")
-  reassurance string @description("A reassuring message that development varies by child (1 sentence, max 25 words)")
+  explanation string @description("A warm explanation of what this milestone means (2 sentences, max 40 words)")
+  whyItMatters string @description("Why this milestone is important (1 sentence, max 25 words)")
+  whatToExpect string @description("What parents might observe or what happens next (1 sentence, max 25 words)")
+  tips string[] @description("2-3 practical tips (each max 12 words)")
+  reassurance string @description("A reassuring message (1 sentence, max 20 words)")
 }
 
 // ============================================================================
@@ -54,15 +54,15 @@ function MilestoneExplanation(
 
     Provide a concise but accessible explanation that includes:
 
-    1. **explanation**: What this milestone is in simple terms. Use {{babyName}}'s name naturally. Make it warm and engaging (2-3 concise sentences, max 60 words).
+    1. **explanation**: What this milestone is in simple terms. Use {{babyName}}'s name naturally (2 sentences, max 40 words).
 
-    2. **whyItMatters**: Explain the developmental significance - why this milestone matters for {{babyName}}'s growth (1-2 sentences, max 40 words).
+    2. **whyItMatters**: Why this milestone matters for {{babyName}}'s growth (1 sentence, max 25 words).
 
-    3. **whatToExpect**: What parents might observe happening now or what typically comes next developmentally (1-2 sentences, max 40 words).
+    3. **whatToExpect**: What parents might observe now or what comes next (1 sentence, max 25 words).
 
-    4. **tips**: 2-3 practical, actionable tips for supporting this milestone or things to watch for (each tip max 20 words).
+    4. **tips**: 2-3 practical tips (each max 12 words).
 
-    5. **reassurance**: A brief, reassuring message that every baby develops at their own pace (1 sentence, max 25 words).
+    5. **reassurance**: A brief, reassuring message (1 sentence, max 20 words).
 
     Keep the tone:
     - Warm and supportive

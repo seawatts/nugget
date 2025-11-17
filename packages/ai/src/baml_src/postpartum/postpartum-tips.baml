@@ -182,45 +182,38 @@ function PostpartumTips(input: PostpartumTipsInput) -> PostpartumTipsOutput {
     For each tip, provide:
     - category: Choose one of: 'feeding', 'sleep', 'diaper', 'development', 'health', or 'postpartum'
     - subtitle: A catchy 4-5 word subtitle (max 5 words)
-    - summary: One concise sentence (max 15 words)
-    - bulletPoints: 2-3 actionable bullet points (each bullet max 20 words)
-    - followUpQuestion: ONE focused, practical question that prompts the parent to share specific observations
-      * Ask ONE question only - NO compound questions with "and" or multiple parts
-      * CRITICAL: We already track COUNTS and DURATIONS (number of feedings, diapers, sleep sessions, etc.)
-      * DON'T ask about quantities we're already tracking
-      * DO ask about QUALITY, APPEARANCE, BEHAVIOR, or CONTEXT we don't have
-      * Keep it simple, direct, and non-judgmental
-      * Avoid quiz-like or educational testing questions
+    - summary: One concise sentence (max 12 words)
+    - bulletPoints: 2-3 actionable bullet points (each bullet max 15 words)
+    - followUpQuestion: ONE focused question
 
-    FOLLOW-UP QUESTIONS - Generate a mix of yes/no and open-ended:
-    * REQUIREMENT: Include at least 1-2 yes/no questions in your 3-5 tips
-    * Prioritize yes/no for health/safety in early postpartum days (0-7)
+    CRITICAL YES/NO QUESTION REQUIREMENTS:
 
-    * YES/NO QUESTIONS - Set isYesNoQuestion: true for health/safety checks:
+    * MANDATORY: At least TWO tips MUST have isYesNoQuestion: true
+    * DEFAULT RULE: For health/safety concerns, ALWAYS use isYesNoQuestion: true
+    * PRIORITY: Days 0-7 should have MORE yes/no questions for urgent health checks
+
+    * YES/NO QUESTIONS (isYesNoQuestion: true) - REQUIRED for health/safety:
       Examples:
       - "Has {{input.babyName}} had a wet diaper in the last 12 hours?"
-      - "Is {{input.babyName}} showing signs of jaundice (yellow skin)?"
+      - "Is {{input.babyName}} showing signs of jaundice?"
       - "Are you experiencing heavy bleeding?"
       - "Has {{input.babyName}} had a bowel movement today?"
-      - "Are you getting any sleep between feedings?"
       - "Is {{input.babyName}} latching well during feedings?"
 
-    * For yes/no questions, decide which answer(s) should open chat:
-      - openChatOnNo: true if "no" indicates urgent concern (e.g., no wet diapers, no sleep, not latching)
-      - openChatOnYes: true if "yes" indicates urgent concern (e.g., heavy bleeding, jaundice)
-      - Provide helpful pre-filled prompts:
-        * noResponsePrompt: Supportive message for "no" (e.g., "{{input.babyName}} hasn't had a wet diaper in 12 hours. Should I be concerned?")
-        * yesResponsePrompt: Supportive message for "yes" (e.g., "I'm experiencing heavy bleeding. What's normal and when should I call my doctor?")
+    * When isYesNoQuestion: true, you MUST set openChatOnNo and/or openChatOnYes:
+      - openChatOnNo: true → If "no" is urgent (no wet diapers, not eating)
+      - openChatOnYes: true → If "yes" is urgent (heavy bleeding, jaundice)
+      - ALWAYS provide the corresponding prompt
 
-    * OPEN-ENDED QUESTIONS - Set isYesNoQuestion: false for qualitative questions:
-      Examples:
+    * OPEN-ENDED QUESTIONS (isYesNoQuestion: false) - Use for qualitative info:
       - "What color is {{input.babyName}}'s poop today?"
       - "How does {{input.babyName}} act during feedings?"
-      - "What does {{input.babyName}} do when waking from sleep?"
 
-    * Question Type Guidelines:
-      - Use YES/NO for: Urgent health checks, safety concerns, critical symptoms, binary outcomes
-      - Use OPEN-ENDED for: Recovery experiences, emotional states, qualitative observations
+    DECISION TREE FOR EACH TIP:
+    1. Is this a health/safety concern? → isYesNoQuestion: true
+    2. Can this be answered yes/no? → isYesNoQuestion: true
+    3. Does it need qualitative details? → isYesNoQuestion: false
+    4. For 'health', 'diaper', 'postpartum' categories → PREFER isYesNoQuestion: true
 
     Make each tip:
     - Specific to {{input.babyName}}'s current age and situation

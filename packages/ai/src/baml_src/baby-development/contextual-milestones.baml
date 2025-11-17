@@ -6,11 +6,11 @@
 // ============================================================================
 
 class MilestoneSuggestion {
-  title string @description("Concise milestone title (4-8 words max)")
+  title string @description("Concise milestone title (max 6 words)")
   type string @description("Milestone type: 'physical', 'cognitive', 'social', 'language', or 'self_care'")
-  description string @description("Brief description of what to look for (1 sentence, max 20 words)")
+  description string @description("Brief description (max 12 words)")
   ageLabel string @description("Age context label (e.g., 'Week 2', 'Day 5')")
-  relevance string @description("Why this milestone is relevant right now based on baby's data (1 sentence, max 25 words)")
+  relevance string @description("Why relevant now (max 15 words)")
 }
 
 class ContextualMilestonesOutput {
@@ -78,11 +78,11 @@ function GenerateContextualMilestones(
     4. Observable by parents in daily care
 
     For each milestone suggestion:
-    - **title**: Clear, concise title (4-8 words max)
+    - **title**: Clear, concise title (max 6 words)
     - **type**: One of: 'physical', 'cognitive', 'social', 'language', 'self_care'
-    - **description**: Brief description of what parents should watch for (1 sentence, max 20 words)
+    - **description**: Brief description of what to watch for (max 12 words)
     - **ageLabel**: Context like "Week {{ageInWeeks}}" or "Day {{ageInDays}}"
-    - **relevance**: Why this is relevant NOW based on the data (1 sentence, max 25 words - reference specific activities or patterns)
+    - **relevance**: Why relevant NOW based on data (max 15 words)
 
     Examples of contextual reasoning:
     - If diaper colors changed recently → suggest "First Yellow Stool" milestone

@@ -6,9 +6,9 @@
 // ============================================================================
 
 class MilestoneEnhancementOutput {
-  bulletPoints string[] @description("3-5 developmental tips and what parents should look for related to this milestone (each max 20 words)")
-  followUpQuestion string @description("ONE focused, practical question that prompts the parent to share specific observations about this milestone")
-  summary string @description("A concise 1-2 sentence summary of what this milestone means (max 30 words total)")
+  bulletPoints string[] @description("2-3 developmental tips (each max 12 words)")
+  followUpQuestion string @description("ONE focused question (max 15 words)")
+  summary string @description("One sentence summary (max 20 words)")
 
   // Yes/No Question Support
   isYesNoQuestion bool? @description("If true, this is a yes/no question (not open-ended). If false or omitted, it's an open-ended question.")
@@ -140,46 +140,36 @@ function EnhanceMilestone(
 
     Provide:
 
-    1. **bulletPoints**: 3-5 actionable bullet points (each max 20 words) that include:
-       - What parents might observe when this milestone is happening
-       - Why this milestone is important for development
-       - Practical suggestions for supporting this milestone
-       - Things to watch for or developmental connections
+    1. **bulletPoints**: 2-3 actionable bullet points (each max 12 words):
+       - What parents might observe
+       - Why this milestone matters
+       - One practical suggestion
 
-    2. **followUpQuestion**: ONE focused, practical question that prompts the parent to share specific observations
-       * Ask ONE question only - NO compound questions with "and" or multiple parts
-       * CRITICAL: We already track COUNTS and DURATIONS (number of feedings, activities, sessions, etc.)
-       * DON'T ask about quantities we're already tracking
-       * DO ask about DEVELOPMENTAL OBSERVATIONS, BEHAVIORS, or MILESTONES
-       * Keep it simple, direct, and non-judgmental
-       * Use {% if babyName %}{{babyName}}'s{% else %}baby's{% endif %} when referring to the baby
+    2. **followUpQuestion**: ONE focused question (max 15 words)
+       * Ask ONE question only - NO compound questions
+       * Use {% if babyName %}{{babyName}}'s{% else %}baby's{% endif %} name
 
-    FOLLOW-UP QUESTION TYPE - Decide between yes/no and open-ended:
+    CRITICAL YES/NO QUESTION REQUIREMENTS:
 
-    * YES/NO QUESTIONS - Set isYesNoQuestion: true for milestone-specific binary questions:
+    * DEFAULT RULE: For milestones, PREFER isYesNoQuestion: true (binary achievement questions)
+
+    * YES/NO QUESTIONS (isYesNoQuestion: true) - PREFERRED for milestones:
       Examples:
-      - "Is {% if babyName %}{{babyName}}{% else %}baby{% endif %} showing this milestone behavior?"
-      - "Has {% if babyName %}{{babyName}}{% else %}baby{% endif %} achieved this milestone yet?"
-      - "Does {% if babyName %}{{babyName}}{% else %}baby{% endif %} respond when you try this activity?"
+      - "Is {% if babyName %}{{babyName}}{% else %}baby{% endif %} showing this behavior?"
+      - "Has {% if babyName %}{{babyName}}{% else %}baby{% endif %} achieved this milestone?"
+      - "Does {% if babyName %}{{babyName}}{% else %}baby{% endif %} do this during activities?"
 
-    * For yes/no questions, decide which answer(s) should open chat:
-      - openChatOnYes: true if "yes" warrants celebration or discussion
-      - openChatOnNo: true if "no" warrants developmental guidance
-      - Provide helpful pre-filled prompts:
-        * yesResponsePrompt: Celebratory or discussion message for "yes"
-        * noResponsePrompt: Supportive guidance message for "no"
+    * When isYesNoQuestion: true, you MUST set openChatOnYes or openChatOnNo:
+      - openChatOnYes: true → For celebration/discussion (milestone achieved)
+      - openChatOnNo: true → For guidance (milestone not yet seen)
+      - ALWAYS provide the corresponding prompt
 
-    * OPEN-ENDED QUESTIONS - Set isYesNoQuestion: false for qualitative questions:
-      Examples:
-      - "What behaviors have you noticed related to this milestone?"
-      - "How does {% if babyName %}{{babyName}}{% else %}baby{% endif %} respond when you try this activity?"
+    * OPEN-ENDED QUESTIONS (isYesNoQuestion: false) - Use ONLY for qualitative details:
+      - "What behaviors have you noticed?"
+      - "How does {% if babyName %}{{babyName}}{% else %}baby{% endif %} respond?"
 
-    * Question Type Guidelines:
-      - Use YES/NO for: Binary milestone achievements, specific behaviors (present/not present)
-      - Use OPEN-ENDED for: Qualitative observations, developmental details, parent reflections
-
-    3. **summary**: A warm, concise summary of what this milestone means (max 30 words total)
-       {% if babyName %}Use {{babyName}}'s name naturally in the summary{% endif %}
+    3. **summary**: One sentence (max 20 words)
+       {% if babyName %}Use {{babyName}}'s name{% endif %}
 
     Keep the tone:
     - Warm and supportive

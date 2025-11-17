@@ -139,35 +139,34 @@ function DailyLearningContent(
        For each tip:
        - category: Choose one of: 'feeding', 'sleep', 'diaper', 'development', 'health', or 'postpartum'
        - subtitle: A catchy 4-5 word subtitle (max 5 words)
-       - summary: One concise sentence (max 15 words)
-       - bulletPoints: 2-3 actionable points (each bullet max 20 words)
+       - summary: One concise sentence (max 12 words)
+       - bulletPoints: 2-3 actionable points (each bullet max 15 words)
        - followUpQuestion: A thoughtful question to engage the parent
 
-       FOLLOW-UP QUESTIONS - Generate a mix of yes/no and open-ended:
-       * REQUIREMENT: Include at least 1 yes/no question in your response
-       * YES/NO QUESTIONS - Set isYesNoQuestion: true for questions that can be answered yes/no:
-         Examples:
-         - "Has {{babyName}} had a bowel movement today?"
-         - "Is {{babyName}} showing signs of hunger every 2-3 hours?"
-         - "Does {{babyName}} wake easily when touched?"
-         - "Are you noticing any yellow skin tone on {{babyName}}?"
+       CRITICAL YES/NO QUESTION REQUIREMENTS:
 
-       * For yes/no questions, decide which answer(s) should open chat for support:
-         - openChatOnNo: true if "no" indicates concern requiring guidance
-         - openChatOnYes: true if "yes" indicates concern or warrants discussion
-         - Provide helpful pre-filled prompts:
-           * noResponsePrompt: Supportive message for "no" answer (e.g., "I'm concerned because {{babyName}} hasn't had a bowel movement today. What should I do?")
-           * yesResponsePrompt: Supportive message for "yes" answer (e.g., "{{babyName}} is showing yellow skin tone. Should I be worried about jaundice?")
+       * MANDATORY: At least ONE tip MUST have isYesNoQuestion: true
+       * DEFAULT RULE: If the question can be answered with yes/no, SET isYesNoQuestion: true
 
-       * OPEN-ENDED QUESTIONS - Set isYesNoQuestion: false for qualitative questions:
-         Examples:
-         - "What feeding cues did {{babyName}} show before the last feeding?"
+       * YES/NO QUESTIONS (isYesNoQuestion: true) - Use for health/safety/binary checks:
+         - Health: "Has {{babyName}} had a bowel movement today?"
+         - Safety: "Is {{babyName}} showing signs of jaundice?"
+         - Binary: "Does {{babyName}} startle at loud noises?"
+         - Feeding: "Is {{babyName}} latching well during feedings?"
+
+       * When isYesNoQuestion: true, you MUST set openChatOnNo and/or openChatOnYes:
+         - openChatOnNo: true → If "no" needs support (e.g., no wet diapers, not eating)
+         - openChatOnYes: true → If "yes" needs support (e.g., showing distress, jaundice)
+         - ALWAYS provide the corresponding prompt (noResponsePrompt or yesResponsePrompt)
+
+       * OPEN-ENDED QUESTIONS (isYesNoQuestion: false) - Use for qualitative details:
+         - "What feeding cues did {{babyName}} show?"
          - "How does {{babyName}} respond during tummy time?"
-         - "What does {{babyName}} do when waking from sleep?"
 
-       * Question Type Guidelines:
-         - Use YES/NO for: Health checks, safety concerns, binary observations, critical symptoms
-         - Use OPEN-ENDED for: Developmental observations, behaviors, qualitative experiences, parent reflections
+       DECISION TREE FOR EACH TIP:
+       1. Can this be answered yes/no? → isYesNoQuestion: true
+       2. Does it need qualitative details? → isYesNoQuestion: false
+       3. For 'diaper' or 'health' categories → PREFER isYesNoQuestion: true
 
     Keep tone:
     - Supportive and educational

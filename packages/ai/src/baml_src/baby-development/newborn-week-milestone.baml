@@ -142,20 +142,16 @@ function NewbornWeekMilestone(
     For each tip, provide:
     - category: Choose one of: 'feeding', 'sleep', 'diaper', 'development', 'health', or 'postpartum'
     - subtitle: A catchy 4-5 word subtitle (max 5 words)
-    - summary: One concise sentence (max 15 words)
-    - bulletPoints: 2-3 actionable bullet points (each bullet max 20 words)
-    - followUpQuestion: ONE focused, practical question that prompts the parent to share specific observations
-      * Ask ONE question only - NO compound questions with "and" or multiple parts
-      * CRITICAL: We already track COUNTS and DURATIONS (number of feedings, activities, tummy time sessions, etc.)
-      * DON'T ask about quantities we're already tracking
-      * DO ask about DEVELOPMENTAL OBSERVATIONS, BEHAVIORS, or MILESTONES we don't have
-      * Keep it simple, direct, and non-judgmental
-      * Avoid quiz-like or educational testing questions
+    - summary: One concise sentence (max 12 words)
+    - bulletPoints: 2-3 actionable bullet points (each bullet max 15 words)
+    - followUpQuestion: ONE focused question
 
-    FOLLOW-UP QUESTIONS - Generate a mix of yes/no and open-ended:
-    * REQUIREMENT: Include at least 1-2 yes/no questions in your 3-5 tips
+    CRITICAL YES/NO QUESTION REQUIREMENTS:
 
-    * YES/NO QUESTIONS - Set isYesNoQuestion: true for binary questions:
+    * MANDATORY: At least TWO tips MUST have isYesNoQuestion: true
+    * DEFAULT RULE: If the question can be answered with yes/no, SET isYesNoQuestion: true
+
+    * YES/NO QUESTIONS (isYesNoQuestion: true) - PREFERRED for health/milestones:
       Examples:
       - "Has {{babyName}} had a wet diaper in the last 12 hours?"
       - "Is {{babyName}} tracking your face when you move?"
@@ -163,22 +159,19 @@ function NewbornWeekMilestone(
       - "Is {{babyName}} starting to smile at you?"
       - "Has {{babyName}} had a bowel movement today?"
 
-    * For yes/no questions, decide which answer(s) should open chat:
-      - openChatOnNo: true if "no" indicates concern (e.g., no wet diapers, not eating)
-      - openChatOnYes: true if "yes" indicates concern (e.g., signs of distress)
-      - Provide helpful pre-filled prompts:
-        * noResponsePrompt: Supportive message for "no" (e.g., "{{babyName}} hasn't had a wet diaper in 12 hours. What should I do?")
-        * yesResponsePrompt: Supportive message for "yes" (e.g., "{{babyName}} startles very easily. Is this normal?")
+    * When isYesNoQuestion: true, you MUST set openChatOnNo and/or openChatOnYes:
+      - openChatOnNo: true → If "no" needs support (e.g., no wet diapers, not eating)
+      - openChatOnYes: true → If "yes" needs support (e.g., showing distress)
+      - ALWAYS provide the corresponding prompt
 
-    * OPEN-ENDED QUESTIONS - Set isYesNoQuestion: false for qualitative questions:
-      Examples:
+    * OPEN-ENDED QUESTIONS (isYesNoQuestion: false) - Use for qualitative details:
       - "What new sounds has {{babyName}} made today?"
       - "What does {{babyName}} do during tummy time?"
-      - "How does {{babyName}} react to loud noises?"
 
-    * Question Type Guidelines:
-      - Use YES/NO for: Health checks, safety concerns, binary milestones, critical observations
-      - Use OPEN-ENDED for: Developmental details, parent reflections, qualitative behaviors
+    DECISION TREE FOR EACH TIP:
+    1. Can this be answered yes/no? → isYesNoQuestion: true
+    2. Does it need qualitative details? → isYesNoQuestion: false
+    3. For 'health' or 'diaper' categories → ALWAYS use isYesNoQuestion: true
 
     Make each tip:
     - Include what parents might observe this week in their daily care
