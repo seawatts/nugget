@@ -41,23 +41,21 @@ export function GrowthDrawer({ onClose, onSaved }: GrowthDrawerProps) {
   );
 
   const handleSave = () => {
-    const growthDetails = {
-      headCircumference: headCircumference
-        ? Number(headCircumference)
-        : undefined,
-      height: height ? Number(height) : undefined,
-      heightUnit,
-      weight: weight ? Number(weight) : undefined,
-      weightUnit,
-    };
+    // TODO: Create a proper GrowthRecord instead of just logging an activity
+    // Growth data should be stored in the GrowthRecords table
+    const growthNotes = [
+      weight && `Weight: ${weight} ${weightUnit}`,
+      height && `Height: ${height} ${heightUnit}`,
+      headCircumference && `Head Circumference: ${headCircumference} in`,
+      notes,
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     createActivity({
       activityType: 'growth',
-      details:
-        Object.keys(growthDetails).length > 0
-          ? (growthDetails as Record<string, unknown>)
-          : undefined,
-      notes: notes || undefined,
+      details: undefined,
+      notes: growthNotes || undefined,
       startTime: new Date(),
     });
   };
