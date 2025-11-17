@@ -15,3 +15,14 @@ export {
   formatSelectiveContext,
 } from './format-context';
 
+// Export learning orchestrator
+export { generateDailyLearning, extractRecentTopicIds } from './learning-orchestrator';
+export type { DailyLearningContext, DailyLearningResult } from './learning-orchestrator';
+
+// Export learning stages
+export * from './learning-stages';
+
+// Export milestone orchestrator
+export { generateMilestoneSuggestions, extractRecentMilestoneIds } from './milestone-orchestrator';
+export type { MilestoneContext, MilestoneResult } from './milestone-orchestrator';
+

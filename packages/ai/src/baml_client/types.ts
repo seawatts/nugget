@@ -118,14 +118,11 @@ export interface DailyCheckInQuestionsOutput {
   
 }
 
-export interface DailyLearningOutput {
-  title: string
-  summary: string
-  keyPoints: string[]
-  practicalTips: string[]
-  researchNote: string
-  developmentalContext: string
-  tips: LearningTip[]
+export interface DailyLearningPlan {
+  items: LearningPlanItem[]
+  reasoning: string
+  coveredCategories: string[]
+  urgentHealthChecks: boolean
   
 }
 
@@ -143,6 +140,17 @@ export interface ImprovementSuggestions {
   
 }
 
+export interface LearningPlanItem {
+  category: string
+  title: string
+  subtitle: string
+  relevance: string
+  priority: number
+  avoidDuplicateOf: string[]
+  recommendYesNo: boolean
+  
+}
+
 export interface LearningTip {
   category: string
   subtitle: string
@@ -152,8 +160,6 @@ export interface LearningTip {
   isYesNoQuestion?: boolean | null
   openChatOnYes?: boolean | null
   openChatOnNo?: boolean | null
-  yesResponsePrompt?: string | null
-  noResponsePrompt?: string | null
   
 }
 
@@ -161,6 +167,9 @@ export interface MilestoneEnhancementOutput {
   bulletPoints: string[]
   followUpQuestion: string
   summary: string
+  isYesNoQuestion?: boolean | null
+  openChatOnYes?: boolean | null
+  openChatOnNo?: boolean | null
   
 }
 
@@ -170,6 +179,51 @@ export interface MilestoneExplanationOutput {
   whatToExpect: string
   tips: string[]
   reassurance: string
+  
+}
+
+export interface MilestoneInput {
+  babyName: string
+  babySex?: string | null
+  ageInDays: number
+  ageInWeeks: number
+  currentWeightOz?: number | null
+  birthWeightOz?: number | null
+  height?: number | null
+  feedingCount24h?: number | null
+  avgFeedingInterval?: number | null
+  sleepCount24h?: number | null
+  totalSleepHours24h?: number | null
+  diaperCount24h?: number | null
+  avgFeedingsPerDay?: number | null
+  avgSleepHoursPerDay?: number | null
+  avgDiaperChangesPerDay?: number | null
+  recentChatTopics?: string | null
+  achievedMilestones?: string | null
+  activitySummary?: string | null
+  hasTummyTimeActivity?: boolean | null
+  medicalContext?: string | null
+  plannedItem: MilestonePlanItem
+  
+}
+
+export interface MilestonePlan {
+  items: MilestonePlanItem[]
+  reasoning: string
+  coveredTypes: string[]
+  developmentalFocus: string
+  
+}
+
+export interface MilestonePlanItem {
+  title: string
+  type: string
+  ageLabel: string
+  relevance: string
+  priority: number
+  expectedInStage: boolean
+  avoidDuplicateOf: string[]
+  recommendYesNo: boolean
   
 }
 

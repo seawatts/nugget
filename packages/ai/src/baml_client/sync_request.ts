@@ -22,7 +22,7 @@ import type { BamlRuntime, BamlCtxManager, ClientRegistry, Image, Audio, Pdf, Vi
 import { toBamlError, HTTPRequest } from "@boundaryml/baml"
 import type { Checked, Check } from "./types"
 import type * as types from "./types"
-import type {AppointmentNudgeOutput, BabyAssistantChatOutput, BabyContext, BabyVisitExplainerOutput, BirthPlanHeadlineOutput, ChatMessage, ChatTitleOutput, CheckInQuestion, ContextualMilestonesOutput, DailyCheckInQuestionsOutput, DailyLearningOutput, HospitalPackAdviceOutput, ImprovementSuggestions, LearningTip, MilestoneEnhancementOutput, MilestoneExplanationOutput, MilestoneSuggestion, NewbornMilestoneOutput, ParentTask, ParentTip, PersonalizedTasksOutput, PostpartumTipsInput, PostpartumTipsOutput, PregnancyWeekSummaryOutput, ResponseType, RoleSpecificTipsOutput, SleepRegressionTipsOutput, StalePromptsOutput, WellnessQuestion, WellnessScreeningOutput} from "./types"
+import type {AppointmentNudgeOutput, BabyAssistantChatOutput, BabyContext, BabyVisitExplainerOutput, BirthPlanHeadlineOutput, ChatMessage, ChatTitleOutput, CheckInQuestion, ContextualMilestonesOutput, DailyCheckInQuestionsOutput, DailyLearningPlan, HospitalPackAdviceOutput, ImprovementSuggestions, LearningPlanItem, LearningTip, MilestoneEnhancementOutput, MilestoneExplanationOutput, MilestoneInput, MilestonePlan, MilestonePlanItem, MilestoneSuggestion, NewbornMilestoneOutput, ParentTask, ParentTip, PersonalizedTasksOutput, PostpartumTipsInput, PostpartumTipsOutput, PregnancyWeekSummaryOutput, ResponseType, RoleSpecificTipsOutput, SleepRegressionTipsOutput, StalePromptsOutput, WellnessQuestion, WellnessScreeningOutput} from "./types"
 import type TypeBuilder from "./type_builder"
 import type * as events from "./events"
 
@@ -162,8 +162,8 @@ export class HttpRequest {
     }
   }
   
-  DailyLearningContent(
-      postpartumDay: number,babyName: string,babySex?: string | null,firstTimeParent: boolean,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
+  DailyLearningPlanner(
+      babyName: string,babySex?: string | null,ageInDays: number,ageInWeeks: number,firstTimeParent: boolean,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,diaperCount24h?: number | null,avgFeedingsPerDay?: number | null,avgSleepHoursPerDay?: number | null,avgDiaperChangesPerDay?: number | null,recentChatTopics?: string | null,recentlyCoveredTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
       __baml_options__?: BamlCallOptions<never>
   ): HTTPRequest {
     try {
@@ -172,9 +172,9 @@ export class HttpRequest {
         Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
       );
       return this.runtime.buildRequestSync(
-        "DailyLearningContent",
+        "DailyLearningPlanner",
         {
-          "postpartumDay": postpartumDay,"babyName": babyName,"babySex": babySex?? null,"firstTimeParent": firstTimeParent,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
+          "babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"firstTimeParent": firstTimeParent,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"totalSleepHours24h": totalSleepHours24h?? null,"diaperCount24h": diaperCount24h?? null,"avgFeedingsPerDay": avgFeedingsPerDay?? null,"avgSleepHoursPerDay": avgSleepHoursPerDay?? null,"avgDiaperChangesPerDay": avgDiaperChangesPerDay?? null,"recentChatTopics": recentChatTopics?? null,"recentlyCoveredTopics": recentlyCoveredTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
         },
         this.ctxManager.cloneContext(),
         __baml_options__?.tb?.__tb(),
@@ -200,6 +200,31 @@ export class HttpRequest {
         "EnhanceMilestone",
         {
           "milestoneTitle": milestoneTitle,"milestoneDescription": milestoneDescription,"milestoneType": milestoneType,"ageLabel": ageLabel,"babyName": babyName?? null,"babySex": babySex?? null,"ageInDays": ageInDays?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        false,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  FirstWeekMilestone(
+      input: types.MilestoneInput,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "FirstWeekMilestone",
+        {
+          "input": input
         },
         this.ctxManager.cloneContext(),
         __baml_options__?.tb?.__tb(),
@@ -262,6 +287,181 @@ export class HttpRequest {
     }
   }
   
+  GenerateLearningTip_FirstWeek(
+      category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "GenerateLearningTip_FirstWeek",
+        {
+          "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        false,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateLearningTip_ImmediatePostbirth(
+      category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "GenerateLearningTip_ImmediatePostbirth",
+        {
+          "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        false,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateLearningTip_MonthOne(
+      category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "GenerateLearningTip_MonthOne",
+        {
+          "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        false,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateLearningTip_MonthThreeFour(
+      category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "GenerateLearningTip_MonthThreeFour",
+        {
+          "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        false,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateLearningTip_MonthTwo(
+      category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "GenerateLearningTip_MonthTwo",
+        {
+          "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        false,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateLearningTip_SecondWeek(
+      category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "GenerateLearningTip_SecondWeek",
+        {
+          "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        false,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateLearningTip_ThirdWeek(
+      category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "GenerateLearningTip_ThirdWeek",
+        {
+          "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        false,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
   HospitalPackAdvice(
       progress: number,
       __baml_options__?: BamlCallOptions<never>
@@ -287,6 +487,31 @@ export class HttpRequest {
     }
   }
   
+  ImmediatePostbirthMilestone(
+      input: types.MilestoneInput,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "ImmediatePostbirthMilestone",
+        {
+          "input": input
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        false,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
   MilestoneExplanation(
       milestoneTitle: string,milestoneType: string,babyName: string,ageInDays: number,ageInWeeks: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,
       __baml_options__?: BamlCallOptions<never>
@@ -300,6 +525,106 @@ export class HttpRequest {
         "MilestoneExplanation",
         {
           "milestoneTitle": milestoneTitle,"milestoneType": milestoneType,"babyName": babyName,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        false,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  MilestonePlanner(
+      babyName: string,babySex?: string | null,ageInDays: number,ageInWeeks: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,diaperCount24h?: number | null,avgFeedingsPerDay?: number | null,avgSleepHoursPerDay?: number | null,avgDiaperChangesPerDay?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,recentlySuggestedMilestones?: string | null,activitySummary?: string | null,hasTummyTimeActivity?: boolean | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "MilestonePlanner",
+        {
+          "babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"totalSleepHours24h": totalSleepHours24h?? null,"diaperCount24h": diaperCount24h?? null,"avgFeedingsPerDay": avgFeedingsPerDay?? null,"avgSleepHoursPerDay": avgSleepHoursPerDay?? null,"avgDiaperChangesPerDay": avgDiaperChangesPerDay?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"recentlySuggestedMilestones": recentlySuggestedMilestones?? null,"activitySummary": activitySummary?? null,"hasTummyTimeActivity": hasTummyTimeActivity?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        false,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  MonthOneMilestone(
+      input: types.MilestoneInput,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "MonthOneMilestone",
+        {
+          "input": input
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        false,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  MonthThreeFourMilestone(
+      input: types.MilestoneInput,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "MonthThreeFourMilestone",
+        {
+          "input": input
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        false,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  MonthTwoMilestone(
+      input: types.MilestoneInput,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "MonthTwoMilestone",
+        {
+          "input": input
         },
         this.ctxManager.cloneContext(),
         __baml_options__?.tb?.__tb(),
@@ -437,6 +762,31 @@ export class HttpRequest {
     }
   }
   
+  SecondWeekMilestone(
+      input: types.MilestoneInput,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "SecondWeekMilestone",
+        {
+          "input": input
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        false,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
   SleepRegressionTips(
       babyName: string,week: number,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,avgSleepHoursPerDay?: number | null,feedingCount24h?: number | null,
       __baml_options__?: BamlCallOptions<never>
@@ -500,6 +850,31 @@ export class HttpRequest {
         "SuggestImprovements",
         {
           "seo": seo,"accessibility": accessibility,"structure": structure
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        false,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  ThirdWeekMilestone(
+      input: types.MilestoneInput,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "ThirdWeekMilestone",
+        {
+          "input": input
         },
         this.ctxManager.cloneContext(),
         __baml_options__?.tb?.__tb(),
@@ -668,8 +1043,8 @@ export class HttpStreamRequest {
     }
   }
   
-  DailyLearningContent(
-      postpartumDay: number,babyName: string,babySex?: string | null,firstTimeParent: boolean,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
+  DailyLearningPlanner(
+      babyName: string,babySex?: string | null,ageInDays: number,ageInWeeks: number,firstTimeParent: boolean,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,diaperCount24h?: number | null,avgFeedingsPerDay?: number | null,avgSleepHoursPerDay?: number | null,avgDiaperChangesPerDay?: number | null,recentChatTopics?: string | null,recentlyCoveredTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
       __baml_options__?: BamlCallOptions<never>
   ): HTTPRequest {
     try {
@@ -678,9 +1053,9 @@ export class HttpStreamRequest {
         Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
       );
       return this.runtime.buildRequestSync(
-        "DailyLearningContent",
+        "DailyLearningPlanner",
         {
-          "postpartumDay": postpartumDay,"babyName": babyName,"babySex": babySex?? null,"firstTimeParent": firstTimeParent,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
+          "babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"firstTimeParent": firstTimeParent,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"totalSleepHours24h": totalSleepHours24h?? null,"diaperCount24h": diaperCount24h?? null,"avgFeedingsPerDay": avgFeedingsPerDay?? null,"avgSleepHoursPerDay": avgSleepHoursPerDay?? null,"avgDiaperChangesPerDay": avgDiaperChangesPerDay?? null,"recentChatTopics": recentChatTopics?? null,"recentlyCoveredTopics": recentlyCoveredTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
         },
         this.ctxManager.cloneContext(),
         __baml_options__?.tb?.__tb(),
@@ -706,6 +1081,31 @@ export class HttpStreamRequest {
         "EnhanceMilestone",
         {
           "milestoneTitle": milestoneTitle,"milestoneDescription": milestoneDescription,"milestoneType": milestoneType,"ageLabel": ageLabel,"babyName": babyName?? null,"babySex": babySex?? null,"ageInDays": ageInDays?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        true,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  FirstWeekMilestone(
+      input: types.MilestoneInput,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "FirstWeekMilestone",
+        {
+          "input": input
         },
         this.ctxManager.cloneContext(),
         __baml_options__?.tb?.__tb(),
@@ -768,6 +1168,181 @@ export class HttpStreamRequest {
     }
   }
   
+  GenerateLearningTip_FirstWeek(
+      category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "GenerateLearningTip_FirstWeek",
+        {
+          "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        true,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateLearningTip_ImmediatePostbirth(
+      category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "GenerateLearningTip_ImmediatePostbirth",
+        {
+          "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        true,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateLearningTip_MonthOne(
+      category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "GenerateLearningTip_MonthOne",
+        {
+          "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        true,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateLearningTip_MonthThreeFour(
+      category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "GenerateLearningTip_MonthThreeFour",
+        {
+          "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        true,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateLearningTip_MonthTwo(
+      category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "GenerateLearningTip_MonthTwo",
+        {
+          "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        true,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateLearningTip_SecondWeek(
+      category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "GenerateLearningTip_SecondWeek",
+        {
+          "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        true,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateLearningTip_ThirdWeek(
+      category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "GenerateLearningTip_ThirdWeek",
+        {
+          "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        true,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
   HospitalPackAdvice(
       progress: number,
       __baml_options__?: BamlCallOptions<never>
@@ -793,6 +1368,31 @@ export class HttpStreamRequest {
     }
   }
   
+  ImmediatePostbirthMilestone(
+      input: types.MilestoneInput,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "ImmediatePostbirthMilestone",
+        {
+          "input": input
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        true,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
   MilestoneExplanation(
       milestoneTitle: string,milestoneType: string,babyName: string,ageInDays: number,ageInWeeks: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,
       __baml_options__?: BamlCallOptions<never>
@@ -806,6 +1406,106 @@ export class HttpStreamRequest {
         "MilestoneExplanation",
         {
           "milestoneTitle": milestoneTitle,"milestoneType": milestoneType,"babyName": babyName,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        true,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  MilestonePlanner(
+      babyName: string,babySex?: string | null,ageInDays: number,ageInWeeks: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,diaperCount24h?: number | null,avgFeedingsPerDay?: number | null,avgSleepHoursPerDay?: number | null,avgDiaperChangesPerDay?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,recentlySuggestedMilestones?: string | null,activitySummary?: string | null,hasTummyTimeActivity?: boolean | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "MilestonePlanner",
+        {
+          "babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"totalSleepHours24h": totalSleepHours24h?? null,"diaperCount24h": diaperCount24h?? null,"avgFeedingsPerDay": avgFeedingsPerDay?? null,"avgSleepHoursPerDay": avgSleepHoursPerDay?? null,"avgDiaperChangesPerDay": avgDiaperChangesPerDay?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"recentlySuggestedMilestones": recentlySuggestedMilestones?? null,"activitySummary": activitySummary?? null,"hasTummyTimeActivity": hasTummyTimeActivity?? null,"medicalContext": medicalContext?? null
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        true,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  MonthOneMilestone(
+      input: types.MilestoneInput,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "MonthOneMilestone",
+        {
+          "input": input
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        true,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  MonthThreeFourMilestone(
+      input: types.MilestoneInput,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "MonthThreeFourMilestone",
+        {
+          "input": input
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        true,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  MonthTwoMilestone(
+      input: types.MilestoneInput,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "MonthTwoMilestone",
+        {
+          "input": input
         },
         this.ctxManager.cloneContext(),
         __baml_options__?.tb?.__tb(),
@@ -943,6 +1643,31 @@ export class HttpStreamRequest {
     }
   }
   
+  SecondWeekMilestone(
+      input: types.MilestoneInput,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "SecondWeekMilestone",
+        {
+          "input": input
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        true,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
   SleepRegressionTips(
       babyName: string,week: number,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,avgSleepHoursPerDay?: number | null,feedingCount24h?: number | null,
       __baml_options__?: BamlCallOptions<never>
@@ -1006,6 +1731,31 @@ export class HttpStreamRequest {
         "SuggestImprovements",
         {
           "seo": seo,"accessibility": accessibility,"structure": structure
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        true,
+        env,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  ThirdWeekMilestone(
+      input: types.MilestoneInput,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.buildRequestSync(
+        "ThirdWeekMilestone",
+        {
+          "input": input
         },
         this.ctxManager.cloneContext(),
         __baml_options__?.tb?.__tb(),

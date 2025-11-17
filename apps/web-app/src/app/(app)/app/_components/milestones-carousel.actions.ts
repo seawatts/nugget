@@ -51,6 +51,10 @@ export interface MilestoneCardData {
   bulletPoints: string[];
   followUpQuestion: string;
   summary?: string;
+  // Yes/No question fields
+  isYesNoQuestion?: boolean | null;
+  openChatOnYes?: boolean | null;
+  openChatOnNo?: boolean | null;
 }
 
 interface MilestonesCarouselData {
@@ -340,6 +344,9 @@ export async function resolveMilestoneAIContent(
   bulletPoints: string[];
   followUpQuestion: string;
   summary: string;
+  isYesNoQuestion?: boolean | null;
+  openChatOnYes?: boolean | null;
+  openChatOnNo?: boolean | null;
 } | null> {
   try {
     // Verify authentication
@@ -422,6 +429,9 @@ export async function resolveMilestoneAIContent(
       bulletPoints: string[];
       followUpQuestion: string;
       summary: string;
+      isYesNoQuestion?: boolean | null;
+      openChatOnYes?: boolean | null;
+      openChatOnNo?: boolean | null;
     };
 
     return enhancement;
@@ -471,6 +481,9 @@ export const enhanceMilestoneAction = action
       return {
         bulletPoints: result.bulletPoints,
         followUpQuestion: result.followUpQuestion,
+        isYesNoQuestion: result.isYesNoQuestion,
+        openChatOnNo: result.openChatOnNo,
+        openChatOnYes: result.openChatOnYes,
         success: true,
         summary: result.summary,
       };

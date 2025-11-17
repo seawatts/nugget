@@ -6,4 +6,6 @@ export * from './db-cache-adapter';
 export * from './dynamic';
 export * from './dynamic-baml';
 export * from './example-program';
+export * from './learning/stages';
+export * from './milestones/stages';
 export * from './milestones-program';

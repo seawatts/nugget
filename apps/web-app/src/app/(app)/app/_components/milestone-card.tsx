@@ -3,6 +3,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
 import { P } from '@nugget/ui/custom/typography';
+import { cn } from '@nugget/ui/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
@@ -37,8 +38,6 @@ interface MilestoneCardProps {
   isYesNoQuestion?: boolean | null;
   openChatOnYes?: boolean | null;
   openChatOnNo?: boolean | null;
-  yesResponsePrompt?: string | null;
-  noResponsePrompt?: string | null;
 }
 
 interface ChatReplier {
@@ -115,12 +114,14 @@ export function MilestoneCard({
   isYesNoQuestion,
   openChatOnYes,
   openChatOnNo,
-  yesResponsePrompt,
-  noResponsePrompt,
 }: MilestoneCardProps) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [repliers, setRepliers] = useState<ChatReplier[]>([]);
+  const [yesRepliers, setYesRepliers] = useState<ChatReplier[]>([]);
+  const [noRepliers, setNoRepliers] = useState<ChatReplier[]>([]);
   const [prefillMessage, setPrefillMessage] = useState<string | undefined>();
+  const [hasUserAnswered, setHasUserAnswered] = useState(false);
+  const [userAnswer, setUserAnswer] = useState<'yes' | 'no' | null>(null);
   const { executeAsync: fetchRepliers } = useAction(getContextChatReplyAction);
   const { executeAsync: saveResponse } = useAction(
     saveMilestoneQuestionResponseAction,
@@ -139,7 +140,25 @@ export function MilestoneCard({
         // biome-ignore lint/suspicious/noExplicitAny: action result type
         .then((result: any) => {
           if (result?.data) {
-            setRepliers(result.data);
+            // Update user answer state
+            if (result.data.hasCurrentUserAnswered) {
+              setHasUserAnswered(true);
+              setUserAnswer(result.data.currentUserAnswer);
+            }
+
+            // For yes/no questions, use split repliers
+            if (result.data.yesRepliers !== undefined) {
+              setYesRepliers(result.data.yesRepliers || []);
+              setNoRepliers(result.data.noRepliers || []);
+              // Keep combined list for non-yes/no questions
+              setRepliers([
+                ...(result.data.yesRepliers || []),
+                ...(result.data.noRepliers || []),
+              ]);
+            } else {
+              // Fallback for non-yes/no questions
+              setRepliers(result.data || []);
+            }
           }
         })
         .catch((error) => {
@@ -169,8 +188,11 @@ export function MilestoneCard({
     async (answer: 'yes' | 'no') => {
       if (!babyId) return;
 
+      // If clicking the same answer, do nothing
+      if (hasUserAnswered && userAnswer === answer) return;
+
       try {
-        // Save the response
+        // Save the response (new or changed)
         const result = await saveResponse({
           answer,
           babyId,
@@ -185,17 +207,17 @@ export function MilestoneCard({
           return;
         }
 
+        // Update local state to reflect the answer
+        setHasUserAnswered(true);
+        setUserAnswer(answer);
+
         // Check if we should open chat
         const shouldOpenChat =
           (answer === 'yes' && openChatOnYes) ||
           (answer === 'no' && openChatOnNo);
 
         if (shouldOpenChat) {
-          const prompt =
-            answer === 'yes' ? yesResponsePrompt : noResponsePrompt;
-          if (prompt) {
-            setPrefillMessage(prompt);
-          }
+          setPrefillMessage(answer);
           setIsChatOpen(true);
         }
       } catch (error) {
@@ -209,11 +231,17 @@ export function MilestoneCard({
       followUpQuestion,
       openChatOnYes,
       openChatOnNo,
-      yesResponsePrompt,
-      noResponsePrompt,
       saveResponse,
+      hasUserAnswered,
+      userAnswer,
     ],
   );
+
+  // Handler for discuss button - opens chat without re-submitting answer
+  const handleDiscussClick = useCallback(() => {
+    setPrefillMessage(undefined);
+    setIsChatOpen(true);
+  }, []);
 
   const colorConfig: ColorConfig = {
     border: config.borderColor,
@@ -235,7 +263,7 @@ export function MilestoneCard({
         className={`flex flex-col gap-3 ${config.bgColor} p-5`}
         colorConfig={colorConfig}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex w-full items-start justify-between gap-3">
           <Icon className="size-6 shrink-0" />
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-sm">{title}</h3>
@@ -321,24 +349,107 @@ export function MilestoneCard({
         {babyId &&
           followUpQuestion &&
           (isYesNoQuestion ? (
-            <div className="flex gap-2 w-full">
-              <Button
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                onClick={() => handleYesNoClick('yes')}
-                size="sm"
-                variant="default"
-              >
-                <Check className="size-4 mr-2" />
-                Yes
-              </Button>
-              <Button
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                onClick={() => handleYesNoClick('no')}
-                size="sm"
-                variant="default"
-              >
-                No
-              </Button>
+            <div className="flex flex-col gap-2 w-full">
+              <div className="flex gap-2 w-full">
+                <Button
+                  className={cn(
+                    'flex-1 text-white',
+                    hasUserAnswered && userAnswer === 'yes'
+                      ? 'bg-green-600 hover:bg-green-600'
+                      : hasUserAnswered
+                        ? 'bg-green-600/50 hover:bg-green-600/50'
+                        : 'bg-green-600 hover:bg-green-700',
+                  )}
+                  onClick={() => handleYesNoClick('yes')}
+                  size="sm"
+                  variant="default"
+                >
+                  <Check className="size-4 mr-2" />
+                  Yes
+                  {yesRepliers.length > 0 && (
+                    <div className="flex -space-x-2 ml-2">
+                      {yesRepliers.slice(0, 3).map((replier) => {
+                        const initials = `${replier.firstName?.[0] || ''}${replier.lastName?.[0] || ''}`;
+                        return (
+                          <Avatar
+                            className="size-5 border-2 border-primary"
+                            key={replier.userId}
+                          >
+                            <AvatarImage
+                              alt={`${replier.firstName || ''} ${replier.lastName || ''}`}
+                              src={replier.avatarUrl || undefined}
+                            />
+                            <AvatarFallback className="text-xs">
+                              {initials}
+                            </AvatarFallback>
+                          </Avatar>
+                        );
+                      })}
+                      {yesRepliers.length > 3 && (
+                        <div className="size-5 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center">
+                          <span className="text-[8px] font-medium">
+                            +{yesRepliers.length - 3}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Button>
+                <Button
+                  className={cn(
+                    'flex-1 text-white',
+                    hasUserAnswered && userAnswer === 'no'
+                      ? 'bg-red-600 hover:bg-red-600'
+                      : hasUserAnswered
+                        ? 'bg-red-600/50 hover:bg-red-600/50'
+                        : 'bg-red-600 hover:bg-red-700',
+                  )}
+                  onClick={() => handleYesNoClick('no')}
+                  size="sm"
+                  variant="default"
+                >
+                  No
+                  {noRepliers.length > 0 && (
+                    <div className="flex -space-x-2 ml-2">
+                      {noRepliers.slice(0, 3).map((replier) => {
+                        const initials = `${replier.firstName?.[0] || ''}${replier.lastName?.[0] || ''}`;
+                        return (
+                          <Avatar
+                            className="size-5 border-2 border-primary"
+                            key={replier.userId}
+                          >
+                            <AvatarImage
+                              alt={`${replier.firstName || ''} ${replier.lastName || ''}`}
+                              src={replier.avatarUrl || undefined}
+                            />
+                            <AvatarFallback className="text-xs">
+                              {initials}
+                            </AvatarFallback>
+                          </Avatar>
+                        );
+                      })}
+                      {noRepliers.length > 3 && (
+                        <div className="size-5 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center">
+                          <span className="text-[8px] font-medium">
+                            +{noRepliers.length - 3}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Button>
+              </div>
+              {hasUserAnswered && (
+                <Button
+                  className="w-full"
+                  onClick={handleDiscussClick}
+                  size="sm"
+                  variant="outline"
+                >
+                  <MessageCircle className="size-4 mr-2" />
+                  Discuss
+                </Button>
+              )}
             </div>
           ) : (
             <Button

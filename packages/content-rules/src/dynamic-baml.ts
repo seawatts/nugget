@@ -36,6 +36,15 @@ export function aiTextBaml(config: AITextBAMLConfig): PropValue<string> {
   };
 }
 
+// Pending marker for cache entries that are being generated
+interface PendingMarker {
+  _status: 'pending';
+  _timestamp: number;
+}
+
+// TTL for pending entries (5 minutes)
+const PENDING_TTL_MS = 5 * 60 * 1000;
+
 // Resolve all props including AI text, compute functions, and regular values
 export async function resolveAIProps<T extends Record<string, PropValue>>(
   props: T,
@@ -61,9 +70,34 @@ export async function resolveAIProps<T extends Record<string, PropValue>>(
         // Check cache first
         const cached = await cache.get(cacheKey);
         if (cached && cached.exp > Date.now()) {
-          resolved[key] = cached.val;
-          continue;
+          // Check if this is a pending entry
+          const val = cached.val as Partial<PendingMarker>;
+          if (val?._status === 'pending') {
+            // Check if pending entry is stale (older than 5 minutes)
+            const pendingAge = Date.now() - (val._timestamp || 0);
+            if (pendingAge > PENDING_TTL_MS) {
+              // Pending entry is stale, regenerate
+              console.warn(
+                `Stale pending entry for key ${cacheKey}, regenerating...`,
+              );
+            } else {
+              // Still pending, return pending marker
+              resolved[key] = '[AI_PENDING]';
+              continue;
+            }
+          } else {
+            // Valid cached result
+            resolved[key] = cached.val;
+            continue;
+          }
         }
+
+        // No valid cache entry, create pending marker before calling BAML
+        const pendingMarker: PendingMarker = {
+          _status: 'pending',
+          _timestamp: Date.now(),
+        };
+        await cache.set(cacheKey, pendingMarker, PENDING_TTL_MS);
 
         // Call BAML function
         try {
@@ -71,11 +105,13 @@ export async function resolveAIProps<T extends Record<string, PropValue>>(
           const output = await callConfig.fn();
           const result = callConfig.pick(output);
 
-          // Cache the result
+          // Cache the result with full TTL
           await cache.set(cacheKey, result, ttlMs);
           resolved[key] = result;
         } catch (error) {
           console.error('BAML call failed:', error);
+          // Remove pending marker on error so it can be retried
+          await cache.set(cacheKey, { _status: 'error' }, 1000); // 1 second TTL for errors
           resolved[key] = '[AI_ERROR]';
         }
       } else {

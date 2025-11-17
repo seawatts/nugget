@@ -64,6 +64,24 @@ export class DbCache implements Cache {
     }
   }
 
+  /**
+   * Check if a cache entry exists and is marked as pending
+   * Returns true if entry exists and has pending status
+   */
+  async isPending(key: string): Promise<boolean> {
+    try {
+      const entry = await this.get(key);
+      if (!entry) return false;
+
+      // Check if the value is a pending marker
+      const val = entry.val as { _status?: string; _timestamp?: number };
+      return val?._status === 'pending';
+    } catch (error) {
+      console.error('DbCache isPending error:', error);
+      return false;
+    }
+  }
+
   async set(key: string, val: unknown, ttlMs: number): Promise<void> {
     try {
       const expiresAt = new Date(Date.now() + ttlMs);

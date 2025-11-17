@@ -73,10 +73,19 @@ export function QuickChatDialogContent({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const hasAutoSent = useRef(false);
+  const prefillMessageRef = useRef(prefillMessage);
 
   const { executeAsync: findOrCreateChat } = useAction(
     findOrCreateContextChatAction,
   );
+
+  // Reset hasAutoSent when dialog opens with a new prefill message
+  useEffect(() => {
+    if (prefillMessage !== prefillMessageRef.current) {
+      hasAutoSent.current = false;
+      prefillMessageRef.current = prefillMessage;
+    }
+  }, [prefillMessage]);
 
   // Load or create chat when component mounts (if context is provided)
   useEffect(() => {

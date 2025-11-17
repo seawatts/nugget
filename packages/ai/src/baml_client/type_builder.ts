@@ -47,17 +47,25 @@ export default class TypeBuilder {
     
     DailyCheckInQuestionsOutput: ClassViewer<'DailyCheckInQuestionsOutput', "questions">;
     
-    DailyLearningOutput: ClassViewer<'DailyLearningOutput', "title" | "summary" | "keyPoints" | "practicalTips" | "researchNote" | "developmentalContext" | "tips">;
+    DailyLearningPlan: ClassViewer<'DailyLearningPlan', "items" | "reasoning" | "coveredCategories" | "urgentHealthChecks">;
     
     HospitalPackAdviceOutput: ClassViewer<'HospitalPackAdviceOutput', "headline" | "subtext">;
     
     ImprovementSuggestions: ClassViewer<'ImprovementSuggestions', "seo" | "accessibility" | "performance" | "overall_priority">;
     
-    LearningTip: ClassViewer<'LearningTip', "category" | "subtitle" | "summary" | "bulletPoints" | "followUpQuestion" | "isYesNoQuestion" | "openChatOnYes" | "openChatOnNo" | "yesResponsePrompt" | "noResponsePrompt">;
+    LearningPlanItem: ClassViewer<'LearningPlanItem', "category" | "title" | "subtitle" | "relevance" | "priority" | "avoidDuplicateOf" | "recommendYesNo">;
     
-    MilestoneEnhancementOutput: ClassViewer<'MilestoneEnhancementOutput', "bulletPoints" | "followUpQuestion" | "summary">;
+    LearningTip: ClassViewer<'LearningTip', "category" | "subtitle" | "summary" | "bulletPoints" | "followUpQuestion" | "isYesNoQuestion" | "openChatOnYes" | "openChatOnNo">;
+    
+    MilestoneEnhancementOutput: ClassViewer<'MilestoneEnhancementOutput', "bulletPoints" | "followUpQuestion" | "summary" | "isYesNoQuestion" | "openChatOnYes" | "openChatOnNo">;
     
     MilestoneExplanationOutput: ClassViewer<'MilestoneExplanationOutput', "explanation" | "whyItMatters" | "whatToExpect" | "tips" | "reassurance">;
+    
+    MilestoneInput: ClassViewer<'MilestoneInput', "babyName" | "babySex" | "ageInDays" | "ageInWeeks" | "currentWeightOz" | "birthWeightOz" | "height" | "feedingCount24h" | "avgFeedingInterval" | "sleepCount24h" | "totalSleepHours24h" | "diaperCount24h" | "avgFeedingsPerDay" | "avgSleepHoursPerDay" | "avgDiaperChangesPerDay" | "recentChatTopics" | "achievedMilestones" | "activitySummary" | "hasTummyTimeActivity" | "medicalContext" | "plannedItem">;
+    
+    MilestonePlan: ClassViewer<'MilestonePlan', "items" | "reasoning" | "coveredTypes" | "developmentalFocus">;
+    
+    MilestonePlanItem: ClassViewer<'MilestonePlanItem', "title" | "type" | "ageLabel" | "relevance" | "priority" | "expectedInStage" | "avoidDuplicateOf" | "recommendYesNo">;
     
     MilestoneSuggestion: ClassViewer<'MilestoneSuggestion', "title" | "type" | "description" | "ageLabel" | "relevance">;
     
@@ -92,7 +100,7 @@ export default class TypeBuilder {
     constructor() {
         this.tb = new _TypeBuilder({
           classes: new Set([
-            "AppointmentNudgeOutput","BabyAssistantChatOutput","BabyContext","BabyVisitExplainerOutput","BirthPlanHeadlineOutput","ChatMessage","ChatTitleOutput","CheckInQuestion","ContextualMilestonesOutput","DailyCheckInQuestionsOutput","DailyLearningOutput","HospitalPackAdviceOutput","ImprovementSuggestions","LearningTip","MilestoneEnhancementOutput","MilestoneExplanationOutput","MilestoneSuggestion","NewbornMilestoneOutput","ParentTask","ParentTip","PersonalizedTasksOutput","PostpartumTipsInput","PostpartumTipsOutput","PregnancyWeekSummaryOutput","RoleSpecificTipsOutput","SleepRegressionTipsOutput","StalePromptsOutput","WellnessQuestion","WellnessScreeningOutput",
+            "AppointmentNudgeOutput","BabyAssistantChatOutput","BabyContext","BabyVisitExplainerOutput","BirthPlanHeadlineOutput","ChatMessage","ChatTitleOutput","CheckInQuestion","ContextualMilestonesOutput","DailyCheckInQuestionsOutput","DailyLearningPlan","HospitalPackAdviceOutput","ImprovementSuggestions","LearningPlanItem","LearningTip","MilestoneEnhancementOutput","MilestoneExplanationOutput","MilestoneInput","MilestonePlan","MilestonePlanItem","MilestoneSuggestion","NewbornMilestoneOutput","ParentTask","ParentTip","PersonalizedTasksOutput","PostpartumTipsInput","PostpartumTipsOutput","PregnancyWeekSummaryOutput","RoleSpecificTipsOutput","SleepRegressionTipsOutput","StalePromptsOutput","WellnessQuestion","WellnessScreeningOutput",
           ]),
           enums: new Set([
             "ResponseType",
@@ -140,8 +148,8 @@ export default class TypeBuilder {
           "questions",
         ]);
         
-        this.DailyLearningOutput = this.tb.classViewer("DailyLearningOutput", [
-          "title","summary","keyPoints","practicalTips","researchNote","developmentalContext","tips",
+        this.DailyLearningPlan = this.tb.classViewer("DailyLearningPlan", [
+          "items","reasoning","coveredCategories","urgentHealthChecks",
         ]);
         
         this.HospitalPackAdviceOutput = this.tb.classViewer("HospitalPackAdviceOutput", [
@@ -152,16 +160,32 @@ export default class TypeBuilder {
           "seo","accessibility","performance","overall_priority",
         ]);
         
+        this.LearningPlanItem = this.tb.classViewer("LearningPlanItem", [
+          "category","title","subtitle","relevance","priority","avoidDuplicateOf","recommendYesNo",
+        ]);
+        
         this.LearningTip = this.tb.classViewer("LearningTip", [
-          "category","subtitle","summary","bulletPoints","followUpQuestion","isYesNoQuestion","openChatOnYes","openChatOnNo","yesResponsePrompt","noResponsePrompt",
+          "category","subtitle","summary","bulletPoints","followUpQuestion","isYesNoQuestion","openChatOnYes","openChatOnNo",
         ]);
         
         this.MilestoneEnhancementOutput = this.tb.classViewer("MilestoneEnhancementOutput", [
-          "bulletPoints","followUpQuestion","summary",
+          "bulletPoints","followUpQuestion","summary","isYesNoQuestion","openChatOnYes","openChatOnNo",
         ]);
         
         this.MilestoneExplanationOutput = this.tb.classViewer("MilestoneExplanationOutput", [
           "explanation","whyItMatters","whatToExpect","tips","reassurance",
+        ]);
+        
+        this.MilestoneInput = this.tb.classViewer("MilestoneInput", [
+          "babyName","babySex","ageInDays","ageInWeeks","currentWeightOz","birthWeightOz","height","feedingCount24h","avgFeedingInterval","sleepCount24h","totalSleepHours24h","diaperCount24h","avgFeedingsPerDay","avgSleepHoursPerDay","avgDiaperChangesPerDay","recentChatTopics","achievedMilestones","activitySummary","hasTummyTimeActivity","medicalContext","plannedItem",
+        ]);
+        
+        this.MilestonePlan = this.tb.classViewer("MilestonePlan", [
+          "items","reasoning","coveredTypes","developmentalFocus",
+        ]);
+        
+        this.MilestonePlanItem = this.tb.classViewer("MilestonePlanItem", [
+          "title","type","ageLabel","relevance","priority","expectedInStage","avoidDuplicateOf","recommendYesNo",
         ]);
         
         this.MilestoneSuggestion = this.tb.classViewer("MilestoneSuggestion", [

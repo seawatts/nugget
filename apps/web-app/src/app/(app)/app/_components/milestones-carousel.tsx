@@ -123,6 +123,9 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
                             ...m,
                             bulletPoints: aiContent.bulletPoints,
                             followUpQuestion: aiContent.followUpQuestion,
+                            isYesNoQuestion: aiContent.isYesNoQuestion,
+                            openChatOnNo: aiContent.openChatOnNo,
+                            openChatOnYes: aiContent.openChatOnYes,
                             summary: aiContent.summary,
                           }
                         : m,
@@ -311,7 +314,10 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
                   followUpQuestion={milestone.followUpQuestion}
                   isCompleted={milestone.isCompleted}
                   isEnhancing={false}
+                  isYesNoQuestion={milestone.isYesNoQuestion}
                   onMarkComplete={() => handleMarkComplete(milestone)}
+                  openChatOnNo={milestone.openChatOnNo}
+                  openChatOnYes={milestone.openChatOnYes}
                   summary={milestone.summary}
                   title={milestone.title}
                   type={milestone.type}
@@ -332,8 +338,8 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
           </div>
 
           {/* Gradient fade on edges */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-background to-transparent" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-2 bg-gradient-to-r from-background to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-2 bg-gradient-to-l from-background to-transparent" />
         </div>
       </div>
 

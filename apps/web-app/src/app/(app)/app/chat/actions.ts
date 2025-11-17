@@ -13,6 +13,7 @@ import {
   Babies,
   ChatMessages,
   Chats,
+  MilestoneQuestionResponses,
   type NewChat,
   type NewChatMessage,
   Users,
@@ -579,7 +580,8 @@ export async function sendChatMessageStreamingAction(input: {
 
 /**
  * Get chat reply information for a specific context
- * Returns user information if a family member has replied in the chat
+ * Returns user information split by yes/no answers for yes/no questions
+ * Also includes whether the current user has answered and their answer
  */
 export const getContextChatReplyAction = action
   .schema(
@@ -600,48 +602,64 @@ export const getContextChatReplyAction = action
 
     if (!baby) throw new Error('Baby not found');
 
-    // Find chats with this context for all family members
-    const chats = await db.query.Chats.findMany({
+    // Query milestone question responses for this context
+    const responses = await db.query.MilestoneQuestionResponses.findMany({
       where: and(
-        eq(Chats.babyId, parsedInput.babyId),
-        eq(Chats.contextType, parsedInput.contextType),
-        eq(Chats.contextId, parsedInput.contextId),
+        eq(MilestoneQuestionResponses.babyId, parsedInput.babyId),
+        eq(MilestoneQuestionResponses.contextType, parsedInput.contextType),
+        eq(MilestoneQuestionResponses.contextId, parsedInput.contextId),
       ),
-      with: {
-        messages: {
-          orderBy: (messages, { asc }) => [asc(messages.createdAt)],
-          where: eq(ChatMessages.role, 'user'),
-        },
-      },
     });
 
-    // Find chats with user messages and get user information
-    const repliers = [];
-    for (const chat of chats) {
-      if (chat.messages.length > 0) {
-        // Get user information
-        const user = await db.query.Users.findFirst({
-          columns: {
-            avatarUrl: true,
-            firstName: true,
-            id: true,
-            lastName: true,
-          },
-          where: eq(Users.id, chat.userId),
-        });
+    // Split repliers by yes/no answers
+    const yesRepliers = [];
+    const noRepliers = [];
+    const seenUserIds = new Set<string>();
+    let currentUserAnswer: 'yes' | 'no' | null = null;
 
-        if (user) {
-          repliers.push({
-            avatarUrl: user.avatarUrl,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            userId: user.id,
-          });
+    for (const response of responses) {
+      // Check if this is the current user's response
+      if (response.userId === currentUserId && currentUserAnswer === null) {
+        currentUserAnswer = response.answer as 'yes' | 'no';
+      }
+
+      // Skip duplicate users (take most recent response)
+      if (seenUserIds.has(response.userId)) continue;
+      seenUserIds.add(response.userId);
+
+      // Get user information
+      const user = await db.query.Users.findFirst({
+        columns: {
+          avatarUrl: true,
+          firstName: true,
+          id: true,
+          lastName: true,
+        },
+        where: eq(Users.id, response.userId),
+      });
+
+      if (user) {
+        const replier = {
+          avatarUrl: user.avatarUrl,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          userId: user.id,
+        };
+
+        if (response.answer === 'yes') {
+          yesRepliers.push(replier);
+        } else if (response.answer === 'no') {
+          noRepliers.push(replier);
         }
       }
     }
 
-    return repliers;
+    return {
+      currentUserAnswer,
+      hasCurrentUserAnswered: currentUserAnswer !== null,
+      noRepliers,
+      yesRepliers,
+    };
   });
 
 /**

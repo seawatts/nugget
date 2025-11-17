@@ -76,8 +76,6 @@ export interface LearningTip {
   isYesNoQuestion?: boolean | null;
   openChatOnYes?: boolean | null;
   openChatOnNo?: boolean | null;
-  yesResponsePrompt?: string | null;
-  noResponsePrompt?: string | null;
 }
 
 export interface LearningCarouselData {

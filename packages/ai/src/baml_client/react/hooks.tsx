@@ -620,19 +620,45 @@ export function useDailyCheckInQuestions(
   }
 }
 /**
- * A specialized hook for the DailyLearningContent BAML function that supports both streaming and non‑streaming responses.
+ * A specialized hook for the DailyLearningPlanner BAML function that supports both streaming and non‑streaming responses.
  *
  * **Input Types:**
- *
- * - postpartumDay: number
  *
  * - babyName: string
  *
  * - babySex (optional): string | null
  *
+ * - ageInDays: number
+ *
+ * - ageInWeeks: number
+ *
  * - firstTimeParent: boolean
  *
+ * - currentWeightOz (optional): number | null
+ *
+ * - birthWeightOz (optional): number | null
+ *
+ * - height (optional): number | null
+ *
+ * - feedingCount24h (optional): number | null
+ *
+ * - avgFeedingInterval (optional): number | null
+ *
+ * - sleepCount24h (optional): number | null
+ *
+ * - totalSleepHours24h (optional): number | null
+ *
+ * - diaperCount24h (optional): number | null
+ *
+ * - avgFeedingsPerDay (optional): number | null
+ *
+ * - avgSleepHoursPerDay (optional): number | null
+ *
+ * - avgDiaperChangesPerDay (optional): number | null
+ *
  * - recentChatTopics (optional): string | null
+ *
+ * - recentlyCoveredTopics (optional): string | null
  *
  * - achievedMilestones (optional): string | null
  *
@@ -644,9 +670,9 @@ export function useDailyCheckInQuestions(
  *
  *
  * **Return Type:**
- * - **Non‑streaming:** types.DailyLearningOutput
- * - **Streaming Partial:** DailyLearningOutput
- * - **Streaming Final:** types.DailyLearningOutput
+ * - **Non‑streaming:** types.DailyLearningPlan
+ * - **Streaming Partial:** DailyLearningPlan
+ * - **Streaming Final:** types.DailyLearningPlan
  *
  * **Usage Patterns:**
  * 1. **Non‑streaming (Default)**
@@ -661,10 +687,10 @@ export function useDailyCheckInQuestions(
  * @example
  * ```tsx
  * // Basic non‑streaming usage:
- * const { data, error, isLoading, mutate } = useDailyLearningContent({ stream: false});
+ * const { data, error, isLoading, mutate } = useDailyLearningPlanner({ stream: false});
  *
  * // Streaming usage:
- * const { data, streamData, isLoading, error, mutate } = useDailyLearningContent({
+ * const { data, streamData, isLoading, error, mutate } = useDailyLearningPlanner({
  *   stream: true | undefined,
  *   onStreamData: (partial) => console.log('Partial update:', partial),
  *   onFinalData: (final) => console.log('Final result:', final),
@@ -672,17 +698,17 @@ export function useDailyCheckInQuestions(
  * });
  * ```
  */
-export function useDailyLearningContent(props: HookInput<'DailyLearningContent', { stream: false }>): HookOutput<'DailyLearningContent', { stream: false }>
-export function useDailyLearningContent(props?: HookInput<'DailyLearningContent', { stream?: true }>): HookOutput<'DailyLearningContent', { stream: true }>
-export function useDailyLearningContent(
-  props: HookInput<'DailyLearningContent', { stream?: boolean }> = {},
-): HookOutput<'DailyLearningContent', { stream: true }> | HookOutput<'DailyLearningContent', { stream: false }> {
-  let action: ServerAction = Actions.DailyLearningContent;
+export function useDailyLearningPlanner(props: HookInput<'DailyLearningPlanner', { stream: false }>): HookOutput<'DailyLearningPlanner', { stream: false }>
+export function useDailyLearningPlanner(props?: HookInput<'DailyLearningPlanner', { stream?: true }>): HookOutput<'DailyLearningPlanner', { stream: true }>
+export function useDailyLearningPlanner(
+  props: HookInput<'DailyLearningPlanner', { stream?: boolean }> = {},
+): HookOutput<'DailyLearningPlanner', { stream: true }> | HookOutput<'DailyLearningPlanner', { stream: false }> {
+  let action: ServerAction = Actions.DailyLearningPlanner;
   if (isStreamingProps(props)) {
-    action = StreamingActions.DailyLearningContent;
+    action = StreamingActions.DailyLearningPlanner;
     return useBamlAction(action, props)
   } else {
-    return useBamlAction(action, props as HookInput<'DailyLearningContent', { stream: false }>)
+    return useBamlAction(action, props as HookInput<'DailyLearningPlanner', { stream: false }>)
   }
 }
 /**
@@ -755,6 +781,56 @@ export function useEnhanceMilestone(
     return useBamlAction(action, props)
   } else {
     return useBamlAction(action, props as HookInput<'EnhanceMilestone', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the FirstWeekMilestone BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - input: types.MilestoneInput
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.MilestoneEnhancementOutput
+ * - **Streaming Partial:** MilestoneEnhancementOutput
+ * - **Streaming Final:** types.MilestoneEnhancementOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useFirstWeekMilestone({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useFirstWeekMilestone({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useFirstWeekMilestone(props: HookInput<'FirstWeekMilestone', { stream: false }>): HookOutput<'FirstWeekMilestone', { stream: false }>
+export function useFirstWeekMilestone(props?: HookInput<'FirstWeekMilestone', { stream?: true }>): HookOutput<'FirstWeekMilestone', { stream: true }>
+export function useFirstWeekMilestone(
+  props: HookInput<'FirstWeekMilestone', { stream?: boolean }> = {},
+): HookOutput<'FirstWeekMilestone', { stream: true }> | HookOutput<'FirstWeekMilestone', { stream: false }> {
+  let action: ServerAction = Actions.FirstWeekMilestone;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.FirstWeekMilestone;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'FirstWeekMilestone', { stream: false }>)
   }
 }
 /**
@@ -890,6 +966,580 @@ export function useGenerateContextualMilestones(
   }
 }
 /**
+ * A specialized hook for the GenerateLearningTip_FirstWeek BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - category: string
+ *
+ * - title: string
+ *
+ * - subtitle: string
+ *
+ * - relevance: string
+ *
+ * - recommendYesNo: boolean
+ *
+ * - babyName: string
+ *
+ * - babySex (optional): string | null
+ *
+ * - ageInDays: number
+ *
+ * - currentWeightOz (optional): number | null
+ *
+ * - birthWeightOz (optional): number | null
+ *
+ * - feedingCount24h (optional): number | null
+ *
+ * - avgFeedingInterval (optional): number | null
+ *
+ * - sleepCount24h (optional): number | null
+ *
+ * - diaperCount24h (optional): number | null
+ *
+ * - recentChatTopics (optional): string | null
+ *
+ * - achievedMilestones (optional): string | null
+ *
+ * - medicalContext (optional): string | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.LearningTip
+ * - **Streaming Partial:** LearningTip
+ * - **Streaming Final:** types.LearningTip
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useGenerateLearningTip_FirstWeek({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useGenerateLearningTip_FirstWeek({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useGenerateLearningTip_FirstWeek(props: HookInput<'GenerateLearningTip_FirstWeek', { stream: false }>): HookOutput<'GenerateLearningTip_FirstWeek', { stream: false }>
+export function useGenerateLearningTip_FirstWeek(props?: HookInput<'GenerateLearningTip_FirstWeek', { stream?: true }>): HookOutput<'GenerateLearningTip_FirstWeek', { stream: true }>
+export function useGenerateLearningTip_FirstWeek(
+  props: HookInput<'GenerateLearningTip_FirstWeek', { stream?: boolean }> = {},
+): HookOutput<'GenerateLearningTip_FirstWeek', { stream: true }> | HookOutput<'GenerateLearningTip_FirstWeek', { stream: false }> {
+  let action: ServerAction = Actions.GenerateLearningTip_FirstWeek;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.GenerateLearningTip_FirstWeek;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'GenerateLearningTip_FirstWeek', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the GenerateLearningTip_ImmediatePostbirth BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - category: string
+ *
+ * - title: string
+ *
+ * - subtitle: string
+ *
+ * - relevance: string
+ *
+ * - recommendYesNo: boolean
+ *
+ * - babyName: string
+ *
+ * - babySex (optional): string | null
+ *
+ * - ageInDays: number
+ *
+ * - currentWeightOz (optional): number | null
+ *
+ * - birthWeightOz (optional): number | null
+ *
+ * - feedingCount24h (optional): number | null
+ *
+ * - avgFeedingInterval (optional): number | null
+ *
+ * - sleepCount24h (optional): number | null
+ *
+ * - diaperCount24h (optional): number | null
+ *
+ * - recentChatTopics (optional): string | null
+ *
+ * - achievedMilestones (optional): string | null
+ *
+ * - medicalContext (optional): string | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.LearningTip
+ * - **Streaming Partial:** LearningTip
+ * - **Streaming Final:** types.LearningTip
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useGenerateLearningTip_ImmediatePostbirth({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useGenerateLearningTip_ImmediatePostbirth({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useGenerateLearningTip_ImmediatePostbirth(props: HookInput<'GenerateLearningTip_ImmediatePostbirth', { stream: false }>): HookOutput<'GenerateLearningTip_ImmediatePostbirth', { stream: false }>
+export function useGenerateLearningTip_ImmediatePostbirth(props?: HookInput<'GenerateLearningTip_ImmediatePostbirth', { stream?: true }>): HookOutput<'GenerateLearningTip_ImmediatePostbirth', { stream: true }>
+export function useGenerateLearningTip_ImmediatePostbirth(
+  props: HookInput<'GenerateLearningTip_ImmediatePostbirth', { stream?: boolean }> = {},
+): HookOutput<'GenerateLearningTip_ImmediatePostbirth', { stream: true }> | HookOutput<'GenerateLearningTip_ImmediatePostbirth', { stream: false }> {
+  let action: ServerAction = Actions.GenerateLearningTip_ImmediatePostbirth;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.GenerateLearningTip_ImmediatePostbirth;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'GenerateLearningTip_ImmediatePostbirth', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the GenerateLearningTip_MonthOne BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - category: string
+ *
+ * - title: string
+ *
+ * - subtitle: string
+ *
+ * - relevance: string
+ *
+ * - recommendYesNo: boolean
+ *
+ * - babyName: string
+ *
+ * - babySex (optional): string | null
+ *
+ * - ageInDays: number
+ *
+ * - currentWeightOz (optional): number | null
+ *
+ * - birthWeightOz (optional): number | null
+ *
+ * - feedingCount24h (optional): number | null
+ *
+ * - avgFeedingInterval (optional): number | null
+ *
+ * - sleepCount24h (optional): number | null
+ *
+ * - diaperCount24h (optional): number | null
+ *
+ * - recentChatTopics (optional): string | null
+ *
+ * - achievedMilestones (optional): string | null
+ *
+ * - medicalContext (optional): string | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.LearningTip
+ * - **Streaming Partial:** LearningTip
+ * - **Streaming Final:** types.LearningTip
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useGenerateLearningTip_MonthOne({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useGenerateLearningTip_MonthOne({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useGenerateLearningTip_MonthOne(props: HookInput<'GenerateLearningTip_MonthOne', { stream: false }>): HookOutput<'GenerateLearningTip_MonthOne', { stream: false }>
+export function useGenerateLearningTip_MonthOne(props?: HookInput<'GenerateLearningTip_MonthOne', { stream?: true }>): HookOutput<'GenerateLearningTip_MonthOne', { stream: true }>
+export function useGenerateLearningTip_MonthOne(
+  props: HookInput<'GenerateLearningTip_MonthOne', { stream?: boolean }> = {},
+): HookOutput<'GenerateLearningTip_MonthOne', { stream: true }> | HookOutput<'GenerateLearningTip_MonthOne', { stream: false }> {
+  let action: ServerAction = Actions.GenerateLearningTip_MonthOne;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.GenerateLearningTip_MonthOne;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'GenerateLearningTip_MonthOne', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the GenerateLearningTip_MonthThreeFour BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - category: string
+ *
+ * - title: string
+ *
+ * - subtitle: string
+ *
+ * - relevance: string
+ *
+ * - recommendYesNo: boolean
+ *
+ * - babyName: string
+ *
+ * - babySex (optional): string | null
+ *
+ * - ageInDays: number
+ *
+ * - currentWeightOz (optional): number | null
+ *
+ * - birthWeightOz (optional): number | null
+ *
+ * - feedingCount24h (optional): number | null
+ *
+ * - avgFeedingInterval (optional): number | null
+ *
+ * - sleepCount24h (optional): number | null
+ *
+ * - diaperCount24h (optional): number | null
+ *
+ * - recentChatTopics (optional): string | null
+ *
+ * - achievedMilestones (optional): string | null
+ *
+ * - medicalContext (optional): string | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.LearningTip
+ * - **Streaming Partial:** LearningTip
+ * - **Streaming Final:** types.LearningTip
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useGenerateLearningTip_MonthThreeFour({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useGenerateLearningTip_MonthThreeFour({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useGenerateLearningTip_MonthThreeFour(props: HookInput<'GenerateLearningTip_MonthThreeFour', { stream: false }>): HookOutput<'GenerateLearningTip_MonthThreeFour', { stream: false }>
+export function useGenerateLearningTip_MonthThreeFour(props?: HookInput<'GenerateLearningTip_MonthThreeFour', { stream?: true }>): HookOutput<'GenerateLearningTip_MonthThreeFour', { stream: true }>
+export function useGenerateLearningTip_MonthThreeFour(
+  props: HookInput<'GenerateLearningTip_MonthThreeFour', { stream?: boolean }> = {},
+): HookOutput<'GenerateLearningTip_MonthThreeFour', { stream: true }> | HookOutput<'GenerateLearningTip_MonthThreeFour', { stream: false }> {
+  let action: ServerAction = Actions.GenerateLearningTip_MonthThreeFour;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.GenerateLearningTip_MonthThreeFour;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'GenerateLearningTip_MonthThreeFour', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the GenerateLearningTip_MonthTwo BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - category: string
+ *
+ * - title: string
+ *
+ * - subtitle: string
+ *
+ * - relevance: string
+ *
+ * - recommendYesNo: boolean
+ *
+ * - babyName: string
+ *
+ * - babySex (optional): string | null
+ *
+ * - ageInDays: number
+ *
+ * - currentWeightOz (optional): number | null
+ *
+ * - birthWeightOz (optional): number | null
+ *
+ * - feedingCount24h (optional): number | null
+ *
+ * - avgFeedingInterval (optional): number | null
+ *
+ * - sleepCount24h (optional): number | null
+ *
+ * - diaperCount24h (optional): number | null
+ *
+ * - recentChatTopics (optional): string | null
+ *
+ * - achievedMilestones (optional): string | null
+ *
+ * - medicalContext (optional): string | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.LearningTip
+ * - **Streaming Partial:** LearningTip
+ * - **Streaming Final:** types.LearningTip
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useGenerateLearningTip_MonthTwo({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useGenerateLearningTip_MonthTwo({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useGenerateLearningTip_MonthTwo(props: HookInput<'GenerateLearningTip_MonthTwo', { stream: false }>): HookOutput<'GenerateLearningTip_MonthTwo', { stream: false }>
+export function useGenerateLearningTip_MonthTwo(props?: HookInput<'GenerateLearningTip_MonthTwo', { stream?: true }>): HookOutput<'GenerateLearningTip_MonthTwo', { stream: true }>
+export function useGenerateLearningTip_MonthTwo(
+  props: HookInput<'GenerateLearningTip_MonthTwo', { stream?: boolean }> = {},
+): HookOutput<'GenerateLearningTip_MonthTwo', { stream: true }> | HookOutput<'GenerateLearningTip_MonthTwo', { stream: false }> {
+  let action: ServerAction = Actions.GenerateLearningTip_MonthTwo;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.GenerateLearningTip_MonthTwo;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'GenerateLearningTip_MonthTwo', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the GenerateLearningTip_SecondWeek BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - category: string
+ *
+ * - title: string
+ *
+ * - subtitle: string
+ *
+ * - relevance: string
+ *
+ * - recommendYesNo: boolean
+ *
+ * - babyName: string
+ *
+ * - babySex (optional): string | null
+ *
+ * - ageInDays: number
+ *
+ * - currentWeightOz (optional): number | null
+ *
+ * - birthWeightOz (optional): number | null
+ *
+ * - feedingCount24h (optional): number | null
+ *
+ * - avgFeedingInterval (optional): number | null
+ *
+ * - sleepCount24h (optional): number | null
+ *
+ * - diaperCount24h (optional): number | null
+ *
+ * - recentChatTopics (optional): string | null
+ *
+ * - achievedMilestones (optional): string | null
+ *
+ * - medicalContext (optional): string | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.LearningTip
+ * - **Streaming Partial:** LearningTip
+ * - **Streaming Final:** types.LearningTip
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useGenerateLearningTip_SecondWeek({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useGenerateLearningTip_SecondWeek({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useGenerateLearningTip_SecondWeek(props: HookInput<'GenerateLearningTip_SecondWeek', { stream: false }>): HookOutput<'GenerateLearningTip_SecondWeek', { stream: false }>
+export function useGenerateLearningTip_SecondWeek(props?: HookInput<'GenerateLearningTip_SecondWeek', { stream?: true }>): HookOutput<'GenerateLearningTip_SecondWeek', { stream: true }>
+export function useGenerateLearningTip_SecondWeek(
+  props: HookInput<'GenerateLearningTip_SecondWeek', { stream?: boolean }> = {},
+): HookOutput<'GenerateLearningTip_SecondWeek', { stream: true }> | HookOutput<'GenerateLearningTip_SecondWeek', { stream: false }> {
+  let action: ServerAction = Actions.GenerateLearningTip_SecondWeek;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.GenerateLearningTip_SecondWeek;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'GenerateLearningTip_SecondWeek', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the GenerateLearningTip_ThirdWeek BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - category: string
+ *
+ * - title: string
+ *
+ * - subtitle: string
+ *
+ * - relevance: string
+ *
+ * - recommendYesNo: boolean
+ *
+ * - babyName: string
+ *
+ * - babySex (optional): string | null
+ *
+ * - ageInDays: number
+ *
+ * - currentWeightOz (optional): number | null
+ *
+ * - birthWeightOz (optional): number | null
+ *
+ * - feedingCount24h (optional): number | null
+ *
+ * - avgFeedingInterval (optional): number | null
+ *
+ * - sleepCount24h (optional): number | null
+ *
+ * - diaperCount24h (optional): number | null
+ *
+ * - recentChatTopics (optional): string | null
+ *
+ * - achievedMilestones (optional): string | null
+ *
+ * - medicalContext (optional): string | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.LearningTip
+ * - **Streaming Partial:** LearningTip
+ * - **Streaming Final:** types.LearningTip
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useGenerateLearningTip_ThirdWeek({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useGenerateLearningTip_ThirdWeek({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useGenerateLearningTip_ThirdWeek(props: HookInput<'GenerateLearningTip_ThirdWeek', { stream: false }>): HookOutput<'GenerateLearningTip_ThirdWeek', { stream: false }>
+export function useGenerateLearningTip_ThirdWeek(props?: HookInput<'GenerateLearningTip_ThirdWeek', { stream?: true }>): HookOutput<'GenerateLearningTip_ThirdWeek', { stream: true }>
+export function useGenerateLearningTip_ThirdWeek(
+  props: HookInput<'GenerateLearningTip_ThirdWeek', { stream?: boolean }> = {},
+): HookOutput<'GenerateLearningTip_ThirdWeek', { stream: true }> | HookOutput<'GenerateLearningTip_ThirdWeek', { stream: false }> {
+  let action: ServerAction = Actions.GenerateLearningTip_ThirdWeek;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.GenerateLearningTip_ThirdWeek;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'GenerateLearningTip_ThirdWeek', { stream: false }>)
+  }
+}
+/**
  * A specialized hook for the HospitalPackAdvice BAML function that supports both streaming and non‑streaming responses.
  *
  * **Input Types:**
@@ -937,6 +1587,56 @@ export function useHospitalPackAdvice(
     return useBamlAction(action, props)
   } else {
     return useBamlAction(action, props as HookInput<'HospitalPackAdvice', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the ImmediatePostbirthMilestone BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - input: types.MilestoneInput
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.MilestoneEnhancementOutput
+ * - **Streaming Partial:** MilestoneEnhancementOutput
+ * - **Streaming Final:** types.MilestoneEnhancementOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useImmediatePostbirthMilestone({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useImmediatePostbirthMilestone({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useImmediatePostbirthMilestone(props: HookInput<'ImmediatePostbirthMilestone', { stream: false }>): HookOutput<'ImmediatePostbirthMilestone', { stream: false }>
+export function useImmediatePostbirthMilestone(props?: HookInput<'ImmediatePostbirthMilestone', { stream?: true }>): HookOutput<'ImmediatePostbirthMilestone', { stream: true }>
+export function useImmediatePostbirthMilestone(
+  props: HookInput<'ImmediatePostbirthMilestone', { stream?: boolean }> = {},
+): HookOutput<'ImmediatePostbirthMilestone', { stream: true }> | HookOutput<'ImmediatePostbirthMilestone', { stream: false }> {
+  let action: ServerAction = Actions.ImmediatePostbirthMilestone;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.ImmediatePostbirthMilestone;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'ImmediatePostbirthMilestone', { stream: false }>)
   }
 }
 /**
@@ -1005,6 +1705,246 @@ export function useMilestoneExplanation(
     return useBamlAction(action, props)
   } else {
     return useBamlAction(action, props as HookInput<'MilestoneExplanation', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the MilestonePlanner BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - babyName: string
+ *
+ * - babySex (optional): string | null
+ *
+ * - ageInDays: number
+ *
+ * - ageInWeeks: number
+ *
+ * - currentWeightOz (optional): number | null
+ *
+ * - birthWeightOz (optional): number | null
+ *
+ * - height (optional): number | null
+ *
+ * - feedingCount24h (optional): number | null
+ *
+ * - avgFeedingInterval (optional): number | null
+ *
+ * - sleepCount24h (optional): number | null
+ *
+ * - totalSleepHours24h (optional): number | null
+ *
+ * - diaperCount24h (optional): number | null
+ *
+ * - avgFeedingsPerDay (optional): number | null
+ *
+ * - avgSleepHoursPerDay (optional): number | null
+ *
+ * - avgDiaperChangesPerDay (optional): number | null
+ *
+ * - recentChatTopics (optional): string | null
+ *
+ * - achievedMilestones (optional): string | null
+ *
+ * - recentlySuggestedMilestones (optional): string | null
+ *
+ * - activitySummary (optional): string | null
+ *
+ * - hasTummyTimeActivity (optional): boolean | null
+ *
+ * - medicalContext (optional): string | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.MilestonePlan
+ * - **Streaming Partial:** MilestonePlan
+ * - **Streaming Final:** types.MilestonePlan
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useMilestonePlanner({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useMilestonePlanner({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useMilestonePlanner(props: HookInput<'MilestonePlanner', { stream: false }>): HookOutput<'MilestonePlanner', { stream: false }>
+export function useMilestonePlanner(props?: HookInput<'MilestonePlanner', { stream?: true }>): HookOutput<'MilestonePlanner', { stream: true }>
+export function useMilestonePlanner(
+  props: HookInput<'MilestonePlanner', { stream?: boolean }> = {},
+): HookOutput<'MilestonePlanner', { stream: true }> | HookOutput<'MilestonePlanner', { stream: false }> {
+  let action: ServerAction = Actions.MilestonePlanner;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.MilestonePlanner;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'MilestonePlanner', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the MonthOneMilestone BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - input: types.MilestoneInput
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.MilestoneEnhancementOutput
+ * - **Streaming Partial:** MilestoneEnhancementOutput
+ * - **Streaming Final:** types.MilestoneEnhancementOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useMonthOneMilestone({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useMonthOneMilestone({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useMonthOneMilestone(props: HookInput<'MonthOneMilestone', { stream: false }>): HookOutput<'MonthOneMilestone', { stream: false }>
+export function useMonthOneMilestone(props?: HookInput<'MonthOneMilestone', { stream?: true }>): HookOutput<'MonthOneMilestone', { stream: true }>
+export function useMonthOneMilestone(
+  props: HookInput<'MonthOneMilestone', { stream?: boolean }> = {},
+): HookOutput<'MonthOneMilestone', { stream: true }> | HookOutput<'MonthOneMilestone', { stream: false }> {
+  let action: ServerAction = Actions.MonthOneMilestone;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.MonthOneMilestone;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'MonthOneMilestone', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the MonthThreeFourMilestone BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - input: types.MilestoneInput
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.MilestoneEnhancementOutput
+ * - **Streaming Partial:** MilestoneEnhancementOutput
+ * - **Streaming Final:** types.MilestoneEnhancementOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useMonthThreeFourMilestone({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useMonthThreeFourMilestone({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useMonthThreeFourMilestone(props: HookInput<'MonthThreeFourMilestone', { stream: false }>): HookOutput<'MonthThreeFourMilestone', { stream: false }>
+export function useMonthThreeFourMilestone(props?: HookInput<'MonthThreeFourMilestone', { stream?: true }>): HookOutput<'MonthThreeFourMilestone', { stream: true }>
+export function useMonthThreeFourMilestone(
+  props: HookInput<'MonthThreeFourMilestone', { stream?: boolean }> = {},
+): HookOutput<'MonthThreeFourMilestone', { stream: true }> | HookOutput<'MonthThreeFourMilestone', { stream: false }> {
+  let action: ServerAction = Actions.MonthThreeFourMilestone;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.MonthThreeFourMilestone;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'MonthThreeFourMilestone', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the MonthTwoMilestone BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - input: types.MilestoneInput
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.MilestoneEnhancementOutput
+ * - **Streaming Partial:** MilestoneEnhancementOutput
+ * - **Streaming Final:** types.MilestoneEnhancementOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useMonthTwoMilestone({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useMonthTwoMilestone({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useMonthTwoMilestone(props: HookInput<'MonthTwoMilestone', { stream: false }>): HookOutput<'MonthTwoMilestone', { stream: false }>
+export function useMonthTwoMilestone(props?: HookInput<'MonthTwoMilestone', { stream?: true }>): HookOutput<'MonthTwoMilestone', { stream: true }>
+export function useMonthTwoMilestone(
+  props: HookInput<'MonthTwoMilestone', { stream?: boolean }> = {},
+): HookOutput<'MonthTwoMilestone', { stream: true }> | HookOutput<'MonthTwoMilestone', { stream: false }> {
+  let action: ServerAction = Actions.MonthTwoMilestone;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.MonthTwoMilestone;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'MonthTwoMilestone', { stream: false }>)
   }
 }
 /**
@@ -1318,6 +2258,56 @@ export function useRoleSpecificTips(
   }
 }
 /**
+ * A specialized hook for the SecondWeekMilestone BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - input: types.MilestoneInput
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.MilestoneEnhancementOutput
+ * - **Streaming Partial:** MilestoneEnhancementOutput
+ * - **Streaming Final:** types.MilestoneEnhancementOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useSecondWeekMilestone({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useSecondWeekMilestone({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useSecondWeekMilestone(props: HookInput<'SecondWeekMilestone', { stream: false }>): HookOutput<'SecondWeekMilestone', { stream: false }>
+export function useSecondWeekMilestone(props?: HookInput<'SecondWeekMilestone', { stream?: true }>): HookOutput<'SecondWeekMilestone', { stream: true }>
+export function useSecondWeekMilestone(
+  props: HookInput<'SecondWeekMilestone', { stream?: boolean }> = {},
+): HookOutput<'SecondWeekMilestone', { stream: true }> | HookOutput<'SecondWeekMilestone', { stream: false }> {
+  let action: ServerAction = Actions.SecondWeekMilestone;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.SecondWeekMilestone;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'SecondWeekMilestone', { stream: false }>)
+  }
+}
+/**
  * A specialized hook for the SleepRegressionTips BAML function that supports both streaming and non‑streaming responses.
  *
  * **Input Types:**
@@ -1487,6 +2477,56 @@ export function useSuggestImprovements(
     return useBamlAction(action, props)
   } else {
     return useBamlAction(action, props as HookInput<'SuggestImprovements', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the ThirdWeekMilestone BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - input: types.MilestoneInput
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.MilestoneEnhancementOutput
+ * - **Streaming Partial:** MilestoneEnhancementOutput
+ * - **Streaming Final:** types.MilestoneEnhancementOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useThirdWeekMilestone({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useThirdWeekMilestone({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useThirdWeekMilestone(props: HookInput<'ThirdWeekMilestone', { stream: false }>): HookOutput<'ThirdWeekMilestone', { stream: false }>
+export function useThirdWeekMilestone(props?: HookInput<'ThirdWeekMilestone', { stream?: true }>): HookOutput<'ThirdWeekMilestone', { stream: true }>
+export function useThirdWeekMilestone(
+  props: HookInput<'ThirdWeekMilestone', { stream?: boolean }> = {},
+): HookOutput<'ThirdWeekMilestone', { stream: true }> | HookOutput<'ThirdWeekMilestone', { stream: false }> {
+  let action: ServerAction = Actions.ThirdWeekMilestone;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.ThirdWeekMilestone;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'ThirdWeekMilestone', { stream: false }>)
   }
 }
 /**

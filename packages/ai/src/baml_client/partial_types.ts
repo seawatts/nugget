@@ -20,7 +20,7 @@ $ pnpm add @boundaryml/baml
 
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml"
 import type { Checked, Check } from "./types"
-import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  DailyLearningOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningTip,  MilestoneEnhancementOutput,  MilestoneExplanationOutput,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsInput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "./types"
+import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  DailyLearningPlan,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningPlanItem,  LearningTip,  MilestoneEnhancementOutput,  MilestoneExplanationOutput,  MilestoneInput,  MilestonePlan,  MilestonePlanItem,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsInput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "./types"
 import type * as types from "./types"
 
 /******************************************************************************
@@ -80,14 +80,11 @@ export namespace partial_types {
     export interface DailyCheckInQuestionsOutput {
       questions: CheckInQuestion[]
     }
-    export interface DailyLearningOutput {
-      title?: string | null
-      summary?: string | null
-      keyPoints: string[]
-      practicalTips: string[]
-      researchNote?: string | null
-      developmentalContext?: string | null
-      tips: LearningTip[]
+    export interface DailyLearningPlan {
+      items: LearningPlanItem[]
+      reasoning?: string | null
+      coveredCategories: string[]
+      urgentHealthChecks?: boolean | null
     }
     export interface HospitalPackAdviceOutput {
       headline?: string | null
@@ -99,6 +96,15 @@ export namespace partial_types {
       performance: string[]
       overall_priority: string[]
     }
+    export interface LearningPlanItem {
+      category?: string | null
+      title?: string | null
+      subtitle?: string | null
+      relevance?: string | null
+      priority?: number | null
+      avoidDuplicateOf: string[]
+      recommendYesNo?: boolean | null
+    }
     export interface LearningTip {
       category?: string | null
       subtitle?: string | null
@@ -108,13 +114,14 @@ export namespace partial_types {
       isYesNoQuestion?: boolean | null
       openChatOnYes?: boolean | null
       openChatOnNo?: boolean | null
-      yesResponsePrompt?: string | null
-      noResponsePrompt?: string | null
     }
     export interface MilestoneEnhancementOutput {
       bulletPoints: string[]
       followUpQuestion?: string | null
       summary?: string | null
+      isYesNoQuestion?: boolean | null
+      openChatOnYes?: boolean | null
+      openChatOnNo?: boolean | null
     }
     export interface MilestoneExplanationOutput {
       explanation?: string | null
@@ -122,6 +129,45 @@ export namespace partial_types {
       whatToExpect?: string | null
       tips: string[]
       reassurance?: string | null
+    }
+    export interface MilestoneInput {
+      babyName?: string | null
+      babySex?: string | null
+      ageInDays?: number | null
+      ageInWeeks?: number | null
+      currentWeightOz?: number | null
+      birthWeightOz?: number | null
+      height?: number | null
+      feedingCount24h?: number | null
+      avgFeedingInterval?: number | null
+      sleepCount24h?: number | null
+      totalSleepHours24h?: number | null
+      diaperCount24h?: number | null
+      avgFeedingsPerDay?: number | null
+      avgSleepHoursPerDay?: number | null
+      avgDiaperChangesPerDay?: number | null
+      recentChatTopics?: string | null
+      achievedMilestones?: string | null
+      activitySummary?: string | null
+      hasTummyTimeActivity?: boolean | null
+      medicalContext?: string | null
+      plannedItem?: MilestonePlanItem | null
+    }
+    export interface MilestonePlan {
+      items: MilestonePlanItem[]
+      reasoning?: string | null
+      coveredTypes: string[]
+      developmentalFocus?: string | null
+    }
+    export interface MilestonePlanItem {
+      title?: string | null
+      type?: string | null
+      ageLabel?: string | null
+      relevance?: string | null
+      priority?: number | null
+      expectedInStage?: boolean | null
+      avoidDuplicateOf: string[]
+      recommendYesNo?: boolean | null
     }
     export interface MilestoneSuggestion {
       title?: string | null

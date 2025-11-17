@@ -1,5 +1,7 @@
 'use server';
 
+import { auth } from '@clerk/nextjs/server';
+import { getApi } from '@nugget/api/server';
 import { db } from '@nugget/db/client';
 import {
   insertMilestoneQuestionResponseSchema,
@@ -23,6 +25,19 @@ export const saveMilestoneQuestionResponseAction = action
     }),
   )
   .action(async ({ parsedInput }) => {
+    // Get auth and baby info for familyId
+    const authResult = await auth();
+    if (!authResult.userId) {
+      throw new Error('Unauthorized');
+    }
+
+    const api = await getApi();
+    const baby = await api.babies.getById({ id: parsedInput.babyId });
+
+    if (!baby) {
+      throw new Error('Baby not found');
+    }
+
     const [response] = await db
       .insert(MilestoneQuestionResponses)
       .values({
@@ -31,7 +46,9 @@ export const saveMilestoneQuestionResponseAction = action
         chatId: parsedInput.chatId || null,
         contextId: parsedInput.contextId,
         contextType: parsedInput.contextType,
+        familyId: baby.familyId,
         question: parsedInput.question,
+        userId: authResult.userId,
       })
       .onConflictDoUpdate({
         set: {

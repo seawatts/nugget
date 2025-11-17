@@ -24,7 +24,7 @@ import { toBamlError, BamlStream, BamlAbortError, Collector } from "@boundaryml/
 import type { Checked, Check, RecursivePartialNull as MovedRecursivePartialNull } from "./types"
 import type { partial_types } from "./partial_types"
 import type * as types from "./types"
-import type {AppointmentNudgeOutput, BabyAssistantChatOutput, BabyContext, BabyVisitExplainerOutput, BirthPlanHeadlineOutput, ChatMessage, ChatTitleOutput, CheckInQuestion, ContextualMilestonesOutput, DailyCheckInQuestionsOutput, DailyLearningOutput, HospitalPackAdviceOutput, ImprovementSuggestions, LearningTip, MilestoneEnhancementOutput, MilestoneExplanationOutput, MilestoneSuggestion, NewbornMilestoneOutput, ParentTask, ParentTip, PersonalizedTasksOutput, PostpartumTipsInput, PostpartumTipsOutput, PregnancyWeekSummaryOutput, ResponseType, RoleSpecificTipsOutput, SleepRegressionTipsOutput, StalePromptsOutput, WellnessQuestion, WellnessScreeningOutput} from "./types"
+import type {AppointmentNudgeOutput, BabyAssistantChatOutput, BabyContext, BabyVisitExplainerOutput, BirthPlanHeadlineOutput, ChatMessage, ChatTitleOutput, CheckInQuestion, ContextualMilestonesOutput, DailyCheckInQuestionsOutput, DailyLearningPlan, HospitalPackAdviceOutput, ImprovementSuggestions, LearningPlanItem, LearningTip, MilestoneEnhancementOutput, MilestoneExplanationOutput, MilestoneInput, MilestonePlan, MilestonePlanItem, MilestoneSuggestion, NewbornMilestoneOutput, ParentTask, ParentTip, PersonalizedTasksOutput, PostpartumTipsInput, PostpartumTipsOutput, PregnancyWeekSummaryOutput, ResponseType, RoleSpecificTipsOutput, SleepRegressionTipsOutput, StalePromptsOutput, WellnessQuestion, WellnessScreeningOutput} from "./types"
 import type TypeBuilder from "./type_builder"
 import { AsyncHttpRequest, AsyncHttpStreamRequest } from "./async_request"
 import { LlmResponseParser, LlmStreamParser } from "./parser"
@@ -336,10 +336,10 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             }
             }
             
-        async DailyLearningContent(
-        postpartumDay: number,babyName: string,babySex?: string | null,firstTimeParent: boolean,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
+        async DailyLearningPlanner(
+        babyName: string,babySex?: string | null,ageInDays: number,ageInWeeks: number,firstTimeParent: boolean,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,diaperCount24h?: number | null,avgFeedingsPerDay?: number | null,avgSleepHoursPerDay?: number | null,avgDiaperChangesPerDay?: number | null,recentChatTopics?: string | null,recentlyCoveredTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
         __baml_options__?: BamlCallOptions<never>
-        ): Promise<types.DailyLearningOutput> {
+        ): Promise<types.DailyLearningPlan> {
           try {
           const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
           const signal = options.signal;
@@ -350,8 +350,8 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
 
           // Check if onTick is provided - route through streaming if so
           if (options.onTick) {
-          const stream = this.stream.DailyLearningContent(
-          postpartumDay,babyName,babySex,firstTimeParent,recentChatTopics,achievedMilestones,activitySummary,parentWellness,medicalContext,
+          const stream = this.stream.DailyLearningPlanner(
+          babyName,babySex,ageInDays,ageInWeeks,firstTimeParent,currentWeightOz,birthWeightOz,height,feedingCount24h,avgFeedingInterval,sleepCount24h,totalSleepHours24h,diaperCount24h,avgFeedingsPerDay,avgSleepHoursPerDay,avgDiaperChangesPerDay,recentChatTopics,recentlyCoveredTopics,achievedMilestones,activitySummary,parentWellness,medicalContext,
           __baml_options__
           );
 
@@ -365,9 +365,9 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
             );
             const raw = await this.runtime.callFunction(
-            "DailyLearningContent",
+            "DailyLearningPlanner",
             {
-            "postpartumDay": postpartumDay,"babyName": babyName,"babySex": babySex?? null,"firstTimeParent": firstTimeParent,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
+            "babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"firstTimeParent": firstTimeParent,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"totalSleepHours24h": totalSleepHours24h?? null,"diaperCount24h": diaperCount24h?? null,"avgFeedingsPerDay": avgFeedingsPerDay?? null,"avgSleepHoursPerDay": avgSleepHoursPerDay?? null,"avgDiaperChangesPerDay": avgDiaperChangesPerDay?? null,"recentChatTopics": recentChatTopics?? null,"recentlyCoveredTopics": recentlyCoveredTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
             },
             this.ctxManager.cloneContext(),
             options.tb?.__tb(),
@@ -378,7 +378,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             signal,
             options.watchers,
             )
-            return raw.parsed(false) as types.DailyLearningOutput
+            return raw.parsed(false) as types.DailyLearningPlan
             } catch (error) {
             throw toBamlError(error);
             }
@@ -416,6 +416,54 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             "EnhanceMilestone",
             {
             "milestoneTitle": milestoneTitle,"milestoneDescription": milestoneDescription,"milestoneType": milestoneType,"ageLabel": ageLabel,"babyName": babyName?? null,"babySex": babySex?? null,"ageInDays": ageInDays?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
+            },
+            this.ctxManager.cloneContext(),
+            options.tb?.__tb(),
+            options.clientRegistry,
+            collector,
+            options.tags || {},
+            env,
+            signal,
+            options.watchers,
+            )
+            return raw.parsed(false) as types.MilestoneEnhancementOutput
+            } catch (error) {
+            throw toBamlError(error);
+            }
+            }
+            
+        async FirstWeekMilestone(
+        input: types.MilestoneInput,
+        __baml_options__?: BamlCallOptions<never>
+        ): Promise<types.MilestoneEnhancementOutput> {
+          try {
+          const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+          const signal = options.signal;
+
+          if (signal?.aborted) {
+          throw new BamlAbortError('Operation was aborted', signal.reason);
+          }
+
+          // Check if onTick is provided - route through streaming if so
+          if (options.onTick) {
+          const stream = this.stream.FirstWeekMilestone(
+          input,
+          __baml_options__
+          );
+
+          return await stream.getFinalResponse();
+          }
+
+          const collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+          [options.collector]) : [];
+          const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+          const env: Record<string, string> = Object.fromEntries(
+            Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+            );
+            const raw = await this.runtime.callFunction(
+            "FirstWeekMilestone",
+            {
+            "input": input
             },
             this.ctxManager.cloneContext(),
             options.tb?.__tb(),
@@ -528,6 +576,342 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             }
             }
             
+        async GenerateLearningTip_FirstWeek(
+        category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+        __baml_options__?: BamlCallOptions<never>
+        ): Promise<types.LearningTip> {
+          try {
+          const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+          const signal = options.signal;
+
+          if (signal?.aborted) {
+          throw new BamlAbortError('Operation was aborted', signal.reason);
+          }
+
+          // Check if onTick is provided - route through streaming if so
+          if (options.onTick) {
+          const stream = this.stream.GenerateLearningTip_FirstWeek(
+          category,title,subtitle,relevance,recommendYesNo,babyName,babySex,ageInDays,currentWeightOz,birthWeightOz,feedingCount24h,avgFeedingInterval,sleepCount24h,diaperCount24h,recentChatTopics,achievedMilestones,medicalContext,
+          __baml_options__
+          );
+
+          return await stream.getFinalResponse();
+          }
+
+          const collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+          [options.collector]) : [];
+          const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+          const env: Record<string, string> = Object.fromEntries(
+            Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+            );
+            const raw = await this.runtime.callFunction(
+            "GenerateLearningTip_FirstWeek",
+            {
+            "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+            },
+            this.ctxManager.cloneContext(),
+            options.tb?.__tb(),
+            options.clientRegistry,
+            collector,
+            options.tags || {},
+            env,
+            signal,
+            options.watchers,
+            )
+            return raw.parsed(false) as types.LearningTip
+            } catch (error) {
+            throw toBamlError(error);
+            }
+            }
+            
+        async GenerateLearningTip_ImmediatePostbirth(
+        category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+        __baml_options__?: BamlCallOptions<never>
+        ): Promise<types.LearningTip> {
+          try {
+          const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+          const signal = options.signal;
+
+          if (signal?.aborted) {
+          throw new BamlAbortError('Operation was aborted', signal.reason);
+          }
+
+          // Check if onTick is provided - route through streaming if so
+          if (options.onTick) {
+          const stream = this.stream.GenerateLearningTip_ImmediatePostbirth(
+          category,title,subtitle,relevance,recommendYesNo,babyName,babySex,ageInDays,currentWeightOz,birthWeightOz,feedingCount24h,avgFeedingInterval,sleepCount24h,diaperCount24h,recentChatTopics,achievedMilestones,medicalContext,
+          __baml_options__
+          );
+
+          return await stream.getFinalResponse();
+          }
+
+          const collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+          [options.collector]) : [];
+          const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+          const env: Record<string, string> = Object.fromEntries(
+            Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+            );
+            const raw = await this.runtime.callFunction(
+            "GenerateLearningTip_ImmediatePostbirth",
+            {
+            "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+            },
+            this.ctxManager.cloneContext(),
+            options.tb?.__tb(),
+            options.clientRegistry,
+            collector,
+            options.tags || {},
+            env,
+            signal,
+            options.watchers,
+            )
+            return raw.parsed(false) as types.LearningTip
+            } catch (error) {
+            throw toBamlError(error);
+            }
+            }
+            
+        async GenerateLearningTip_MonthOne(
+        category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+        __baml_options__?: BamlCallOptions<never>
+        ): Promise<types.LearningTip> {
+          try {
+          const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+          const signal = options.signal;
+
+          if (signal?.aborted) {
+          throw new BamlAbortError('Operation was aborted', signal.reason);
+          }
+
+          // Check if onTick is provided - route through streaming if so
+          if (options.onTick) {
+          const stream = this.stream.GenerateLearningTip_MonthOne(
+          category,title,subtitle,relevance,recommendYesNo,babyName,babySex,ageInDays,currentWeightOz,birthWeightOz,feedingCount24h,avgFeedingInterval,sleepCount24h,diaperCount24h,recentChatTopics,achievedMilestones,medicalContext,
+          __baml_options__
+          );
+
+          return await stream.getFinalResponse();
+          }
+
+          const collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+          [options.collector]) : [];
+          const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+          const env: Record<string, string> = Object.fromEntries(
+            Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+            );
+            const raw = await this.runtime.callFunction(
+            "GenerateLearningTip_MonthOne",
+            {
+            "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+            },
+            this.ctxManager.cloneContext(),
+            options.tb?.__tb(),
+            options.clientRegistry,
+            collector,
+            options.tags || {},
+            env,
+            signal,
+            options.watchers,
+            )
+            return raw.parsed(false) as types.LearningTip
+            } catch (error) {
+            throw toBamlError(error);
+            }
+            }
+            
+        async GenerateLearningTip_MonthThreeFour(
+        category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+        __baml_options__?: BamlCallOptions<never>
+        ): Promise<types.LearningTip> {
+          try {
+          const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+          const signal = options.signal;
+
+          if (signal?.aborted) {
+          throw new BamlAbortError('Operation was aborted', signal.reason);
+          }
+
+          // Check if onTick is provided - route through streaming if so
+          if (options.onTick) {
+          const stream = this.stream.GenerateLearningTip_MonthThreeFour(
+          category,title,subtitle,relevance,recommendYesNo,babyName,babySex,ageInDays,currentWeightOz,birthWeightOz,feedingCount24h,avgFeedingInterval,sleepCount24h,diaperCount24h,recentChatTopics,achievedMilestones,medicalContext,
+          __baml_options__
+          );
+
+          return await stream.getFinalResponse();
+          }
+
+          const collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+          [options.collector]) : [];
+          const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+          const env: Record<string, string> = Object.fromEntries(
+            Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+            );
+            const raw = await this.runtime.callFunction(
+            "GenerateLearningTip_MonthThreeFour",
+            {
+            "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+            },
+            this.ctxManager.cloneContext(),
+            options.tb?.__tb(),
+            options.clientRegistry,
+            collector,
+            options.tags || {},
+            env,
+            signal,
+            options.watchers,
+            )
+            return raw.parsed(false) as types.LearningTip
+            } catch (error) {
+            throw toBamlError(error);
+            }
+            }
+            
+        async GenerateLearningTip_MonthTwo(
+        category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+        __baml_options__?: BamlCallOptions<never>
+        ): Promise<types.LearningTip> {
+          try {
+          const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+          const signal = options.signal;
+
+          if (signal?.aborted) {
+          throw new BamlAbortError('Operation was aborted', signal.reason);
+          }
+
+          // Check if onTick is provided - route through streaming if so
+          if (options.onTick) {
+          const stream = this.stream.GenerateLearningTip_MonthTwo(
+          category,title,subtitle,relevance,recommendYesNo,babyName,babySex,ageInDays,currentWeightOz,birthWeightOz,feedingCount24h,avgFeedingInterval,sleepCount24h,diaperCount24h,recentChatTopics,achievedMilestones,medicalContext,
+          __baml_options__
+          );
+
+          return await stream.getFinalResponse();
+          }
+
+          const collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+          [options.collector]) : [];
+          const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+          const env: Record<string, string> = Object.fromEntries(
+            Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+            );
+            const raw = await this.runtime.callFunction(
+            "GenerateLearningTip_MonthTwo",
+            {
+            "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+            },
+            this.ctxManager.cloneContext(),
+            options.tb?.__tb(),
+            options.clientRegistry,
+            collector,
+            options.tags || {},
+            env,
+            signal,
+            options.watchers,
+            )
+            return raw.parsed(false) as types.LearningTip
+            } catch (error) {
+            throw toBamlError(error);
+            }
+            }
+            
+        async GenerateLearningTip_SecondWeek(
+        category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+        __baml_options__?: BamlCallOptions<never>
+        ): Promise<types.LearningTip> {
+          try {
+          const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+          const signal = options.signal;
+
+          if (signal?.aborted) {
+          throw new BamlAbortError('Operation was aborted', signal.reason);
+          }
+
+          // Check if onTick is provided - route through streaming if so
+          if (options.onTick) {
+          const stream = this.stream.GenerateLearningTip_SecondWeek(
+          category,title,subtitle,relevance,recommendYesNo,babyName,babySex,ageInDays,currentWeightOz,birthWeightOz,feedingCount24h,avgFeedingInterval,sleepCount24h,diaperCount24h,recentChatTopics,achievedMilestones,medicalContext,
+          __baml_options__
+          );
+
+          return await stream.getFinalResponse();
+          }
+
+          const collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+          [options.collector]) : [];
+          const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+          const env: Record<string, string> = Object.fromEntries(
+            Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+            );
+            const raw = await this.runtime.callFunction(
+            "GenerateLearningTip_SecondWeek",
+            {
+            "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+            },
+            this.ctxManager.cloneContext(),
+            options.tb?.__tb(),
+            options.clientRegistry,
+            collector,
+            options.tags || {},
+            env,
+            signal,
+            options.watchers,
+            )
+            return raw.parsed(false) as types.LearningTip
+            } catch (error) {
+            throw toBamlError(error);
+            }
+            }
+            
+        async GenerateLearningTip_ThirdWeek(
+        category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+        __baml_options__?: BamlCallOptions<never>
+        ): Promise<types.LearningTip> {
+          try {
+          const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+          const signal = options.signal;
+
+          if (signal?.aborted) {
+          throw new BamlAbortError('Operation was aborted', signal.reason);
+          }
+
+          // Check if onTick is provided - route through streaming if so
+          if (options.onTick) {
+          const stream = this.stream.GenerateLearningTip_ThirdWeek(
+          category,title,subtitle,relevance,recommendYesNo,babyName,babySex,ageInDays,currentWeightOz,birthWeightOz,feedingCount24h,avgFeedingInterval,sleepCount24h,diaperCount24h,recentChatTopics,achievedMilestones,medicalContext,
+          __baml_options__
+          );
+
+          return await stream.getFinalResponse();
+          }
+
+          const collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+          [options.collector]) : [];
+          const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+          const env: Record<string, string> = Object.fromEntries(
+            Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+            );
+            const raw = await this.runtime.callFunction(
+            "GenerateLearningTip_ThirdWeek",
+            {
+            "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"diaperCount24h": diaperCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"medicalContext": medicalContext?? null
+            },
+            this.ctxManager.cloneContext(),
+            options.tb?.__tb(),
+            options.clientRegistry,
+            collector,
+            options.tags || {},
+            env,
+            signal,
+            options.watchers,
+            )
+            return raw.parsed(false) as types.LearningTip
+            } catch (error) {
+            throw toBamlError(error);
+            }
+            }
+            
         async HospitalPackAdvice(
         progress: number,
         __baml_options__?: BamlCallOptions<never>
@@ -576,6 +960,54 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             }
             }
             
+        async ImmediatePostbirthMilestone(
+        input: types.MilestoneInput,
+        __baml_options__?: BamlCallOptions<never>
+        ): Promise<types.MilestoneEnhancementOutput> {
+          try {
+          const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+          const signal = options.signal;
+
+          if (signal?.aborted) {
+          throw new BamlAbortError('Operation was aborted', signal.reason);
+          }
+
+          // Check if onTick is provided - route through streaming if so
+          if (options.onTick) {
+          const stream = this.stream.ImmediatePostbirthMilestone(
+          input,
+          __baml_options__
+          );
+
+          return await stream.getFinalResponse();
+          }
+
+          const collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+          [options.collector]) : [];
+          const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+          const env: Record<string, string> = Object.fromEntries(
+            Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+            );
+            const raw = await this.runtime.callFunction(
+            "ImmediatePostbirthMilestone",
+            {
+            "input": input
+            },
+            this.ctxManager.cloneContext(),
+            options.tb?.__tb(),
+            options.clientRegistry,
+            collector,
+            options.tags || {},
+            env,
+            signal,
+            options.watchers,
+            )
+            return raw.parsed(false) as types.MilestoneEnhancementOutput
+            } catch (error) {
+            throw toBamlError(error);
+            }
+            }
+            
         async MilestoneExplanation(
         milestoneTitle: string,milestoneType: string,babyName: string,ageInDays: number,ageInWeeks: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,
         __baml_options__?: BamlCallOptions<never>
@@ -619,6 +1051,198 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             options.watchers,
             )
             return raw.parsed(false) as types.MilestoneExplanationOutput
+            } catch (error) {
+            throw toBamlError(error);
+            }
+            }
+            
+        async MilestonePlanner(
+        babyName: string,babySex?: string | null,ageInDays: number,ageInWeeks: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,diaperCount24h?: number | null,avgFeedingsPerDay?: number | null,avgSleepHoursPerDay?: number | null,avgDiaperChangesPerDay?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,recentlySuggestedMilestones?: string | null,activitySummary?: string | null,hasTummyTimeActivity?: boolean | null,medicalContext?: string | null,
+        __baml_options__?: BamlCallOptions<never>
+        ): Promise<types.MilestonePlan> {
+          try {
+          const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+          const signal = options.signal;
+
+          if (signal?.aborted) {
+          throw new BamlAbortError('Operation was aborted', signal.reason);
+          }
+
+          // Check if onTick is provided - route through streaming if so
+          if (options.onTick) {
+          const stream = this.stream.MilestonePlanner(
+          babyName,babySex,ageInDays,ageInWeeks,currentWeightOz,birthWeightOz,height,feedingCount24h,avgFeedingInterval,sleepCount24h,totalSleepHours24h,diaperCount24h,avgFeedingsPerDay,avgSleepHoursPerDay,avgDiaperChangesPerDay,recentChatTopics,achievedMilestones,recentlySuggestedMilestones,activitySummary,hasTummyTimeActivity,medicalContext,
+          __baml_options__
+          );
+
+          return await stream.getFinalResponse();
+          }
+
+          const collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+          [options.collector]) : [];
+          const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+          const env: Record<string, string> = Object.fromEntries(
+            Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+            );
+            const raw = await this.runtime.callFunction(
+            "MilestonePlanner",
+            {
+            "babyName": babyName,"babySex": babySex?? null,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"totalSleepHours24h": totalSleepHours24h?? null,"diaperCount24h": diaperCount24h?? null,"avgFeedingsPerDay": avgFeedingsPerDay?? null,"avgSleepHoursPerDay": avgSleepHoursPerDay?? null,"avgDiaperChangesPerDay": avgDiaperChangesPerDay?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"recentlySuggestedMilestones": recentlySuggestedMilestones?? null,"activitySummary": activitySummary?? null,"hasTummyTimeActivity": hasTummyTimeActivity?? null,"medicalContext": medicalContext?? null
+            },
+            this.ctxManager.cloneContext(),
+            options.tb?.__tb(),
+            options.clientRegistry,
+            collector,
+            options.tags || {},
+            env,
+            signal,
+            options.watchers,
+            )
+            return raw.parsed(false) as types.MilestonePlan
+            } catch (error) {
+            throw toBamlError(error);
+            }
+            }
+            
+        async MonthOneMilestone(
+        input: types.MilestoneInput,
+        __baml_options__?: BamlCallOptions<never>
+        ): Promise<types.MilestoneEnhancementOutput> {
+          try {
+          const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+          const signal = options.signal;
+
+          if (signal?.aborted) {
+          throw new BamlAbortError('Operation was aborted', signal.reason);
+          }
+
+          // Check if onTick is provided - route through streaming if so
+          if (options.onTick) {
+          const stream = this.stream.MonthOneMilestone(
+          input,
+          __baml_options__
+          );
+
+          return await stream.getFinalResponse();
+          }
+
+          const collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+          [options.collector]) : [];
+          const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+          const env: Record<string, string> = Object.fromEntries(
+            Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+            );
+            const raw = await this.runtime.callFunction(
+            "MonthOneMilestone",
+            {
+            "input": input
+            },
+            this.ctxManager.cloneContext(),
+            options.tb?.__tb(),
+            options.clientRegistry,
+            collector,
+            options.tags || {},
+            env,
+            signal,
+            options.watchers,
+            )
+            return raw.parsed(false) as types.MilestoneEnhancementOutput
+            } catch (error) {
+            throw toBamlError(error);
+            }
+            }
+            
+        async MonthThreeFourMilestone(
+        input: types.MilestoneInput,
+        __baml_options__?: BamlCallOptions<never>
+        ): Promise<types.MilestoneEnhancementOutput> {
+          try {
+          const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+          const signal = options.signal;
+
+          if (signal?.aborted) {
+          throw new BamlAbortError('Operation was aborted', signal.reason);
+          }
+
+          // Check if onTick is provided - route through streaming if so
+          if (options.onTick) {
+          const stream = this.stream.MonthThreeFourMilestone(
+          input,
+          __baml_options__
+          );
+
+          return await stream.getFinalResponse();
+          }
+
+          const collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+          [options.collector]) : [];
+          const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+          const env: Record<string, string> = Object.fromEntries(
+            Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+            );
+            const raw = await this.runtime.callFunction(
+            "MonthThreeFourMilestone",
+            {
+            "input": input
+            },
+            this.ctxManager.cloneContext(),
+            options.tb?.__tb(),
+            options.clientRegistry,
+            collector,
+            options.tags || {},
+            env,
+            signal,
+            options.watchers,
+            )
+            return raw.parsed(false) as types.MilestoneEnhancementOutput
+            } catch (error) {
+            throw toBamlError(error);
+            }
+            }
+            
+        async MonthTwoMilestone(
+        input: types.MilestoneInput,
+        __baml_options__?: BamlCallOptions<never>
+        ): Promise<types.MilestoneEnhancementOutput> {
+          try {
+          const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+          const signal = options.signal;
+
+          if (signal?.aborted) {
+          throw new BamlAbortError('Operation was aborted', signal.reason);
+          }
+
+          // Check if onTick is provided - route through streaming if so
+          if (options.onTick) {
+          const stream = this.stream.MonthTwoMilestone(
+          input,
+          __baml_options__
+          );
+
+          return await stream.getFinalResponse();
+          }
+
+          const collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+          [options.collector]) : [];
+          const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+          const env: Record<string, string> = Object.fromEntries(
+            Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+            );
+            const raw = await this.runtime.callFunction(
+            "MonthTwoMilestone",
+            {
+            "input": input
+            },
+            this.ctxManager.cloneContext(),
+            options.tb?.__tb(),
+            options.clientRegistry,
+            collector,
+            options.tags || {},
+            env,
+            signal,
+            options.watchers,
+            )
+            return raw.parsed(false) as types.MilestoneEnhancementOutput
             } catch (error) {
             throw toBamlError(error);
             }
@@ -864,6 +1488,54 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             }
             }
             
+        async SecondWeekMilestone(
+        input: types.MilestoneInput,
+        __baml_options__?: BamlCallOptions<never>
+        ): Promise<types.MilestoneEnhancementOutput> {
+          try {
+          const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+          const signal = options.signal;
+
+          if (signal?.aborted) {
+          throw new BamlAbortError('Operation was aborted', signal.reason);
+          }
+
+          // Check if onTick is provided - route through streaming if so
+          if (options.onTick) {
+          const stream = this.stream.SecondWeekMilestone(
+          input,
+          __baml_options__
+          );
+
+          return await stream.getFinalResponse();
+          }
+
+          const collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+          [options.collector]) : [];
+          const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+          const env: Record<string, string> = Object.fromEntries(
+            Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+            );
+            const raw = await this.runtime.callFunction(
+            "SecondWeekMilestone",
+            {
+            "input": input
+            },
+            this.ctxManager.cloneContext(),
+            options.tb?.__tb(),
+            options.clientRegistry,
+            collector,
+            options.tags || {},
+            env,
+            signal,
+            options.watchers,
+            )
+            return raw.parsed(false) as types.MilestoneEnhancementOutput
+            } catch (error) {
+            throw toBamlError(error);
+            }
+            }
+            
         async SleepRegressionTips(
         babyName: string,week: number,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,avgSleepHoursPerDay?: number | null,feedingCount24h?: number | null,
         __baml_options__?: BamlCallOptions<never>
@@ -1003,6 +1675,54 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             options.watchers,
             )
             return raw.parsed(false) as types.ImprovementSuggestions
+            } catch (error) {
+            throw toBamlError(error);
+            }
+            }
+            
+        async ThirdWeekMilestone(
+        input: types.MilestoneInput,
+        __baml_options__?: BamlCallOptions<never>
+        ): Promise<types.MilestoneEnhancementOutput> {
+          try {
+          const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+          const signal = options.signal;
+
+          if (signal?.aborted) {
+          throw new BamlAbortError('Operation was aborted', signal.reason);
+          }
+
+          // Check if onTick is provided - route through streaming if so
+          if (options.onTick) {
+          const stream = this.stream.ThirdWeekMilestone(
+          input,
+          __baml_options__
+          );
+
+          return await stream.getFinalResponse();
+          }
+
+          const collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+          [options.collector]) : [];
+          const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+          const env: Record<string, string> = Object.fromEntries(
+            Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+            );
+            const raw = await this.runtime.callFunction(
+            "ThirdWeekMilestone",
+            {
+            "input": input
+            },
+            this.ctxManager.cloneContext(),
+            options.tb?.__tb(),
+            options.clientRegistry,
+            collector,
+            options.tags || {},
+            env,
+            signal,
+            options.watchers,
+            )
+            return raw.parsed(false) as types.MilestoneEnhancementOutput
             } catch (error) {
             throw toBamlError(error);
             }
@@ -1400,10 +2120,10 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                   }
                   }
                   
-            DailyLearningContent(
-            postpartumDay: number,babyName: string,babySex?: string | null,firstTimeParent: boolean,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
+            DailyLearningPlanner(
+            babyName: string,babySex?: string | null,ageInDays: number,ageInWeeks: number,firstTimeParent: boolean,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,diaperCount24h?: number | null,avgFeedingsPerDay?: number | null,avgSleepHoursPerDay?: number | null,avgDiaperChangesPerDay?: number | null,recentChatTopics?: string | null,recentlyCoveredTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
             __baml_options__?: BamlCallOptions<never>
-            ): BamlStream<partial_types.DailyLearningOutput, types.DailyLearningOutput>
+            ): BamlStream<partial_types.DailyLearningPlan, types.DailyLearningPlan>
               {
               try {
               const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
@@ -1429,7 +2149,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
               try {
               options.onTick!("Unknown", log);
               } catch (error) {
-              console.error("Error in onTick callback for DailyLearningContent", error);
+              console.error("Error in onTick callback for DailyLearningPlanner", error);
               }
               }
               };
@@ -1440,9 +2160,9 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                 Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
                 );
                 const raw = this.runtime.streamFunction(
-                "DailyLearningContent",
+                "DailyLearningPlanner",
                 {
-                "postpartumDay": postpartumDay,"babyName": babyName,"babySex": babySex ?? null,"firstTimeParent": firstTimeParent,"recentChatTopics": recentChatTopics ?? null,"achievedMilestones": achievedMilestones ?? null,"activitySummary": activitySummary ?? null,"parentWellness": parentWellness ?? null,"medicalContext": medicalContext ?? null
+                "babyName": babyName,"babySex": babySex ?? null,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"firstTimeParent": firstTimeParent,"currentWeightOz": currentWeightOz ?? null,"birthWeightOz": birthWeightOz ?? null,"height": height ?? null,"feedingCount24h": feedingCount24h ?? null,"avgFeedingInterval": avgFeedingInterval ?? null,"sleepCount24h": sleepCount24h ?? null,"totalSleepHours24h": totalSleepHours24h ?? null,"diaperCount24h": diaperCount24h ?? null,"avgFeedingsPerDay": avgFeedingsPerDay ?? null,"avgSleepHoursPerDay": avgSleepHoursPerDay ?? null,"avgDiaperChangesPerDay": avgDiaperChangesPerDay ?? null,"recentChatTopics": recentChatTopics ?? null,"recentlyCoveredTopics": recentlyCoveredTopics ?? null,"achievedMilestones": achievedMilestones ?? null,"activitySummary": activitySummary ?? null,"parentWellness": parentWellness ?? null,"medicalContext": medicalContext ?? null
                 },
                 undefined,
                 this.ctxManager.cloneContext(),
@@ -1454,10 +2174,10 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                 signal,
                 onTickWrapper,
                 )
-                return new BamlStream<partial_types.DailyLearningOutput, types.DailyLearningOutput>(
+                return new BamlStream<partial_types.DailyLearningPlan, types.DailyLearningPlan>(
                   raw,
-                  (a): partial_types.DailyLearningOutput => a,
-                  (a): types.DailyLearningOutput => a,
+                  (a): partial_types.DailyLearningPlan => a,
+                  (a): types.DailyLearningPlan => a,
                   this.ctxManager.cloneContext(),
                   options.signal,
                   )
@@ -1509,6 +2229,72 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                 "EnhanceMilestone",
                 {
                 "milestoneTitle": milestoneTitle,"milestoneDescription": milestoneDescription,"milestoneType": milestoneType,"ageLabel": ageLabel,"babyName": babyName ?? null,"babySex": babySex ?? null,"ageInDays": ageInDays ?? null,"recentChatTopics": recentChatTopics ?? null,"achievedMilestones": achievedMilestones ?? null,"activitySummary": activitySummary ?? null,"parentWellness": parentWellness ?? null,"medicalContext": medicalContext ?? null
+                },
+                undefined,
+                this.ctxManager.cloneContext(),
+                options.tb?.__tb(),
+                options.clientRegistry,
+                collector,
+                options.tags || {},
+                env,
+                signal,
+                onTickWrapper,
+                )
+                return new BamlStream<partial_types.MilestoneEnhancementOutput, types.MilestoneEnhancementOutput>(
+                  raw,
+                  (a): partial_types.MilestoneEnhancementOutput => a,
+                  (a): types.MilestoneEnhancementOutput => a,
+                  this.ctxManager.cloneContext(),
+                  options.signal,
+                  )
+                  } catch (error) {
+                  throw toBamlError(error);
+                  }
+                  }
+                  
+            FirstWeekMilestone(
+            input: types.MilestoneInput,
+            __baml_options__?: BamlCallOptions<never>
+            ): BamlStream<partial_types.MilestoneEnhancementOutput, types.MilestoneEnhancementOutput>
+              {
+              try {
+              const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+              const signal = options.signal;
+
+              if (signal?.aborted) {
+              throw new BamlAbortError('Operation was aborted', signal.reason);
+              }
+
+              let collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+              [options.collector]) : [];
+
+              let onTickWrapper: (() => void) | undefined;
+
+              // Create collector and wrap onTick if provided
+              if (options.onTick) {
+              const tickCollector = new Collector("on-tick-collector");
+              collector = [...collector, tickCollector];
+
+              onTickWrapper = () => {
+              const log = tickCollector.last;
+              if (log) {
+              try {
+              options.onTick!("Unknown", log);
+              } catch (error) {
+              console.error("Error in onTick callback for FirstWeekMilestone", error);
+              }
+              }
+              };
+              }
+
+              const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+              const env: Record<string, string> = Object.fromEntries(
+                Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+                );
+                const raw = this.runtime.streamFunction(
+                "FirstWeekMilestone",
+                {
+                "input": input
                 },
                 undefined,
                 this.ctxManager.cloneContext(),
@@ -1664,6 +2450,468 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                   }
                   }
                   
+            GenerateLearningTip_FirstWeek(
+            category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+            __baml_options__?: BamlCallOptions<never>
+            ): BamlStream<partial_types.LearningTip, types.LearningTip>
+              {
+              try {
+              const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+              const signal = options.signal;
+
+              if (signal?.aborted) {
+              throw new BamlAbortError('Operation was aborted', signal.reason);
+              }
+
+              let collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+              [options.collector]) : [];
+
+              let onTickWrapper: (() => void) | undefined;
+
+              // Create collector and wrap onTick if provided
+              if (options.onTick) {
+              const tickCollector = new Collector("on-tick-collector");
+              collector = [...collector, tickCollector];
+
+              onTickWrapper = () => {
+              const log = tickCollector.last;
+              if (log) {
+              try {
+              options.onTick!("Unknown", log);
+              } catch (error) {
+              console.error("Error in onTick callback for GenerateLearningTip_FirstWeek", error);
+              }
+              }
+              };
+              }
+
+              const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+              const env: Record<string, string> = Object.fromEntries(
+                Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+                );
+                const raw = this.runtime.streamFunction(
+                "GenerateLearningTip_FirstWeek",
+                {
+                "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex ?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz ?? null,"birthWeightOz": birthWeightOz ?? null,"feedingCount24h": feedingCount24h ?? null,"avgFeedingInterval": avgFeedingInterval ?? null,"sleepCount24h": sleepCount24h ?? null,"diaperCount24h": diaperCount24h ?? null,"recentChatTopics": recentChatTopics ?? null,"achievedMilestones": achievedMilestones ?? null,"medicalContext": medicalContext ?? null
+                },
+                undefined,
+                this.ctxManager.cloneContext(),
+                options.tb?.__tb(),
+                options.clientRegistry,
+                collector,
+                options.tags || {},
+                env,
+                signal,
+                onTickWrapper,
+                )
+                return new BamlStream<partial_types.LearningTip, types.LearningTip>(
+                  raw,
+                  (a): partial_types.LearningTip => a,
+                  (a): types.LearningTip => a,
+                  this.ctxManager.cloneContext(),
+                  options.signal,
+                  )
+                  } catch (error) {
+                  throw toBamlError(error);
+                  }
+                  }
+                  
+            GenerateLearningTip_ImmediatePostbirth(
+            category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+            __baml_options__?: BamlCallOptions<never>
+            ): BamlStream<partial_types.LearningTip, types.LearningTip>
+              {
+              try {
+              const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+              const signal = options.signal;
+
+              if (signal?.aborted) {
+              throw new BamlAbortError('Operation was aborted', signal.reason);
+              }
+
+              let collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+              [options.collector]) : [];
+
+              let onTickWrapper: (() => void) | undefined;
+
+              // Create collector and wrap onTick if provided
+              if (options.onTick) {
+              const tickCollector = new Collector("on-tick-collector");
+              collector = [...collector, tickCollector];
+
+              onTickWrapper = () => {
+              const log = tickCollector.last;
+              if (log) {
+              try {
+              options.onTick!("Unknown", log);
+              } catch (error) {
+              console.error("Error in onTick callback for GenerateLearningTip_ImmediatePostbirth", error);
+              }
+              }
+              };
+              }
+
+              const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+              const env: Record<string, string> = Object.fromEntries(
+                Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+                );
+                const raw = this.runtime.streamFunction(
+                "GenerateLearningTip_ImmediatePostbirth",
+                {
+                "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex ?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz ?? null,"birthWeightOz": birthWeightOz ?? null,"feedingCount24h": feedingCount24h ?? null,"avgFeedingInterval": avgFeedingInterval ?? null,"sleepCount24h": sleepCount24h ?? null,"diaperCount24h": diaperCount24h ?? null,"recentChatTopics": recentChatTopics ?? null,"achievedMilestones": achievedMilestones ?? null,"medicalContext": medicalContext ?? null
+                },
+                undefined,
+                this.ctxManager.cloneContext(),
+                options.tb?.__tb(),
+                options.clientRegistry,
+                collector,
+                options.tags || {},
+                env,
+                signal,
+                onTickWrapper,
+                )
+                return new BamlStream<partial_types.LearningTip, types.LearningTip>(
+                  raw,
+                  (a): partial_types.LearningTip => a,
+                  (a): types.LearningTip => a,
+                  this.ctxManager.cloneContext(),
+                  options.signal,
+                  )
+                  } catch (error) {
+                  throw toBamlError(error);
+                  }
+                  }
+                  
+            GenerateLearningTip_MonthOne(
+            category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+            __baml_options__?: BamlCallOptions<never>
+            ): BamlStream<partial_types.LearningTip, types.LearningTip>
+              {
+              try {
+              const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+              const signal = options.signal;
+
+              if (signal?.aborted) {
+              throw new BamlAbortError('Operation was aborted', signal.reason);
+              }
+
+              let collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+              [options.collector]) : [];
+
+              let onTickWrapper: (() => void) | undefined;
+
+              // Create collector and wrap onTick if provided
+              if (options.onTick) {
+              const tickCollector = new Collector("on-tick-collector");
+              collector = [...collector, tickCollector];
+
+              onTickWrapper = () => {
+              const log = tickCollector.last;
+              if (log) {
+              try {
+              options.onTick!("Unknown", log);
+              } catch (error) {
+              console.error("Error in onTick callback for GenerateLearningTip_MonthOne", error);
+              }
+              }
+              };
+              }
+
+              const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+              const env: Record<string, string> = Object.fromEntries(
+                Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+                );
+                const raw = this.runtime.streamFunction(
+                "GenerateLearningTip_MonthOne",
+                {
+                "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex ?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz ?? null,"birthWeightOz": birthWeightOz ?? null,"feedingCount24h": feedingCount24h ?? null,"avgFeedingInterval": avgFeedingInterval ?? null,"sleepCount24h": sleepCount24h ?? null,"diaperCount24h": diaperCount24h ?? null,"recentChatTopics": recentChatTopics ?? null,"achievedMilestones": achievedMilestones ?? null,"medicalContext": medicalContext ?? null
+                },
+                undefined,
+                this.ctxManager.cloneContext(),
+                options.tb?.__tb(),
+                options.clientRegistry,
+                collector,
+                options.tags || {},
+                env,
+                signal,
+                onTickWrapper,
+                )
+                return new BamlStream<partial_types.LearningTip, types.LearningTip>(
+                  raw,
+                  (a): partial_types.LearningTip => a,
+                  (a): types.LearningTip => a,
+                  this.ctxManager.cloneContext(),
+                  options.signal,
+                  )
+                  } catch (error) {
+                  throw toBamlError(error);
+                  }
+                  }
+                  
+            GenerateLearningTip_MonthThreeFour(
+            category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+            __baml_options__?: BamlCallOptions<never>
+            ): BamlStream<partial_types.LearningTip, types.LearningTip>
+              {
+              try {
+              const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+              const signal = options.signal;
+
+              if (signal?.aborted) {
+              throw new BamlAbortError('Operation was aborted', signal.reason);
+              }
+
+              let collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+              [options.collector]) : [];
+
+              let onTickWrapper: (() => void) | undefined;
+
+              // Create collector and wrap onTick if provided
+              if (options.onTick) {
+              const tickCollector = new Collector("on-tick-collector");
+              collector = [...collector, tickCollector];
+
+              onTickWrapper = () => {
+              const log = tickCollector.last;
+              if (log) {
+              try {
+              options.onTick!("Unknown", log);
+              } catch (error) {
+              console.error("Error in onTick callback for GenerateLearningTip_MonthThreeFour", error);
+              }
+              }
+              };
+              }
+
+              const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+              const env: Record<string, string> = Object.fromEntries(
+                Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+                );
+                const raw = this.runtime.streamFunction(
+                "GenerateLearningTip_MonthThreeFour",
+                {
+                "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex ?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz ?? null,"birthWeightOz": birthWeightOz ?? null,"feedingCount24h": feedingCount24h ?? null,"avgFeedingInterval": avgFeedingInterval ?? null,"sleepCount24h": sleepCount24h ?? null,"diaperCount24h": diaperCount24h ?? null,"recentChatTopics": recentChatTopics ?? null,"achievedMilestones": achievedMilestones ?? null,"medicalContext": medicalContext ?? null
+                },
+                undefined,
+                this.ctxManager.cloneContext(),
+                options.tb?.__tb(),
+                options.clientRegistry,
+                collector,
+                options.tags || {},
+                env,
+                signal,
+                onTickWrapper,
+                )
+                return new BamlStream<partial_types.LearningTip, types.LearningTip>(
+                  raw,
+                  (a): partial_types.LearningTip => a,
+                  (a): types.LearningTip => a,
+                  this.ctxManager.cloneContext(),
+                  options.signal,
+                  )
+                  } catch (error) {
+                  throw toBamlError(error);
+                  }
+                  }
+                  
+            GenerateLearningTip_MonthTwo(
+            category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+            __baml_options__?: BamlCallOptions<never>
+            ): BamlStream<partial_types.LearningTip, types.LearningTip>
+              {
+              try {
+              const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+              const signal = options.signal;
+
+              if (signal?.aborted) {
+              throw new BamlAbortError('Operation was aborted', signal.reason);
+              }
+
+              let collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+              [options.collector]) : [];
+
+              let onTickWrapper: (() => void) | undefined;
+
+              // Create collector and wrap onTick if provided
+              if (options.onTick) {
+              const tickCollector = new Collector("on-tick-collector");
+              collector = [...collector, tickCollector];
+
+              onTickWrapper = () => {
+              const log = tickCollector.last;
+              if (log) {
+              try {
+              options.onTick!("Unknown", log);
+              } catch (error) {
+              console.error("Error in onTick callback for GenerateLearningTip_MonthTwo", error);
+              }
+              }
+              };
+              }
+
+              const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+              const env: Record<string, string> = Object.fromEntries(
+                Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+                );
+                const raw = this.runtime.streamFunction(
+                "GenerateLearningTip_MonthTwo",
+                {
+                "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex ?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz ?? null,"birthWeightOz": birthWeightOz ?? null,"feedingCount24h": feedingCount24h ?? null,"avgFeedingInterval": avgFeedingInterval ?? null,"sleepCount24h": sleepCount24h ?? null,"diaperCount24h": diaperCount24h ?? null,"recentChatTopics": recentChatTopics ?? null,"achievedMilestones": achievedMilestones ?? null,"medicalContext": medicalContext ?? null
+                },
+                undefined,
+                this.ctxManager.cloneContext(),
+                options.tb?.__tb(),
+                options.clientRegistry,
+                collector,
+                options.tags || {},
+                env,
+                signal,
+                onTickWrapper,
+                )
+                return new BamlStream<partial_types.LearningTip, types.LearningTip>(
+                  raw,
+                  (a): partial_types.LearningTip => a,
+                  (a): types.LearningTip => a,
+                  this.ctxManager.cloneContext(),
+                  options.signal,
+                  )
+                  } catch (error) {
+                  throw toBamlError(error);
+                  }
+                  }
+                  
+            GenerateLearningTip_SecondWeek(
+            category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+            __baml_options__?: BamlCallOptions<never>
+            ): BamlStream<partial_types.LearningTip, types.LearningTip>
+              {
+              try {
+              const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+              const signal = options.signal;
+
+              if (signal?.aborted) {
+              throw new BamlAbortError('Operation was aborted', signal.reason);
+              }
+
+              let collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+              [options.collector]) : [];
+
+              let onTickWrapper: (() => void) | undefined;
+
+              // Create collector and wrap onTick if provided
+              if (options.onTick) {
+              const tickCollector = new Collector("on-tick-collector");
+              collector = [...collector, tickCollector];
+
+              onTickWrapper = () => {
+              const log = tickCollector.last;
+              if (log) {
+              try {
+              options.onTick!("Unknown", log);
+              } catch (error) {
+              console.error("Error in onTick callback for GenerateLearningTip_SecondWeek", error);
+              }
+              }
+              };
+              }
+
+              const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+              const env: Record<string, string> = Object.fromEntries(
+                Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+                );
+                const raw = this.runtime.streamFunction(
+                "GenerateLearningTip_SecondWeek",
+                {
+                "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex ?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz ?? null,"birthWeightOz": birthWeightOz ?? null,"feedingCount24h": feedingCount24h ?? null,"avgFeedingInterval": avgFeedingInterval ?? null,"sleepCount24h": sleepCount24h ?? null,"diaperCount24h": diaperCount24h ?? null,"recentChatTopics": recentChatTopics ?? null,"achievedMilestones": achievedMilestones ?? null,"medicalContext": medicalContext ?? null
+                },
+                undefined,
+                this.ctxManager.cloneContext(),
+                options.tb?.__tb(),
+                options.clientRegistry,
+                collector,
+                options.tags || {},
+                env,
+                signal,
+                onTickWrapper,
+                )
+                return new BamlStream<partial_types.LearningTip, types.LearningTip>(
+                  raw,
+                  (a): partial_types.LearningTip => a,
+                  (a): types.LearningTip => a,
+                  this.ctxManager.cloneContext(),
+                  options.signal,
+                  )
+                  } catch (error) {
+                  throw toBamlError(error);
+                  }
+                  }
+                  
+            GenerateLearningTip_ThirdWeek(
+            category: string,title: string,subtitle: string,relevance: string,recommendYesNo: boolean,babyName: string,babySex?: string | null,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,medicalContext?: string | null,
+            __baml_options__?: BamlCallOptions<never>
+            ): BamlStream<partial_types.LearningTip, types.LearningTip>
+              {
+              try {
+              const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+              const signal = options.signal;
+
+              if (signal?.aborted) {
+              throw new BamlAbortError('Operation was aborted', signal.reason);
+              }
+
+              let collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+              [options.collector]) : [];
+
+              let onTickWrapper: (() => void) | undefined;
+
+              // Create collector and wrap onTick if provided
+              if (options.onTick) {
+              const tickCollector = new Collector("on-tick-collector");
+              collector = [...collector, tickCollector];
+
+              onTickWrapper = () => {
+              const log = tickCollector.last;
+              if (log) {
+              try {
+              options.onTick!("Unknown", log);
+              } catch (error) {
+              console.error("Error in onTick callback for GenerateLearningTip_ThirdWeek", error);
+              }
+              }
+              };
+              }
+
+              const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+              const env: Record<string, string> = Object.fromEntries(
+                Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+                );
+                const raw = this.runtime.streamFunction(
+                "GenerateLearningTip_ThirdWeek",
+                {
+                "category": category,"title": title,"subtitle": subtitle,"relevance": relevance,"recommendYesNo": recommendYesNo,"babyName": babyName,"babySex": babySex ?? null,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz ?? null,"birthWeightOz": birthWeightOz ?? null,"feedingCount24h": feedingCount24h ?? null,"avgFeedingInterval": avgFeedingInterval ?? null,"sleepCount24h": sleepCount24h ?? null,"diaperCount24h": diaperCount24h ?? null,"recentChatTopics": recentChatTopics ?? null,"achievedMilestones": achievedMilestones ?? null,"medicalContext": medicalContext ?? null
+                },
+                undefined,
+                this.ctxManager.cloneContext(),
+                options.tb?.__tb(),
+                options.clientRegistry,
+                collector,
+                options.tags || {},
+                env,
+                signal,
+                onTickWrapper,
+                )
+                return new BamlStream<partial_types.LearningTip, types.LearningTip>(
+                  raw,
+                  (a): partial_types.LearningTip => a,
+                  (a): types.LearningTip => a,
+                  this.ctxManager.cloneContext(),
+                  options.signal,
+                  )
+                  } catch (error) {
+                  throw toBamlError(error);
+                  }
+                  }
+                  
             HospitalPackAdvice(
             progress: number,
             __baml_options__?: BamlCallOptions<never>
@@ -1730,6 +2978,72 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                   }
                   }
                   
+            ImmediatePostbirthMilestone(
+            input: types.MilestoneInput,
+            __baml_options__?: BamlCallOptions<never>
+            ): BamlStream<partial_types.MilestoneEnhancementOutput, types.MilestoneEnhancementOutput>
+              {
+              try {
+              const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+              const signal = options.signal;
+
+              if (signal?.aborted) {
+              throw new BamlAbortError('Operation was aborted', signal.reason);
+              }
+
+              let collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+              [options.collector]) : [];
+
+              let onTickWrapper: (() => void) | undefined;
+
+              // Create collector and wrap onTick if provided
+              if (options.onTick) {
+              const tickCollector = new Collector("on-tick-collector");
+              collector = [...collector, tickCollector];
+
+              onTickWrapper = () => {
+              const log = tickCollector.last;
+              if (log) {
+              try {
+              options.onTick!("Unknown", log);
+              } catch (error) {
+              console.error("Error in onTick callback for ImmediatePostbirthMilestone", error);
+              }
+              }
+              };
+              }
+
+              const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+              const env: Record<string, string> = Object.fromEntries(
+                Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+                );
+                const raw = this.runtime.streamFunction(
+                "ImmediatePostbirthMilestone",
+                {
+                "input": input
+                },
+                undefined,
+                this.ctxManager.cloneContext(),
+                options.tb?.__tb(),
+                options.clientRegistry,
+                collector,
+                options.tags || {},
+                env,
+                signal,
+                onTickWrapper,
+                )
+                return new BamlStream<partial_types.MilestoneEnhancementOutput, types.MilestoneEnhancementOutput>(
+                  raw,
+                  (a): partial_types.MilestoneEnhancementOutput => a,
+                  (a): types.MilestoneEnhancementOutput => a,
+                  this.ctxManager.cloneContext(),
+                  options.signal,
+                  )
+                  } catch (error) {
+                  throw toBamlError(error);
+                  }
+                  }
+                  
             MilestoneExplanation(
             milestoneTitle: string,milestoneType: string,babyName: string,ageInDays: number,ageInWeeks: number,currentWeightOz?: number | null,birthWeightOz?: number | null,feedingCount24h?: number | null,sleepCount24h?: number | null,diaperCount24h?: number | null,
             __baml_options__?: BamlCallOptions<never>
@@ -1788,6 +3102,270 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                   raw,
                   (a): partial_types.MilestoneExplanationOutput => a,
                   (a): types.MilestoneExplanationOutput => a,
+                  this.ctxManager.cloneContext(),
+                  options.signal,
+                  )
+                  } catch (error) {
+                  throw toBamlError(error);
+                  }
+                  }
+                  
+            MilestonePlanner(
+            babyName: string,babySex?: string | null,ageInDays: number,ageInWeeks: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,diaperCount24h?: number | null,avgFeedingsPerDay?: number | null,avgSleepHoursPerDay?: number | null,avgDiaperChangesPerDay?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,recentlySuggestedMilestones?: string | null,activitySummary?: string | null,hasTummyTimeActivity?: boolean | null,medicalContext?: string | null,
+            __baml_options__?: BamlCallOptions<never>
+            ): BamlStream<partial_types.MilestonePlan, types.MilestonePlan>
+              {
+              try {
+              const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+              const signal = options.signal;
+
+              if (signal?.aborted) {
+              throw new BamlAbortError('Operation was aborted', signal.reason);
+              }
+
+              let collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+              [options.collector]) : [];
+
+              let onTickWrapper: (() => void) | undefined;
+
+              // Create collector and wrap onTick if provided
+              if (options.onTick) {
+              const tickCollector = new Collector("on-tick-collector");
+              collector = [...collector, tickCollector];
+
+              onTickWrapper = () => {
+              const log = tickCollector.last;
+              if (log) {
+              try {
+              options.onTick!("Unknown", log);
+              } catch (error) {
+              console.error("Error in onTick callback for MilestonePlanner", error);
+              }
+              }
+              };
+              }
+
+              const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+              const env: Record<string, string> = Object.fromEntries(
+                Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+                );
+                const raw = this.runtime.streamFunction(
+                "MilestonePlanner",
+                {
+                "babyName": babyName,"babySex": babySex ?? null,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"currentWeightOz": currentWeightOz ?? null,"birthWeightOz": birthWeightOz ?? null,"height": height ?? null,"feedingCount24h": feedingCount24h ?? null,"avgFeedingInterval": avgFeedingInterval ?? null,"sleepCount24h": sleepCount24h ?? null,"totalSleepHours24h": totalSleepHours24h ?? null,"diaperCount24h": diaperCount24h ?? null,"avgFeedingsPerDay": avgFeedingsPerDay ?? null,"avgSleepHoursPerDay": avgSleepHoursPerDay ?? null,"avgDiaperChangesPerDay": avgDiaperChangesPerDay ?? null,"recentChatTopics": recentChatTopics ?? null,"achievedMilestones": achievedMilestones ?? null,"recentlySuggestedMilestones": recentlySuggestedMilestones ?? null,"activitySummary": activitySummary ?? null,"hasTummyTimeActivity": hasTummyTimeActivity ?? null,"medicalContext": medicalContext ?? null
+                },
+                undefined,
+                this.ctxManager.cloneContext(),
+                options.tb?.__tb(),
+                options.clientRegistry,
+                collector,
+                options.tags || {},
+                env,
+                signal,
+                onTickWrapper,
+                )
+                return new BamlStream<partial_types.MilestonePlan, types.MilestonePlan>(
+                  raw,
+                  (a): partial_types.MilestonePlan => a,
+                  (a): types.MilestonePlan => a,
+                  this.ctxManager.cloneContext(),
+                  options.signal,
+                  )
+                  } catch (error) {
+                  throw toBamlError(error);
+                  }
+                  }
+                  
+            MonthOneMilestone(
+            input: types.MilestoneInput,
+            __baml_options__?: BamlCallOptions<never>
+            ): BamlStream<partial_types.MilestoneEnhancementOutput, types.MilestoneEnhancementOutput>
+              {
+              try {
+              const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+              const signal = options.signal;
+
+              if (signal?.aborted) {
+              throw new BamlAbortError('Operation was aborted', signal.reason);
+              }
+
+              let collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+              [options.collector]) : [];
+
+              let onTickWrapper: (() => void) | undefined;
+
+              // Create collector and wrap onTick if provided
+              if (options.onTick) {
+              const tickCollector = new Collector("on-tick-collector");
+              collector = [...collector, tickCollector];
+
+              onTickWrapper = () => {
+              const log = tickCollector.last;
+              if (log) {
+              try {
+              options.onTick!("Unknown", log);
+              } catch (error) {
+              console.error("Error in onTick callback for MonthOneMilestone", error);
+              }
+              }
+              };
+              }
+
+              const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+              const env: Record<string, string> = Object.fromEntries(
+                Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+                );
+                const raw = this.runtime.streamFunction(
+                "MonthOneMilestone",
+                {
+                "input": input
+                },
+                undefined,
+                this.ctxManager.cloneContext(),
+                options.tb?.__tb(),
+                options.clientRegistry,
+                collector,
+                options.tags || {},
+                env,
+                signal,
+                onTickWrapper,
+                )
+                return new BamlStream<partial_types.MilestoneEnhancementOutput, types.MilestoneEnhancementOutput>(
+                  raw,
+                  (a): partial_types.MilestoneEnhancementOutput => a,
+                  (a): types.MilestoneEnhancementOutput => a,
+                  this.ctxManager.cloneContext(),
+                  options.signal,
+                  )
+                  } catch (error) {
+                  throw toBamlError(error);
+                  }
+                  }
+                  
+            MonthThreeFourMilestone(
+            input: types.MilestoneInput,
+            __baml_options__?: BamlCallOptions<never>
+            ): BamlStream<partial_types.MilestoneEnhancementOutput, types.MilestoneEnhancementOutput>
+              {
+              try {
+              const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+              const signal = options.signal;
+
+              if (signal?.aborted) {
+              throw new BamlAbortError('Operation was aborted', signal.reason);
+              }
+
+              let collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+              [options.collector]) : [];
+
+              let onTickWrapper: (() => void) | undefined;
+
+              // Create collector and wrap onTick if provided
+              if (options.onTick) {
+              const tickCollector = new Collector("on-tick-collector");
+              collector = [...collector, tickCollector];
+
+              onTickWrapper = () => {
+              const log = tickCollector.last;
+              if (log) {
+              try {
+              options.onTick!("Unknown", log);
+              } catch (error) {
+              console.error("Error in onTick callback for MonthThreeFourMilestone", error);
+              }
+              }
+              };
+              }
+
+              const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+              const env: Record<string, string> = Object.fromEntries(
+                Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+                );
+                const raw = this.runtime.streamFunction(
+                "MonthThreeFourMilestone",
+                {
+                "input": input
+                },
+                undefined,
+                this.ctxManager.cloneContext(),
+                options.tb?.__tb(),
+                options.clientRegistry,
+                collector,
+                options.tags || {},
+                env,
+                signal,
+                onTickWrapper,
+                )
+                return new BamlStream<partial_types.MilestoneEnhancementOutput, types.MilestoneEnhancementOutput>(
+                  raw,
+                  (a): partial_types.MilestoneEnhancementOutput => a,
+                  (a): types.MilestoneEnhancementOutput => a,
+                  this.ctxManager.cloneContext(),
+                  options.signal,
+                  )
+                  } catch (error) {
+                  throw toBamlError(error);
+                  }
+                  }
+                  
+            MonthTwoMilestone(
+            input: types.MilestoneInput,
+            __baml_options__?: BamlCallOptions<never>
+            ): BamlStream<partial_types.MilestoneEnhancementOutput, types.MilestoneEnhancementOutput>
+              {
+              try {
+              const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+              const signal = options.signal;
+
+              if (signal?.aborted) {
+              throw new BamlAbortError('Operation was aborted', signal.reason);
+              }
+
+              let collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+              [options.collector]) : [];
+
+              let onTickWrapper: (() => void) | undefined;
+
+              // Create collector and wrap onTick if provided
+              if (options.onTick) {
+              const tickCollector = new Collector("on-tick-collector");
+              collector = [...collector, tickCollector];
+
+              onTickWrapper = () => {
+              const log = tickCollector.last;
+              if (log) {
+              try {
+              options.onTick!("Unknown", log);
+              } catch (error) {
+              console.error("Error in onTick callback for MonthTwoMilestone", error);
+              }
+              }
+              };
+              }
+
+              const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+              const env: Record<string, string> = Object.fromEntries(
+                Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+                );
+                const raw = this.runtime.streamFunction(
+                "MonthTwoMilestone",
+                {
+                "input": input
+                },
+                undefined,
+                this.ctxManager.cloneContext(),
+                options.tb?.__tb(),
+                options.clientRegistry,
+                collector,
+                options.tags || {},
+                env,
+                signal,
+                onTickWrapper,
+                )
+                return new BamlStream<partial_types.MilestoneEnhancementOutput, types.MilestoneEnhancementOutput>(
+                  raw,
+                  (a): partial_types.MilestoneEnhancementOutput => a,
+                  (a): types.MilestoneEnhancementOutput => a,
                   this.ctxManager.cloneContext(),
                   options.signal,
                   )
@@ -2126,6 +3704,72 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                   }
                   }
                   
+            SecondWeekMilestone(
+            input: types.MilestoneInput,
+            __baml_options__?: BamlCallOptions<never>
+            ): BamlStream<partial_types.MilestoneEnhancementOutput, types.MilestoneEnhancementOutput>
+              {
+              try {
+              const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+              const signal = options.signal;
+
+              if (signal?.aborted) {
+              throw new BamlAbortError('Operation was aborted', signal.reason);
+              }
+
+              let collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+              [options.collector]) : [];
+
+              let onTickWrapper: (() => void) | undefined;
+
+              // Create collector and wrap onTick if provided
+              if (options.onTick) {
+              const tickCollector = new Collector("on-tick-collector");
+              collector = [...collector, tickCollector];
+
+              onTickWrapper = () => {
+              const log = tickCollector.last;
+              if (log) {
+              try {
+              options.onTick!("Unknown", log);
+              } catch (error) {
+              console.error("Error in onTick callback for SecondWeekMilestone", error);
+              }
+              }
+              };
+              }
+
+              const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+              const env: Record<string, string> = Object.fromEntries(
+                Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+                );
+                const raw = this.runtime.streamFunction(
+                "SecondWeekMilestone",
+                {
+                "input": input
+                },
+                undefined,
+                this.ctxManager.cloneContext(),
+                options.tb?.__tb(),
+                options.clientRegistry,
+                collector,
+                options.tags || {},
+                env,
+                signal,
+                onTickWrapper,
+                )
+                return new BamlStream<partial_types.MilestoneEnhancementOutput, types.MilestoneEnhancementOutput>(
+                  raw,
+                  (a): partial_types.MilestoneEnhancementOutput => a,
+                  (a): types.MilestoneEnhancementOutput => a,
+                  this.ctxManager.cloneContext(),
+                  options.signal,
+                  )
+                  } catch (error) {
+                  throw toBamlError(error);
+                  }
+                  }
+                  
             SleepRegressionTips(
             babyName: string,week: number,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,avgSleepHoursPerDay?: number | null,feedingCount24h?: number | null,
             __baml_options__?: BamlCallOptions<never>
@@ -2316,6 +3960,72 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                   raw,
                   (a): partial_types.ImprovementSuggestions => a,
                   (a): types.ImprovementSuggestions => a,
+                  this.ctxManager.cloneContext(),
+                  options.signal,
+                  )
+                  } catch (error) {
+                  throw toBamlError(error);
+                  }
+                  }
+                  
+            ThirdWeekMilestone(
+            input: types.MilestoneInput,
+            __baml_options__?: BamlCallOptions<never>
+            ): BamlStream<partial_types.MilestoneEnhancementOutput, types.MilestoneEnhancementOutput>
+              {
+              try {
+              const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+              const signal = options.signal;
+
+              if (signal?.aborted) {
+              throw new BamlAbortError('Operation was aborted', signal.reason);
+              }
+
+              let collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+              [options.collector]) : [];
+
+              let onTickWrapper: (() => void) | undefined;
+
+              // Create collector and wrap onTick if provided
+              if (options.onTick) {
+              const tickCollector = new Collector("on-tick-collector");
+              collector = [...collector, tickCollector];
+
+              onTickWrapper = () => {
+              const log = tickCollector.last;
+              if (log) {
+              try {
+              options.onTick!("Unknown", log);
+              } catch (error) {
+              console.error("Error in onTick callback for ThirdWeekMilestone", error);
+              }
+              }
+              };
+              }
+
+              const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+              const env: Record<string, string> = Object.fromEntries(
+                Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+                );
+                const raw = this.runtime.streamFunction(
+                "ThirdWeekMilestone",
+                {
+                "input": input
+                },
+                undefined,
+                this.ctxManager.cloneContext(),
+                options.tb?.__tb(),
+                options.clientRegistry,
+                collector,
+                options.tags || {},
+                env,
+                signal,
+                onTickWrapper,
+                )
+                return new BamlStream<partial_types.MilestoneEnhancementOutput, types.MilestoneEnhancementOutput>(
+                  raw,
+                  (a): partial_types.MilestoneEnhancementOutput => a,
+                  (a): types.MilestoneEnhancementOutput => a,
                   this.ctxManager.cloneContext(),
                   options.signal,
                   )

@@ -24,7 +24,7 @@ import { b } from '../index';
 import type { Check, Checked  } from "../types";
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml";
 
-import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  DailyLearningOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningTip,  MilestoneEnhancementOutput,  MilestoneExplanationOutput,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsInput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "../types"
+import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  DailyLearningPlan,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningPlanItem,  LearningTip,  MilestoneEnhancementOutput,  MilestoneExplanationOutput,  MilestoneInput,  MilestonePlan,  MilestonePlanItem,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsInput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "../types"
 
 import type * as types from "../types"
 
@@ -161,16 +161,29 @@ export const DailyCheckInQuestions = async (
 };
 
 /**
- * Executes the streaming variant of the "DailyLearningContent" BAML action.
+ * Executes the streaming variant of the "DailyLearningPlanner" BAML action.
  *
  * This action initiates a streaming response by calling the corresponding
  * BAML stream function. The returned stream yields incremental updates.
  *
- * @param { number } postpartumDay - Input parameter.
  * @param { string } babyName - Input parameter.
  * @param { string | null } babySex (optional) - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { number } ageInWeeks - Input parameter.
  * @param { boolean } firstTimeParent - Input parameter.
+ * @param { number | null } currentWeightOz (optional) - Input parameter.
+ * @param { number | null } birthWeightOz (optional) - Input parameter.
+ * @param { number | null } height (optional) - Input parameter.
+ * @param { number | null } feedingCount24h (optional) - Input parameter.
+ * @param { number | null } avgFeedingInterval (optional) - Input parameter.
+ * @param { number | null } sleepCount24h (optional) - Input parameter.
+ * @param { number | null } totalSleepHours24h (optional) - Input parameter.
+ * @param { number | null } diaperCount24h (optional) - Input parameter.
+ * @param { number | null } avgFeedingsPerDay (optional) - Input parameter.
+ * @param { number | null } avgSleepHoursPerDay (optional) - Input parameter.
+ * @param { number | null } avgDiaperChangesPerDay (optional) - Input parameter.
  * @param { string | null } recentChatTopics (optional) - Input parameter.
+ * @param { string | null } recentlyCoveredTopics (optional) - Input parameter.
  * @param { string | null } achievedMilestones (optional) - Input parameter.
  * @param { string | null } activitySummary (optional) - Input parameter.
  * @param { string | null } parentWellness (optional) - Input parameter.
@@ -178,23 +191,49 @@ export const DailyCheckInQuestions = async (
  *
  * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
  */
-export const DailyLearningContent = async (
-  postpartumDay: number,
+export const DailyLearningPlanner = async (
   babyName: string,
   babySex?: string | null,
+  ageInDays: number,
+  ageInWeeks: number,
   firstTimeParent: boolean,
+  currentWeightOz?: number | null,
+  birthWeightOz?: number | null,
+  height?: number | null,
+  feedingCount24h?: number | null,
+  avgFeedingInterval?: number | null,
+  sleepCount24h?: number | null,
+  totalSleepHours24h?: number | null,
+  diaperCount24h?: number | null,
+  avgFeedingsPerDay?: number | null,
+  avgSleepHoursPerDay?: number | null,
+  avgDiaperChangesPerDay?: number | null,
   recentChatTopics?: string | null,
+  recentlyCoveredTopics?: string | null,
   achievedMilestones?: string | null,
   activitySummary?: string | null,
   parentWellness?: string | null,
   medicalContext?: string | null,
 ): Promise<ReadableStream<Uint8Array>> => {
-  const stream = b.stream.DailyLearningContent(
-    postpartumDay,
+  const stream = b.stream.DailyLearningPlanner(
     babyName,
     babySex,
+    ageInDays,
+    ageInWeeks,
     firstTimeParent,
+    currentWeightOz,
+    birthWeightOz,
+    height,
+    feedingCount24h,
+    avgFeedingInterval,
+    sleepCount24h,
+    totalSleepHours24h,
+    diaperCount24h,
+    avgFeedingsPerDay,
+    avgSleepHoursPerDay,
+    avgDiaperChangesPerDay,
     recentChatTopics,
+    recentlyCoveredTopics,
     achievedMilestones,
     activitySummary,
     parentWellness,
@@ -251,6 +290,25 @@ export const EnhanceMilestone = async (
     activitySummary,
     parentWellness,
     medicalContext,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "FirstWeekMilestone" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { types.MilestoneInput } input - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const FirstWeekMilestone = async (
+  input: types.MilestoneInput,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.FirstWeekMilestone(
+    input,
   );
   return Promise.resolve(stream.toStreamable());
 };
@@ -342,6 +400,475 @@ export const GenerateContextualMilestones = async (
 };
 
 /**
+ * Executes the streaming variant of the "GenerateLearningTip_FirstWeek" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { string } category - Input parameter.
+ * @param { string } title - Input parameter.
+ * @param { string } subtitle - Input parameter.
+ * @param { string } relevance - Input parameter.
+ * @param { boolean } recommendYesNo - Input parameter.
+ * @param { string } babyName - Input parameter.
+ * @param { string | null } babySex (optional) - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { number | null } currentWeightOz (optional) - Input parameter.
+ * @param { number | null } birthWeightOz (optional) - Input parameter.
+ * @param { number | null } feedingCount24h (optional) - Input parameter.
+ * @param { number | null } avgFeedingInterval (optional) - Input parameter.
+ * @param { number | null } sleepCount24h (optional) - Input parameter.
+ * @param { number | null } diaperCount24h (optional) - Input parameter.
+ * @param { string | null } recentChatTopics (optional) - Input parameter.
+ * @param { string | null } achievedMilestones (optional) - Input parameter.
+ * @param { string | null } medicalContext (optional) - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const GenerateLearningTip_FirstWeek = async (
+  category: string,
+  title: string,
+  subtitle: string,
+  relevance: string,
+  recommendYesNo: boolean,
+  babyName: string,
+  babySex?: string | null,
+  ageInDays: number,
+  currentWeightOz?: number | null,
+  birthWeightOz?: number | null,
+  feedingCount24h?: number | null,
+  avgFeedingInterval?: number | null,
+  sleepCount24h?: number | null,
+  diaperCount24h?: number | null,
+  recentChatTopics?: string | null,
+  achievedMilestones?: string | null,
+  medicalContext?: string | null,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.GenerateLearningTip_FirstWeek(
+    category,
+    title,
+    subtitle,
+    relevance,
+    recommendYesNo,
+    babyName,
+    babySex,
+    ageInDays,
+    currentWeightOz,
+    birthWeightOz,
+    feedingCount24h,
+    avgFeedingInterval,
+    sleepCount24h,
+    diaperCount24h,
+    recentChatTopics,
+    achievedMilestones,
+    medicalContext,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "GenerateLearningTip_ImmediatePostbirth" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { string } category - Input parameter.
+ * @param { string } title - Input parameter.
+ * @param { string } subtitle - Input parameter.
+ * @param { string } relevance - Input parameter.
+ * @param { boolean } recommendYesNo - Input parameter.
+ * @param { string } babyName - Input parameter.
+ * @param { string | null } babySex (optional) - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { number | null } currentWeightOz (optional) - Input parameter.
+ * @param { number | null } birthWeightOz (optional) - Input parameter.
+ * @param { number | null } feedingCount24h (optional) - Input parameter.
+ * @param { number | null } avgFeedingInterval (optional) - Input parameter.
+ * @param { number | null } sleepCount24h (optional) - Input parameter.
+ * @param { number | null } diaperCount24h (optional) - Input parameter.
+ * @param { string | null } recentChatTopics (optional) - Input parameter.
+ * @param { string | null } achievedMilestones (optional) - Input parameter.
+ * @param { string | null } medicalContext (optional) - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const GenerateLearningTip_ImmediatePostbirth = async (
+  category: string,
+  title: string,
+  subtitle: string,
+  relevance: string,
+  recommendYesNo: boolean,
+  babyName: string,
+  babySex?: string | null,
+  ageInDays: number,
+  currentWeightOz?: number | null,
+  birthWeightOz?: number | null,
+  feedingCount24h?: number | null,
+  avgFeedingInterval?: number | null,
+  sleepCount24h?: number | null,
+  diaperCount24h?: number | null,
+  recentChatTopics?: string | null,
+  achievedMilestones?: string | null,
+  medicalContext?: string | null,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.GenerateLearningTip_ImmediatePostbirth(
+    category,
+    title,
+    subtitle,
+    relevance,
+    recommendYesNo,
+    babyName,
+    babySex,
+    ageInDays,
+    currentWeightOz,
+    birthWeightOz,
+    feedingCount24h,
+    avgFeedingInterval,
+    sleepCount24h,
+    diaperCount24h,
+    recentChatTopics,
+    achievedMilestones,
+    medicalContext,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "GenerateLearningTip_MonthOne" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { string } category - Input parameter.
+ * @param { string } title - Input parameter.
+ * @param { string } subtitle - Input parameter.
+ * @param { string } relevance - Input parameter.
+ * @param { boolean } recommendYesNo - Input parameter.
+ * @param { string } babyName - Input parameter.
+ * @param { string | null } babySex (optional) - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { number | null } currentWeightOz (optional) - Input parameter.
+ * @param { number | null } birthWeightOz (optional) - Input parameter.
+ * @param { number | null } feedingCount24h (optional) - Input parameter.
+ * @param { number | null } avgFeedingInterval (optional) - Input parameter.
+ * @param { number | null } sleepCount24h (optional) - Input parameter.
+ * @param { number | null } diaperCount24h (optional) - Input parameter.
+ * @param { string | null } recentChatTopics (optional) - Input parameter.
+ * @param { string | null } achievedMilestones (optional) - Input parameter.
+ * @param { string | null } medicalContext (optional) - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const GenerateLearningTip_MonthOne = async (
+  category: string,
+  title: string,
+  subtitle: string,
+  relevance: string,
+  recommendYesNo: boolean,
+  babyName: string,
+  babySex?: string | null,
+  ageInDays: number,
+  currentWeightOz?: number | null,
+  birthWeightOz?: number | null,
+  feedingCount24h?: number | null,
+  avgFeedingInterval?: number | null,
+  sleepCount24h?: number | null,
+  diaperCount24h?: number | null,
+  recentChatTopics?: string | null,
+  achievedMilestones?: string | null,
+  medicalContext?: string | null,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.GenerateLearningTip_MonthOne(
+    category,
+    title,
+    subtitle,
+    relevance,
+    recommendYesNo,
+    babyName,
+    babySex,
+    ageInDays,
+    currentWeightOz,
+    birthWeightOz,
+    feedingCount24h,
+    avgFeedingInterval,
+    sleepCount24h,
+    diaperCount24h,
+    recentChatTopics,
+    achievedMilestones,
+    medicalContext,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "GenerateLearningTip_MonthThreeFour" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { string } category - Input parameter.
+ * @param { string } title - Input parameter.
+ * @param { string } subtitle - Input parameter.
+ * @param { string } relevance - Input parameter.
+ * @param { boolean } recommendYesNo - Input parameter.
+ * @param { string } babyName - Input parameter.
+ * @param { string | null } babySex (optional) - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { number | null } currentWeightOz (optional) - Input parameter.
+ * @param { number | null } birthWeightOz (optional) - Input parameter.
+ * @param { number | null } feedingCount24h (optional) - Input parameter.
+ * @param { number | null } avgFeedingInterval (optional) - Input parameter.
+ * @param { number | null } sleepCount24h (optional) - Input parameter.
+ * @param { number | null } diaperCount24h (optional) - Input parameter.
+ * @param { string | null } recentChatTopics (optional) - Input parameter.
+ * @param { string | null } achievedMilestones (optional) - Input parameter.
+ * @param { string | null } medicalContext (optional) - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const GenerateLearningTip_MonthThreeFour = async (
+  category: string,
+  title: string,
+  subtitle: string,
+  relevance: string,
+  recommendYesNo: boolean,
+  babyName: string,
+  babySex?: string | null,
+  ageInDays: number,
+  currentWeightOz?: number | null,
+  birthWeightOz?: number | null,
+  feedingCount24h?: number | null,
+  avgFeedingInterval?: number | null,
+  sleepCount24h?: number | null,
+  diaperCount24h?: number | null,
+  recentChatTopics?: string | null,
+  achievedMilestones?: string | null,
+  medicalContext?: string | null,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.GenerateLearningTip_MonthThreeFour(
+    category,
+    title,
+    subtitle,
+    relevance,
+    recommendYesNo,
+    babyName,
+    babySex,
+    ageInDays,
+    currentWeightOz,
+    birthWeightOz,
+    feedingCount24h,
+    avgFeedingInterval,
+    sleepCount24h,
+    diaperCount24h,
+    recentChatTopics,
+    achievedMilestones,
+    medicalContext,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "GenerateLearningTip_MonthTwo" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { string } category - Input parameter.
+ * @param { string } title - Input parameter.
+ * @param { string } subtitle - Input parameter.
+ * @param { string } relevance - Input parameter.
+ * @param { boolean } recommendYesNo - Input parameter.
+ * @param { string } babyName - Input parameter.
+ * @param { string | null } babySex (optional) - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { number | null } currentWeightOz (optional) - Input parameter.
+ * @param { number | null } birthWeightOz (optional) - Input parameter.
+ * @param { number | null } feedingCount24h (optional) - Input parameter.
+ * @param { number | null } avgFeedingInterval (optional) - Input parameter.
+ * @param { number | null } sleepCount24h (optional) - Input parameter.
+ * @param { number | null } diaperCount24h (optional) - Input parameter.
+ * @param { string | null } recentChatTopics (optional) - Input parameter.
+ * @param { string | null } achievedMilestones (optional) - Input parameter.
+ * @param { string | null } medicalContext (optional) - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const GenerateLearningTip_MonthTwo = async (
+  category: string,
+  title: string,
+  subtitle: string,
+  relevance: string,
+  recommendYesNo: boolean,
+  babyName: string,
+  babySex?: string | null,
+  ageInDays: number,
+  currentWeightOz?: number | null,
+  birthWeightOz?: number | null,
+  feedingCount24h?: number | null,
+  avgFeedingInterval?: number | null,
+  sleepCount24h?: number | null,
+  diaperCount24h?: number | null,
+  recentChatTopics?: string | null,
+  achievedMilestones?: string | null,
+  medicalContext?: string | null,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.GenerateLearningTip_MonthTwo(
+    category,
+    title,
+    subtitle,
+    relevance,
+    recommendYesNo,
+    babyName,
+    babySex,
+    ageInDays,
+    currentWeightOz,
+    birthWeightOz,
+    feedingCount24h,
+    avgFeedingInterval,
+    sleepCount24h,
+    diaperCount24h,
+    recentChatTopics,
+    achievedMilestones,
+    medicalContext,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "GenerateLearningTip_SecondWeek" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { string } category - Input parameter.
+ * @param { string } title - Input parameter.
+ * @param { string } subtitle - Input parameter.
+ * @param { string } relevance - Input parameter.
+ * @param { boolean } recommendYesNo - Input parameter.
+ * @param { string } babyName - Input parameter.
+ * @param { string | null } babySex (optional) - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { number | null } currentWeightOz (optional) - Input parameter.
+ * @param { number | null } birthWeightOz (optional) - Input parameter.
+ * @param { number | null } feedingCount24h (optional) - Input parameter.
+ * @param { number | null } avgFeedingInterval (optional) - Input parameter.
+ * @param { number | null } sleepCount24h (optional) - Input parameter.
+ * @param { number | null } diaperCount24h (optional) - Input parameter.
+ * @param { string | null } recentChatTopics (optional) - Input parameter.
+ * @param { string | null } achievedMilestones (optional) - Input parameter.
+ * @param { string | null } medicalContext (optional) - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const GenerateLearningTip_SecondWeek = async (
+  category: string,
+  title: string,
+  subtitle: string,
+  relevance: string,
+  recommendYesNo: boolean,
+  babyName: string,
+  babySex?: string | null,
+  ageInDays: number,
+  currentWeightOz?: number | null,
+  birthWeightOz?: number | null,
+  feedingCount24h?: number | null,
+  avgFeedingInterval?: number | null,
+  sleepCount24h?: number | null,
+  diaperCount24h?: number | null,
+  recentChatTopics?: string | null,
+  achievedMilestones?: string | null,
+  medicalContext?: string | null,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.GenerateLearningTip_SecondWeek(
+    category,
+    title,
+    subtitle,
+    relevance,
+    recommendYesNo,
+    babyName,
+    babySex,
+    ageInDays,
+    currentWeightOz,
+    birthWeightOz,
+    feedingCount24h,
+    avgFeedingInterval,
+    sleepCount24h,
+    diaperCount24h,
+    recentChatTopics,
+    achievedMilestones,
+    medicalContext,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "GenerateLearningTip_ThirdWeek" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { string } category - Input parameter.
+ * @param { string } title - Input parameter.
+ * @param { string } subtitle - Input parameter.
+ * @param { string } relevance - Input parameter.
+ * @param { boolean } recommendYesNo - Input parameter.
+ * @param { string } babyName - Input parameter.
+ * @param { string | null } babySex (optional) - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { number | null } currentWeightOz (optional) - Input parameter.
+ * @param { number | null } birthWeightOz (optional) - Input parameter.
+ * @param { number | null } feedingCount24h (optional) - Input parameter.
+ * @param { number | null } avgFeedingInterval (optional) - Input parameter.
+ * @param { number | null } sleepCount24h (optional) - Input parameter.
+ * @param { number | null } diaperCount24h (optional) - Input parameter.
+ * @param { string | null } recentChatTopics (optional) - Input parameter.
+ * @param { string | null } achievedMilestones (optional) - Input parameter.
+ * @param { string | null } medicalContext (optional) - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const GenerateLearningTip_ThirdWeek = async (
+  category: string,
+  title: string,
+  subtitle: string,
+  relevance: string,
+  recommendYesNo: boolean,
+  babyName: string,
+  babySex?: string | null,
+  ageInDays: number,
+  currentWeightOz?: number | null,
+  birthWeightOz?: number | null,
+  feedingCount24h?: number | null,
+  avgFeedingInterval?: number | null,
+  sleepCount24h?: number | null,
+  diaperCount24h?: number | null,
+  recentChatTopics?: string | null,
+  achievedMilestones?: string | null,
+  medicalContext?: string | null,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.GenerateLearningTip_ThirdWeek(
+    category,
+    title,
+    subtitle,
+    relevance,
+    recommendYesNo,
+    babyName,
+    babySex,
+    ageInDays,
+    currentWeightOz,
+    birthWeightOz,
+    feedingCount24h,
+    avgFeedingInterval,
+    sleepCount24h,
+    diaperCount24h,
+    recentChatTopics,
+    achievedMilestones,
+    medicalContext,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
  * Executes the streaming variant of the "HospitalPackAdvice" BAML action.
  *
  * This action initiates a streaming response by calling the corresponding
@@ -356,6 +883,25 @@ export const HospitalPackAdvice = async (
 ): Promise<ReadableStream<Uint8Array>> => {
   const stream = b.stream.HospitalPackAdvice(
     progress,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "ImmediatePostbirthMilestone" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { types.MilestoneInput } input - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const ImmediatePostbirthMilestone = async (
+  input: types.MilestoneInput,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.ImmediatePostbirthMilestone(
+    input,
   );
   return Promise.resolve(stream.toStreamable());
 };
@@ -402,6 +948,142 @@ export const MilestoneExplanation = async (
     feedingCount24h,
     sleepCount24h,
     diaperCount24h,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "MilestonePlanner" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { string } babyName - Input parameter.
+ * @param { string | null } babySex (optional) - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { number } ageInWeeks - Input parameter.
+ * @param { number | null } currentWeightOz (optional) - Input parameter.
+ * @param { number | null } birthWeightOz (optional) - Input parameter.
+ * @param { number | null } height (optional) - Input parameter.
+ * @param { number | null } feedingCount24h (optional) - Input parameter.
+ * @param { number | null } avgFeedingInterval (optional) - Input parameter.
+ * @param { number | null } sleepCount24h (optional) - Input parameter.
+ * @param { number | null } totalSleepHours24h (optional) - Input parameter.
+ * @param { number | null } diaperCount24h (optional) - Input parameter.
+ * @param { number | null } avgFeedingsPerDay (optional) - Input parameter.
+ * @param { number | null } avgSleepHoursPerDay (optional) - Input parameter.
+ * @param { number | null } avgDiaperChangesPerDay (optional) - Input parameter.
+ * @param { string | null } recentChatTopics (optional) - Input parameter.
+ * @param { string | null } achievedMilestones (optional) - Input parameter.
+ * @param { string | null } recentlySuggestedMilestones (optional) - Input parameter.
+ * @param { string | null } activitySummary (optional) - Input parameter.
+ * @param { boolean | null } hasTummyTimeActivity (optional) - Input parameter.
+ * @param { string | null } medicalContext (optional) - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const MilestonePlanner = async (
+  babyName: string,
+  babySex?: string | null,
+  ageInDays: number,
+  ageInWeeks: number,
+  currentWeightOz?: number | null,
+  birthWeightOz?: number | null,
+  height?: number | null,
+  feedingCount24h?: number | null,
+  avgFeedingInterval?: number | null,
+  sleepCount24h?: number | null,
+  totalSleepHours24h?: number | null,
+  diaperCount24h?: number | null,
+  avgFeedingsPerDay?: number | null,
+  avgSleepHoursPerDay?: number | null,
+  avgDiaperChangesPerDay?: number | null,
+  recentChatTopics?: string | null,
+  achievedMilestones?: string | null,
+  recentlySuggestedMilestones?: string | null,
+  activitySummary?: string | null,
+  hasTummyTimeActivity?: boolean | null,
+  medicalContext?: string | null,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.MilestonePlanner(
+    babyName,
+    babySex,
+    ageInDays,
+    ageInWeeks,
+    currentWeightOz,
+    birthWeightOz,
+    height,
+    feedingCount24h,
+    avgFeedingInterval,
+    sleepCount24h,
+    totalSleepHours24h,
+    diaperCount24h,
+    avgFeedingsPerDay,
+    avgSleepHoursPerDay,
+    avgDiaperChangesPerDay,
+    recentChatTopics,
+    achievedMilestones,
+    recentlySuggestedMilestones,
+    activitySummary,
+    hasTummyTimeActivity,
+    medicalContext,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "MonthOneMilestone" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { types.MilestoneInput } input - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const MonthOneMilestone = async (
+  input: types.MilestoneInput,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.MonthOneMilestone(
+    input,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "MonthThreeFourMilestone" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { types.MilestoneInput } input - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const MonthThreeFourMilestone = async (
+  input: types.MilestoneInput,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.MonthThreeFourMilestone(
+    input,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "MonthTwoMilestone" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { types.MilestoneInput } input - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const MonthTwoMilestone = async (
+  input: types.MilestoneInput,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.MonthTwoMilestone(
+    input,
   );
   return Promise.resolve(stream.toStreamable());
 };
@@ -592,6 +1274,25 @@ export const RoleSpecificTips = async (
 };
 
 /**
+ * Executes the streaming variant of the "SecondWeekMilestone" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { types.MilestoneInput } input - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const SecondWeekMilestone = async (
+  input: types.MilestoneInput,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.SecondWeekMilestone(
+    input,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
  * Executes the streaming variant of the "SleepRegressionTips" BAML action.
  *
  * This action initiates a streaming response by calling the corresponding
@@ -677,6 +1378,25 @@ export const SuggestImprovements = async (
     seo,
     accessibility,
     structure,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "ThirdWeekMilestone" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { types.MilestoneInput } input - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const ThirdWeekMilestone = async (
+  input: types.MilestoneInput,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.ThirdWeekMilestone(
+    input,
   );
   return Promise.resolve(stream.toStreamable());
 };
