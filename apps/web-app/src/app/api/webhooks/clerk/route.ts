@@ -63,11 +63,6 @@ export async function POST(request: Request) {
     });
   }
 
-  // Do something with the payload
-  const { id } = event.data;
-  const eventType = event.type;
-  console.log(`Webhook with and ID of ${id} and type of ${eventType}`);
-
   let response: Response | undefined;
   try {
     switch (event.type) {
@@ -105,7 +100,6 @@ export async function POST(request: Request) {
         response = await handleOrganizationInvitationAccepted(event);
         break;
       default:
-        console.log(`Unhandled webhook event type: ${event.type}`);
         response = undefined;
     }
   } catch (error) {

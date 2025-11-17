@@ -172,10 +172,11 @@ export default function ChatPage() {
     setQuestion,
   ]);
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change (including during streaming)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: messages is intentionally included to trigger scroll on every message update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+  }, [messages]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>) => {

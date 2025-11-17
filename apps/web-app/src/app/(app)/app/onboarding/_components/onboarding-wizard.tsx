@@ -71,16 +71,6 @@ export function OnboardingWizard() {
 
   const handleComplete = () => {
     try {
-      console.log('handleComplete called', {
-        birthDate,
-        birthWeightLbs,
-        birthWeightOz,
-        fullName,
-        isPending,
-        journeyStage,
-        step,
-      });
-
       if (!journeyStage) {
         console.error('No journey stage selected');
         setError('Please select your journey stage');
@@ -91,8 +81,6 @@ export function OnboardingWizard() {
 
       // Parse the full name into parts
       const { firstName, middleName, lastName } = parseBabyName(fullName);
-
-      console.log('Parsed name:', { firstName, lastName, middleName });
 
       // Convert lbs/oz to total ounces
       const lbs = Number.parseInt(birthWeightLbs || '0', 10);
@@ -119,20 +107,6 @@ export function OnboardingWizard() {
       // Submit to server
       startTransition(async () => {
         try {
-          console.log('Submitting onboarding data:', {
-            birthDate: birthDate || undefined,
-            birthWeightOz:
-              birthWeightTotalOz > 0 ? birthWeightTotalOz : undefined,
-            dueDate: dueDate || undefined,
-            firstName: firstName || undefined,
-            gender: gender || undefined,
-            journeyStage,
-            lastName: lastName || undefined,
-            lastPeriodDate: lastPeriodDate || undefined,
-            middleName: middleName || undefined,
-            ttcMethod: ttcMethod || undefined,
-          });
-
           const result = await completeOnboardingAction({
             birthDate: birthDate || undefined,
             birthWeightOz:
@@ -147,8 +121,6 @@ export function OnboardingWizard() {
             ttcMethod: ttcMethod || undefined,
           });
 
-          console.log('Onboarding action result:', result);
-
           if (result?.serverError) {
             console.error('Server error:', result.serverError);
             setError(result.serverError);
@@ -162,11 +134,9 @@ export function OnboardingWizard() {
           }
 
           if (result?.data?.success && result.data.family) {
-            console.log('Onboarding completed successfully');
-
             // Set the active organization in the session
             if (result.data.family && setActive) {
-              await setActive({ organization: result.data.family.id });
+              await setActive({ organization: result.data.family.clerkOrgId });
             }
 
             // Now navigate to the app
@@ -224,21 +194,12 @@ export function OnboardingWizard() {
           }
 
           if (result?.data?.success && result.data.family) {
-            console.log(
-              'Family and baby created successfully:',
-              result.data.family,
-            );
-
             // Set the active organization in Clerk session
             if (setActive) {
               try {
                 await setActive({
                   organization: result.data.family.clerkOrgId,
                 });
-                console.log(
-                  'Active organization set:',
-                  result.data.family.clerkOrgId,
-                );
 
                 // Give a small delay to ensure session is updated
                 await new Promise((resolve) => setTimeout(resolve, 500));
@@ -276,15 +237,6 @@ export function OnboardingWizard() {
     } else if (step === 3) {
       result = true; // Step 3 is optional
     }
-
-    console.log('canProceed check:', {
-      birthDate,
-      dueDate,
-      journeyStage,
-      result,
-      step,
-      ttcMethod,
-    });
 
     return result;
   };

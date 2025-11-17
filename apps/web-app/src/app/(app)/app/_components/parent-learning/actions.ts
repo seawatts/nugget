@@ -11,6 +11,65 @@ import { createSafeActionClient } from 'next-safe-action';
 
 const action = createSafeActionClient();
 
+// ============================================================================
+// Timeout and Retry Utility
+// ============================================================================
+
+interface RetryOptions {
+  maxAttempts?: number;
+  timeoutMs?: number;
+  baseDelayMs?: number;
+}
+
+/**
+ * Wraps an async function with timeout and retry logic
+ */
+async function withTimeoutAndRetry<T>(
+  fn: () => Promise<T>,
+  options: RetryOptions = {},
+): Promise<{ data: T | null; error: string | null }> {
+  const {
+    maxAttempts = 3,
+    timeoutMs = 30000, // 30 seconds
+    baseDelayMs = 1000, // 1 second base delay
+  } = options;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      // Create a timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(`Request timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      });
+
+      // Race between the actual function and the timeout
+      const data = await Promise.race([fn(), timeoutPromise]);
+      return { data, error: null };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+
+      // If this was the last attempt, return the error
+      if (attempt === maxAttempts) {
+        console.error(`Failed after ${maxAttempts} attempts: ${errorMessage}`);
+        return { data: null, error: errorMessage };
+      }
+
+      // Calculate exponential backoff delay
+      const delay = baseDelayMs * 2 ** (attempt - 1);
+      console.warn(
+        `Attempt ${attempt} failed: ${errorMessage}. Retrying in ${delay}ms...`,
+      );
+
+      // Wait before retrying
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  return { data: null, error: 'Max retry attempts exceeded' };
+}
+
 export interface LearningTip {
   category:
     | 'feeding'
@@ -34,7 +93,7 @@ export const getParentLearningContentAction = action.action(async () => {
 
   // Check authentication
   if (!authResult?.userId || !authResult?.orgId) {
-    return { babyName: '', postpartumDay: 0, tips: [] };
+    return { babyName: '', error: null, postpartumDay: 0, tips: [] };
   }
 
   const { orgId } = authResult;
@@ -44,7 +103,7 @@ export const getParentLearningContentAction = action.action(async () => {
   const baby = babies[0];
 
   if (!baby || !baby.birthDate) {
-    return { babyName: '', postpartumDay: 0, tips: [] };
+    return { babyName: '', error: null, postpartumDay: 0, tips: [] };
   }
 
   // Calculate postpartum day (days since baby was born)
@@ -125,29 +184,49 @@ export const getParentLearningContentAction = action.action(async () => {
   // Use baby's first name only
   const babyName = baby.firstName || 'your baby';
 
-  // Call BAML function for postpartum tips
-  const result = await PostpartumTips(
-    babyName,
-    postpartumDay,
-    firstPregnancy,
-    postpartumDay, // ageInDays
-    ageInWeeks,
-    baby.currentWeightOz || null,
-    baby.birthWeightOz || null,
-    null, // height
-    null, // headCircumference
-    feedingCount24h || null,
-    avgFeedingInterval || null,
-    sleepCount24h || null,
-    totalSleepHours24h || null,
-    diaperCount24h || null,
-    avgFeedingsPerDay || null,
-    avgSleepHoursPerDay || null,
-    avgDiaperChangesPerDay || null,
+  // Call BAML function for postpartum tips with timeout and retry
+  const { data: result, error } = await withTimeoutAndRetry(
+    () =>
+      PostpartumTips({
+        ageInDays: postpartumDay,
+        ageInWeeks,
+        avgDiaperChangesPerDay: avgDiaperChangesPerDay || null,
+        avgFeedingInterval: avgFeedingInterval || null,
+        avgFeedingsPerDay: avgFeedingsPerDay || null,
+        avgSleepHoursPerDay: avgSleepHoursPerDay || null,
+        babyName,
+        babySex: baby.gender || null,
+        birthWeightOz: baby.birthWeightOz || null,
+        currentWeightOz: baby.currentWeightOz || null,
+        day: postpartumDay,
+        diaperCount24h: diaperCount24h || null,
+        feedingCount24h: feedingCount24h || null,
+        firstPregnancy,
+        headCircumference: null,
+        height: null,
+        sleepCount24h: sleepCount24h || null,
+        totalSleepHours24h: totalSleepHours24h || null,
+      }),
+    {
+      maxAttempts: 3,
+      timeoutMs: 30000, // 30 seconds
+    },
   );
+
+  // Handle error case
+  if (error || !result) {
+    console.error('Failed to fetch postpartum tips:', error);
+    return {
+      babyName: baby.firstName,
+      error: error || 'Failed to load content',
+      postpartumDay,
+      tips: [],
+    };
+  }
 
   return {
     babyName: baby.firstName,
+    error: null,
     postpartumDay,
     tips: result.tips,
   };

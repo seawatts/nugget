@@ -24,12 +24,25 @@ function NewbornWeekMilestone(
   height: int?,
   headCircumference: int?,
   feedingCount24h: int?,
-  sleepCount24h: int?
+  sleepCount24h: int?,
+  // Rich context from database
+  recentChatTopics: string?,
+  achievedMilestones: string?,
+  activitySummary: string?,
+  parentWellness: string?,
+  medicalContext: string?
 ) -> NewbornMilestoneOutput {
   client CustomGPT4oMini
   prompt #"
     {{_.role("system")}}
-    You are a pediatric development expert providing age-appropriate milestone information to parents.
+    You are a pediatric development expert providing age-appropriate milestone information based on:
+    - AAP Bright Futures developmental surveillance guidelines
+    - CDC "Learn the Signs. Act Early" milestones
+    - WHO Multicentre Growth Reference Study
+    - Current peer-reviewed pediatric research on infant development
+
+    Ground all milestone information in these evidence-based sources.
+    When discussing milestones, explain the developmental significance and reference typical ranges (not single ages).
 
     IMPORTANT CONTEXT - About the Nugget App:
     The parents are using Nugget, a comprehensive parenting app that already provides:
@@ -63,10 +76,21 @@ function NewbornWeekMilestone(
 
     {{_.role("user")}}
     Provide 3-5 developmental milestone tips and observations for week {{week}} of a newborn's life.
-    {% if babySex %}Baby's sex: {{babySex}}{% endif %}
     {% if firstPregnancy %}Parents are first-timers.{% endif %}
 
     Baby: {{babyName}}
+    {% if babySex %}Sex: {{babySex}}
+    CRITICAL: Use grammatically correct pronouns throughout ALL generated content:
+    {% if babySex == "M" or babySex == "male" %}
+    - Use: he, him, his (e.g., "Watch how he tracks objects", "His head control", "Encourage him")
+    {% elif babySex == "F" or babySex == "female" %}
+    - Use: she, her, hers (e.g., "Watch how she tracks objects", "Her head control", "Encourage her")
+    {% else %}
+    - Use: they, them, their (e.g., "Watch how they track objects", "Their head control", "Encourage them")
+    {% endif %}
+    {% else %}
+    - Use gender-neutral: they, them, their when sex is unknown
+    {% endif %}
 
     Baby Context:
     - Age: {{ageInDays}} days ({{week}} weeks)
@@ -80,25 +104,81 @@ function NewbornWeekMilestone(
     {% if sleepCount24h %}- Sleep sessions: {{sleepCount24h}}{% endif %}
     {% endif %}
 
+    {% if recentChatTopics %}
+    ═══════════════════════════════════════════════════════════════
+    RECENT DISCUSSION CONTEXT
+    ═══════════════════════════════════════════════════════════════
+    {{recentChatTopics}}
+    {% endif %}
+
+    {% if achievedMilestones %}
+    ═══════════════════════════════════════════════════════════════
+    RECENTLY ACHIEVED MILESTONES
+    ═══════════════════════════════════════════════════════════════
+    {{achievedMilestones}}
+    {% endif %}
+
+    {% if activitySummary %}
+    ═══════════════════════════════════════════════════════════════
+    DETAILED ACTIVITY SUMMARY (LAST 3 DAYS)
+    ═══════════════════════════════════════════════════════════════
+    {{activitySummary}}
+    {% endif %}
+
+    {% if parentWellness %}
+    ═══════════════════════════════════════════════════════════════
+    PARENT WELLNESS CONTEXT
+    ═══════════════════════════════════════════════════════════════
+    {{parentWellness}}
+    {% endif %}
+
+    {% if medicalContext %}
+    ═══════════════════════════════════════════════════════════════
+    MEDICAL CONTEXT
+    ═══════════════════════════════════════════════════════════════
+    {{medicalContext}}
+    {% endif %}
+
     For each tip, provide:
     - category: Choose one of: 'feeding', 'sleep', 'diaper', 'development', 'health', or 'postpartum'
-    - subtitle: A catchy 4-5 word subtitle that captures the essence of the tip
-    - summary: One concise sentence summarizing the milestone or observation
-    - bulletPoints: 2-3 actionable bullet points (what to observe, why it matters, practical suggestions)
+    - subtitle: A catchy 4-5 word subtitle (max 5 words)
+    - summary: One concise sentence (max 15 words)
+    - bulletPoints: 2-3 actionable bullet points (each bullet max 20 words)
     - followUpQuestion: ONE focused, practical question that prompts the parent to share specific observations
       * Ask ONE question only - NO compound questions with "and" or multiple parts
       * CRITICAL: We already track COUNTS and DURATIONS (number of feedings, activities, tummy time sessions, etc.)
-      * DON'T ask about quantities we're already tracking (e.g., "How many tummy time sessions?" "How long did {{babyName}} feed?")
-      * DO ask about DEVELOPMENTAL OBSERVATIONS, BEHAVIORS, or MILESTONES we don't have:
-        - "What new sounds has {{babyName}} made today?"
-        - "Does {{babyName}} track your face when you move?"
-        - "What does {{babyName}} do during tummy time?"
-        - "How does {{babyName}} react to loud noises?"
-        - "Is {{babyName}} starting to smile at you?"
-      * Ask about developmental milestones, reactions, or behaviors that provide INSIGHT beyond our raw data
+      * DON'T ask about quantities we're already tracking
+      * DO ask about DEVELOPMENTAL OBSERVATIONS, BEHAVIORS, or MILESTONES we don't have
       * Keep it simple, direct, and non-judgmental
       * Avoid quiz-like or educational testing questions
-      * IMPORTANT: Each question must stand alone and ask about ONE thing only
+
+    FOLLOW-UP QUESTIONS - Generate a mix of yes/no and open-ended:
+    * REQUIREMENT: Include at least 1-2 yes/no questions in your 3-5 tips
+
+    * YES/NO QUESTIONS - Set isYesNoQuestion: true for binary questions:
+      Examples:
+      - "Has {{babyName}} had a wet diaper in the last 12 hours?"
+      - "Is {{babyName}} tracking your face when you move?"
+      - "Does {{babyName}} startle at loud noises?"
+      - "Is {{babyName}} starting to smile at you?"
+      - "Has {{babyName}} had a bowel movement today?"
+
+    * For yes/no questions, decide which answer(s) should open chat:
+      - openChatOnNo: true if "no" indicates concern (e.g., no wet diapers, not eating)
+      - openChatOnYes: true if "yes" indicates concern (e.g., signs of distress)
+      - Provide helpful pre-filled prompts:
+        * noResponsePrompt: Supportive message for "no" (e.g., "{{babyName}} hasn't had a wet diaper in 12 hours. What should I do?")
+        * yesResponsePrompt: Supportive message for "yes" (e.g., "{{babyName}} startles very easily. Is this normal?")
+
+    * OPEN-ENDED QUESTIONS - Set isYesNoQuestion: false for qualitative questions:
+      Examples:
+      - "What new sounds has {{babyName}} made today?"
+      - "What does {{babyName}} do during tummy time?"
+      - "How does {{babyName}} react to loud noises?"
+
+    * Question Type Guidelines:
+      - Use YES/NO for: Health checks, safety concerns, binary milestones, critical observations
+      - Use OPEN-ENDED for: Developmental details, parent reflections, qualitative behaviors
 
     Make each tip:
     - Include what parents might observe this week in their daily care

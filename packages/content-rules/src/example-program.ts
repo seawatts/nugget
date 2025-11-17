@@ -144,6 +144,7 @@ export function createExampleProgram(b: BamlAsyncClient) {
           body: aiTextBaml({
             call: ({ baby, traits, enhancedBabyData }) => {
               const babyName = baby?.firstName || 'your baby';
+              const babySex = baby?.sex || null;
               const firstPregnancy = !!traits?.firstPregnancy;
               const babyCtx = enhancedBabyData?.baby;
               const activities = enhancedBabyData?.activities24h;
@@ -151,25 +152,26 @@ export function createExampleProgram(b: BamlAsyncClient) {
 
               return bamlCall(
                 () =>
-                  b.PostpartumTips(
+                  b.PostpartumTips({
+                    ageInDays: babyCtx?.ageInDays ?? day,
+                    ageInWeeks: babyCtx?.ageInWeeks ?? 0,
+                    avgDiaperChangesPerDay: weekly?.avgDiaperChanges ?? null,
+                    avgFeedingInterval: activities?.avgFeedingInterval ?? null,
+                    avgFeedingsPerDay: weekly?.avgFeedingsPerDay ?? null,
+                    avgSleepHoursPerDay: weekly?.avgSleepHours ?? null,
                     babyName,
+                    babySex,
+                    birthWeightOz: babyCtx?.birthWeightOz ?? null,
+                    currentWeightOz: babyCtx?.currentWeightOz ?? null,
                     day,
+                    diaperCount24h: activities?.diaperCount ?? null,
+                    feedingCount24h: activities?.feedingCount ?? null,
                     firstPregnancy,
-                    babyCtx?.ageInDays ?? day,
-                    babyCtx?.ageInWeeks ?? 0,
-                    babyCtx?.currentWeightOz ?? null,
-                    babyCtx?.birthWeightOz ?? null,
-                    babyCtx?.height ?? null,
-                    babyCtx?.headCircumference ?? null,
-                    activities?.feedingCount ?? null,
-                    activities?.avgFeedingInterval ?? null,
-                    activities?.sleepCount ?? null,
-                    activities?.totalSleepHours ?? null,
-                    activities?.diaperCount ?? null,
-                    weekly?.avgFeedingsPerDay ?? null,
-                    weekly?.avgSleepHours ?? null,
-                    weekly?.avgDiaperChanges ?? null,
-                  ),
+                    headCircumference: babyCtx?.headCircumference ?? null,
+                    height: babyCtx?.height ?? null,
+                    sleepCount24h: activities?.sleepCount ?? null,
+                    totalSleepHours24h: activities?.totalSleepHours ?? null,
+                  }),
                 (out) => out.tips,
               );
             },

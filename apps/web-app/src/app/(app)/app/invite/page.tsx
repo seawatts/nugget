@@ -107,8 +107,7 @@ export default function InvitePage() {
   };
 
   const sendEmailInvite = () => {
-    // In production, this would send an actual email
-    console.log(`Sending invite to ${email} as ${selectedType}`);
+    // TODO: In production, this would send an actual email
     setEmailSent(true);
     setTimeout(() => {
       setEmailSent(false);

@@ -3,7 +3,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
 import { P } from '@nugget/ui/custom/typography';
-import { MessageCircle } from 'lucide-react';
+import { Check, MessageCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useState } from 'react';
 import { FeatureCard } from '~/components/feature-card';
@@ -11,6 +11,7 @@ import type { ColorConfig } from '~/components/feature-card.types';
 import { getContextChatReplyAction } from '../chat/actions';
 import { getCategoryConfig } from './learning-card-categories';
 import type { LearningTip } from './learning-carousel.actions';
+import { saveMilestoneQuestionResponseAction } from './milestone-question.actions';
 import { QuickChatDialog } from './quick-chat-dialog';
 
 interface LearningCardInfoProps {
@@ -33,7 +34,11 @@ export function LearningCardInfo({
 }: LearningCardInfoProps) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [repliers, setRepliers] = useState<ChatReplier[]>([]);
+  const [prefillMessage, setPrefillMessage] = useState<string | undefined>();
   const { executeAsync: fetchRepliers } = useAction(getContextChatReplyAction);
+  const { executeAsync: saveResponse } = useAction(
+    saveMilestoneQuestionResponseAction,
+  );
 
   // Function to fetch repliers
   const loadRepliers = useCallback(() => {
@@ -70,6 +75,47 @@ export function LearningCardInfo({
       return () => clearTimeout(timer);
     }
   }, [isChatOpen, loadRepliers]);
+
+  // Handler for yes/no button clicks
+  const handleYesNoClick = useCallback(
+    async (answer: 'yes' | 'no') => {
+      if (!babyId || !tip) return;
+
+      try {
+        // Save the response
+        const result = await saveResponse({
+          answer,
+          babyId,
+          contextId: `${tip.category}-${tip.subtitle}`,
+          contextType: 'learning_tip',
+          question: tip.followUpQuestion,
+        });
+
+        // Check for errors from the action
+        if (result?.serverError) {
+          console.error('Error saving response:', result.serverError);
+          return;
+        }
+
+        // Check if we should open chat
+        const shouldOpenChat =
+          (answer === 'yes' && tip.openChatOnYes) ||
+          (answer === 'no' && tip.openChatOnNo);
+
+        if (shouldOpenChat) {
+          const prompt =
+            answer === 'yes' ? tip.yesResponsePrompt : tip.noResponsePrompt;
+          if (prompt) {
+            setPrefillMessage(prompt);
+          }
+          setIsChatOpen(true);
+        }
+      } catch (error) {
+        console.error('Unexpected error:', error);
+      }
+    },
+    [babyId, tip, saveResponse],
+  );
 
   // Handle loading state when tip is undefined or being resolved
   if (!tip) {
@@ -156,49 +202,72 @@ export function LearningCardInfo({
           </P>
         </div>
 
-        {/* Answer Button */}
-        <Button
-          className="w-full justify-center"
-          onClick={() => setIsChatOpen(true)}
-          size="sm"
-          variant="default"
-        >
-          <MessageCircle className="size-4 mr-2" />
-          Answer
-          {repliers.length > 0 && (
-            <div className="flex -space-x-2 ml-2">
-              {repliers.slice(0, 3).map((replier) => {
-                const initials = `${replier.firstName?.[0] || ''}${replier.lastName?.[0] || ''}`;
-                return (
-                  <Avatar
-                    className="size-5 border-2 border-primary"
-                    key={replier.userId}
-                  >
-                    <AvatarImage
-                      alt={`${replier.firstName || ''} ${replier.lastName || ''}`}
-                      src={replier.avatarUrl || undefined}
-                    />
-                    <AvatarFallback className="text-xs">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                );
-              })}
-              {repliers.length > 3 && (
-                <div className="size-5 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center">
-                  <span className="text-[8px] font-medium">
-                    +{repliers.length - 3}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-        </Button>
+        {/* Yes/No Buttons or Answer Button */}
+        {tip.isYesNoQuestion ? (
+          <div className="flex gap-2 w-full">
+            <Button
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => handleYesNoClick('yes')}
+              size="sm"
+              variant="default"
+            >
+              <Check className="size-4 mr-2" />
+              Yes
+            </Button>
+            <Button
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => handleYesNoClick('no')}
+              size="sm"
+              variant="default"
+            >
+              No
+            </Button>
+          </div>
+        ) : (
+          <Button
+            className="w-full justify-center"
+            onClick={() => setIsChatOpen(true)}
+            size="sm"
+            variant="default"
+          >
+            <MessageCircle className="size-4 mr-2" />
+            Answer
+            {repliers.length > 0 && (
+              <div className="flex -space-x-2 ml-2">
+                {repliers.slice(0, 3).map((replier) => {
+                  const initials = `${replier.firstName?.[0] || ''}${replier.lastName?.[0] || ''}`;
+                  return (
+                    <Avatar
+                      className="size-5 border-2 border-primary"
+                      key={replier.userId}
+                    >
+                      <AvatarImage
+                        alt={`${replier.firstName || ''} ${replier.lastName || ''}`}
+                        src={replier.avatarUrl || undefined}
+                      />
+                      <AvatarFallback className="text-xs">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                  );
+                })}
+                {repliers.length > 3 && (
+                  <div className="size-5 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center">
+                    <span className="text-[8px] font-medium">
+                      +{repliers.length - 3}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </Button>
+        )}
       </FeatureCard.Footer>
 
       {/* Chat Dialog */}
       {babyId && tip && (
         <QuickChatDialog
+          autoSendPrefill={!!prefillMessage}
           babyId={babyId}
           contextId={`${tip.category}-${tip.subtitle}`}
           contextType="learning_tip"
@@ -212,6 +281,7 @@ export function LearningCardInfo({
           ]}
           onOpenChange={setIsChatOpen}
           open={isChatOpen}
+          prefillMessage={prefillMessage}
           title="Nugget AI"
           trigger={<span style={{ display: 'none' }} />}
         />

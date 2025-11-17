@@ -77,6 +77,30 @@ export const milestoneTypeEnum = pgEnum('milestoneType', [
   'language',
   'self_care',
 ]);
+export const celebrationTypeEnum = pgEnum('celebrationType', [
+  'week_1',
+  'week_2',
+  'week_3',
+  'week_4',
+  'week_5',
+  'week_6',
+  'week_7',
+  'week_8',
+  'week_9',
+  'week_10',
+  'week_11',
+  'week_12',
+  'month_1',
+  'month_2',
+  'month_3',
+  'month_4',
+  'month_5',
+  'month_6',
+  'month_9',
+  'year_1',
+  'month_18',
+  'year_2',
+]);
 export const feedingSourceEnum = pgEnum('feedingSource', [
   'pumped',
   'donor',
@@ -184,6 +208,7 @@ export const wakeReasonEnum = pgEnum('wakeReason', [
   'unknown',
 ]);
 export const messageRoleEnum = pgEnum('messageRole', ['user', 'assistant']);
+export const questionAnswerEnum = pgEnum('questionAnswer', ['yes', 'no']);
 
 // Zod enum types
 export const UserRoleType = z.enum(userRoleEnum.enumValues).enum;
@@ -195,6 +220,7 @@ export const StripeSubscriptionStatusType = z.enum(
 ).enum;
 export const ActivityTypeType = z.enum(activityTypeEnum.enumValues).enum;
 export const MilestoneTypeType = z.enum(milestoneTypeEnum.enumValues).enum;
+export const CelebrationTypeType = z.enum(celebrationTypeEnum.enumValues).enum;
 export const FeedingSourceType = z.enum(feedingSourceEnum.enumValues).enum;
 export const UnitPrefType = z.enum(unitPrefEnum.enumValues).enum;
 export const SupplyTransactionTypeType = z.enum(
@@ -210,6 +236,7 @@ export const SleepQualityType = z.enum(sleepQualityEnum.enumValues).enum;
 export const SleepLocationType = z.enum(sleepLocationEnum.enumValues).enum;
 export const WakeReasonType = z.enum(wakeReasonEnum.enumValues).enum;
 export const MessageRoleType = z.enum(messageRoleEnum.enumValues).enum;
+export const QuestionAnswerType = z.enum(questionAnswerEnum.enumValues).enum;
 
 // ============================================================================
 // Tables - Users & Families
@@ -657,6 +684,39 @@ export const Milestones = pgTable('milestones', {
     .default(requestingUserId()),
 });
 
+// ============================================================================
+// Tables - Celebrations
+// ============================================================================
+
+export const CelebrationMemories = pgTable('celebrationMemories', {
+  babyId: varchar('babyId', { length: 128 })
+    .notNull()
+    .references(() => Babies.id, { onDelete: 'cascade' }),
+  celebrationDate: timestamp('celebrationDate', { mode: 'date' })
+    .notNull()
+    .defaultNow(),
+  celebrationType: celebrationTypeEnum('celebrationType').notNull(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+  familyId: varchar('familyId', { length: 128 })
+    .notNull()
+    .references(() => Families.id, { onDelete: 'cascade' })
+    .default(requestingFamilyId()),
+  id: varchar('id', { length: 128 })
+    .primaryKey()
+    .$defaultFn(() => createId({ prefix: 'celebration' })),
+  metadata: json('metadata').$type<Record<string, unknown>>(),
+  note: text('note'),
+  photoUrls: json('photoUrls').$type<string[]>().default([]),
+  sharedWith: json('sharedWith').$type<string[]>().default([]), // Array of user IDs
+  updatedAt: timestamp('updatedAt', { mode: 'date' })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+  userId: varchar('userId', { length: 128 })
+    .notNull()
+    .default(requestingUserId()),
+});
+
 export const GrowthRecords = pgTable('growthRecords', {
   babyId: varchar('babyId', { length: 128 })
     .notNull()
@@ -812,6 +872,7 @@ export const Chats = pgTable(
       .$defaultFn(() => createId({ prefix: 'chat' }))
       .notNull()
       .primaryKey(),
+    summary: text('summary'), // AI-generated summary of chat (populated separately)
     title: text('title').notNull().default('New Chat'),
     updatedAt: timestamp('updatedAt', {
       mode: 'date',
@@ -861,6 +922,67 @@ export const ChatMessages = pgTable(
     index('chatMessages_chatId_createdAt_idx').on(
       table.chatId,
       table.createdAt,
+    ),
+  ],
+);
+
+export const MilestoneQuestionResponses = pgTable(
+  'milestoneQuestionResponses',
+  {
+    answer: questionAnswerEnum('answer').notNull(),
+    babyId: varchar('babyId', { length: 128 })
+      .notNull()
+      .references(() => Babies.id, { onDelete: 'cascade' }),
+    chatId: varchar('chatId', { length: 128 }).references(() => Chats.id, {
+      onDelete: 'set null',
+    }),
+    contextId: varchar('contextId', { length: 256 }).notNull(), // e.g., milestone ID, learning tip ID
+    contextType: varchar('contextType', { length: 64 }).notNull(), // e.g., 'milestone', 'learning_tip'
+    createdAt: timestamp('createdAt', {
+      mode: 'date',
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+    familyId: varchar('familyId', { length: 128 })
+      .notNull()
+      .references(() => Families.id, { onDelete: 'cascade' })
+      .default(requestingFamilyId()),
+    id: varchar('id', { length: 128 })
+      .$defaultFn(() => createId({ prefix: 'mqr' }))
+      .notNull()
+      .primaryKey(),
+    question: text('question').notNull(),
+    updatedAt: timestamp('updatedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }).$onUpdateFn(() => new Date()),
+    userId: varchar('userId', { length: 128 })
+      .notNull()
+      .default(requestingUserId()),
+  },
+  (table) => [
+    // Index for efficient lookups by context
+    index('milestoneQuestionResponses_contextType_contextId_idx').on(
+      table.contextType,
+      table.contextId,
+    ),
+    // Index for baby + family lookups
+    index('milestoneQuestionResponses_babyId_familyId_idx').on(
+      table.babyId,
+      table.familyId,
+    ),
+    // Index for user responses
+    index('milestoneQuestionResponses_userId_createdAt_idx').on(
+      table.userId,
+      table.createdAt,
+    ),
+    // Unique constraint: one response per user per question per context
+    unique('unique_response_per_context').on(
+      table.userId,
+      table.contextType,
+      table.contextId,
+      table.question,
     ),
   ],
 );
@@ -987,6 +1109,24 @@ export const MilestonesRelations = relations(Milestones, ({ one }) => ({
   }),
 }));
 
+export const CelebrationMemoriesRelations = relations(
+  CelebrationMemories,
+  ({ one }) => ({
+    baby: one(Babies, {
+      fields: [CelebrationMemories.babyId],
+      references: [Babies.id],
+    }),
+    family: one(Families, {
+      fields: [CelebrationMemories.familyId],
+      references: [Families.id],
+    }),
+    user: one(Users, {
+      fields: [CelebrationMemories.userId],
+      references: [Users.id],
+    }),
+  }),
+);
+
 export const GrowthRecordsRelations = relations(GrowthRecords, ({ one }) => ({
   baby: one(Babies, {
     fields: [GrowthRecords.babyId],
@@ -1063,6 +1203,7 @@ export const ChatsRelations = relations(Chats, ({ one, many }) => ({
     references: [Families.id],
   }),
   messages: many(ChatMessages),
+  milestoneQuestionResponses: many(MilestoneQuestionResponses),
   user: one(Users, {
     fields: [Chats.userId],
     references: [Users.id],
@@ -1079,6 +1220,28 @@ export const ChatMessagesRelations = relations(ChatMessages, ({ one }) => ({
     references: [Users.id],
   }),
 }));
+
+export const MilestoneQuestionResponsesRelations = relations(
+  MilestoneQuestionResponses,
+  ({ one }) => ({
+    baby: one(Babies, {
+      fields: [MilestoneQuestionResponses.babyId],
+      references: [Babies.id],
+    }),
+    chat: one(Chats, {
+      fields: [MilestoneQuestionResponses.chatId],
+      references: [Chats.id],
+    }),
+    family: one(Families, {
+      fields: [MilestoneQuestionResponses.familyId],
+      references: [Families.id],
+    }),
+    user: one(Users, {
+      fields: [MilestoneQuestionResponses.userId],
+      references: [Users.id],
+    }),
+  }),
+);
 
 // ============================================================================
 // Types
@@ -1188,6 +1351,19 @@ export const insertMilestoneSchema = createInsertSchema(Milestones);
 export const selectMilestoneSchema = createSelectSchema(Milestones);
 export const updateMilestoneSchema = insertMilestoneSchema.partial();
 
+export const insertCelebrationMemorySchema = createInsertSchema(
+  CelebrationMemories,
+).omit({
+  createdAt: true,
+  familyId: true,
+  id: true,
+  updatedAt: true,
+});
+export const selectCelebrationMemorySchema =
+  createSelectSchema(CelebrationMemories);
+export const updateCelebrationMemorySchema =
+  insertCelebrationMemorySchema.partial();
+
 export const insertGrowthRecordSchema = createInsertSchema(GrowthRecords);
 export const selectGrowthRecordSchema = createSelectSchema(GrowthRecords);
 export const updateGrowthRecordSchema = insertGrowthRecordSchema.partial();
@@ -1232,6 +1408,27 @@ export const insertChatMessageSchema = createInsertSchema(ChatMessages).omit({
   id: true,
 });
 export const selectChatMessageSchema = createSelectSchema(ChatMessages);
+
+export const insertMilestoneQuestionResponseSchema = createInsertSchema(
+  MilestoneQuestionResponses,
+).omit({
+  createdAt: true,
+  familyId: true,
+  id: true,
+  updatedAt: true,
+  userId: true,
+});
+export const selectMilestoneQuestionResponseSchema = createSelectSchema(
+  MilestoneQuestionResponses,
+);
+export const updateMilestoneQuestionResponseSchema = createUpdateSchema(
+  MilestoneQuestionResponses,
+).omit({
+  createdAt: true,
+  familyId: true,
+  id: true,
+  userId: true,
+});
 
 // ============================================================================
 // Tables - Parent Wellness & Support

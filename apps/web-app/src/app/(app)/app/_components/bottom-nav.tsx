@@ -248,7 +248,7 @@ const navGroups = [
         label: 'Emergency Help',
       },
       {
-        href: '/app/settings',
+        href: '/app/settings/preferences',
         icon: Settings,
         id: 'settings',
         label: 'Settings',
@@ -398,6 +398,7 @@ export function BottomNav() {
           const now = new Date();
           const age = formatDistanceToNowStrict(birthDate, {
             addSuffix: false,
+            roundingMethod: 'floor',
           });
 
           // Add context based on whether baby is born or not
@@ -687,8 +688,8 @@ export function BottomNav() {
                         className="flex items-center justify-center size-8 rounded-full hover:bg-muted/50 transition-colors mr-1"
                         href={
                           member.type === 'baby'
-                            ? `/app/settings?tab=profile&babyId=${member.id}`
-                            : '/app/settings'
+                            ? '/app/settings/baby'
+                            : '/app/settings/preferences'
                         }
                         onClick={(e) => {
                           e.stopPropagation();

@@ -1,19 +1,47 @@
 'use client';
 
 import { Button } from '@nugget/ui/button';
+import { Icons } from '@nugget/ui/custom/icons';
 import { Input } from '@nugget/ui/input';
 import { Textarea } from '@nugget/ui/textarea';
+import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { createActivityWithDetailsAction } from '../activity-cards.actions';
 
-export function TummyTimeDrawer() {
+interface TummyTimeDrawerProps {
+  onClose?: () => void;
+  onSaved?: () => void;
+}
+
+export function TummyTimeDrawer({ onClose, onSaved }: TummyTimeDrawerProps) {
   const [duration, setDuration] = useState(5);
   const [notes, setNotes] = useState('');
 
+  const { execute: createActivity, isExecuting } = useAction(
+    createActivityWithDetailsAction,
+    {
+      onError: ({ error }) => {
+        toast.error('Error', {
+          description: error.serverError || 'Failed to save tummy time.',
+        });
+      },
+      onSuccess: () => {
+        toast.success('Tummy time logged', {
+          description: 'Tummy time activity has been recorded successfully.',
+        });
+        onSaved?.();
+        onClose?.();
+      },
+    },
+  );
+
   const handleSave = () => {
-    console.log('[v0] Saving tummy time:', {
+    createActivity({
+      activityType: 'tummy_time',
       duration,
-      notes,
-      timestamp: new Date(),
+      notes: notes || undefined,
+      startTime: new Date(),
     });
   };
 
@@ -79,8 +107,20 @@ export function TummyTimeDrawer() {
         />
       </div>
 
-      <Button className="w-full" onClick={handleSave} size="lg">
-        Save Tummy Time
+      <Button
+        className="w-full"
+        disabled={isExecuting || duration < 1}
+        onClick={handleSave}
+        size="lg"
+      >
+        {isExecuting ? (
+          <>
+            <Icons.Spinner className="animate-spin" size="sm" />
+            Saving...
+          </>
+        ) : (
+          'Save Tummy Time'
+        )}
       </Button>
     </div>
   );

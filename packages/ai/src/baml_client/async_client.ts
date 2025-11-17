@@ -24,7 +24,7 @@ import { toBamlError, BamlStream, BamlAbortError, Collector } from "@boundaryml/
 import type { Checked, Check, RecursivePartialNull as MovedRecursivePartialNull } from "./types"
 import type { partial_types } from "./partial_types"
 import type * as types from "./types"
-import type {AppointmentNudgeOutput, BabyAssistantChatOutput, BabyContext, BabyVisitExplainerOutput, BirthPlanHeadlineOutput, ChatMessage, ChatTitleOutput, CheckInQuestion, ContextualMilestonesOutput, DailyCheckInQuestionsOutput, HospitalPackAdviceOutput, ImprovementSuggestions, LearningTip, MilestoneEnhancementOutput, MilestoneExplanationOutput, MilestoneSuggestion, NewbornMilestoneOutput, ParentTask, ParentTip, PersonalizedTasksOutput, PostpartumTipsOutput, PregnancyWeekSummaryOutput, ResponseType, RoleSpecificTipsOutput, SleepRegressionTipsOutput, StalePromptsOutput, WellnessQuestion, WellnessScreeningOutput} from "./types"
+import type {AppointmentNudgeOutput, BabyAssistantChatOutput, BabyContext, BabyVisitExplainerOutput, BirthPlanHeadlineOutput, ChatMessage, ChatTitleOutput, CheckInQuestion, ContextualMilestonesOutput, DailyCheckInQuestionsOutput, DailyLearningOutput, HospitalPackAdviceOutput, ImprovementSuggestions, LearningTip, MilestoneEnhancementOutput, MilestoneExplanationOutput, MilestoneSuggestion, NewbornMilestoneOutput, ParentTask, ParentTip, PersonalizedTasksOutput, PostpartumTipsInput, PostpartumTipsOutput, PregnancyWeekSummaryOutput, ResponseType, RoleSpecificTipsOutput, SleepRegressionTipsOutput, StalePromptsOutput, WellnessQuestion, WellnessScreeningOutput} from "./types"
 import type TypeBuilder from "./type_builder"
 import { AsyncHttpRequest, AsyncHttpStreamRequest } from "./async_request"
 import { LlmResponseParser, LlmStreamParser } from "./parser"
@@ -336,8 +336,56 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             }
             }
             
+        async DailyLearningContent(
+        postpartumDay: number,babyName: string,babySex?: string | null,firstTimeParent: boolean,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
+        __baml_options__?: BamlCallOptions<never>
+        ): Promise<types.DailyLearningOutput> {
+          try {
+          const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+          const signal = options.signal;
+
+          if (signal?.aborted) {
+          throw new BamlAbortError('Operation was aborted', signal.reason);
+          }
+
+          // Check if onTick is provided - route through streaming if so
+          if (options.onTick) {
+          const stream = this.stream.DailyLearningContent(
+          postpartumDay,babyName,babySex,firstTimeParent,recentChatTopics,achievedMilestones,activitySummary,parentWellness,medicalContext,
+          __baml_options__
+          );
+
+          return await stream.getFinalResponse();
+          }
+
+          const collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+          [options.collector]) : [];
+          const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+          const env: Record<string, string> = Object.fromEntries(
+            Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+            );
+            const raw = await this.runtime.callFunction(
+            "DailyLearningContent",
+            {
+            "postpartumDay": postpartumDay,"babyName": babyName,"babySex": babySex?? null,"firstTimeParent": firstTimeParent,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
+            },
+            this.ctxManager.cloneContext(),
+            options.tb?.__tb(),
+            options.clientRegistry,
+            collector,
+            options.tags || {},
+            env,
+            signal,
+            options.watchers,
+            )
+            return raw.parsed(false) as types.DailyLearningOutput
+            } catch (error) {
+            throw toBamlError(error);
+            }
+            }
+            
         async EnhanceMilestone(
-        milestoneTitle: string,milestoneDescription: string,milestoneType: string,ageLabel: string,babyName?: string | null,ageInDays?: number | null,
+        milestoneTitle: string,milestoneDescription: string,milestoneType: string,ageLabel: string,babyName?: string | null,babySex?: string | null,ageInDays?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
         __baml_options__?: BamlCallOptions<never>
         ): Promise<types.MilestoneEnhancementOutput> {
           try {
@@ -351,7 +399,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
           // Check if onTick is provided - route through streaming if so
           if (options.onTick) {
           const stream = this.stream.EnhanceMilestone(
-          milestoneTitle,milestoneDescription,milestoneType,ageLabel,babyName,ageInDays,
+          milestoneTitle,milestoneDescription,milestoneType,ageLabel,babyName,babySex,ageInDays,recentChatTopics,achievedMilestones,activitySummary,parentWellness,medicalContext,
           __baml_options__
           );
 
@@ -367,7 +415,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             const raw = await this.runtime.callFunction(
             "EnhanceMilestone",
             {
-            "milestoneTitle": milestoneTitle,"milestoneDescription": milestoneDescription,"milestoneType": milestoneType,"ageLabel": ageLabel,"babyName": babyName?? null,"ageInDays": ageInDays?? null
+            "milestoneTitle": milestoneTitle,"milestoneDescription": milestoneDescription,"milestoneType": milestoneType,"ageLabel": ageLabel,"babyName": babyName?? null,"babySex": babySex?? null,"ageInDays": ageInDays?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
             },
             this.ctxManager.cloneContext(),
             options.tb?.__tb(),
@@ -577,7 +625,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             }
             
         async NewbornWeekMilestone(
-        babyName: string,week: number,babySex?: string | null,firstPregnancy: boolean,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,headCircumference?: number | null,feedingCount24h?: number | null,sleepCount24h?: number | null,
+        babyName: string,week: number,babySex?: string | null,firstPregnancy: boolean,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,headCircumference?: number | null,feedingCount24h?: number | null,sleepCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
         __baml_options__?: BamlCallOptions<never>
         ): Promise<types.NewbornMilestoneOutput> {
           try {
@@ -591,7 +639,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
           // Check if onTick is provided - route through streaming if so
           if (options.onTick) {
           const stream = this.stream.NewbornWeekMilestone(
-          babyName,week,babySex,firstPregnancy,ageInDays,currentWeightOz,birthWeightOz,height,headCircumference,feedingCount24h,sleepCount24h,
+          babyName,week,babySex,firstPregnancy,ageInDays,currentWeightOz,birthWeightOz,height,headCircumference,feedingCount24h,sleepCount24h,recentChatTopics,achievedMilestones,activitySummary,parentWellness,medicalContext,
           __baml_options__
           );
 
@@ -607,7 +655,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             const raw = await this.runtime.callFunction(
             "NewbornWeekMilestone",
             {
-            "babyName": babyName,"week": week,"babySex": babySex?? null,"firstPregnancy": firstPregnancy,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"headCircumference": headCircumference?? null,"feedingCount24h": feedingCount24h?? null,"sleepCount24h": sleepCount24h?? null
+            "babyName": babyName,"week": week,"babySex": babySex?? null,"firstPregnancy": firstPregnancy,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"headCircumference": headCircumference?? null,"feedingCount24h": feedingCount24h?? null,"sleepCount24h": sleepCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
             },
             this.ctxManager.cloneContext(),
             options.tb?.__tb(),
@@ -673,7 +721,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             }
             
         async PostpartumTips(
-        babyName: string,day: number,firstPregnancy: boolean,ageInDays: number,ageInWeeks: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,headCircumference?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,diaperCount24h?: number | null,avgFeedingsPerDay?: number | null,avgSleepHoursPerDay?: number | null,avgDiaperChangesPerDay?: number | null,
+        input: types.PostpartumTipsInput,
         __baml_options__?: BamlCallOptions<never>
         ): Promise<types.PostpartumTipsOutput> {
           try {
@@ -687,7 +735,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
           // Check if onTick is provided - route through streaming if so
           if (options.onTick) {
           const stream = this.stream.PostpartumTips(
-          babyName,day,firstPregnancy,ageInDays,ageInWeeks,currentWeightOz,birthWeightOz,height,headCircumference,feedingCount24h,avgFeedingInterval,sleepCount24h,totalSleepHours24h,diaperCount24h,avgFeedingsPerDay,avgSleepHoursPerDay,avgDiaperChangesPerDay,
+          input,
           __baml_options__
           );
 
@@ -703,7 +751,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             const raw = await this.runtime.callFunction(
             "PostpartumTips",
             {
-            "babyName": babyName,"day": day,"firstPregnancy": firstPregnancy,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"headCircumference": headCircumference?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"totalSleepHours24h": totalSleepHours24h?? null,"diaperCount24h": diaperCount24h?? null,"avgFeedingsPerDay": avgFeedingsPerDay?? null,"avgSleepHoursPerDay": avgSleepHoursPerDay?? null,"avgDiaperChangesPerDay": avgDiaperChangesPerDay?? null
+            "input": input
             },
             this.ctxManager.cloneContext(),
             options.tb?.__tb(),
@@ -769,7 +817,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             }
             
         async RoleSpecificTips(
-        parentRole: string,ppDay?: number | null,babyAgeInDays: number,topic: string,recentSleepHours?: number | null,concerns?: string[] | null,
+        parentRole: string,ppDay?: number | null,babyAgeInDays: number,babyName?: string | null,babySex?: string | null,topic: string,recentSleepHours?: number | null,concerns?: string[] | null,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
         __baml_options__?: BamlCallOptions<never>
         ): Promise<types.RoleSpecificTipsOutput> {
           try {
@@ -783,7 +831,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
           // Check if onTick is provided - route through streaming if so
           if (options.onTick) {
           const stream = this.stream.RoleSpecificTips(
-          parentRole,ppDay,babyAgeInDays,topic,recentSleepHours,concerns,
+          parentRole,ppDay,babyAgeInDays,babyName,babySex,topic,recentSleepHours,concerns,recentChatTopics,achievedMilestones,activitySummary,parentWellness,medicalContext,
           __baml_options__
           );
 
@@ -799,7 +847,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
             const raw = await this.runtime.callFunction(
             "RoleSpecificTips",
             {
-            "parentRole": parentRole,"ppDay": ppDay?? null,"babyAgeInDays": babyAgeInDays,"topic": topic,"recentSleepHours": recentSleepHours?? null,"concerns": concerns?? null
+            "parentRole": parentRole,"ppDay": ppDay?? null,"babyAgeInDays": babyAgeInDays,"babyName": babyName?? null,"babySex": babySex?? null,"topic": topic,"recentSleepHours": recentSleepHours?? null,"concerns": concerns?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
             },
             this.ctxManager.cloneContext(),
             options.tb?.__tb(),
@@ -1352,8 +1400,74 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                   }
                   }
                   
+            DailyLearningContent(
+            postpartumDay: number,babyName: string,babySex?: string | null,firstTimeParent: boolean,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
+            __baml_options__?: BamlCallOptions<never>
+            ): BamlStream<partial_types.DailyLearningOutput, types.DailyLearningOutput>
+              {
+              try {
+              const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+              const signal = options.signal;
+
+              if (signal?.aborted) {
+              throw new BamlAbortError('Operation was aborted', signal.reason);
+              }
+
+              let collector = options.collector ? (Array.isArray(options.collector) ? options.collector :
+              [options.collector]) : [];
+
+              let onTickWrapper: (() => void) | undefined;
+
+              // Create collector and wrap onTick if provided
+              if (options.onTick) {
+              const tickCollector = new Collector("on-tick-collector");
+              collector = [...collector, tickCollector];
+
+              onTickWrapper = () => {
+              const log = tickCollector.last;
+              if (log) {
+              try {
+              options.onTick!("Unknown", log);
+              } catch (error) {
+              console.error("Error in onTick callback for DailyLearningContent", error);
+              }
+              }
+              };
+              }
+
+              const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+              const env: Record<string, string> = Object.fromEntries(
+                Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+                );
+                const raw = this.runtime.streamFunction(
+                "DailyLearningContent",
+                {
+                "postpartumDay": postpartumDay,"babyName": babyName,"babySex": babySex ?? null,"firstTimeParent": firstTimeParent,"recentChatTopics": recentChatTopics ?? null,"achievedMilestones": achievedMilestones ?? null,"activitySummary": activitySummary ?? null,"parentWellness": parentWellness ?? null,"medicalContext": medicalContext ?? null
+                },
+                undefined,
+                this.ctxManager.cloneContext(),
+                options.tb?.__tb(),
+                options.clientRegistry,
+                collector,
+                options.tags || {},
+                env,
+                signal,
+                onTickWrapper,
+                )
+                return new BamlStream<partial_types.DailyLearningOutput, types.DailyLearningOutput>(
+                  raw,
+                  (a): partial_types.DailyLearningOutput => a,
+                  (a): types.DailyLearningOutput => a,
+                  this.ctxManager.cloneContext(),
+                  options.signal,
+                  )
+                  } catch (error) {
+                  throw toBamlError(error);
+                  }
+                  }
+                  
             EnhanceMilestone(
-            milestoneTitle: string,milestoneDescription: string,milestoneType: string,ageLabel: string,babyName?: string | null,ageInDays?: number | null,
+            milestoneTitle: string,milestoneDescription: string,milestoneType: string,ageLabel: string,babyName?: string | null,babySex?: string | null,ageInDays?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
             __baml_options__?: BamlCallOptions<never>
             ): BamlStream<partial_types.MilestoneEnhancementOutput, types.MilestoneEnhancementOutput>
               {
@@ -1394,7 +1508,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                 const raw = this.runtime.streamFunction(
                 "EnhanceMilestone",
                 {
-                "milestoneTitle": milestoneTitle,"milestoneDescription": milestoneDescription,"milestoneType": milestoneType,"ageLabel": ageLabel,"babyName": babyName ?? null,"ageInDays": ageInDays ?? null
+                "milestoneTitle": milestoneTitle,"milestoneDescription": milestoneDescription,"milestoneType": milestoneType,"ageLabel": ageLabel,"babyName": babyName ?? null,"babySex": babySex ?? null,"ageInDays": ageInDays ?? null,"recentChatTopics": recentChatTopics ?? null,"achievedMilestones": achievedMilestones ?? null,"activitySummary": activitySummary ?? null,"parentWellness": parentWellness ?? null,"medicalContext": medicalContext ?? null
                 },
                 undefined,
                 this.ctxManager.cloneContext(),
@@ -1683,7 +1797,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                   }
                   
             NewbornWeekMilestone(
-            babyName: string,week: number,babySex?: string | null,firstPregnancy: boolean,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,headCircumference?: number | null,feedingCount24h?: number | null,sleepCount24h?: number | null,
+            babyName: string,week: number,babySex?: string | null,firstPregnancy: boolean,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,headCircumference?: number | null,feedingCount24h?: number | null,sleepCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
             __baml_options__?: BamlCallOptions<never>
             ): BamlStream<partial_types.NewbornMilestoneOutput, types.NewbornMilestoneOutput>
               {
@@ -1724,7 +1838,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                 const raw = this.runtime.streamFunction(
                 "NewbornWeekMilestone",
                 {
-                "babyName": babyName,"week": week,"babySex": babySex ?? null,"firstPregnancy": firstPregnancy,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz ?? null,"birthWeightOz": birthWeightOz ?? null,"height": height ?? null,"headCircumference": headCircumference ?? null,"feedingCount24h": feedingCount24h ?? null,"sleepCount24h": sleepCount24h ?? null
+                "babyName": babyName,"week": week,"babySex": babySex ?? null,"firstPregnancy": firstPregnancy,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz ?? null,"birthWeightOz": birthWeightOz ?? null,"height": height ?? null,"headCircumference": headCircumference ?? null,"feedingCount24h": feedingCount24h ?? null,"sleepCount24h": sleepCount24h ?? null,"recentChatTopics": recentChatTopics ?? null,"achievedMilestones": achievedMilestones ?? null,"activitySummary": activitySummary ?? null,"parentWellness": parentWellness ?? null,"medicalContext": medicalContext ?? null
                 },
                 undefined,
                 this.ctxManager.cloneContext(),
@@ -1815,7 +1929,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                   }
                   
             PostpartumTips(
-            babyName: string,day: number,firstPregnancy: boolean,ageInDays: number,ageInWeeks: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,headCircumference?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,diaperCount24h?: number | null,avgFeedingsPerDay?: number | null,avgSleepHoursPerDay?: number | null,avgDiaperChangesPerDay?: number | null,
+            input: types.PostpartumTipsInput,
             __baml_options__?: BamlCallOptions<never>
             ): BamlStream<partial_types.PostpartumTipsOutput, types.PostpartumTipsOutput>
               {
@@ -1856,7 +1970,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                 const raw = this.runtime.streamFunction(
                 "PostpartumTips",
                 {
-                "babyName": babyName,"day": day,"firstPregnancy": firstPregnancy,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"currentWeightOz": currentWeightOz ?? null,"birthWeightOz": birthWeightOz ?? null,"height": height ?? null,"headCircumference": headCircumference ?? null,"feedingCount24h": feedingCount24h ?? null,"avgFeedingInterval": avgFeedingInterval ?? null,"sleepCount24h": sleepCount24h ?? null,"totalSleepHours24h": totalSleepHours24h ?? null,"diaperCount24h": diaperCount24h ?? null,"avgFeedingsPerDay": avgFeedingsPerDay ?? null,"avgSleepHoursPerDay": avgSleepHoursPerDay ?? null,"avgDiaperChangesPerDay": avgDiaperChangesPerDay ?? null
+                "input": input
                 },
                 undefined,
                 this.ctxManager.cloneContext(),
@@ -1947,7 +2061,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                   }
                   
             RoleSpecificTips(
-            parentRole: string,ppDay?: number | null,babyAgeInDays: number,topic: string,recentSleepHours?: number | null,concerns?: string[] | null,
+            parentRole: string,ppDay?: number | null,babyAgeInDays: number,babyName?: string | null,babySex?: string | null,topic: string,recentSleepHours?: number | null,concerns?: string[] | null,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
             __baml_options__?: BamlCallOptions<never>
             ): BamlStream<partial_types.RoleSpecificTipsOutput, types.RoleSpecificTipsOutput>
               {
@@ -1988,7 +2102,7 @@ export type RecursivePartialNull<T> = MovedRecursivePartialNull<T>
                 const raw = this.runtime.streamFunction(
                 "RoleSpecificTips",
                 {
-                "parentRole": parentRole,"ppDay": ppDay ?? null,"babyAgeInDays": babyAgeInDays,"topic": topic,"recentSleepHours": recentSleepHours ?? null,"concerns": concerns ?? null
+                "parentRole": parentRole,"ppDay": ppDay ?? null,"babyAgeInDays": babyAgeInDays,"babyName": babyName ?? null,"babySex": babySex ?? null,"topic": topic,"recentSleepHours": recentSleepHours ?? null,"concerns": concerns ?? null,"recentChatTopics": recentChatTopics ?? null,"achievedMilestones": achievedMilestones ?? null,"activitySummary": activitySummary ?? null,"parentWellness": parentWellness ?? null,"medicalContext": medicalContext ?? null
                 },
                 undefined,
                 this.ctxManager.cloneContext(),

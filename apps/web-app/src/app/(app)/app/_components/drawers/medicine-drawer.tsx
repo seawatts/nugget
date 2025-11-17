@@ -12,13 +12,7 @@ export function MedicineDrawer() {
   const [notes, setNotes] = useState('');
 
   const handleSave = () => {
-    console.log('[v0] Saving medicine:', {
-      dosage,
-      medicineName,
-      notes,
-      timestamp: new Date(),
-      unit,
-    });
+    // TODO: Implement save functionality
   };
 
   return (

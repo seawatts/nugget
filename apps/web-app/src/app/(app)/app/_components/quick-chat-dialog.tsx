@@ -48,6 +48,8 @@ interface QuickChatDialogContentProps {
   title?: string;
   contextType?: string; // e.g., 'learning_tip', 'milestone'
   contextId?: string; // e.g., tip ID
+  prefillMessage?: string; // Pre-fill the input with this message
+  autoSendPrefill?: boolean; // Auto-send the pre-filled message
 }
 
 export function QuickChatDialogContent({
@@ -58,16 +60,19 @@ export function QuickChatDialogContent({
   title = 'Quick Chat',
   contextType,
   contextId,
+  prefillMessage,
+  autoSendPrefill = false,
 }: QuickChatDialogContentProps) {
   const { userId } = useAuth();
   const { user } = useUser();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(prefillMessage || '');
   const [isSending, setIsSending] = useState(false);
   const [chatId, setChatId] = useState<string | null>(null);
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const hasAutoSent = useRef(false);
 
   const { executeAsync: findOrCreateChat } = useAction(
     findOrCreateContextChatAction,
@@ -136,10 +141,36 @@ export function QuickChatDialogContent({
     }, 100);
   }, []);
 
-  // Auto-scroll to bottom
+  // Auto-send prefilled message if requested
+  // biome-ignore lint/correctness/useExhaustiveDependencies: handleSendMessage is defined below and causes circular dependency
+  useEffect(() => {
+    if (
+      autoSendPrefill &&
+      prefillMessage &&
+      !hasAutoSent.current &&
+      !isLoadingChat &&
+      chatId
+    ) {
+      hasAutoSent.current = true;
+      void handleSendMessage(prefillMessage);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSendPrefill, prefillMessage, isLoadingChat, chatId]);
+
+  // Auto-scroll to bottom when messages change (including during streaming)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: messages is intentionally included to trigger scroll on every message update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
+
+  const handleInputFocus = useCallback(() => {
+    // Small delay to allow keyboard to appear
+    setTimeout(() => {
+      inputRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }, 300);
   }, []);
 
   const handleSendMessage = useCallback(
@@ -319,6 +350,7 @@ export function QuickChatDialogContent({
             )}
             disabled={isSending}
             onChange={(event) => setInput(event.target.value)}
+            onFocus={handleInputFocus}
             placeholder={placeholder}
             ref={inputRef}
             type="text"
@@ -349,6 +381,8 @@ interface QuickChatDialogProps {
   onOpenChange?: (open: boolean) => void;
   contextType?: string; // e.g., 'learning_tip', 'milestone'
   contextId?: string; // e.g., tip ID
+  prefillMessage?: string; // Pre-fill the input with this message
+  autoSendPrefill?: boolean; // Auto-send the pre-filled message
 }
 
 /**
@@ -390,6 +424,8 @@ export function QuickChatDialog({
   onOpenChange,
   contextType,
   contextId,
+  prefillMessage,
+  autoSendPrefill,
 }: QuickChatDialogProps) {
   const isDesktop = useMediaQuery({ query: '(min-width: 768px)' });
   const [isOpen, setIsOpen] = useState(open ?? false);
@@ -401,11 +437,13 @@ export function QuickChatDialog({
 
   const commonContent = (
     <QuickChatDialogContent
+      autoSendPrefill={autoSendPrefill}
       babyId={babyId}
       contextId={contextId}
       contextType={contextType}
       initialMessages={initialMessages}
       placeholder={placeholder}
+      prefillMessage={prefillMessage}
       systemPrompt={systemPrompt}
       title={title}
     />

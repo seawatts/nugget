@@ -19,6 +19,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { FeatureCard } from '~/components/feature-card';
 import type { ColorConfig } from '~/components/feature-card.types';
 import { getContextChatReplyAction } from '../chat/actions';
+import { saveMilestoneQuestionResponseAction } from './milestone-question.actions';
 import { QuickChatDialog } from './quick-chat-dialog';
 
 interface MilestoneCardProps {
@@ -32,6 +33,12 @@ interface MilestoneCardProps {
   followUpQuestion: string;
   summary?: string;
   babyId?: string;
+  // Yes/No question fields
+  isYesNoQuestion?: boolean | null;
+  openChatOnYes?: boolean | null;
+  openChatOnNo?: boolean | null;
+  yesResponsePrompt?: string | null;
+  noResponsePrompt?: string | null;
 }
 
 interface ChatReplier {
@@ -105,10 +112,19 @@ export function MilestoneCard({
   followUpQuestion,
   summary,
   babyId,
+  isYesNoQuestion,
+  openChatOnYes,
+  openChatOnNo,
+  yesResponsePrompt,
+  noResponsePrompt,
 }: MilestoneCardProps) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [repliers, setRepliers] = useState<ChatReplier[]>([]);
+  const [prefillMessage, setPrefillMessage] = useState<string | undefined>();
   const { executeAsync: fetchRepliers } = useAction(getContextChatReplyAction);
+  const { executeAsync: saveResponse } = useAction(
+    saveMilestoneQuestionResponseAction,
+  );
   const config = typeConfig[type];
   const Icon = config.icon;
 
@@ -148,6 +164,57 @@ export function MilestoneCard({
     }
   }, [isChatOpen, loadRepliers]);
 
+  // Handler for yes/no button clicks
+  const handleYesNoClick = useCallback(
+    async (answer: 'yes' | 'no') => {
+      if (!babyId) return;
+
+      try {
+        // Save the response
+        const result = await saveResponse({
+          answer,
+          babyId,
+          contextId: `${type}-${title}`,
+          contextType: 'milestone',
+          question: followUpQuestion,
+        });
+
+        // Check for errors from the action
+        if (result?.serverError) {
+          console.error('Error saving response:', result.serverError);
+          return;
+        }
+
+        // Check if we should open chat
+        const shouldOpenChat =
+          (answer === 'yes' && openChatOnYes) ||
+          (answer === 'no' && openChatOnNo);
+
+        if (shouldOpenChat) {
+          const prompt =
+            answer === 'yes' ? yesResponsePrompt : noResponsePrompt;
+          if (prompt) {
+            setPrefillMessage(prompt);
+          }
+          setIsChatOpen(true);
+        }
+      } catch (error) {
+        console.error('Unexpected error:', error);
+      }
+    },
+    [
+      babyId,
+      type,
+      title,
+      followUpQuestion,
+      openChatOnYes,
+      openChatOnNo,
+      yesResponsePrompt,
+      noResponsePrompt,
+      saveResponse,
+    ],
+  );
+
   const colorConfig: ColorConfig = {
     border: config.borderColor,
     card: config.bgColor,
@@ -163,29 +230,37 @@ export function MilestoneCard({
       colorConfig={colorConfig}
       variant="custom"
     >
-      {/* Completed Badge */}
-      {isCompleted && (
-        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 rounded-full bg-green-500 px-2 py-1 shadow-sm">
-          <Check className="size-3 text-white" />
-          <span className="text-xs font-medium text-white">Done</span>
-        </div>
-      )}
-
       {/* Header with icon and type */}
       <FeatureCard.Header
-        className={`flex items-center gap-3 ${config.bgColor} p-5`}
+        className={`flex flex-col gap-3 ${config.bgColor} p-5`}
         colorConfig={colorConfig}
       >
-        <Icon className="size-6 shrink-0" />
-        <div className="min-w-0 flex-1">
-          <h3 className="font-semibold text-sm">{title}</h3>
-          <p className="text-xs text-muted-foreground">{config.label}</p>
-        </div>
-        {ageLabel && (
-          <div className="inline-block w-fit rounded-full bg-primary/20 px-2 py-0.5">
-            <P className="text-xs font-medium text-primary">{ageLabel}</P>
+        <div className="flex items-center gap-3">
+          <Icon className="size-6 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <h3 className="font-semibold text-sm">{title}</h3>
+            <p className="text-xs text-muted-foreground">{config.label}</p>
           </div>
-        )}
+          {ageLabel && (
+            <div className="inline-block w-fit rounded-full bg-primary/20 px-2 py-0.5 shrink-0">
+              <P className="text-xs font-medium text-primary">{ageLabel}</P>
+            </div>
+          )}
+        </div>
+        <Button
+          className={
+            isCompleted
+              ? 'bg-green-600 hover:bg-green-600 text-white font-semibold shadow-sm cursor-default h-8 w-full'
+              : 'bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md hover:shadow-lg transition-all h-8 w-full'
+          }
+          disabled={isCompleted}
+          onClick={onMarkComplete}
+          variant="default"
+        >
+          <span className="text-xs">
+            {isCompleted ? 'Completed' : 'Complete'}
+          </span>
+        </Button>
       </FeatureCard.Header>
 
       {/* Scrollable Content Area */}
@@ -242,9 +317,30 @@ export function MilestoneCard({
           </div>
         )}
 
-        {/* Buttons */}
-        <div className="flex flex-col gap-2.5 w-full">
-          {babyId && followUpQuestion && (
+        {/* Yes/No Buttons or Answer Button */}
+        {babyId &&
+          followUpQuestion &&
+          (isYesNoQuestion ? (
+            <div className="flex gap-2 w-full">
+              <Button
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => handleYesNoClick('yes')}
+                size="sm"
+                variant="default"
+              >
+                <Check className="size-4 mr-2" />
+                Yes
+              </Button>
+              <Button
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                onClick={() => handleYesNoClick('no')}
+                size="sm"
+                variant="default"
+              >
+                No
+              </Button>
+            </div>
+          ) : (
             <Button
               className="w-full justify-center"
               onClick={() => setIsChatOpen(true)}
@@ -282,23 +378,13 @@ export function MilestoneCard({
                 </div>
               )}
             </Button>
-          )}
-          <Button
-            className="w-full"
-            disabled={isCompleted}
-            onClick={onMarkComplete}
-            size="sm"
-            variant={isCompleted ? 'default' : 'outline'}
-          >
-            <Check className="size-4 mr-2" />
-            {isCompleted ? 'Completed' : 'Mark Complete'}
-          </Button>
-        </div>
+          ))}
       </FeatureCard.Footer>
 
       {/* Chat Dialog */}
       {babyId && followUpQuestion && (
         <QuickChatDialog
+          autoSendPrefill={!!prefillMessage}
           babyId={babyId}
           contextId={`${type}-${title}`}
           contextType="milestone"
@@ -312,6 +398,7 @@ export function MilestoneCard({
           ]}
           onOpenChange={setIsChatOpen}
           open={isChatOpen}
+          prefillMessage={prefillMessage}
           title="Nugget AI"
           trigger={<span style={{ display: 'none' }} />}
         />

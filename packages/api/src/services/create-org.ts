@@ -185,9 +185,6 @@ async function autoSubscribeToFreePlan({
       })
       .where(eq(Families.id, orgId));
 
-    console.log(
-      `Auto-subscribed org ${orgId} to free plan with subscription ${subscription.id}`,
-    );
     return subscription;
   } catch (error) {
     if (error instanceof Error) {
@@ -330,11 +327,6 @@ export async function createOrg({
     });
 
     if (finalCheckOrg) {
-      console.log(
-        'Organization was created by another process (likely webhook), using existing org:',
-        finalCheckOrg.id,
-      );
-
       return {
         org: {
           id: finalCheckOrg.clerkOrgId,
@@ -362,25 +354,12 @@ export async function createOrg({
           userId,
         })
         .onConflictDoNothing();
-      console.log(
-        'Created family member record for org creator:',
-        userId,
-        'in org:',
-        org.id,
-      );
     } catch (error) {
       console.error('Failed to create family member for org creator:', error);
       // Don't throw - the webhook will handle this if it fails here
     }
 
     // Create or update Stripe customer
-    console.log(
-      'Creating/updating Stripe customer for org:',
-      org.id,
-      'name:',
-      name,
-    );
-
     let stripeCustomer: Stripe.Customer;
     try {
       stripeCustomer = await upsertStripeCustomer({
@@ -407,13 +386,6 @@ export async function createOrg({
         `Failed to create or get Stripe customer for orgId: ${org.id}, name: ${name}, email: ${userEmail}`,
       );
     }
-
-    console.log(
-      'Stripe customer created/updated:',
-      stripeCustomer.id,
-      'for org:',
-      org.id,
-    );
 
     // Run database updates and Clerk update in parallel
     await Promise.all([

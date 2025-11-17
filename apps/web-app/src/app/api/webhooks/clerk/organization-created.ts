@@ -9,7 +9,6 @@ export async function handleOrganizationCreated(event: WebhookEvent) {
   const orgData = event.data as OrganizationJSON;
 
   if (!orgData.created_by) {
-    console.log('No created_by field in organization creation event', orgData);
     return new Response('', { status: 200 });
   }
 
@@ -19,7 +18,6 @@ export async function handleOrganizationCreated(event: WebhookEvent) {
   });
 
   if (!createdByUser) {
-    console.log('User not found for organization creation', orgData.created_by);
     return new Response('', { status: 200 });
   }
 

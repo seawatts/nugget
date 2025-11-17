@@ -162,9 +162,6 @@ async function autoSubscribeToFreePlan({
       })
       .where(eq(Families.id, orgId));
 
-    console.log(
-      `Auto-subscribed org ${orgId} to free plan with subscription ${subscription.id}`,
-    );
     return subscription;
   } catch (error) {
     if (error instanceof Error) {
@@ -317,22 +314,11 @@ async function findExistingOrg({
 
   // Check 2: If orgId is provided, check if organization already exists
   if (existingOrgByOrgId) {
-    console.log(
-      'Organization already exists for orgId:',
-      orgId,
-      'using existing org:',
-      existingOrgByOrgId.id,
-    );
     return { org: existingOrgByOrgId, reason: 'existing_org_id' };
   }
 
   // Check 3: User has created any organization
   if (existingOrgByUser && !orgId) {
-    console.log(
-      'User already has an organization:',
-      existingOrgByUser.id,
-      'using existing org',
-    );
     return { org: existingOrgByUser, reason: 'existing_user_org' };
   }
 
@@ -503,10 +489,6 @@ export async function upsertOrg({
     });
 
     if (finalCheckOrg) {
-      console.log(
-        'Organization was created by another process (likely webhook), using existing org:',
-        finalCheckOrg.id,
-      );
       return buildOrgResult({
         org: finalCheckOrg,
         tx,
@@ -523,13 +505,6 @@ export async function upsertOrg({
     });
 
     // Create or update Stripe customer
-    console.log(
-      'Creating/updating Stripe customer for org:',
-      org.id,
-      'name:',
-      name,
-    );
-
     let stripeCustomer: Stripe.Customer;
     try {
       stripeCustomer = await upsertStripeCustomer({
@@ -556,13 +531,6 @@ export async function upsertOrg({
         `Failed to create or get Stripe customer for orgId: ${org.id}, name: ${name}, email: ${userEmail}`,
       );
     }
-
-    console.log(
-      'Stripe customer created/updated:',
-      stripeCustomer.id,
-      'for org:',
-      org.id,
-    );
 
     // Run database updates and Clerk update in parallel
     await Promise.all([

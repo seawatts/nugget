@@ -19,11 +19,7 @@ export function BathDrawer() {
   };
 
   const handleSave = () => {
-    console.log('[v0] Saving bath:', {
-      notes,
-      products,
-      timestamp: new Date(),
-    });
+    // TODO: Implement save functionality
   };
 
   return (

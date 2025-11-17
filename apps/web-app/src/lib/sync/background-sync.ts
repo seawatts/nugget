@@ -175,13 +175,6 @@ export async function fetchWithSync(
 
 // Initialize sync listener when service worker is ready
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.ready.then((registration) => {
-    // Listen for sync events
-    if ('sync' in registration) {
-      console.log('Background sync is supported');
-    }
-  });
-
   // Process queue when coming back online
   window.addEventListener('online', () => {
     const syncManager = BackgroundSyncManager.getInstance();

@@ -18,11 +18,6 @@ export default clerkMiddleware(async (auth, request) => {
 
     // All app routes require org except onboarding
     if (authResponse.userId && !authResponse.orgId && !isOnboardingPage) {
-      console.log('Redirecting to onboarding - org required', {
-        orgId: authResponse.orgId,
-        pathname: request.nextUrl.pathname,
-        userId: authResponse.userId,
-      });
       const url = request.nextUrl.clone();
       url.pathname = '/app/onboarding';
       url.searchParams.set('redirectTo', request.nextUrl.pathname);

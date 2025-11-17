@@ -22,10 +22,6 @@ export async function handleOrganizationMembershipUpdated(event: WebhookEvent) {
   ]);
 
   if (!user || !org) {
-    console.log('User or org not found for membership update', {
-      orgId: membershipData.organization.id,
-      userId: membershipData.public_user_data.user_id,
-    });
     return new Response('', { status: 200 });
   }
 

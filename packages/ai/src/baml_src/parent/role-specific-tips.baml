@@ -24,14 +24,22 @@ function RoleSpecificTips(
   parentRole: string,
   ppDay: int?,
   babyAgeInDays: int,
+  babyName: string?,
+  babySex: string?,
   topic: string,
   recentSleepHours: float?,
-  concerns: string[]?
+  concerns: string[]?,
+  // Rich context from database
+  recentChatTopics: string?,
+  achievedMilestones: string?,
+  activitySummary: string?,
+  parentWellness: string?,
+  medicalContext: string?
 ) -> RoleSpecificTipsOutput {
   client CustomGPT4oMini
   prompt #"
     {{_.role("system")}}
-    You are a specialized parenting coach providing role-specific support and guidance.
+    You are a specialized parenting coach providing role-specific support and guidance grounded in evidence-based research.
 
     Your expertise includes:
     - Postpartum recovery for birthing parents
@@ -74,9 +82,57 @@ function RoleSpecificTips(
     - Role: {{parentRole}}
     {% if ppDay %}- Postpartum day: {{ppDay}}{% endif %}
     - Baby age: {{babyAgeInDays}} days
+    {% if babyName %}- Baby: {{babyName}}{% endif %}
+    {% if babySex %}Sex: {{babySex}}
+    CRITICAL: Use grammatically correct pronouns when referencing the baby:
+    {% if babySex == "M" or babySex == "male" %}
+    - Use: he, him, his (e.g., "When he cries", "Comfort him", "His needs")
+    {% elif babySex == "F" or babySex == "female" %}
+    - Use: she, her, hers (e.g., "When she cries", "Comfort her", "Her needs")
+    {% else %}
+    - Use: they, them, their (e.g., "When they cry", "Comfort them", "Their needs")
+    {% endif %}
+    {% else %}
+    - Use gender-neutral: they, them, their when sex is unknown
+    {% endif %}
     - Topic focus: {{topic}}
     {% if recentSleepHours %}- Recent sleep: {{recentSleepHours}}h{% endif %}
     {% if concerns and concerns|length > 0 %}- Recent concerns: {{concerns|join(", ")}}{% endif %}
+
+    {% if recentChatTopics %}
+    ═══════════════════════════════════════════════════════════════
+    RECENT DISCUSSION CONTEXT
+    ═══════════════════════════════════════════════════════════════
+    {{recentChatTopics}}
+    {% endif %}
+
+    {% if achievedMilestones %}
+    ═══════════════════════════════════════════════════════════════
+    RECENTLY ACHIEVED MILESTONES
+    ═══════════════════════════════════════════════════════════════
+    {{achievedMilestones}}
+    {% endif %}
+
+    {% if activitySummary %}
+    ═══════════════════════════════════════════════════════════════
+    DETAILED ACTIVITY SUMMARY (LAST 3 DAYS)
+    ═══════════════════════════════════════════════════════════════
+    {{activitySummary}}
+    {% endif %}
+
+    {% if parentWellness %}
+    ═══════════════════════════════════════════════════════════════
+    PARENT WELLNESS CONTEXT
+    ═══════════════════════════════════════════════════════════════
+    {{parentWellness}}
+    {% endif %}
+
+    {% if medicalContext %}
+    ═══════════════════════════════════════════════════════════════
+    MEDICAL CONTEXT
+    ═══════════════════════════════════════════════════════════════
+    {{medicalContext}}
+    {% endif %}
 
     Topic Guidance:
     {% if topic == "sleep_deprivation" %}
@@ -100,9 +156,13 @@ function RoleSpecificTips(
     - relevantToRole: One sentence on why this matters for THEIR specific role
 
     Make tips:
+    - Evidence-based when possible - reference research findings
+    - Cite AAP, WHO, or ACOG guidelines for medical/health advice
+    - Distinguish between "research shows" and "many parents find"
+    - Acknowledge where evidence is limited
+    - Include phrases like "Studies suggest", "Research indicates", "AAP recommends"
     - Specific to their role's unique needs and challenges
     - Actionable and practical (not just "be positive")
-    - Evidence-based when possible
     - Empathetic and non-judgmental
     - Acknowledge the difficulty of their situation
     - Empower them with knowledge and choices

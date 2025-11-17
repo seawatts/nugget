@@ -132,7 +132,7 @@ Format this as a clear, organized guide with sections, bullet points, and a warm
           title: 'Caregiver Instructions',
           url: viewUrl,
         })
-        .catch((err) => console.log('Error sharing:', err));
+        .catch((err) => console.error('Error sharing:', err));
     } else {
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(viewUrl);

@@ -23,7 +23,7 @@ import type { BamlRuntime, BamlCtxManager, ClientRegistry, Image, Audio, Pdf, Vi
 import { toBamlError, HTTPRequest } from "@boundaryml/baml"
 import type { Checked, Check } from "./types"
 import type * as types from "./types"
-import type {AppointmentNudgeOutput, BabyAssistantChatOutput, BabyContext, BabyVisitExplainerOutput, BirthPlanHeadlineOutput, ChatMessage, ChatTitleOutput, CheckInQuestion, ContextualMilestonesOutput, DailyCheckInQuestionsOutput, HospitalPackAdviceOutput, ImprovementSuggestions, LearningTip, MilestoneEnhancementOutput, MilestoneExplanationOutput, MilestoneSuggestion, NewbornMilestoneOutput, ParentTask, ParentTip, PersonalizedTasksOutput, PostpartumTipsOutput, PregnancyWeekSummaryOutput, ResponseType, RoleSpecificTipsOutput, SleepRegressionTipsOutput, StalePromptsOutput, WellnessQuestion, WellnessScreeningOutput} from "./types"
+import type {AppointmentNudgeOutput, BabyAssistantChatOutput, BabyContext, BabyVisitExplainerOutput, BirthPlanHeadlineOutput, ChatMessage, ChatTitleOutput, CheckInQuestion, ContextualMilestonesOutput, DailyCheckInQuestionsOutput, DailyLearningOutput, HospitalPackAdviceOutput, ImprovementSuggestions, LearningTip, MilestoneEnhancementOutput, MilestoneExplanationOutput, MilestoneSuggestion, NewbornMilestoneOutput, ParentTask, ParentTip, PersonalizedTasksOutput, PostpartumTipsInput, PostpartumTipsOutput, PregnancyWeekSummaryOutput, ResponseType, RoleSpecificTipsOutput, SleepRegressionTipsOutput, StalePromptsOutput, WellnessQuestion, WellnessScreeningOutput} from "./types"
 import type TypeBuilder from "./type_builder"
 import type * as events from "./events"
 
@@ -166,8 +166,33 @@ env?: Record<string, string | undefined>
       }
       }
       
+  async DailyLearningContent(
+  postpartumDay: number,babyName: string,babySex?: string | null,firstTimeParent: boolean,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
+  __baml_options__?: BamlCallOptions<never>
+  ): Promise<HTTPRequest> {
+    try {
+    const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+    const env: Record<string, string> = Object.fromEntries(
+      Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return await this.runtime.buildRequest(
+      "DailyLearningContent",
+      {
+      "postpartumDay": postpartumDay,"babyName": babyName,"babySex": babySex?? null,"firstTimeParent": firstTimeParent,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
+      },
+      this.ctxManager.cloneContext(),
+      __baml_options__?.tb?.__tb(),
+      __baml_options__?.clientRegistry,
+      false,
+      env
+      )
+      } catch (error) {
+      throw toBamlError(error);
+      }
+      }
+      
   async EnhanceMilestone(
-  milestoneTitle: string,milestoneDescription: string,milestoneType: string,ageLabel: string,babyName?: string | null,ageInDays?: number | null,
+  milestoneTitle: string,milestoneDescription: string,milestoneType: string,ageLabel: string,babyName?: string | null,babySex?: string | null,ageInDays?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
   __baml_options__?: BamlCallOptions<never>
   ): Promise<HTTPRequest> {
     try {
@@ -178,7 +203,7 @@ env?: Record<string, string | undefined>
       return await this.runtime.buildRequest(
       "EnhanceMilestone",
       {
-      "milestoneTitle": milestoneTitle,"milestoneDescription": milestoneDescription,"milestoneType": milestoneType,"ageLabel": ageLabel,"babyName": babyName?? null,"ageInDays": ageInDays?? null
+      "milestoneTitle": milestoneTitle,"milestoneDescription": milestoneDescription,"milestoneType": milestoneType,"ageLabel": ageLabel,"babyName": babyName?? null,"babySex": babySex?? null,"ageInDays": ageInDays?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
       },
       this.ctxManager.cloneContext(),
       __baml_options__?.tb?.__tb(),
@@ -292,7 +317,7 @@ env?: Record<string, string | undefined>
       }
       
   async NewbornWeekMilestone(
-  babyName: string,week: number,babySex?: string | null,firstPregnancy: boolean,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,headCircumference?: number | null,feedingCount24h?: number | null,sleepCount24h?: number | null,
+  babyName: string,week: number,babySex?: string | null,firstPregnancy: boolean,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,headCircumference?: number | null,feedingCount24h?: number | null,sleepCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
   __baml_options__?: BamlCallOptions<never>
   ): Promise<HTTPRequest> {
     try {
@@ -303,7 +328,7 @@ env?: Record<string, string | undefined>
       return await this.runtime.buildRequest(
       "NewbornWeekMilestone",
       {
-      "babyName": babyName,"week": week,"babySex": babySex?? null,"firstPregnancy": firstPregnancy,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"headCircumference": headCircumference?? null,"feedingCount24h": feedingCount24h?? null,"sleepCount24h": sleepCount24h?? null
+      "babyName": babyName,"week": week,"babySex": babySex?? null,"firstPregnancy": firstPregnancy,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"headCircumference": headCircumference?? null,"feedingCount24h": feedingCount24h?? null,"sleepCount24h": sleepCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
       },
       this.ctxManager.cloneContext(),
       __baml_options__?.tb?.__tb(),
@@ -342,7 +367,7 @@ env?: Record<string, string | undefined>
       }
       
   async PostpartumTips(
-  babyName: string,day: number,firstPregnancy: boolean,ageInDays: number,ageInWeeks: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,headCircumference?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,diaperCount24h?: number | null,avgFeedingsPerDay?: number | null,avgSleepHoursPerDay?: number | null,avgDiaperChangesPerDay?: number | null,
+  input: types.PostpartumTipsInput,
   __baml_options__?: BamlCallOptions<never>
   ): Promise<HTTPRequest> {
     try {
@@ -353,7 +378,7 @@ env?: Record<string, string | undefined>
       return await this.runtime.buildRequest(
       "PostpartumTips",
       {
-      "babyName": babyName,"day": day,"firstPregnancy": firstPregnancy,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"headCircumference": headCircumference?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"totalSleepHours24h": totalSleepHours24h?? null,"diaperCount24h": diaperCount24h?? null,"avgFeedingsPerDay": avgFeedingsPerDay?? null,"avgSleepHoursPerDay": avgSleepHoursPerDay?? null,"avgDiaperChangesPerDay": avgDiaperChangesPerDay?? null
+      "input": input
       },
       this.ctxManager.cloneContext(),
       __baml_options__?.tb?.__tb(),
@@ -392,7 +417,7 @@ env?: Record<string, string | undefined>
       }
       
   async RoleSpecificTips(
-  parentRole: string,ppDay?: number | null,babyAgeInDays: number,topic: string,recentSleepHours?: number | null,concerns?: string[] | null,
+  parentRole: string,ppDay?: number | null,babyAgeInDays: number,babyName?: string | null,babySex?: string | null,topic: string,recentSleepHours?: number | null,concerns?: string[] | null,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
   __baml_options__?: BamlCallOptions<never>
   ): Promise<HTTPRequest> {
     try {
@@ -403,7 +428,7 @@ env?: Record<string, string | undefined>
       return await this.runtime.buildRequest(
       "RoleSpecificTips",
       {
-      "parentRole": parentRole,"ppDay": ppDay?? null,"babyAgeInDays": babyAgeInDays,"topic": topic,"recentSleepHours": recentSleepHours?? null,"concerns": concerns?? null
+      "parentRole": parentRole,"ppDay": ppDay?? null,"babyAgeInDays": babyAgeInDays,"babyName": babyName?? null,"babySex": babySex?? null,"topic": topic,"recentSleepHours": recentSleepHours?? null,"concerns": concerns?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
       },
       this.ctxManager.cloneContext(),
       __baml_options__?.tb?.__tb(),
@@ -647,8 +672,33 @@ env?: Record<string, string | undefined>
           }
           }
           
+      async DailyLearningContent(
+      postpartumDay: number,babyName: string,babySex?: string | null,firstTimeParent: boolean,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
+      __baml_options__?: BamlCallOptions<never>
+      ): Promise<HTTPRequest> {
+        try {
+        const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+        const env: Record<string, string> = Object.fromEntries(
+          Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+          );
+          return await this.runtime.buildRequest(
+          "DailyLearningContent",
+          {
+          "postpartumDay": postpartumDay,"babyName": babyName,"babySex": babySex?? null,"firstTimeParent": firstTimeParent,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
+          },
+          this.ctxManager.cloneContext(),
+          __baml_options__?.tb?.__tb(),
+          __baml_options__?.clientRegistry,
+          true,
+          env
+          )
+          } catch (error) {
+          throw toBamlError(error);
+          }
+          }
+          
       async EnhanceMilestone(
-      milestoneTitle: string,milestoneDescription: string,milestoneType: string,ageLabel: string,babyName?: string | null,ageInDays?: number | null,
+      milestoneTitle: string,milestoneDescription: string,milestoneType: string,ageLabel: string,babyName?: string | null,babySex?: string | null,ageInDays?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
       __baml_options__?: BamlCallOptions<never>
       ): Promise<HTTPRequest> {
         try {
@@ -659,7 +709,7 @@ env?: Record<string, string | undefined>
           return await this.runtime.buildRequest(
           "EnhanceMilestone",
           {
-          "milestoneTitle": milestoneTitle,"milestoneDescription": milestoneDescription,"milestoneType": milestoneType,"ageLabel": ageLabel,"babyName": babyName?? null,"ageInDays": ageInDays?? null
+          "milestoneTitle": milestoneTitle,"milestoneDescription": milestoneDescription,"milestoneType": milestoneType,"ageLabel": ageLabel,"babyName": babyName?? null,"babySex": babySex?? null,"ageInDays": ageInDays?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
           },
           this.ctxManager.cloneContext(),
           __baml_options__?.tb?.__tb(),
@@ -773,7 +823,7 @@ env?: Record<string, string | undefined>
           }
           
       async NewbornWeekMilestone(
-      babyName: string,week: number,babySex?: string | null,firstPregnancy: boolean,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,headCircumference?: number | null,feedingCount24h?: number | null,sleepCount24h?: number | null,
+      babyName: string,week: number,babySex?: string | null,firstPregnancy: boolean,ageInDays: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,headCircumference?: number | null,feedingCount24h?: number | null,sleepCount24h?: number | null,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
       __baml_options__?: BamlCallOptions<never>
       ): Promise<HTTPRequest> {
         try {
@@ -784,7 +834,7 @@ env?: Record<string, string | undefined>
           return await this.runtime.buildRequest(
           "NewbornWeekMilestone",
           {
-          "babyName": babyName,"week": week,"babySex": babySex?? null,"firstPregnancy": firstPregnancy,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"headCircumference": headCircumference?? null,"feedingCount24h": feedingCount24h?? null,"sleepCount24h": sleepCount24h?? null
+          "babyName": babyName,"week": week,"babySex": babySex?? null,"firstPregnancy": firstPregnancy,"ageInDays": ageInDays,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"headCircumference": headCircumference?? null,"feedingCount24h": feedingCount24h?? null,"sleepCount24h": sleepCount24h?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
           },
           this.ctxManager.cloneContext(),
           __baml_options__?.tb?.__tb(),
@@ -823,7 +873,7 @@ env?: Record<string, string | undefined>
           }
           
       async PostpartumTips(
-      babyName: string,day: number,firstPregnancy: boolean,ageInDays: number,ageInWeeks: number,currentWeightOz?: number | null,birthWeightOz?: number | null,height?: number | null,headCircumference?: number | null,feedingCount24h?: number | null,avgFeedingInterval?: number | null,sleepCount24h?: number | null,totalSleepHours24h?: number | null,diaperCount24h?: number | null,avgFeedingsPerDay?: number | null,avgSleepHoursPerDay?: number | null,avgDiaperChangesPerDay?: number | null,
+      input: types.PostpartumTipsInput,
       __baml_options__?: BamlCallOptions<never>
       ): Promise<HTTPRequest> {
         try {
@@ -834,7 +884,7 @@ env?: Record<string, string | undefined>
           return await this.runtime.buildRequest(
           "PostpartumTips",
           {
-          "babyName": babyName,"day": day,"firstPregnancy": firstPregnancy,"ageInDays": ageInDays,"ageInWeeks": ageInWeeks,"currentWeightOz": currentWeightOz?? null,"birthWeightOz": birthWeightOz?? null,"height": height?? null,"headCircumference": headCircumference?? null,"feedingCount24h": feedingCount24h?? null,"avgFeedingInterval": avgFeedingInterval?? null,"sleepCount24h": sleepCount24h?? null,"totalSleepHours24h": totalSleepHours24h?? null,"diaperCount24h": diaperCount24h?? null,"avgFeedingsPerDay": avgFeedingsPerDay?? null,"avgSleepHoursPerDay": avgSleepHoursPerDay?? null,"avgDiaperChangesPerDay": avgDiaperChangesPerDay?? null
+          "input": input
           },
           this.ctxManager.cloneContext(),
           __baml_options__?.tb?.__tb(),
@@ -873,7 +923,7 @@ env?: Record<string, string | undefined>
           }
           
       async RoleSpecificTips(
-      parentRole: string,ppDay?: number | null,babyAgeInDays: number,topic: string,recentSleepHours?: number | null,concerns?: string[] | null,
+      parentRole: string,ppDay?: number | null,babyAgeInDays: number,babyName?: string | null,babySex?: string | null,topic: string,recentSleepHours?: number | null,concerns?: string[] | null,recentChatTopics?: string | null,achievedMilestones?: string | null,activitySummary?: string | null,parentWellness?: string | null,medicalContext?: string | null,
       __baml_options__?: BamlCallOptions<never>
       ): Promise<HTTPRequest> {
         try {
@@ -884,7 +934,7 @@ env?: Record<string, string | undefined>
           return await this.runtime.buildRequest(
           "RoleSpecificTips",
           {
-          "parentRole": parentRole,"ppDay": ppDay?? null,"babyAgeInDays": babyAgeInDays,"topic": topic,"recentSleepHours": recentSleepHours?? null,"concerns": concerns?? null
+          "parentRole": parentRole,"ppDay": ppDay?? null,"babyAgeInDays": babyAgeInDays,"babyName": babyName?? null,"babySex": babySex?? null,"topic": topic,"recentSleepHours": recentSleepHours?? null,"concerns": concerns?? null,"recentChatTopics": recentChatTopics?? null,"achievedMilestones": achievedMilestones?? null,"activitySummary": activitySummary?? null,"parentWellness": parentWellness?? null,"medicalContext": medicalContext?? null
           },
           this.ctxManager.cloneContext(),
           __baml_options__?.tb?.__tb(),

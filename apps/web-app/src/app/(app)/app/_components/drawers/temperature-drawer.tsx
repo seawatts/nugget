@@ -14,13 +14,7 @@ export function TemperatureDrawer() {
   const methods = ['Oral', 'Rectal', 'Armpit', 'Forehead', 'Ear'];
 
   const handleSave = () => {
-    console.log('[v0] Saving temperature:', {
-      method,
-      notes,
-      temperature,
-      timestamp: new Date(),
-      unit,
-    });
+    // TODO: Implement save functionality
   };
 
   return (

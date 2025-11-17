@@ -1,6 +1,5 @@
 'use client';
 
-import { api } from '@nugget/api/react';
 import type { Activities, Milestone } from '@nugget/db/schema';
 import { NuggetAvatar } from '@nugget/ui/custom/nugget-avatar';
 import type { LucideIcon } from 'lucide-react';
@@ -20,9 +19,9 @@ import {
   Tablet as Toilet,
   UtensilsCrossed,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { getTodaySummaryAction } from './today-summary.actions';
-import { formatVolumeDisplay, getVolumeUnit } from './volume-utils';
+import { formatVolumeDisplay } from './volume-utils';
 
 const activityIcons: Record<string, LucideIcon> = {
   activity: Activity,
@@ -82,6 +81,7 @@ interface TodaySummaryCardProps {
   babyBirthDate?: Date | null;
   babyName?: string;
   babyPhotoUrl?: string | null;
+  measurementUnit?: 'metric' | 'imperial';
   optimisticActivities?: Array<typeof Activities.$inferSelect>;
   refreshTrigger?: number;
 }
@@ -134,7 +134,8 @@ function formatTotal(
   }
 }
 
-function LiveBabyAge({ birthDate }: { birthDate: Date }) {
+// Memoized component to prevent parent re-renders when age updates
+const LiveBabyAge = memo(({ birthDate }: { birthDate: Date }) => {
   const [age, setAge] = useState('');
 
   useEffect(() => {
@@ -147,30 +148,36 @@ function LiveBabyAge({ birthDate }: { birthDate: Date }) {
       const hours = Math.floor(
         (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
       );
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
 
       if (days > 0) {
-        setAge(`${days}d ${hours}h`);
+        setAge(`${days}d ${hours}h ${minutes}m ${seconds}s`);
       } else if (hours > 0) {
-        setAge(`${hours}h`);
+        setAge(`${hours}h ${minutes}m ${seconds}s`);
+      } else if (minutes > 0) {
+        setAge(`${minutes}m ${seconds}s`);
       } else {
-        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-        setAge(`${minutes}m`);
+        setAge(`${seconds}s`);
       }
     }
 
     updateAge();
-    const interval = setInterval(updateAge, 60000); // Update every minute
+    const interval = setInterval(updateAge, 1000); // Update every second
 
     return () => clearInterval(interval);
   }, [birthDate]);
 
   return <>{age}</>;
-}
+});
+
+LiveBabyAge.displayName = 'LiveBabyAge';
 
 export function TodaySummaryCard({
   babyBirthDate,
   babyName,
   babyPhotoUrl,
+  measurementUnit = 'metric',
   optimisticActivities = [],
   refreshTrigger = 0,
 }: TodaySummaryCardProps) {
@@ -180,41 +187,68 @@ export function TodaySummaryCard({
   const [milestonesData, setMilestonesData] = useState<Array<Milestone>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isLoadingRef = useRef(false);
 
-  // Fetch user preferences for volume display
-  const { data: user } = api.user.current.useQuery();
-  const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
+  // Determine volume unit based on measurement preference
+  const userUnitPref = measurementUnit === 'imperial' ? 'OZ' : 'ML';
 
-  const loadTodaySummary = useCallback(async () => {
-    try {
-      setLoading(true);
-      const result = await getTodaySummaryAction();
+  // Load today's summary data
+  useEffect(() => {
+    // Only trigger on mount or when refreshTrigger changes
+    if (refreshTrigger === 0 && activitiesData.length > 0) {
+      // Skip initial load if we already have data
+      return;
+    }
 
-      if (result?.data) {
-        setActivitiesData(result.data.activities);
-        setMilestonesData(result.data.milestones);
-      } else if (result?.serverError) {
-        setError(result.serverError);
+    async function loadData() {
+      // Prevent multiple simultaneous calls
+      if (isLoadingRef.current) {
+        return;
       }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to load today summary',
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
-  useEffect(() => {
-    loadTodaySummary();
-  }, [loadTodaySummary]);
+      try {
+        isLoadingRef.current = true;
+        setLoading(true);
+        setError(null);
 
-  // Refetch data when refresh is triggered
-  useEffect(() => {
-    if (refreshTrigger > 0) {
-      loadTodaySummary();
+        const result = await getTodaySummaryAction();
+
+        if (!result) {
+          console.error('[TodaySummaryCard] No result returned from action');
+          setError('No data received');
+          setActivitiesData([]);
+          setMilestonesData([]);
+        } else if (result?.data) {
+          setActivitiesData(result.data.activities);
+          setMilestonesData(result.data.milestones);
+          setError(null);
+        } else if (result?.serverError) {
+          console.error('[TodaySummaryCard] Server error:', result.serverError);
+          setError(result.serverError);
+          setActivitiesData([]);
+          setMilestonesData([]);
+        } else {
+          console.error('[TodaySummaryCard] Unexpected result format:', result);
+          setError('Unexpected response format');
+          setActivitiesData([]);
+          setMilestonesData([]);
+        }
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to load today summary';
+        console.error('[TodaySummaryCard] Error loading data:', err);
+        setError(errorMessage);
+        setActivitiesData([]);
+        setMilestonesData([]);
+      } finally {
+        setLoading(false);
+        isLoadingRef.current = false;
+      }
     }
-  }, [refreshTrigger, loadTodaySummary]);
+
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshTrigger, activitiesData.length]);
 
   // Merge optimistic activities with fetched activities
   // Optimistic activities override fetched activities with the same ID

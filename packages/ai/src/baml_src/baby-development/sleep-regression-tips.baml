@@ -78,23 +78,44 @@ function SleepRegressionTips(
 
     For each tip, provide:
     - category: Choose one of: 'feeding', 'sleep', 'diaper', 'development', 'health', or 'postpartum'
-    - subtitle: A catchy 4-5 word subtitle that captures the essence of the tip
-    - summary: One concise sentence summarizing the tip
-    - bulletPoints: 2-3 actionable bullet points (keep each point brief and practical)
+    - subtitle: A catchy 4-5 word subtitle (max 5 words)
+    - summary: One concise sentence (max 15 words)
+    - bulletPoints: 2-3 actionable bullet points (each bullet max 20 words)
     - followUpQuestion: ONE focused, practical question that prompts the parent to share specific observations
       * Ask ONE question only - NO compound questions with "and" or multiple parts
       * CRITICAL: We already track COUNTS and DURATIONS (number of sleep sessions, total hours, wake counts, etc.)
-      * DON'T ask about quantities we're already tracking (e.g., "How many times did {{babyName}} wake?" "How long did {{babyName}} sleep?")
-      * DO ask about QUALITY, BEHAVIOR, or CONTEXT we don't have:
-        - "What does {{babyName}} do when waking at night?"
-        - "How does {{babyName}} settle back to sleep?"
-        - "Is {{babyName}} crying or fussy when waking?"
-        - "What seems to help {{babyName}} sleep better?"
-        - "Does {{babyName}} show tiredness cues before sleep?"
-      * Ask about observations, feelings, or details that provide CONTEXT beyond our raw sleep data
+      * DON'T ask about quantities we're already tracking
       * Keep it simple, direct, and non-judgmental
       * Avoid quiz-like or educational testing questions
-      * IMPORTANT: Each question must stand alone and ask about ONE thing only
+
+    FOLLOW-UP QUESTIONS - Generate a mix of yes/no and open-ended:
+    * REQUIREMENT: Include at least 1-2 yes/no questions in your 3-5 tips
+
+    * YES/NO QUESTIONS - Set isYesNoQuestion: true for sleep-specific checks:
+      Examples:
+      - "Is {{babyName}} showing distress at bedtime?"
+      - "Does {{babyName}} cry when waking at night?"
+      - "Are you noticing any new sleep patterns this week?"
+      - "Is {{babyName}} resisting sleep more than usual?"
+      - "Does {{babyName}} show clear tiredness cues before sleep?"
+      - "Is {{babyName}} waking more frequently than last week?"
+
+    * For yes/no questions, decide which answer(s) should open chat:
+      - openChatOnYes: true if "yes" indicates concern (e.g., showing distress, resisting sleep)
+      - openChatOnNo: true if "no" indicates concern (e.g., not showing tiredness cues)
+      - Provide helpful pre-filled prompts:
+        * yesResponsePrompt: Supportive message for "yes" (e.g., "{{babyName}} is showing distress at bedtime. What can I do to help?")
+        * noResponsePrompt: Supportive message for "no" (e.g., "{{babyName}} isn't showing tiredness cues. How can I tell when to put them down?")
+
+    * OPEN-ENDED QUESTIONS - Set isYesNoQuestion: false for qualitative questions:
+      Examples:
+      - "What does {{babyName}} do when waking at night?"
+      - "How does {{babyName}} settle back to sleep?"
+      - "What seems to help {{babyName}} sleep better?"
+
+    * Question Type Guidelines:
+      - Use YES/NO for: Sleep concerns, behavioral changes, pattern shifts, distress indicators
+      - Use OPEN-ENDED for: Sleep behaviors, settling methods, qualitative experiences
 
     Make each tip:
     - Specific and actionable

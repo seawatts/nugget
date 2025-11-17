@@ -382,15 +382,12 @@ export function GlossarySection() {
     if (typeof window !== 'undefined') {
       const hash = decodeURIComponent(window.location.hash.slice(1)); // Remove the # symbol and decode
       if (hash) {
-        console.log('Hash found:', hash);
         // Find the term in allTerms to check if it exists
         const termExists = allTerms.some((term) => term.term === hash);
-        console.log('Term exists:', termExists);
         if (termExists) {
           // Small delay to ensure the component is rendered
           setTimeout(() => {
             const element = document.getElementById(hash);
-            console.log('Element found:', element);
             if (element) {
               element.scrollIntoView({
                 behavior: 'smooth',

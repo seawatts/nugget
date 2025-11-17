@@ -47,11 +47,13 @@ export default class TypeBuilder {
     
     DailyCheckInQuestionsOutput: ClassViewer<'DailyCheckInQuestionsOutput', "questions">;
     
+    DailyLearningOutput: ClassViewer<'DailyLearningOutput', "title" | "summary" | "keyPoints" | "practicalTips" | "researchNote" | "developmentalContext" | "tips">;
+    
     HospitalPackAdviceOutput: ClassViewer<'HospitalPackAdviceOutput', "headline" | "subtext">;
     
     ImprovementSuggestions: ClassViewer<'ImprovementSuggestions', "seo" | "accessibility" | "performance" | "overall_priority">;
     
-    LearningTip: ClassViewer<'LearningTip', "category" | "subtitle" | "summary" | "bulletPoints" | "followUpQuestion">;
+    LearningTip: ClassViewer<'LearningTip', "category" | "subtitle" | "summary" | "bulletPoints" | "followUpQuestion" | "isYesNoQuestion" | "openChatOnYes" | "openChatOnNo" | "yesResponsePrompt" | "noResponsePrompt">;
     
     MilestoneEnhancementOutput: ClassViewer<'MilestoneEnhancementOutput', "bulletPoints" | "followUpQuestion" | "summary">;
     
@@ -66,6 +68,8 @@ export default class TypeBuilder {
     ParentTip: ClassViewer<'ParentTip', "title" | "content" | "actionItems" | "relevantToRole">;
     
     PersonalizedTasksOutput: ClassViewer<'PersonalizedTasksOutput', "tasks" | "motivationalMessage">;
+    
+    PostpartumTipsInput: ClassViewer<'PostpartumTipsInput', "babyName" | "babySex" | "day" | "firstPregnancy" | "ageInDays" | "ageInWeeks" | "currentWeightOz" | "birthWeightOz" | "height" | "headCircumference" | "feedingCount24h" | "avgFeedingInterval" | "sleepCount24h" | "totalSleepHours24h" | "diaperCount24h" | "avgFeedingsPerDay" | "avgSleepHoursPerDay" | "avgDiaperChangesPerDay" | "recentChatTopics" | "achievedMilestones" | "activitySummary" | "parentWellness" | "medicalContext">;
     
     PostpartumTipsOutput: ClassViewer<'PostpartumTipsOutput', "tips">;
     
@@ -88,7 +92,7 @@ export default class TypeBuilder {
     constructor() {
         this.tb = new _TypeBuilder({
           classes: new Set([
-            "AppointmentNudgeOutput","BabyAssistantChatOutput","BabyContext","BabyVisitExplainerOutput","BirthPlanHeadlineOutput","ChatMessage","ChatTitleOutput","CheckInQuestion","ContextualMilestonesOutput","DailyCheckInQuestionsOutput","HospitalPackAdviceOutput","ImprovementSuggestions","LearningTip","MilestoneEnhancementOutput","MilestoneExplanationOutput","MilestoneSuggestion","NewbornMilestoneOutput","ParentTask","ParentTip","PersonalizedTasksOutput","PostpartumTipsOutput","PregnancyWeekSummaryOutput","RoleSpecificTipsOutput","SleepRegressionTipsOutput","StalePromptsOutput","WellnessQuestion","WellnessScreeningOutput",
+            "AppointmentNudgeOutput","BabyAssistantChatOutput","BabyContext","BabyVisitExplainerOutput","BirthPlanHeadlineOutput","ChatMessage","ChatTitleOutput","CheckInQuestion","ContextualMilestonesOutput","DailyCheckInQuestionsOutput","DailyLearningOutput","HospitalPackAdviceOutput","ImprovementSuggestions","LearningTip","MilestoneEnhancementOutput","MilestoneExplanationOutput","MilestoneSuggestion","NewbornMilestoneOutput","ParentTask","ParentTip","PersonalizedTasksOutput","PostpartumTipsInput","PostpartumTipsOutput","PregnancyWeekSummaryOutput","RoleSpecificTipsOutput","SleepRegressionTipsOutput","StalePromptsOutput","WellnessQuestion","WellnessScreeningOutput",
           ]),
           enums: new Set([
             "ResponseType",
@@ -136,6 +140,10 @@ export default class TypeBuilder {
           "questions",
         ]);
         
+        this.DailyLearningOutput = this.tb.classViewer("DailyLearningOutput", [
+          "title","summary","keyPoints","practicalTips","researchNote","developmentalContext","tips",
+        ]);
+        
         this.HospitalPackAdviceOutput = this.tb.classViewer("HospitalPackAdviceOutput", [
           "headline","subtext",
         ]);
@@ -145,7 +153,7 @@ export default class TypeBuilder {
         ]);
         
         this.LearningTip = this.tb.classViewer("LearningTip", [
-          "category","subtitle","summary","bulletPoints","followUpQuestion",
+          "category","subtitle","summary","bulletPoints","followUpQuestion","isYesNoQuestion","openChatOnYes","openChatOnNo","yesResponsePrompt","noResponsePrompt",
         ]);
         
         this.MilestoneEnhancementOutput = this.tb.classViewer("MilestoneEnhancementOutput", [
@@ -174,6 +182,10 @@ export default class TypeBuilder {
         
         this.PersonalizedTasksOutput = this.tb.classViewer("PersonalizedTasksOutput", [
           "tasks","motivationalMessage",
+        ]);
+        
+        this.PostpartumTipsInput = this.tb.classViewer("PostpartumTipsInput", [
+          "babyName","babySex","day","firstPregnancy","ageInDays","ageInWeeks","currentWeightOz","birthWeightOz","height","headCircumference","feedingCount24h","avgFeedingInterval","sleepCount24h","totalSleepHours24h","diaperCount24h","avgFeedingsPerDay","avgSleepHoursPerDay","avgDiaperChangesPerDay","recentChatTopics","achievedMilestones","activitySummary","parentWellness","medicalContext",
         ]);
         
         this.PostpartumTipsOutput = this.tb.classViewer("PostpartumTipsOutput", [

@@ -124,6 +124,8 @@ export const getRoleSpecificTipsAction = action
       parentRole,
       ppDay,
       babyAgeInDays,
+      baby?.firstName || null, // babyName
+      baby?.gender || null, // babySex
       parsedInput.topic,
       recentSleepHours,
       uniqueConcerns.length > 0 ? uniqueConcerns : null,

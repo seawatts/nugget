@@ -27,15 +27,11 @@ export async function handleOrganizationMembershipDeleted(event: WebhookEvent) {
   });
 
   if (!org) {
-    console.log(
-      `Organization not found for Clerk org ID: ${membershipData.organization.id}`,
-    );
     return new Response('Organization not found', { status: 200 });
   }
 
   // Check if the organization has an active subscription
   if (!org.stripeSubscriptionId || org.stripeSubscriptionStatus !== 'active') {
-    console.log(`Organization ${org.id} does not have an active subscription`);
     return new Response('No active subscription', { status: 200 });
   }
 
@@ -52,9 +48,6 @@ export async function handleOrganizationMembershipDeleted(event: WebhookEvent) {
     const isTeamPlan = subscription.metadata?.planType === PLAN_TYPES.TEAM;
 
     if (!isTeamPlan) {
-      console.log(
-        `Organization ${org.id} is not on a team plan, skipping quantity update`,
-      );
       return new Response('Not a team plan', { status: 200 });
     }
 
@@ -74,10 +67,6 @@ export async function handleOrganizationMembershipDeleted(event: WebhookEvent) {
           quantity: adjustedMemberCount,
         })),
       },
-    );
-
-    console.log(
-      `Updated subscription ${org.stripeSubscriptionId} quantity to ${adjustedMemberCount} for organization ${org.id} (after member deletion)`,
     );
 
     // Track the subscription update

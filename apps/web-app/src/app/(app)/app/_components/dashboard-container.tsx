@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import { ActivityCards } from '~/app/(app)/app/_components/activity-cards';
 import { ActivityTimeline } from '~/app/(app)/app/_components/activity-timeline';
+import { CelebrationsCarousel } from '~/app/(app)/app/_components/celebrations-carousel';
 import { LearningCarousel } from '~/app/(app)/app/_components/learning-carousel';
 import { MilestonesCarousel } from '~/app/(app)/app/_components/milestones-carousel';
 import { TodaySummaryCard } from '~/app/(app)/app/_components/today-summary-card';
@@ -14,6 +15,7 @@ export function DashboardContainer() {
   const params = useParams();
   const babyId = params.userId as string;
   const { data: baby } = api.babies.getById.useQuery({ id: babyId });
+  const { data: user } = api.user.current.useQuery();
   const [optimisticActivities, setOptimisticActivities] = useState<
     Array<typeof Activities.$inferSelect>
   >([]);
@@ -56,12 +58,16 @@ export function DashboardContainer() {
 
   return (
     <main className="px-4 pt-4 pb-8 min-h-screen">
+      {/* Celebration Card - Shows on milestone days */}
+      <CelebrationsCarousel babyId={babyId} />
+
       {/* Today's Summary */}
       <div className="mb-6">
         <TodaySummaryCard
           babyBirthDate={baby?.birthDate}
           babyName={baby?.firstName}
           babyPhotoUrl={baby?.photoUrl}
+          measurementUnit={user?.measurementUnit || 'metric'}
           optimisticActivities={optimisticActivities}
           refreshTrigger={refreshTrigger}
         />

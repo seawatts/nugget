@@ -278,10 +278,20 @@ export interface CardMilestoneProps {
   title: PropValue<string>;
   description: PropValue<string>;
   type: PropValue<
-    'physical' | 'cognitive' | 'social' | 'language' | 'self_care'
+    'physical' | 'cognitive' | 'social' | 'language' | 'self_care' | 'health'
   >;
   ageLabel: PropValue<string>;
   suggestedDay?: PropValue<number>;
+}
+
+export interface CardCelebrationProps {
+  title: PropValue<string>;
+  ageLabel: PropValue<string>;
+  celebrationType: PropValue<string>;
+  type: PropValue<string>;
+  showPhotoUpload: PropValue<boolean>;
+  statistics: PropValue;
+  actions: PropValue;
 }
 
 export interface CheckInDailyProps {
@@ -321,6 +331,7 @@ export type RenderTemplate =
   | { template: 'Card.Success'; props: CardSuccessProps }
   | { template: 'Card.Hidden'; props: Record<string, never> }
   | { template: 'Card.Milestone'; props: CardMilestoneProps }
+  | { template: 'Card.Celebration'; props: CardCelebrationProps }
   | { template: 'CheckIn.Daily'; props: CheckInDailyProps }
   | { template: 'Assessment.Wellness'; props: AssessmentWellnessProps }
   | { template: 'Tasks.List'; props: TasksListProps }

@@ -81,11 +81,11 @@ export function ChatDialogContent({
     }, 100);
   }, []);
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change (including during streaming)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: messages is intentionally included to trigger scroll on every message update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [messages]);
 
   // Load messages when active chat changes
   useEffect(() => {
@@ -108,6 +108,16 @@ export function ChatDialogContent({
       );
     }
   }, [activeChat, loadChatMessages]);
+
+  const handleInputFocus = useCallback(() => {
+    // Small delay to allow keyboard to appear
+    setTimeout(() => {
+      inputRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }, 300);
+  }, []);
 
   const handleSubmit = useCallback(
     async (e?: React.FormEvent<HTMLFormElement>) => {
@@ -289,6 +299,7 @@ export function ChatDialogContent({
               disabled={isSending || !babyId}
               name="message"
               onChange={(event) => setInput(event.target.value)}
+              onFocus={handleInputFocus}
               placeholder="Ask a question..."
               ref={inputRef}
               type="text"

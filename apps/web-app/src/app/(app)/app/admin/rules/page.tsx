@@ -248,7 +248,6 @@ export default function AdminRulesPage() {
   };
 
   const handleSaveRule = () => {
-    console.log('[v0] Saving new rule:', newRule);
     setIsDrawerOpen(false);
     setNewRule({
       conditions: [createEmptyCondition()],

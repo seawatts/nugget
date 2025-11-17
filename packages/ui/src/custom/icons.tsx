@@ -19,12 +19,14 @@ import {
   IconArrowRight,
   IconArrowsUpDown,
   IconArrowUp,
+  IconBabyCarriage,
   IconBadge,
   IconBan,
   IconBell,
   IconBookmark,
   IconBookmarkPlus,
   IconBorderHorizontal,
+  IconBottle,
   IconCalendar,
   IconChartBar,
   IconChartPie,
@@ -185,6 +187,9 @@ export const Icons = {
     'size',
     'variant',
   ])<IconProps>(({ size, variant }) => iconVariants({ size, variant })),
+  Baby: twx(IconBabyCarriage).transientProps(['size', 'variant'])<IconProps>(
+    ({ size, variant }) => iconVariants({ size, variant }),
+  ),
   BadgeCheck: twx(IconBadge).transientProps(['size', 'variant'])<IconProps>(
     ({ size, variant }) => iconVariants({ size, variant }),
   ),
@@ -410,6 +415,9 @@ export const Icons = {
     'size',
     'variant',
   ])<IconProps>(({ size, variant }) => iconVariants({ size, variant })),
+  Milk: twx(IconBottle).transientProps(['size', 'variant'])<IconProps>(
+    ({ size, variant }) => iconVariants({ size, variant }),
+  ),
   Moon: twx(IconMoon).transientProps(['size', 'variant'])<IconProps>(
     ({ size, variant }) => iconVariants({ size, variant }),
   ),

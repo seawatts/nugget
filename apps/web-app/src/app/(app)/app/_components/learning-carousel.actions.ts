@@ -72,6 +72,12 @@ export interface LearningTip {
   summary: string;
   bulletPoints: string[];
   followUpQuestion: string;
+  // Yes/No question fields
+  isYesNoQuestion?: boolean | null;
+  openChatOnYes?: boolean | null;
+  openChatOnNo?: boolean | null;
+  yesResponsePrompt?: string | null;
+  noResponsePrompt?: string | null;
 }
 
 export interface LearningCarouselData {
@@ -114,7 +120,7 @@ export async function getLearningCarouselContent(
     const cache = new DbCache(db, baby.id, baby.familyId, authResult.userId);
 
     // Build rule context with enhanced data
-    const context = buildRuleContext(baby, enhancedData);
+    const context = await buildRuleContext(baby, enhancedData);
 
     // Create the rules program with BAML client
     const program = createExampleProgram(b);
@@ -185,7 +191,7 @@ export async function getLearningCarouselContent(
 /**
  * Build rule context from baby data with enhanced information
  */
-function buildRuleContext(
+async function buildRuleContext(
   baby: {
     id: string;
     firstName: string;
@@ -195,9 +201,10 @@ function buildRuleContext(
     dueDate: Date | null;
     journeyStage: string | null;
     gender: string | null;
+    familyId: string;
   },
   enhancedData: EnhancedBabyData,
-): RuleContext {
+): Promise<RuleContext> {
   const now = new Date();
   let scope: Scope | undefined;
   let week: number | undefined;
@@ -219,6 +226,40 @@ function buildRuleContext(
     week = Math.max(0, Math.min(42, weeksPregnant));
   }
 
+  // Get all babies for the family to determine if first pregnancy
+  const allBabies = await db.query.Babies.findMany({
+    where: (babies, { eq }) => eq(babies.familyId, baby.familyId),
+  });
+  const firstPregnancy = allBabies.length === 1;
+
+  // Get nursery setup completion from parent tasks
+  const nurseryTasks = await db.query.ParentTasks.findMany({
+    where: (tasks, { and, eq, like }) =>
+      and(eq(tasks.familyId, baby.familyId), like(tasks.taskText, '%nursery%')),
+  });
+  const nurserySetupDone =
+    nurseryTasks.length > 0 && nurseryTasks.every((task) => task.completed);
+
+  // Get hospital bag progress from parent tasks
+  const hospitalBagTasks = await db.query.ParentTasks.findMany({
+    where: (tasks, { and, eq, like, or }) =>
+      and(
+        eq(tasks.familyId, baby.familyId),
+        or(
+          like(tasks.taskText, '%hospital bag%'),
+          like(tasks.taskText, '%hospital%'),
+        ),
+      ),
+  });
+  const hospitalBagProgress =
+    hospitalBagTasks.length > 0
+      ? Math.round(
+          (hospitalBagTasks.filter((task) => task.completed).length /
+            hospitalBagTasks.length) *
+            100,
+        )
+      : 0;
+
   return {
     baby: {
       ageInDays: baby.birthDate
@@ -230,21 +271,21 @@ function buildRuleContext(
       sex: baby.gender || 'U',
     },
     done: {
-      nursery_setup: false, // TODO: Get from actual completion tracking
+      nursery_setup: nurserySetupDone,
     },
     // Enhanced baby context
     enhancedBabyData: enhancedData,
     ppDay,
     ppWeek,
     progress: {
-      hospital_bag: 0, // TODO: Get from actual progress tracking
+      hospital_bag: hospitalBagProgress,
       nursery_essentials: 0,
     },
     scope,
     season: getSeason(),
     stale: {},
     traits: {
-      firstPregnancy: true, // TODO: Determine from user data
+      firstPregnancy,
       userId: baby.id,
     },
     week,
@@ -477,7 +518,7 @@ export async function resolveCardAIContent(
     const cache = new DbCache(db, baby.id, baby.familyId, authResult.userId);
 
     // Build rule context with enhanced data
-    const context = buildRuleContext(baby, enhancedData);
+    const context = await buildRuleContext(baby, enhancedData);
 
     // Create the rules program with BAML client
     const program = createExampleProgram(b);

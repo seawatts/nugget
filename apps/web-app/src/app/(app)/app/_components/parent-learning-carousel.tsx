@@ -1,6 +1,7 @@
 'use client';
 
 import { Badge } from '@nugget/ui/badge';
+import { Button } from '@nugget/ui/button';
 import {
   Card,
   CardContent,
@@ -8,9 +9,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@nugget/ui/card';
+import { Icons } from '@nugget/ui/custom/icons';
 import { H2 } from '@nugget/ui/custom/typography';
-import { Sparkles } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { AlertCircle, Sparkles } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   getParentLearningContentAction,
   type LearningTip,
@@ -21,27 +23,36 @@ export function ParentLearningCarousel() {
   const [_babyName, setBabyName] = useState<string>('');
   const [postpartumDay, setPostpartumDay] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadContent() {
-      try {
-        setIsLoading(true);
-        const result = await getParentLearningContentAction();
-        if (result?.data) {
+  const loadContent = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const result = await getParentLearningContentAction();
+      if (result?.data) {
+        // Check for error in response
+        if (result.data.error) {
+          setError(result.data.error);
+          setTips([]);
+        } else {
           setTips((result.data.tips || []) as LearningTip[]);
           setBabyName(result.data.babyName || '');
           setPostpartumDay(result.data.postpartumDay || 0);
         }
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Failed to load parent learning content:', error);
-        setTips([]);
-        setIsLoading(false);
       }
+    } catch (error) {
+      console.error('Failed to load parent learning content:', error);
+      setError('Unable to load postpartum care tips. Please try again.');
+      setTips([]);
+    } finally {
+      setIsLoading(false);
     }
-
-    loadContent();
   }, []);
+
+  useEffect(() => {
+    loadContent();
+  }, [loadContent]);
 
   if (isLoading) {
     return (
@@ -56,6 +67,38 @@ export function ParentLearningCarousel() {
             <div className="h-3 bg-muted rounded w-full" />
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mb-6">
+        <div className="mb-4 flex items-center gap-2">
+          <Sparkles className="size-5 text-primary" />
+          <H2 variant="primary">Postpartum Care</H2>
+        </div>
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <AlertCircle className="size-12 text-destructive" />
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-foreground">
+                  Unable to Load Content
+                </h3>
+                <p className="text-sm text-muted-foreground">{error}</p>
+              </div>
+              <Button
+                className="w-full sm:w-auto"
+                onClick={loadContent}
+                variant="outline"
+              >
+                <Icons.Spinner className="size-4 mr-2" />
+                Try Again
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

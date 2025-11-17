@@ -7,6 +7,7 @@ import { ParentLearningCarousel } from './parent-learning-carousel';
 import { ParentSleepCard } from './parent-sleep-card';
 import { ParentTasksCard } from './parent-tasks-card';
 import { ParentTipsWidget } from './parent-tips-widget';
+import { WellnessAssessmentModal } from './parent-wellness/wellness-assessment-modal';
 import { ParentWellnessCard } from './parent-wellness-card';
 
 interface ParentDashboardProps {
@@ -17,6 +18,7 @@ export function ParentDashboard({ userId }: ParentDashboardProps) {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showWellnessAssessment, _setShowWellnessAssessment] = useState(false);
   const [checkInCompleted, setCheckInCompleted] = useState(false);
+  const [wellnessModalOpen, setWellnessModalOpen] = useState(false);
 
   const handleSleepLogged = useCallback(() => {
     setRefreshTrigger((prev) => prev + 1);
@@ -25,6 +27,10 @@ export function ParentDashboard({ userId }: ParentDashboardProps) {
   const handleCheckInComplete = useCallback(() => {
     setCheckInCompleted(true);
     setRefreshTrigger((prev) => prev + 1);
+  }, []);
+
+  const handleStartAssessment = useCallback(() => {
+    setWellnessModalOpen(true);
   }, []);
 
   return (
@@ -43,14 +49,18 @@ export function ParentDashboard({ userId }: ParentDashboardProps) {
       {showWellnessAssessment && (
         <div className="mb-6">
           <ParentWellnessCard
-            onStartAssessment={() => {
-              // TODO: Open wellness assessment in a modal/drawer
-              console.log('Start wellness assessment');
-            }}
+            onStartAssessment={handleStartAssessment}
             userId={userId}
           />
         </div>
       )}
+
+      {/* Wellness Assessment Modal */}
+      <WellnessAssessmentModal
+        onOpenChange={setWellnessModalOpen}
+        open={wellnessModalOpen}
+        userId={userId}
+      />
 
       {/* Postpartum Learning Carousel */}
       <ParentLearningCarousel />

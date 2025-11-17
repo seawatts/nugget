@@ -9,6 +9,8 @@ import { LearningCardCheckBack } from './learning-card-check-back';
 import { LearningCardCTA } from './learning-card-cta';
 import { LearningCardInfo } from './learning-card-info';
 import { LearningCardLoading } from './learning-card-loading';
+import { LearningCardProgress } from './learning-card-progress';
+import { LearningCardPromptList } from './learning-card-prompt-list';
 import { LearningCardSuccess } from './learning-card-success';
 import {
   getLearningCarouselContent,
@@ -150,11 +152,11 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
 
   // Handle AI advice click
   const handleGetAIAdvice = () => {
-    // TODO: Navigate to AI chat or open AI modal
-    console.log('Open AI chat');
+    window.location.href = '/app/chat';
   };
 
-  if (isLoading) {
+  // Show full-width loading card while initial data loads OR AI content is resolving
+  if (isLoading || isResolvingAI) {
     return (
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-4">
@@ -197,40 +199,14 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
             scrollbarWidth: 'none',
           }}
         >
-          {cards
-            .filter((card) => {
-              // Hide cards with pending AI content while showing the generating card
-              if (isResolvingAI) {
-                const hasPendingAI = Object.values(card.props).some(
-                  (val) => val === '[AI_PENDING]',
-                );
-                return !hasPendingAI;
-              }
-              return true;
-            })
-            .map((card) => (
-              <div className="snap-start" key={card.id}>
-                {renderCard(card, handleGetAIAdvice, baby)}
-              </div>
-            ))}
-
-          {/* Show full-width loading card when AI is being resolved */}
-          {isResolvingAI && baby && cards.length === 0 && (
-            <LearningCardLoading
-              ageInDays={
-                baby.birthDate
-                  ? Math.floor(
-                      (Date.now() - baby.birthDate.getTime()) /
-                        (1000 * 60 * 60 * 24),
-                    )
-                  : 0
-              }
-              babyName={baby.firstName}
-            />
-          )}
+          {cards.map((card) => (
+            <div className="snap-start" key={card.id}>
+              {renderCard(card, handleGetAIAdvice, baby)}
+            </div>
+          ))}
 
           {/* Check Back card at the end */}
-          {!isResolvingAI && baby && (
+          {baby && (
             <div className="snap-start">
               <LearningCardCheckBack baby={baby} />
             </div>
@@ -291,12 +267,13 @@ function renderCard(
       );
 
     case 'Card.Progress':
-      // TODO: Implement Card.Progress variant
       return (
-        <LearningCardCTA
+        <LearningCardProgress
           ageLabel={props.ageLabel as string | undefined}
-          deeplink={props.deeplink as string}
-          headline={props.label as string}
+          current={props.current as number}
+          deeplink={props.deeplink as string | undefined}
+          label={props.label as string}
+          total={props.total as number}
         />
       );
 
@@ -311,8 +288,13 @@ function renderCard(
       );
 
     case 'Carousel.PromptList':
-      // TODO: Implement prompt list variant
-      return null;
+      return (
+        <LearningCardPromptList
+          ageLabel={props.ageLabel as string | undefined}
+          prompts={props.prompts as Array<{ text: string; category?: string }>}
+          title={props.title as string}
+        />
+      );
 
     default:
       return null;

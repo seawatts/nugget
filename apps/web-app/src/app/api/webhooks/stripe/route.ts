@@ -80,14 +80,6 @@ export async function POST(req: NextRequest) {
       }
 
       case 'customer.subscription.trial_will_end': {
-        const subscription = event.data.object;
-
-        // Log trial ending for monitoring
-        if (subscription.metadata?.orgId) {
-          console.log(
-            `Trial ending for organization ${subscription.metadata.orgId} on subscription ${subscription.id}`,
-          );
-        }
         break;
       }
 
@@ -148,24 +140,15 @@ export async function POST(req: NextRequest) {
       }
 
       case 'customer.updated': {
-        const customer = event.data.object;
-
-        // Log customer updates for monitoring
-        console.log(`Customer ${customer.id} updated`);
         break;
       }
 
       case 'customer.deleted': {
-        const customer = event.data.object;
-
-        // Log customer deletion for monitoring
-        console.log(`Customer ${customer.id} deleted`);
         break;
       }
 
       default:
-        // Log unhandled event types
-        console.log(`Unhandled event type: ${event.type}`);
+        break;
     }
 
     return NextResponse.json({ received: true });

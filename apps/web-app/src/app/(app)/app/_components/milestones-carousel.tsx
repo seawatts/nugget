@@ -11,9 +11,9 @@ import { MilestoneCardCheckBack } from './milestone-card-check-back';
 import { MilestoneCompletionDialog } from './milestone-completion-dialog';
 import {
   completeMilestoneAction,
-  enhanceMilestoneAction,
   getMilestonesCarouselContent,
   type MilestoneCardData,
+  resolveMilestoneAIContent,
 } from './milestones-carousel.actions';
 
 type PartialBaby = {
@@ -55,17 +55,17 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
     undefined,
   );
   const [isLoading, setIsLoading] = useState(true);
+  const [isResolvingAI, setIsResolvingAI] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedMilestone, setSelectedMilestone] =
     useState<MilestoneCardData | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [enhancingIds, setEnhancingIds] = useState<Set<string>>(new Set());
   const milestoneRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const { executeAsync: completeMilestone } = useAction(
     completeMilestoneAction,
   );
-  const { executeAsync: enhanceMilestone } = useAction(enhanceMilestoneAction);
 
   useEffect(() => {
     async function loadMilestones() {
@@ -73,7 +73,7 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
         setIsLoading(true);
         setError(null);
 
-        // Load base milestone data (fast, no AI)
+        // Load milestone data with [AI_PENDING] placeholders
         const data = await getMilestonesCarouselContent(babyId);
         setMilestones(data.milestones);
         setBaby(data.baby);
@@ -82,61 +82,63 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
         setNextMilestoneDay(data.nextMilestoneDay);
         setIsLoading(false);
 
-        // Start progressive AI enhancement in the background
-        if (data.milestones.length > 0) {
-          // Mark all milestones as enhancing
-          setEnhancingIds(new Set(data.milestones.map((m) => m.id)));
+        // Resolve AI content for each milestone progressively (non-blocking)
+        const milestonesWithPendingAI = data.milestones.filter((milestone) =>
+          Object.values(milestone).some((val) => val === '[AI_PENDING]'),
+        );
 
-          // Enhance each milestone progressively
-          for (const milestone of data.milestones) {
-            // Run enhancement in background
-            enhanceMilestone({
-              ageInDays: data.ageInDays,
-              ageLabel: milestone.ageLabel,
+        if (milestonesWithPendingAI.length > 0) {
+          setIsResolvingAI(true);
+        }
+
+        let resolvedCount = 0;
+        for (const milestone of data.milestones) {
+          // Check if milestone has any pending AI content
+          const hasPendingAI = Object.values(milestone).some(
+            (val) => val === '[AI_PENDING]',
+          );
+
+          if (hasPendingAI) {
+            // Resolve AI content in the background
+            resolveMilestoneAIContent(
+              milestone.id,
               babyId,
-              description: milestone.description,
-              title: milestone.title,
-              type: milestone.type,
-            })
-              .then((result) => {
-                if (result?.data?.success && result.data.bulletPoints) {
-                  // Update the milestone with enhanced content
+              milestone.title,
+              milestone.description,
+              milestone.type,
+              milestone.ageLabel,
+              data.ageInDays,
+            )
+              .then((aiContent) => {
+                resolvedCount++;
+                if (resolvedCount === milestonesWithPendingAI.length) {
+                  setIsResolvingAI(false);
+                }
+                if (aiContent) {
+                  // Update the milestone with resolved AI content
                   setMilestones((prev) =>
                     prev.map((m) =>
                       m.id === milestone.id
                         ? {
                             ...m,
-                            bulletPoints:
-                              result.data?.bulletPoints ?? m.bulletPoints,
-                            followUpQuestion:
-                              result.data?.followUpQuestion ??
-                              m.followUpQuestion,
-                            summary: result.data?.summary ?? m.summary,
+                            bulletPoints: aiContent.bulletPoints,
+                            followUpQuestion: aiContent.followUpQuestion,
+                            summary: aiContent.summary,
                           }
                         : m,
                     ),
                   );
                 }
-
-                // Remove from enhancing set
-                setEnhancingIds((prev) => {
-                  const next = new Set(prev);
-                  next.delete(milestone.id);
-                  return next;
-                });
               })
               .catch((error) => {
                 console.error(
-                  `Failed to enhance milestone "${milestone.title}":`,
+                  `Failed to resolve AI content for milestone "${milestone.title}":`,
                   error,
                 );
-
-                // Remove from enhancing set even on error
-                setEnhancingIds((prev) => {
-                  const next = new Set(prev);
-                  next.delete(milestone.id);
-                  return next;
-                });
+                resolvedCount++;
+                if (resolvedCount === milestonesWithPendingAI.length) {
+                  setIsResolvingAI(false);
+                }
               });
           }
         }
@@ -150,23 +152,44 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
     }
 
     void loadMilestones();
-  }, [babyId, enhanceMilestone]);
+  }, [babyId]);
 
-  // Auto-scroll to first incomplete milestone
+  // Set up Intersection Observer to scroll to first incomplete milestone when carousel enters viewport
   useEffect(() => {
-    if (!isLoading && milestones.length > 0) {
+    if (!isLoading && milestones.length > 0 && scrollContainerRef.current) {
       const firstIncomplete = milestones.find((m) => !m.isCompleted);
       if (firstIncomplete) {
-        const element = milestoneRefs.current.get(firstIncomplete.id);
-        if (element) {
-          // Use a slight delay to ensure DOM is ready
-          setTimeout(() => {
-            element.scrollIntoView({
-              behavior: 'smooth',
-              block: 'nearest',
-              inline: 'start',
-            });
-          }, 300);
+        const milestoneElement = milestoneRefs.current.get(firstIncomplete.id);
+        const container = scrollContainerRef.current;
+
+        if (milestoneElement && container) {
+          const observer = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((entry) => {
+                // When the carousel container is fully visible in viewport, scroll to first incomplete
+                if (entry.isIntersecting && entry.intersectionRatio === 1) {
+                  milestoneElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'start',
+                  });
+                  // Disconnect after scrolling once
+                  observer.disconnect();
+                }
+              });
+            },
+            {
+              root: null, // Observe visibility in the viewport (for vertical page scrolling)
+              threshold: 1.0, // Container must be fully visible
+            },
+          );
+
+          observer.observe(container);
+
+          // Cleanup
+          return () => {
+            observer.disconnect();
+          };
         }
       }
     }
@@ -210,7 +233,8 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
     }
   };
 
-  if (isLoading) {
+  // Show full-width loading card while initial data loads OR AI content is resolving
+  if (isLoading || isResolvingAI) {
     return (
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-4">
@@ -262,6 +286,7 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
         <div className="relative">
           <div
             className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide"
+            ref={scrollContainerRef}
             style={{
               msOverflowStyle: 'none',
               scrollbarWidth: 'none',
@@ -285,7 +310,7 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
                   bulletPoints={milestone.bulletPoints}
                   followUpQuestion={milestone.followUpQuestion}
                   isCompleted={milestone.isCompleted}
-                  isEnhancing={enhancingIds.has(milestone.id)}
+                  isEnhancing={false}
                   onMarkComplete={() => handleMarkComplete(milestone)}
                   summary={milestone.summary}
                   title={milestone.title}
@@ -294,32 +319,16 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
               </div>
             ))}
 
-            {/* Show AI generating card while enhancing */}
-            {enhancingIds.size > 0 && (
+            {/* Check Back card at the end */}
+            {baby && milestones.length > 0 && (
               <div className="snap-start">
-                <AIGeneratingCard
-                  ageInDays={ageInDays}
-                  babyName={babyName}
-                  messages={milestoneLoadingMessages}
-                  variant="info"
+                <MilestoneCardCheckBack
+                  baby={baby}
+                  currentAgeInDays={ageInDays}
+                  nextMilestoneDay={nextMilestoneDay}
                 />
               </div>
             )}
-
-            {/* Check Back card at the end */}
-            {!isLoading &&
-              !error &&
-              milestones.length > 0 &&
-              enhancingIds.size === 0 &&
-              baby && (
-                <div className="snap-start">
-                  <MilestoneCardCheckBack
-                    baby={baby}
-                    currentAgeInDays={ageInDays}
-                    nextMilestoneDay={nextMilestoneDay}
-                  />
-                </div>
-              )}
           </div>
 
           {/* Gradient fade on edges */}

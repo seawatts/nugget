@@ -1,11 +1,20 @@
 'use client';
 
 import { Button } from '@nugget/ui/button';
+import { Icons } from '@nugget/ui/custom/icons';
 import { Input } from '@nugget/ui/input';
 import { Textarea } from '@nugget/ui/textarea';
+import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { createActivityWithDetailsAction } from '../activity-cards.actions';
 
-export function GrowthDrawer() {
+interface GrowthDrawerProps {
+  onClose?: () => void;
+  onSaved?: () => void;
+}
+
+export function GrowthDrawer({ onClose, onSaved }: GrowthDrawerProps) {
   const [weight, setWeight] = useState('');
   const [weightUnit, setWeightUnit] = useState('lbs');
   const [height, setHeight] = useState('');
@@ -13,15 +22,43 @@ export function GrowthDrawer() {
   const [headCircumference, setHeadCircumference] = useState('');
   const [notes, setNotes] = useState('');
 
+  const { execute: createActivity, isExecuting } = useAction(
+    createActivityWithDetailsAction,
+    {
+      onError: ({ error }) => {
+        toast.error('Error', {
+          description: error.serverError || 'Failed to save growth data.',
+        });
+      },
+      onSuccess: () => {
+        toast.success('Growth recorded', {
+          description: 'Growth measurements have been saved successfully.',
+        });
+        onSaved?.();
+        onClose?.();
+      },
+    },
+  );
+
   const handleSave = () => {
-    console.log('[v0] Saving growth:', {
-      headCircumference,
-      height,
+    const growthDetails = {
+      headCircumference: headCircumference
+        ? Number(headCircumference)
+        : undefined,
+      height: height ? Number(height) : undefined,
       heightUnit,
-      notes,
-      timestamp: new Date(),
-      weight,
+      weight: weight ? Number(weight) : undefined,
       weightUnit,
+    };
+
+    createActivity({
+      activityType: 'growth',
+      details:
+        Object.keys(growthDetails).length > 0
+          ? (growthDetails as Record<string, unknown>)
+          : undefined,
+      notes: notes || undefined,
+      startTime: new Date(),
     });
   };
 
@@ -117,8 +154,20 @@ export function GrowthDrawer() {
         />
       </div>
 
-      <Button className="w-full" onClick={handleSave} size="lg">
-        Save Growth
+      <Button
+        className="w-full"
+        disabled={isExecuting || (!weight && !height && !headCircumference)}
+        onClick={handleSave}
+        size="lg"
+      >
+        {isExecuting ? (
+          <>
+            <Icons.Spinner className="animate-spin" size="sm" />
+            Saving...
+          </>
+        ) : (
+          'Save Growth'
+        )}
       </Button>
     </div>
   );

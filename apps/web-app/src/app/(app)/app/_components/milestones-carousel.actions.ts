@@ -1,6 +1,14 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
+import {
+  buildBamlContext,
+  formatActivityContext,
+  formatChatContext,
+  formatMedicalContext,
+  formatMilestoneContext,
+  formatParentWellnessContext,
+} from '@nugget/ai';
 import { b } from '@nugget/ai/async_client';
 import { getApi } from '@nugget/api/server';
 import {
@@ -151,22 +159,18 @@ export async function getMilestonesCarouselContent(
       ? differenceInDays(new Date(), baby.birthDate)
       : undefined;
 
-    // Return base milestones immediately with placeholder content
-    // AI enhancement will happen progressively on the client side
+    // Return base milestones with [AI_PENDING] placeholders
+    // AI enhancement will be resolved progressively on the client side
     const milestones: MilestoneCardData[] = baseMilestones.map(
       (props, index) => ({
         ageLabel: props.ageLabel,
-        bulletPoints: [
-          props.description,
-          'Every baby develops at their own pace.',
-          'Consult your pediatrician if you have concerns.',
-        ],
+        bulletPoints: '[AI_PENDING]' as unknown as string[],
         description: props.description,
-        followUpQuestion: `What have you noticed about ${baby.firstName ?? 'your baby'}'s development recently?`,
+        followUpQuestion: '[AI_PENDING]' as unknown as string,
         id: `milestone-${index}-${props.title.toLowerCase().replace(/\s+/g, '-')}`,
         isCompleted: completedTitles.has(props.title),
         suggestedDay: props.suggestedDay,
-        summary: props.description,
+        summary: '[AI_PENDING]' as unknown as string,
         title: props.title,
         type: props.type,
       }),
@@ -321,7 +325,117 @@ export const completeMilestoneAction = action
   });
 
 /**
- * Enhance a single milestone with AI-generated content
+ * Resolve AI content for a specific milestone (non-blocking)
+ * This follows the same pattern as the learning carousel
+ */
+export async function resolveMilestoneAIContent(
+  _milestoneId: string,
+  babyId: string,
+  title: string,
+  description: string,
+  type: 'physical' | 'cognitive' | 'social' | 'language' | 'self_care',
+  ageLabel: string,
+  ageInDays?: number,
+): Promise<{
+  bulletPoints: string[];
+  followUpQuestion: string;
+  summary: string;
+} | null> {
+  try {
+    // Verify authentication
+    const authResult = await auth();
+    if (!authResult.userId) {
+      return null;
+    }
+
+    // Get baby info for AI context
+    const api = await getApi();
+    const baby = await api.babies.getById({ id: babyId });
+
+    if (!baby) {
+      return null;
+    }
+
+    // Create database-backed cache
+    const cache = new DbCache(db, baby.id, baby.familyId, authResult.userId);
+
+    // Build rule context for caching
+    const context = buildRuleContext(baby);
+
+    // Generate cache key
+    const cacheKey = `milestone:${baby.id}:${type}:${title.toLowerCase().replace(/\s+/g, '-')}`;
+
+    // Build context for BAML
+    const bamlContext = await buildBamlContext({
+      babyId: baby.id,
+      familyId: baby.familyId,
+      includeActivities: true,
+      includeChat: true,
+      includeMedical: true,
+      includeMilestones: true,
+      includeParentWellness: true,
+      userId: authResult.userId,
+    });
+
+    // Format context for BAML prompts
+    const recentChatTopics = formatChatContext(bamlContext);
+    const achievedMilestones = formatMilestoneContext(bamlContext);
+    const activitySummary = formatActivityContext(bamlContext);
+    const parentWellness = formatParentWellnessContext(bamlContext);
+    const medicalContext = formatMedicalContext(bamlContext);
+
+    // Structure the enhancement as an aiTextBaml prop for caching
+    const enhancementProp = aiTextBaml({
+      call: () =>
+        bamlCall(
+          () =>
+            b.EnhanceMilestone(
+              title,
+              description,
+              type,
+              ageLabel,
+              baby.firstName ?? null,
+              baby.gender ?? null,
+              ageInDays ?? null,
+              recentChatTopics,
+              achievedMilestones,
+              activitySummary,
+              parentWellness,
+              medicalContext,
+            ),
+          (output) => output,
+        ),
+      // Cache key includes milestone title and type to uniquely identify content
+      key: () => cacheKey,
+      // Cache for 7 days (milestones don't change frequently)
+      ttl: '7d',
+    });
+
+    // Resolve the prop using cache (will use cached value if available)
+    const resolved = await resolveAIProps(
+      { enhancement: enhancementProp },
+      context,
+      cache,
+    );
+
+    const enhancement = resolved.enhancement as {
+      bulletPoints: string[];
+      followUpQuestion: string;
+      summary: string;
+    };
+
+    return enhancement;
+  } catch (error) {
+    console.error(
+      `Error resolving milestone AI content for "${title}":`,
+      error,
+    );
+    return null;
+  }
+}
+
+/**
+ * Legacy action for backward compatibility
  * This is called progressively on the client side
  * Uses database caching to avoid regenerating content
  */
@@ -343,110 +457,28 @@ export const enhanceMilestoneAction = action
     }),
   )
   .action(async ({ parsedInput: input }) => {
-    const { userId } = await auth();
-    if (!userId) throw new Error('Unauthorized');
+    const result = await resolveMilestoneAIContent(
+      `milestone-${input.title}`,
+      input.babyId,
+      input.title,
+      input.description,
+      input.type,
+      input.ageLabel,
+      input.ageInDays,
+    );
 
-    // Get baby info for AI context
-    const api = await getApi();
-    const baby = await api.babies.getById({ id: input.babyId });
-
-    if (!baby) {
-      throw new Error('Baby not found');
-    }
-
-    // Create database-backed cache (same pattern as learning carousel)
-    const cache = new DbCache(db, baby.id, baby.familyId, userId);
-
-    // Build rule context for caching
-    const context = buildRuleContext(baby);
-
-    try {
-      // Generate cache key
-      const cacheKey = `milestone:${baby.id}:${input.type}:${input.title.toLowerCase().replace(/\s+/g, '-')}`;
-
-      console.log(`[Milestone Cache] Checking cache for key: ${cacheKey}`);
-
-      // Check cache manually first to log the result
-      const cached = await cache.get(cacheKey);
-      if (cached && cached.exp > Date.now()) {
-        console.log(`[Milestone Cache] ✓ Cache HIT for "${input.title}"`);
-        const enhancement = cached.val as {
-          bulletPoints: string[];
-          followUpQuestion: string;
-          summary: string;
-        };
-        return {
-          bulletPoints: enhancement.bulletPoints,
-          followUpQuestion: enhancement.followUpQuestion,
-          success: true,
-          summary: enhancement.summary,
-        };
-      }
-
-      console.log(
-        `[Milestone Cache] ✗ Cache MISS for "${input.title}" - generating new content`,
-      );
-
-      // Structure the enhancement as an aiTextBaml prop for caching
-      const enhancementProp = aiTextBaml({
-        call: () =>
-          bamlCall(
-            () => {
-              console.log(
-                `[Milestone Cache] Calling BAML for "${input.title}"`,
-              );
-              return b.EnhanceMilestone(
-                input.title,
-                input.description,
-                input.type,
-                input.ageLabel,
-                baby.firstName ?? null,
-                input.ageInDays ?? null,
-              );
-            },
-            (output) => output,
-          ),
-        // Cache key includes milestone title and type to uniquely identify content
-        key: () => cacheKey,
-        // Cache for 7 days (milestones don't change frequently)
-        ttl: '7d',
-      });
-
-      // Resolve the prop using cache (will use cached value if available)
-      const resolved = await resolveAIProps(
-        { enhancement: enhancementProp },
-        context,
-        cache,
-      );
-
-      const enhancement = resolved.enhancement as {
-        bulletPoints: string[];
-        followUpQuestion: string;
-        summary: string;
-      };
-
-      console.log(
-        `[Milestone Cache] Successfully enhanced milestone "${input.title}" with ${enhancement.bulletPoints.length} bullet points`,
-      );
-
+    if (result) {
       return {
-        bulletPoints: enhancement.bulletPoints,
-        followUpQuestion: enhancement.followUpQuestion,
+        bulletPoints: result.bulletPoints,
+        followUpQuestion: result.followUpQuestion,
         success: true,
-        summary: enhancement.summary,
-      };
-    } catch (error) {
-      console.error(`Error enhancing milestone "${input.title}":`, error);
-      console.error('Error details:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-
-      // Return null to indicate enhancement failed - component will use fallback
-      return {
-        success: false,
+        summary: result.summary,
       };
     }
+
+    return {
+      success: false,
+    };
   });
 
 /**

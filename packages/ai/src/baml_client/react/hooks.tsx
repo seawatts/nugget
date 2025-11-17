@@ -620,6 +620,72 @@ export function useDailyCheckInQuestions(
   }
 }
 /**
+ * A specialized hook for the DailyLearningContent BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - postpartumDay: number
+ *
+ * - babyName: string
+ *
+ * - babySex (optional): string | null
+ *
+ * - firstTimeParent: boolean
+ *
+ * - recentChatTopics (optional): string | null
+ *
+ * - achievedMilestones (optional): string | null
+ *
+ * - activitySummary (optional): string | null
+ *
+ * - parentWellness (optional): string | null
+ *
+ * - medicalContext (optional): string | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.DailyLearningOutput
+ * - **Streaming Partial:** DailyLearningOutput
+ * - **Streaming Final:** types.DailyLearningOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useDailyLearningContent({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useDailyLearningContent({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useDailyLearningContent(props: HookInput<'DailyLearningContent', { stream: false }>): HookOutput<'DailyLearningContent', { stream: false }>
+export function useDailyLearningContent(props?: HookInput<'DailyLearningContent', { stream?: true }>): HookOutput<'DailyLearningContent', { stream: true }>
+export function useDailyLearningContent(
+  props: HookInput<'DailyLearningContent', { stream?: boolean }> = {},
+): HookOutput<'DailyLearningContent', { stream: true }> | HookOutput<'DailyLearningContent', { stream: false }> {
+  let action: ServerAction = Actions.DailyLearningContent;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.DailyLearningContent;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'DailyLearningContent', { stream: false }>)
+  }
+}
+/**
  * A specialized hook for the EnhanceMilestone BAML function that supports both streaming and non‑streaming responses.
  *
  * **Input Types:**
@@ -634,7 +700,19 @@ export function useDailyCheckInQuestions(
  *
  * - babyName (optional): string | null
  *
+ * - babySex (optional): string | null
+ *
  * - ageInDays (optional): number | null
+ *
+ * - recentChatTopics (optional): string | null
+ *
+ * - achievedMilestones (optional): string | null
+ *
+ * - activitySummary (optional): string | null
+ *
+ * - parentWellness (optional): string | null
+ *
+ * - medicalContext (optional): string | null
  *
  *
  * **Return Type:**
@@ -956,6 +1034,16 @@ export function useMilestoneExplanation(
  *
  * - sleepCount24h (optional): number | null
  *
+ * - recentChatTopics (optional): string | null
+ *
+ * - achievedMilestones (optional): string | null
+ *
+ * - activitySummary (optional): string | null
+ *
+ * - parentWellness (optional): string | null
+ *
+ * - medicalContext (optional): string | null
+ *
  *
  * **Return Type:**
  * - **Non‑streaming:** types.NewbornMilestoneOutput
@@ -1060,39 +1148,7 @@ export function usePersonalizedTasks(
  *
  * **Input Types:**
  *
- * - babyName: string
- *
- * - day: number
- *
- * - firstPregnancy: boolean
- *
- * - ageInDays: number
- *
- * - ageInWeeks: number
- *
- * - currentWeightOz (optional): number | null
- *
- * - birthWeightOz (optional): number | null
- *
- * - height (optional): number | null
- *
- * - headCircumference (optional): number | null
- *
- * - feedingCount24h (optional): number | null
- *
- * - avgFeedingInterval (optional): number | null
- *
- * - sleepCount24h (optional): number | null
- *
- * - totalSleepHours24h (optional): number | null
- *
- * - diaperCount24h (optional): number | null
- *
- * - avgFeedingsPerDay (optional): number | null
- *
- * - avgSleepHoursPerDay (optional): number | null
- *
- * - avgDiaperChangesPerDay (optional): number | null
+ * - input: types.PostpartumTipsInput
  *
  *
  * **Return Type:**
@@ -1198,11 +1254,25 @@ export function usePregnancyWeekSummary(
  *
  * - babyAgeInDays: number
  *
+ * - babyName (optional): string | null
+ *
+ * - babySex (optional): string | null
+ *
  * - topic: string
  *
  * - recentSleepHours (optional): number | null
  *
  * - concerns (optional): string[] | null
+ *
+ * - recentChatTopics (optional): string | null
+ *
+ * - achievedMilestones (optional): string | null
+ *
+ * - activitySummary (optional): string | null
+ *
+ * - parentWellness (optional): string | null
+ *
+ * - medicalContext (optional): string | null
  *
  *
  * **Return Type:**

@@ -1,23 +1,53 @@
 'use client';
 
 import { Button } from '@nugget/ui/button';
+import { Icons } from '@nugget/ui/custom/icons';
 import { Input } from '@nugget/ui/input';
 import { Textarea } from '@nugget/ui/textarea';
+import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { createActivityWithDetailsAction } from '../activity-cards.actions';
 
-export function ActivityDrawerContent() {
+interface ActivityDrawerContentProps {
+  onClose?: () => void;
+  onSaved?: () => void;
+}
+
+export function ActivityDrawerContent({
+  onClose,
+  onSaved,
+}: ActivityDrawerContentProps) {
   const [activityType, setActivityType] = useState('play');
   const [duration, setDuration] = useState(30);
   const [notes, setNotes] = useState('');
 
   const activities = ['Play', 'Walk', 'Park', 'Reading', 'Music', 'Other'];
 
+  const { execute: createActivity, isExecuting } = useAction(
+    createActivityWithDetailsAction,
+    {
+      onError: ({ error }) => {
+        toast.error('Error', {
+          description: error.serverError || 'Failed to save activity.',
+        });
+      },
+      onSuccess: () => {
+        toast.success('Activity logged', {
+          description: 'Activity has been recorded successfully.',
+        });
+        onSaved?.();
+        onClose?.();
+      },
+    },
+  );
+
   const handleSave = () => {
-    console.log('[v0] Saving activity:', {
-      activityType,
+    createActivity({
+      activityType: 'bath',
       duration,
-      notes,
-      timestamp: new Date(),
+      notes: notes || undefined,
+      startTime: new Date(),
     });
   };
 
@@ -91,8 +121,20 @@ export function ActivityDrawerContent() {
         />
       </div>
 
-      <Button className="w-full" onClick={handleSave} size="lg">
-        Save Activity
+      <Button
+        className="w-full"
+        disabled={isExecuting || duration < 1}
+        onClick={handleSave}
+        size="lg"
+      >
+        {isExecuting ? (
+          <>
+            <Icons.Spinner className="animate-spin" size="sm" />
+            Saving...
+          </>
+        ) : (
+          'Save Activity'
+        )}
       </Button>
     </div>
   );
