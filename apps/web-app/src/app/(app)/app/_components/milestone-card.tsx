@@ -211,15 +211,10 @@ export function MilestoneCard({
         setHasUserAnswered(true);
         setUserAnswer(answer);
 
-        // Check if we should open chat
-        const shouldOpenChat =
-          (answer === 'yes' && openChatOnYes) ||
-          (answer === 'no' && openChatOnNo);
-
-        if (shouldOpenChat) {
-          setPrefillMessage(answer);
-          setIsChatOpen(true);
-        }
+        // For yes/no questions, always auto-send the answer
+        // The drawer will open and the AI will respond to the user's choice
+        setPrefillMessage(answer);
+        setIsChatOpen(true);
       } catch (error) {
         console.error('Unexpected error:', error);
       }
@@ -229,8 +224,6 @@ export function MilestoneCard({
       type,
       title,
       followUpQuestion,
-      openChatOnYes,
-      openChatOnNo,
       saveResponse,
       hasUserAnswered,
       userAnswer,

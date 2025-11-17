@@ -95,6 +95,9 @@ export function SleepDrawerContent({
         (Date.now() - startTime.getTime()) / 1000,
       );
       setDuration(elapsedSeconds);
+    } else {
+      // Reset tracking state when activity is cleared
+      setIsTracking(false);
     }
   }, [activeActivityId, startTime, setDuration]);
 

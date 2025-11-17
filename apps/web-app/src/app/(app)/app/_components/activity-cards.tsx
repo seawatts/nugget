@@ -108,6 +108,7 @@ interface ActivityCardsProps {
   onOptimisticActivity?: (activity: typeof Activities.$inferSelect) => void;
   onActivityCreated?: () => void;
   onActivityUpdated?: () => void;
+  refreshTrigger?: number;
 }
 
 export function ActivityCards({
@@ -115,6 +116,7 @@ export function ActivityCards({
   onOptimisticActivity,
   onActivityCreated,
   onActivityUpdated,
+  refreshTrigger = 0,
 }: ActivityCardsProps = {}) {
   const { user } = useUser();
   const [openDrawer, setOpenDrawer] = useState<string | null>(null);
@@ -321,6 +323,14 @@ export function ActivityCards({
     onActivityUpdated?.();
   };
 
+  const handleActivityLogged = (activity: typeof Activities.$inferSelect) => {
+    // When a quick log button is pressed on a predictive card:
+    // 1. Add optimistic activity to local state
+    onOptimisticActivity?.(activity);
+    // 2. Trigger parent refresh (increments refreshTrigger)
+    onActivityCreated?.();
+  };
+
   if (compact) {
     // Compact mode: smaller buttons in a single row
     return (
@@ -371,23 +381,27 @@ export function ActivityCards({
       {/* All Action Cards Section - Predictive + Quick Actions */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         <PredictiveFeedingCard
+          onActivityLogged={handleActivityLogged}
           onCardClick={() => {
             // Open unified feeding drawer for selection
             setOpenDrawer('feeding');
           }}
-          refreshTrigger={onActivityCreated ? 1 : 0}
+          refreshTrigger={refreshTrigger}
         />
         <PredictiveSleepCard
+          onActivityLogged={handleActivityLogged}
           onCardClick={() => setOpenDrawer('sleep')}
-          refreshTrigger={onActivityCreated ? 1 : 0}
+          refreshTrigger={refreshTrigger}
         />
         <PredictiveDiaperCard
+          onActivityLogged={handleActivityLogged}
           onCardClick={() => setOpenDrawer('diaper')}
-          refreshTrigger={onActivityCreated ? 1 : 0}
+          refreshTrigger={refreshTrigger}
         />
         <PredictivePumpingCard
+          onActivityLogged={handleActivityLogged}
           onCardClick={() => setOpenDrawer('pumping')}
-          refreshTrigger={onActivityCreated ? 1 : 0}
+          refreshTrigger={refreshTrigger}
         />
       </div>
 

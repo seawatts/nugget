@@ -167,9 +167,14 @@ export function ActivityDrawer({
       });
     }
 
-    // Reset activeActivityId when drawer closes
+    // Reset state when drawer closes
     if (!isOpen) {
       setActiveActivityId(null);
+      setDuration(0);
+      setNotes('');
+      setSleepQuality(undefined);
+      setSleepLocation(undefined);
+      setWakeReason(undefined);
     }
   }, [isOpen, activity.id, existingActivity]);
 
@@ -222,6 +227,12 @@ export function ActivityDrawer({
             }
           : undefined;
 
+      // Clear the active activity ID immediately to reset UI state
+      setActiveActivityId(null);
+
+      // Close drawer immediately for better UX
+      onClose();
+
       // Update the in-progress activity with endTime and duration
       startTransition(async () => {
         try {
@@ -235,17 +246,11 @@ export function ActivityDrawer({
           });
 
           if (result?.data?.activity) {
-            // Clear the active activity first
-            setActiveActivityId(null);
-
             // Update with real data from server
             onActivityUpdated?.(result.data.activity);
             // Notify that save completed successfully (triggers refresh)
             onActivitySaved?.();
             toast.success('Sleep saved successfully');
-
-            // Close drawer after successful save
-            onClose();
           } else if (result?.serverError) {
             toast.error(result.serverError);
           }

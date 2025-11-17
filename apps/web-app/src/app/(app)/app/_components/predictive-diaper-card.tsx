@@ -1,5 +1,6 @@
 'use client';
 
+import type { Activities } from '@nugget/db/schema';
 import { Card } from '@nugget/ui/card';
 import { Button } from '@nugget/ui/components/button';
 import { toast } from '@nugget/ui/components/sonner';
@@ -25,11 +26,13 @@ import { getDiaperLearningContent } from './upcoming-diaper/learning-content';
 interface PredictiveDiaperCardProps {
   refreshTrigger?: number;
   onCardClick?: () => void;
+  onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
 }
 
 export function PredictiveDiaperCard({
   refreshTrigger = 0,
   onCardClick,
+  onActivityLogged,
 }: PredictiveDiaperCardProps) {
   const [data, setData] = useState<UpcomingDiaperData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -148,6 +151,8 @@ export function PredictiveDiaperCard({
 
       if (result?.data) {
         toast.success('Diaper change logged!');
+        // Notify parent component for optimistic updates and timeline refresh
+        onActivityLogged?.(result.data.activity);
         await loadData(); // Reload to show updated state
       } else if (result?.serverError) {
         toast.error(result.serverError);

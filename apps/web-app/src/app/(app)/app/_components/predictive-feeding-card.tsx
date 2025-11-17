@@ -1,6 +1,7 @@
 'use client';
 
 import { useUser } from '@clerk/nextjs';
+import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
 import { Icons } from '@nugget/ui/custom/icons';
@@ -28,11 +29,13 @@ import { getFeedingLearningContent } from './upcoming-feeding/learning-content';
 interface PredictiveFeedingCardProps {
   refreshTrigger?: number;
   onCardClick?: () => void;
+  onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
 }
 
 export function PredictiveFeedingCard({
   refreshTrigger = 0,
   onCardClick,
+  onActivityLogged,
 }: PredictiveFeedingCardProps) {
   const { user } = useUser();
   const [data, setData] = useState<UpcomingFeedingData | null>(null);
@@ -204,6 +207,8 @@ export function PredictiveFeedingCard({
 
       if (result?.data) {
         toast.success('Feeding logged!');
+        // Notify parent component for optimistic updates and timeline refresh
+        onActivityLogged?.(result.data.activity);
         await loadData(); // Reload to show updated state
       } else if (result?.serverError) {
         toast.error(result.serverError);

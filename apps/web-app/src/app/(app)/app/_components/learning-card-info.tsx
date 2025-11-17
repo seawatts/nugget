@@ -127,15 +127,10 @@ export function LearningCardInfo({
         setHasUserAnswered(true);
         setUserAnswer(answer);
 
-        // Check if we should open chat
-        const shouldOpenChat =
-          (answer === 'yes' && tip.openChatOnYes) ||
-          (answer === 'no' && tip.openChatOnNo);
-
-        if (shouldOpenChat) {
-          setPrefillMessage(answer);
-          setIsChatOpen(true);
-        }
+        // For yes/no questions, always auto-send the answer
+        // The drawer will open and the AI will respond to the user's choice
+        setPrefillMessage(answer);
+        setIsChatOpen(true);
       } catch (error) {
         console.error('Unexpected error:', error);
       }

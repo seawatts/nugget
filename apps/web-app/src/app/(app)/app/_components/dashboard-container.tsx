@@ -79,6 +79,7 @@ export function DashboardContainer() {
           onActivityCreated={handleActivityCreated}
           onActivityUpdated={handleActivityUpdated}
           onOptimisticActivity={handleOptimisticActivity}
+          refreshTrigger={refreshTrigger}
         />
       </div>
 

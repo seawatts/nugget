@@ -18,6 +18,7 @@ export interface SleepPrediction {
   isOverdue: boolean;
   overdueMinutes: number | null;
   suggestedRecoveryTime: Date | null;
+  suggestedDuration: number; // in minutes, suggested duration for quick log
 }
 
 interface SleepActivity {
@@ -54,6 +55,55 @@ function calculateIntervals(sleeps: SleepActivity[]): Array<number | null> {
 }
 
 /**
+ * Calculate suggested sleep duration for quick log based on baby's age and recent patterns
+ */
+function calculateSuggestedDuration(
+  babyAgeDays: number | null,
+  recentSleeps: SleepActivity[],
+): number {
+  // Age-based duration defaults (in minutes)
+  let ageBasedDuration: number;
+
+  if (babyAgeDays === null) {
+    ageBasedDuration = 60; // Default 1 hour
+  } else if (babyAgeDays <= 90) {
+    // 0-3 months: shorter naps
+    ageBasedDuration = 45;
+  } else if (babyAgeDays <= 180) {
+    // 3-6 months: 1-1.5 hours
+    ageBasedDuration = 75;
+  } else if (babyAgeDays <= 365) {
+    // 6-12 months: 1-2 hours
+    ageBasedDuration = 90;
+  } else {
+    // 12+ months: 1.5-2 hours
+    ageBasedDuration = 105;
+  }
+
+  // Calculate average duration from recent sleeps
+  const validDurations = recentSleeps
+    .map((s) => s.duration)
+    .filter((d): d is number => d !== null && d > 0 && d < 480); // Filter realistic durations (< 8 hours)
+
+  if (validDurations.length >= 3) {
+    const avgDuration =
+      validDurations.reduce((sum, d) => sum + d, 0) / validDurations.length;
+    // Weight: 60% recent average, 40% age-based
+    return Math.round(avgDuration * 0.6 + ageBasedDuration * 0.4);
+  }
+
+  if (validDurations.length > 0) {
+    const avgDuration =
+      validDurations.reduce((sum, d) => sum + d, 0) / validDurations.length;
+    // Weight: 40% recent average, 60% age-based (less confidence)
+    return Math.round(avgDuration * 0.4 + ageBasedDuration * 0.6);
+  }
+
+  // No recent data, use age-based
+  return ageBasedDuration;
+}
+
+/**
  * Hybrid prediction algorithm that combines:
  * - Age-based baseline interval (40%)
  * - Recent average interval (40%)
@@ -81,6 +131,7 @@ export function predictNextSleep(
   if (sleepActivities.length === 0) {
     const nextSleepTime = new Date();
     nextSleepTime.setHours(nextSleepTime.getHours() + ageBasedInterval);
+    const suggestedDuration = calculateSuggestedDuration(ageDays, []);
 
     return {
       averageIntervalHours: null,
@@ -92,6 +143,7 @@ export function predictNextSleep(
       nextSleepTime,
       overdueMinutes: null,
       recentSleepPattern: [],
+      suggestedDuration,
       suggestedRecoveryTime: null,
     };
   }
@@ -101,6 +153,8 @@ export function predictNextSleep(
     // Should not happen since we checked length > 0, but satisfy TypeScript
     const nextSleepTime = new Date();
     nextSleepTime.setHours(nextSleepTime.getHours() + ageBasedInterval);
+    const suggestedDuration = calculateSuggestedDuration(ageDays, []);
+
     return {
       averageIntervalHours: null,
       confidenceLevel: 'low',
@@ -111,6 +165,7 @@ export function predictNextSleep(
       nextSleepTime,
       overdueMinutes: null,
       recentSleepPattern: [],
+      suggestedDuration,
       suggestedRecoveryTime: null,
     };
   }
@@ -187,6 +242,12 @@ export function predictNextSleep(
     );
   }
 
+  // Calculate suggested duration for quick log
+  const suggestedDuration = calculateSuggestedDuration(
+    ageDays,
+    sleepActivities,
+  );
+
   return {
     averageIntervalHours: averageInterval,
     confidenceLevel,
@@ -197,6 +258,7 @@ export function predictNextSleep(
     nextSleepTime,
     overdueMinutes,
     recentSleepPattern: recentPattern,
+    suggestedDuration,
     suggestedRecoveryTime,
   };
 }

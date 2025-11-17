@@ -27,11 +27,13 @@ import { getSleepLearningContent } from './upcoming-sleep/learning-content';
 interface PredictiveSleepCardProps {
   refreshTrigger?: number;
   onCardClick?: () => void;
+  onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
 }
 
 export function PredictiveSleepCard({
   refreshTrigger = 0,
   onCardClick,
+  onActivityLogged,
 }: PredictiveSleepCardProps) {
   const [data, setData] = useState<UpcomingSleepData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -187,11 +189,17 @@ export function PredictiveSleepCard({
     e.stopPropagation();
     setQuickLogging(true);
     try {
-      const result = await quickLogSleepAction({});
+      // Use the suggested duration from prediction data
+      const duration = prediction.suggestedDuration;
+
+      const result = await quickLogSleepAction({ duration });
 
       if (result?.data) {
         toast.success('Sleep logged!');
+        // Notify parent component for optimistic updates and timeline refresh
+        onActivityLogged?.(result.data.activity);
         await loadData(); // Reload to show updated state
+        await loadInProgressActivity(); // Reload in-progress to ensure no stale state
       } else if (result?.serverError) {
         toast.error(result.serverError);
       }

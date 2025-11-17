@@ -72,19 +72,16 @@ export function QuickChatDialogContent({
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const hasAutoSent = useRef(false);
-  const prefillMessageRef = useRef(prefillMessage);
+  const formRef = useRef<HTMLFormElement>(null);
+  const hasAttemptedAutoSend = useRef(false);
 
   const { executeAsync: findOrCreateChat } = useAction(
     findOrCreateContextChatAction,
   );
 
-  // Reset hasAutoSent when dialog opens with a new prefill message
+  // Reset auto-send flag when prefillMessage changes (new session)
   useEffect(() => {
-    if (prefillMessage !== prefillMessageRef.current) {
-      hasAutoSent.current = false;
-      prefillMessageRef.current = prefillMessage;
-    }
+    hasAttemptedAutoSend.current = false;
   }, [prefillMessage]);
 
   // Load or create chat when component mounts (if context is provided)
@@ -151,20 +148,39 @@ export function QuickChatDialogContent({
   }, []);
 
   // Auto-send prefilled message if requested
-  // biome-ignore lint/correctness/useExhaustiveDependencies: handleSendMessage is defined below and causes circular dependency
   useEffect(() => {
     if (
       autoSendPrefill &&
       prefillMessage &&
-      !hasAutoSent.current &&
+      !hasAttemptedAutoSend.current &&
       !isLoadingChat &&
+      chatId &&
+      !isSending
+    ) {
+      hasAttemptedAutoSend.current = true;
+      // Set the input value first
+      setInput(prefillMessage);
+    }
+  }, [autoSendPrefill, prefillMessage, isLoadingChat, chatId, isSending]);
+
+  // Trigger send after input state has been updated
+  // biome-ignore lint/correctness/useExhaustiveDependencies: we only want this to run when input matches prefillMessage after auto-send sets it
+  useEffect(() => {
+    if (
+      hasAttemptedAutoSend.current &&
+      input === prefillMessage &&
+      prefillMessage &&
+      !isSending &&
       chatId
     ) {
-      hasAutoSent.current = true;
-      void handleSendMessage(prefillMessage);
+      // Give a moment for drawer animation, then send
+      const timer = setTimeout(() => {
+        void handleSendMessage();
+      }, 200);
+      return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoSendPrefill, prefillMessage, isLoadingChat, chatId]);
+  }, [input, prefillMessage, isSending, chatId]);
 
   // Auto-scroll to bottom when messages change (including during streaming)
   // biome-ignore lint/correctness/useExhaustiveDependencies: messages is intentionally included to trigger scroll on every message update
@@ -182,104 +198,101 @@ export function QuickChatDialogContent({
     }, 300);
   }, []);
 
-  const handleSendMessage = useCallback(
-    async (messageContent?: string) => {
-      const trimmedInput = (messageContent || input).trim();
-      if (!trimmedInput || !userId || isSending) return;
+  const handleSendMessage = useCallback(async () => {
+    const trimmedInput = input.trim();
+    if (!trimmedInput || !userId || isSending) return;
 
-      setIsSending(true);
+    setIsSending(true);
 
-      // Add user message optimistically
-      const userMsg: Message = {
-        content: trimmedInput,
-        createdAt: new Date(),
-        id: `temp-user-${Date.now()}`,
-        role: 'user',
-      };
-      setMessages((prev) => [...prev, userMsg]);
-      setInput('');
+    // Add user message optimistically
+    const userMsg: Message = {
+      content: trimmedInput,
+      createdAt: new Date(),
+      id: `temp-user-${Date.now()}`,
+      role: 'user',
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput('');
 
-      // Create placeholder for streaming assistant message
-      const assistantMsgId = `temp-assistant-${Date.now()}`;
-      const assistantMsg: Message = {
-        content: '',
-        createdAt: new Date(),
-        id: assistantMsgId,
-        role: 'assistant',
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
+    // Create placeholder for streaming assistant message
+    const assistantMsgId = `temp-assistant-${Date.now()}`;
+    const assistantMsg: Message = {
+      content: '',
+      createdAt: new Date(),
+      id: assistantMsgId,
+      role: 'assistant',
+    };
+    setMessages((prev) => [...prev, assistantMsg]);
 
-      try {
-        // Call the streaming action with chatId if available
-        const result = await sendChatMessageStreamingAction({
-          babyId,
-          chatId: chatId || undefined,
-          message: trimmedInput,
-          systemPrompt,
-        });
+    try {
+      // Call the streaming action with chatId if available
+      const result = await sendChatMessageStreamingAction({
+        babyId,
+        chatId: chatId || undefined,
+        message: trimmedInput,
+        systemPrompt,
+      });
 
-        // Update chatId if this was the first message
-        if (!chatId) {
-          setChatId(result.chatId);
-        }
-
-        // Update user message with actual ID
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === userMsg.id ? { ...m, id: result.userMessageId } : m,
-          ),
-        );
-
-        // Process the stream
-        const reader = result.stream.getReader();
-        const decoder = new TextDecoder();
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          try {
-            const parsed = JSON.parse(chunk);
-
-            // Update the assistant message with partial response
-            if (parsed.partial?.response) {
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantMsgId
-                    ? { ...m, content: parsed.partial.response }
-                    : m,
-                ),
-              );
-            }
-
-            // Update with final response
-            if (parsed.final?.response) {
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantMsgId
-                    ? { ...m, content: parsed.final.response }
-                    : m,
-                ),
-              );
-            }
-          } catch (e) {
-            // Chunk might not be complete JSON, continue
-            console.error('Error parsing streaming chunk:', e);
-          }
-        }
-      } catch (error) {
-        console.error('Error sending message:', error);
-        // Remove optimistic messages on error
-        setMessages((prev) =>
-          prev.filter((m) => m.id !== userMsg.id && m.id !== assistantMsgId),
-        );
-      } finally {
-        setIsSending(false);
+      // Update chatId if this was the first message
+      if (!chatId) {
+        setChatId(result.chatId);
       }
-    },
-    [input, userId, babyId, systemPrompt, chatId, isSending],
-  );
+
+      // Update user message with actual ID
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === userMsg.id ? { ...m, id: result.userMessageId } : m,
+        ),
+      );
+
+      // Process the stream
+      const reader = result.stream.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        try {
+          const parsed = JSON.parse(chunk);
+
+          // Update the assistant message with partial response
+          if (parsed.partial?.response) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMsgId
+                  ? { ...m, content: parsed.partial.response }
+                  : m,
+              ),
+            );
+          }
+
+          // Update with final response
+          if (parsed.final?.response) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMsgId
+                  ? { ...m, content: parsed.final.response }
+                  : m,
+              ),
+            );
+          }
+        } catch (e) {
+          // Chunk might not be complete JSON, continue
+          console.error('Error parsing streaming chunk:', e);
+        }
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Remove optimistic messages on error
+      setMessages((prev) =>
+        prev.filter((m) => m.id !== userMsg.id && m.id !== assistantMsgId),
+      );
+    } finally {
+      setIsSending(false);
+    }
+  }, [input, userId, babyId, systemPrompt, chatId, isSending]);
 
   return (
     <div className="flex flex-col h-full max-h-[70vh]">
@@ -352,6 +365,7 @@ export function QuickChatDialogContent({
             event.preventDefault();
             void handleSendMessage();
           }}
+          ref={formRef}
         >
           <input
             className={cn(

@@ -1,6 +1,7 @@
 'use client';
 
 import { api } from '@nugget/api/react';
+import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
 import { toast } from '@nugget/ui/components/sonner';
@@ -29,11 +30,13 @@ import { formatVolumeDisplay, getVolumeUnit } from './volume-utils';
 interface PredictivePumpingCardProps {
   refreshTrigger?: number;
   onCardClick?: () => void;
+  onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
 }
 
 export function PredictivePumpingCard({
   refreshTrigger = 0,
   onCardClick,
+  onActivityLogged,
 }: PredictivePumpingCardProps) {
   const router = useRouter();
   const [data, setData] = useState<UpcomingPumpingData | null>(null);
@@ -148,6 +151,8 @@ export function PredictivePumpingCard({
 
       if (result?.data) {
         toast.success('Pumping logged!');
+        // Notify parent component for optimistic updates and timeline refresh
+        onActivityLogged?.(result.data.activity);
         await loadData(); // Reload to show updated state
       } else if (result?.serverError) {
         toast.error(result.serverError);

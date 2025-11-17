@@ -80,12 +80,13 @@ export const getUpcomingSleepAction = action.action(
 );
 
 const quickLogSleepInputSchema = z.object({
-  duration: z.number().optional(), // duration in minutes
-  time: z.string().datetime().optional(), // defaults to now
+  duration: z.number().min(10).max(480), // duration in minutes, 10min to 8hr
+  time: z.string().datetime().optional(), // defaults to now (as endTime)
 });
 
 /**
  * Quick log a sleep activity (for when sleep is overdue)
+ * Creates a completed sleep entry with start and end times
  */
 export const quickLogSleepAction = action
   .schema(quickLogSleepInputSchema)
@@ -108,13 +109,29 @@ export const quickLogSleepAction = action
         throw new Error('No baby found. Please complete onboarding first.');
       }
 
-      // Create the sleep activity
+      // Calculate start and end times for completed entry
+      const endTime = parsedInput.time
+        ? new Date(parsedInput.time)
+        : new Date();
+      const startTime = new Date(
+        endTime.getTime() - parsedInput.duration * 60 * 1000,
+      );
+
+      // Determine sleep type based on time of day
+      const hour = startTime.getHours();
+      const sleepType = hour >= 6 && hour < 18 ? 'nap' : 'night';
+
+      // Create the sleep activity as a completed entry
       const activity = await api.activities.create({
         babyId: baby.id,
-        details: null,
-        duration: parsedInput.duration || null,
+        details: {
+          sleepType,
+          type: 'sleep',
+        },
+        duration: parsedInput.duration,
+        endTime,
         isScheduled: false,
-        startTime: parsedInput.time ? new Date(parsedInput.time) : new Date(),
+        startTime,
         type: 'sleep',
       });
 
