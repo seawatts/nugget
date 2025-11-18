@@ -61,7 +61,7 @@ export function ParentDashboard({ userId }: ParentDashboardProps) {
 
       {/* Parent Sleep Tracking */}
       <div className="mb-6">
-        <ParentSleepCard onSleepLogged={handleSleepLogged} userId={userId} />
+        <ParentSleepCard userId={userId} />
       </div>
 
       {/* Today's Tasks */}
