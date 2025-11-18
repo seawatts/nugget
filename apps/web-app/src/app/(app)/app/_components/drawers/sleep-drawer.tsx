@@ -1,6 +1,8 @@
 'use client';
 
+import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
+import { Checkbox } from '@nugget/ui/checkbox';
 import { Textarea } from '@nugget/ui/textarea';
 import {
   Baby,
@@ -63,6 +65,17 @@ interface SleepDrawerContentProps {
   setWakeReason: (
     reason: 'hungry' | 'diaper' | 'crying' | 'naturally' | 'noise' | 'unknown',
   ) => void;
+  isCoSleeping?: boolean;
+  setIsCoSleeping: (value: boolean) => void;
+  coSleepingWith?: string[];
+  setCoSleepingWith: (value: string[]) => void;
+  currentUserId?: string;
+  familyMembers?: Array<{
+    id: string;
+    name: string;
+    avatarUrl?: string | null;
+    userId: string;
+  }>;
 }
 
 export function SleepDrawerContent({
@@ -82,6 +95,12 @@ export function SleepDrawerContent({
   setSleepLocation,
   wakeReason,
   setWakeReason,
+  isCoSleeping,
+  setIsCoSleeping,
+  coSleepingWith = [],
+  setCoSleepingWith,
+  currentUserId,
+  familyMembers = [],
 }: SleepDrawerContentProps) {
   const [isTracking, setIsTracking] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -347,6 +366,82 @@ export function SleepDrawerContent({
           </div>
         </div>
       )}
+
+      {/* Co-sleeping */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            checked={isCoSleeping}
+            id="co-sleeping"
+            onCheckedChange={(checked) => {
+              const isChecked = checked === true;
+              setIsCoSleeping(isChecked);
+              if (isChecked && currentUserId) {
+                // Auto-select current user when enabling co-sleeping
+                setCoSleepingWith([currentUserId]);
+              } else if (!isChecked) {
+                // Clear selections when disabling
+                setCoSleepingWith([]);
+              }
+            }}
+          />
+          <label
+            className="text-sm font-medium text-muted-foreground cursor-pointer"
+            htmlFor="co-sleeping"
+          >
+            Co-sleeping
+          </label>
+        </div>
+
+        {/* Family member selection - shown when co-sleeping is enabled */}
+        {isCoSleeping && familyMembers.length > 0 && (
+          <div className="space-y-2 pl-6">
+            <p className="text-xs text-muted-foreground">Who is co-sleeping?</p>
+            <div className="grid grid-cols-1 gap-2">
+              {familyMembers.map((member) => (
+                <div
+                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors"
+                  key={member.userId}
+                >
+                  <Checkbox
+                    checked={coSleepingWith.includes(member.userId)}
+                    id={`member-${member.userId}`}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setCoSleepingWith([...coSleepingWith, member.userId]);
+                      } else {
+                        setCoSleepingWith(
+                          coSleepingWith.filter((id) => id !== member.userId),
+                        );
+                      }
+                    }}
+                  />
+                  <Avatar className="size-8">
+                    <AvatarImage
+                      alt={member.name}
+                      src={member.avatarUrl || undefined}
+                    />
+                    <AvatarFallback className="text-xs">
+                      {member.name
+                        .split(' ')
+                        .map((n) => n[0])
+                        .join('')
+                        .toUpperCase()
+                        .slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <label
+                    className="text-sm flex-1 cursor-pointer"
+                    htmlFor={`member-${member.userId}`}
+                  >
+                    {member.name}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Notes */}
       <div className="space-y-3">

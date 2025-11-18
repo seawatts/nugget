@@ -3,7 +3,8 @@
 import { api } from '@nugget/api/react';
 import { H2, P } from '@nugget/ui/custom/typography';
 import { Award } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useOptimisticMilestonesStore } from '~/stores/optimistic-milestones';
 import { MilestoneCard } from './milestone-card';
 import { MilestoneCardCheckBack } from './milestone-card-check-back';
 import { MilestoneCardLoading } from './milestone-card-loading';
@@ -11,6 +12,7 @@ import {
   getMilestonesCarouselContent,
   type MilestoneCardData,
 } from './milestones-carousel.actions';
+import { useMilestoneMutations } from './use-milestone-mutations';
 
 interface MilestonesCarouselProps {
   babyId: string;
@@ -22,6 +24,13 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
 
   // Fetch baby info using tRPC for immediate display in loading card
   const { data: baby } = api.babies.getById.useQuery({ id: babyId });
+
+  // Use milestone mutations hook
+  const { markComplete } = useMilestoneMutations();
+
+  // Get optimistic completion state
+  const isOptimisticallyCompleted =
+    useOptimisticMilestonesStore.use.isOptimisticallyCompleted();
 
   const babyName = baby?.firstName ?? 'Baby';
   const ageInDays = baby?.birthDate
@@ -54,6 +63,32 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
 
     loadMilestones();
   }, [babyId]);
+
+  // Handler to mark milestone as complete
+  const handleMarkComplete = useCallback(
+    async (milestone: MilestoneCardData) => {
+      if (!baby?.id) return;
+
+      try {
+        await markComplete({
+          babyId: baby.id,
+          description: milestone.description,
+          milestoneId: milestone.id,
+          suggestedDay: milestone.suggestedDay,
+          title: milestone.title,
+          type: milestone.type,
+        });
+
+        console.log(
+          '[MilestonesCarousel] Milestone marked complete:',
+          milestone.title,
+        );
+      } catch (error) {
+        console.error('[MilestonesCarousel] Failed to mark complete:', error);
+      }
+    },
+    [baby?.id, markComplete],
+  );
 
   // Show loading state
   if (isLoading) {
@@ -101,10 +136,10 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
       </div>
 
       {/* Horizontal scroll container */}
-      <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
+      <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
         {milestones.map((milestone) => (
           <div
-            className="snap-center shrink-0 first:ml-0 w-80 sm:w-96"
+            className="snap-center shrink-0 first:ml-0 w-[340px] sm:w-96"
             key={milestone.id}
           >
             <MilestoneCard
@@ -112,12 +147,11 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
               babyId={baby?.id}
               bulletPoints={milestone.bulletPoints || [milestone.description]}
               followUpQuestion={milestone.followUpQuestion || ''}
-              isCompleted={milestone.isCompleted}
+              isCompleted={
+                milestone.isCompleted || isOptimisticallyCompleted(milestone.id)
+              }
               isYesNoQuestion={milestone.isYesNoQuestion}
-              onMarkComplete={() => {
-                console.log('Mark complete:', milestone.id);
-                // TODO: Implement mark complete handler
-              }}
+              onMarkComplete={() => handleMarkComplete(milestone)}
               openChatOnNo={milestone.openChatOnNo}
               openChatOnYes={milestone.openChatOnYes}
               summary={milestone.summary}
@@ -144,7 +178,7 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
             }
 
             return (
-              <div className="snap-center shrink-0 w-80 sm:w-96">
+              <div className="snap-center shrink-0 w-[340px] sm:w-96">
                 <MilestoneCardCheckBack
                   baby={{ firstName: baby.firstName ?? 'Baby' }}
                   currentAgeInDays={ageInDays}

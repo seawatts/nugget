@@ -68,7 +68,7 @@ function NuggetAvatar({
         {image ? (
           <img
             alt={name || 'Avatar'}
-            className="size-full rounded-full object-cover"
+            className="size-full rounded-full object-contain"
             src={image || '/placeholder.svg'}
           />
         ) : (

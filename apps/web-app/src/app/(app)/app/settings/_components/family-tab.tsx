@@ -109,6 +109,16 @@ export function FamilyTab() {
     }
   };
 
+  const updateRoleMutation = api.familyMembers.updateRole.useMutation({
+    onError: (error) => {
+      toast.error(error.message || 'Failed to update role');
+    },
+    onSuccess: () => {
+      toast.success('Role updated successfully');
+      void utils.familyMembers.all.invalidate();
+    },
+  });
+
   const removeMemberMutation = api.familyMembers.remove.useMutation({
     onError: (error) => {
       toast.error(error.message || 'Failed to remove member');
@@ -217,9 +227,6 @@ export function FamilyTab() {
               const RoleIcon = member.role
                 ? roleIcons[member.role as RoleType]
                 : User;
-              const roleLabel = member.role
-                ? roleLabels[member.role as RoleType]
-                : 'Member';
               const roleColor = member.role
                 ? roleColors[member.role as RoleType]
                 : 'text-muted-foreground';
@@ -246,10 +253,45 @@ export function FamilyTab() {
                         {member.user?.firstName || member.user?.email}{' '}
                         {member.user?.lastName || ''}
                       </p>
-                      <div className={`flex items-center gap-1 ${roleColor}`}>
-                        <RoleIcon className="size-3" />
-                        <span className="text-xs">{roleLabel}</span>
-                      </div>
+                      <Select
+                        disabled={updateRoleMutation.isPending}
+                        onValueChange={(value) => {
+                          updateRoleMutation.mutate({
+                            memberId: member.id,
+                            newRole: value as RoleType,
+                          });
+                        }}
+                        value={member.role || 'partner'}
+                      >
+                        <SelectTrigger className="w-[130px] h-7 text-xs">
+                          <div
+                            className={`flex items-center gap-1 ${roleColor}`}
+                          >
+                            <RoleIcon className="size-3" />
+                            <SelectValue />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="primary">
+                            <div className="flex items-center gap-2">
+                              <Crown className="size-3 text-primary" />
+                              <span>Primary</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="partner">
+                            <div className="flex items-center gap-2">
+                              <Heart className="size-3 text-accent" />
+                              <span>Partner</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="caregiver">
+                            <div className="flex items-center gap-2">
+                              <Shield className="size-3 text-secondary" />
+                              <span>Caregiver</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <p className="text-sm text-muted-foreground truncate">
                       {member.user?.email}

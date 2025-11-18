@@ -1,11 +1,13 @@
 'use client';
 
+import { useAuth } from '@clerk/nextjs';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
 import { Calendar, Clock, Moon, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getInProgressSleepActivityAction } from '../activity-cards.actions';
+import { getFamilyMembersAction } from '../activity-timeline-filters.actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import { SleepDrawerContent } from './sleep-drawer';
 
@@ -24,6 +26,7 @@ export function SleepActivityDrawer({
   isOpen,
   onClose,
 }: SleepActivityDrawerProps) {
+  const { userId } = useAuth();
   const { createActivity, updateActivity, isCreating, isUpdating } =
     useActivityMutations();
 
@@ -55,10 +58,41 @@ export function SleepActivityDrawer({
     | 'unknown'
     | undefined
   >();
+  const [isCoSleeping, setIsCoSleeping] = useState(false);
+  const [coSleepingWith, setCoSleepingWith] = useState<string[]>([]);
+  const [familyMembers, setFamilyMembers] = useState<
+    Array<{
+      id: string;
+      name: string;
+      avatarUrl?: string | null;
+      userId: string;
+    }>
+  >([]);
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>();
   const [activeActivityId, setActiveActivityId] = useState<string | null>(null);
 
   const isPending = isCreating || isUpdating;
   const isEditing = Boolean(existingActivity) || Boolean(activeActivityId);
+
+  // Fetch family members when drawer opens
+  useEffect(() => {
+    if (isOpen) {
+      // Set current user ID
+      setCurrentUserId(userId || undefined);
+
+      // Fetch family members
+      void (async () => {
+        try {
+          const members = await getFamilyMembersAction();
+          if (members) {
+            setFamilyMembers(members);
+          }
+        } catch (error) {
+          console.error('Failed to fetch family members:', error);
+        }
+      })();
+    }
+  }, [isOpen, userId]);
 
   // Update state when existingActivity changes
   useEffect(() => {
@@ -85,6 +119,8 @@ export function SleepActivityDrawer({
         setSleepQuality(existingActivity.details.quality);
         setSleepLocation(existingActivity.details.location);
         setWakeReason(existingActivity.details.wakeReason);
+        setIsCoSleeping(existingActivity.details.isCoSleeping || false);
+        setCoSleepingWith(existingActivity.details.coSleepingWith || []);
       }
     }
 
@@ -96,6 +132,8 @@ export function SleepActivityDrawer({
       setSleepQuality(undefined);
       setSleepLocation(undefined);
       setWakeReason(undefined);
+      setIsCoSleeping(false);
+      setCoSleepingWith([]);
     }
   }, [existingActivity]);
 
@@ -121,6 +159,10 @@ export function SleepActivityDrawer({
               setSleepQuality(inProgressActivity.details.quality);
               setSleepLocation(inProgressActivity.details.location);
               setWakeReason(inProgressActivity.details.wakeReason);
+              setIsCoSleeping(inProgressActivity.details.isCoSleeping || false);
+              setCoSleepingWith(
+                inProgressActivity.details.coSleepingWith || [],
+              );
             }
           } else {
             setActiveActivityId(null);
@@ -139,6 +181,8 @@ export function SleepActivityDrawer({
       setSleepQuality(undefined);
       setSleepLocation(undefined);
       setWakeReason(undefined);
+      setIsCoSleeping(false);
+      setCoSleepingWith([]);
     }
   }, [isOpen, existingActivity]);
 
@@ -147,6 +191,8 @@ export function SleepActivityDrawer({
       const activity = await createActivity({
         activityType: 'sleep',
         details: {
+          coSleepingWith: isCoSleeping ? coSleepingWith : undefined,
+          isCoSleeping: isCoSleeping || undefined,
           location: sleepLocation,
           quality: sleepQuality,
           sleepType: sleepType,
@@ -172,6 +218,8 @@ export function SleepActivityDrawer({
 
       // Create details object
       const sleepDetails = {
+        coSleepingWith: isCoSleeping ? coSleepingWith : undefined,
+        isCoSleeping: isCoSleeping || undefined,
         location: sleepLocation,
         quality: sleepQuality,
         sleepType: sleepType,
@@ -268,10 +316,16 @@ export function SleepActivityDrawer({
       <div className="flex-1 overflow-y-auto p-6">
         <SleepDrawerContent
           activeActivityId={activeActivityId}
+          coSleepingWith={coSleepingWith}
+          currentUserId={currentUserId}
           duration={duration}
+          familyMembers={familyMembers}
+          isCoSleeping={isCoSleeping}
           notes={notes}
           onTimerStart={handleTimerStart}
+          setCoSleepingWith={setCoSleepingWith}
           setDuration={setDuration}
+          setIsCoSleeping={setIsCoSleeping}
           setNotes={setNotes}
           setSleepLocation={setSleepLocation}
           setSleepQuality={setSleepQuality}

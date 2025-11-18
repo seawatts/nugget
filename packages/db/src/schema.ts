@@ -70,6 +70,10 @@ export const activityTypeEnum = pgEnum('activityType', [
   'growth',
   'potty',
 ]);
+export const activitySubjectTypeEnum = pgEnum('activitySubjectType', [
+  'baby',
+  'family_member',
+]);
 export const milestoneTypeEnum = pgEnum('milestoneType', [
   'physical',
   'cognitive',
@@ -505,6 +509,8 @@ export const temperatureDetailsSchema = z.object({
 
 // Sleep details
 export const sleepDetailsSchema = z.object({
+  coSleepingWith: z.array(z.string()).optional(), // Array of user IDs who are co-sleeping
+  isCoSleeping: z.boolean().optional(), // Whether this is a co-sleeping session
   location: z
     .enum([
       'crib',
@@ -599,9 +605,9 @@ export const Activities = pgTable('activities', {
     () => Users.id,
     { onDelete: 'set null' },
   ), // User assigned to complete this scheduled feeding
-  babyId: varchar('babyId', { length: 128 })
-    .notNull()
-    .references(() => Babies.id, { onDelete: 'cascade' }),
+  babyId: varchar('babyId', { length: 128 }).references(() => Babies.id, {
+    onDelete: 'cascade',
+  }), // Baby the activity is about (when subjectType = 'baby')
   createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
   details: json('details').$type<ActivityDetails>(),
   duration: integer('duration'), // in minutes
@@ -610,6 +616,10 @@ export const Activities = pgTable('activities', {
     .notNull()
     .references(() => Families.id, { onDelete: 'cascade' })
     .default(requestingFamilyId()),
+  familyMemberId: varchar('familyMemberId', { length: 128 }).references(
+    () => FamilyMembers.id,
+    { onDelete: 'cascade' },
+  ), // Family member the activity is about (when subjectType = 'family_member')
   feedingSource: feedingSourceEnum('feedingSource'), // Source of milk/formula for feeding activities
   id: varchar('id', { length: 128 })
     .primaryKey()
@@ -617,6 +627,7 @@ export const Activities = pgTable('activities', {
   isScheduled: boolean('isScheduled').default(false).notNull(), // Whether this is a scheduled/future feed
   notes: text('notes'),
   startTime: timestamp('startTime', { mode: 'date' }).notNull(),
+  subjectType: activitySubjectTypeEnum('subjectType').notNull().default('baby'), // What/who the activity is about
   type: activityTypeEnum('type').notNull(),
   updatedAt: timestamp('updatedAt', { mode: 'date' })
     .notNull()

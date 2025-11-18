@@ -21,6 +21,7 @@ export interface LearningTip {
 interface LearningCarouselData {
   baby: Baby | null;
   tips: LearningTip[];
+  status: 'loading' | 'pending' | 'ready' | 'empty';
 }
 
 /**
@@ -34,7 +35,7 @@ export async function getLearningCarouselContent(
     const authResult = await auth();
     if (!authResult.userId) {
       console.error('[Learning] No authenticated user');
-      return { baby: null, tips: [] };
+      return { baby: null, status: 'empty', tips: [] };
     }
 
     // Get baby data
@@ -43,7 +44,7 @@ export async function getLearningCarouselContent(
 
     if (!baby || !baby.birthDate) {
       console.error('[Learning] No baby or birth date found');
-      return { baby: null, tips: [] };
+      return { baby: null, status: 'empty', tips: [] };
     }
 
     const ageInDays = differenceInDays(new Date(), baby.birthDate);
@@ -102,15 +103,27 @@ export async function getLearningCarouselContent(
 
     console.log('[Learning] Returning result:', {
       hasBaby: !!baby,
+      isPending: tips === null,
       tipsCount: tips?.length || 0,
     });
 
+    // Determine status based on result
+    let status: 'loading' | 'pending' | 'ready' | 'empty';
+    if (tips === null) {
+      status = 'pending'; // Cache is generating
+    } else if (tips.length === 0) {
+      status = 'empty'; // No content available
+    } else {
+      status = 'ready'; // Content is ready
+    }
+
     return {
       baby,
+      status,
       tips: tips || [],
     };
   } catch (error) {
     console.error('[Learning] Error:', error);
-    return { baby: null, tips: [] };
+    return { baby: null, status: 'empty', tips: [] };
   }
 }

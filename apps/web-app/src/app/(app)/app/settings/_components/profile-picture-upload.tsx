@@ -111,10 +111,11 @@ export function ProfilePictureUpload({
         ctx.clip();
 
         // Calculate dimensions with crop
-        const scaledWidth = img.width * crop.scale;
-        const scaledHeight = img.height * crop.scale;
+        // Use naturalWidth/naturalHeight to ensure we're working with actual image dimensions
+        const scaledWidth = img.naturalWidth * crop.scale;
+        const scaledHeight = img.naturalHeight * crop.scale;
 
-        // Draw image with crop settings
+        // Draw image with crop settings, centered with offsets applied
         ctx.drawImage(
           img,
           size / 2 - scaledWidth / 2 + crop.x,

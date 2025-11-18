@@ -26,7 +26,7 @@ export function MilestoneCardCheckBack({
     : 7; // Default to 7 days if no specific milestone is found
 
   return (
-    <div className="min-w-[280px] h-[560px] snap-start rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 overflow-hidden flex flex-col">
+    <div className="min-w-[340px] h-[560px] snap-start rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 overflow-hidden flex flex-col">
       <div className="flex items-center justify-center gap-3 p-6 bg-primary/10">
         <Award className="size-8 text-primary" />
       </div>

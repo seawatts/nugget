@@ -18,7 +18,9 @@ interface LearningCarouselProps {
 
 export function LearningCarousel({ babyId }: LearningCarouselProps) {
   const [tips, setTips] = useState<LearningTip[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [status, setStatus] = useState<
+    'loading' | 'pending' | 'ready' | 'empty'
+  >('loading');
 
   // Fetch baby info using tRPC for immediate display in loading card
   const { data: baby } = api.babies.getById.useQuery({ id: babyId });
@@ -33,32 +35,45 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
   useEffect(() => {
     async function loadContent() {
       try {
-        setIsLoading(true);
+        setStatus('loading');
         console.log('[LearningCarousel] Loading content for baby:', babyId);
 
-        const { tips: loadedTips } = await getLearningCarouselContent(babyId);
+        const result = await getLearningCarouselContent(babyId);
 
-        console.log('[LearningCarousel] Loaded tips:', loadedTips.length);
+        console.log('[LearningCarousel] Result:', {
+          status: result.status,
+          tipsCount: result.tips.length,
+        });
 
-        setTips(loadedTips);
+        setTips(result.tips);
+        setStatus(result.status);
+
+        // If pending, poll again after a short delay
+        if (result.status === 'pending') {
+          console.log('[LearningCarousel] Content is pending, will retry...');
+          setTimeout(() => {
+            loadContent();
+          }, 3000); // Retry after 3 seconds
+        }
       } catch (error) {
         console.error('[LearningCarousel] Failed to load content:', error);
-      } finally {
-        setIsLoading(false);
+        setStatus('empty');
       }
     }
 
     loadContent();
   }, [babyId]);
 
-  // Show loading state
-  if (isLoading) {
+  // Show loading state for both initial loading and pending generation
+  if (status === 'loading' || status === 'pending') {
     return (
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="size-5 text-primary" />
           <H2 className="text-xl">Learning</H2>
-          <P className="text-xs text-muted-foreground ml-auto">Loading...</P>
+          <P className="text-xs text-muted-foreground ml-auto">
+            {status === 'pending' ? 'Generating...' : 'Loading...'}
+          </P>
         </div>
         <LearningCardLoading ageInDays={ageInDays} babyName={babyName} />
       </div>
@@ -66,7 +81,7 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
   }
 
   // Show message if no tips (don't hide completely)
-  if (tips.length === 0) {
+  if (status === 'empty' || tips.length === 0) {
     console.log('[LearningCarousel] No tips to display');
     return (
       <div className="mb-6">
@@ -76,9 +91,7 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
         </div>
         <div className="bg-muted/30 rounded-lg p-6 text-center">
           <P className="text-muted-foreground">
-            {baby
-              ? 'Generating personalized learning content...'
-              : 'No content available'}
+            {baby ? 'Check back later for new content' : 'No content available'}
           </P>
         </div>
       </div>
@@ -93,10 +106,10 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
       </div>
 
       {/* Horizontal scroll container */}
-      <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
+      <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
         {tips.map((tip) => (
           <div
-            className="snap-center shrink-0 first:ml-0 w-80 sm:w-96"
+            className="snap-center shrink-0 first:ml-0 w-[340px] sm:w-96"
             key={`${tip.category}-${tip.summary.slice(0, 30)}`}
           >
             <LearningCardInfo
@@ -124,7 +137,7 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
             }
 
             return (
-              <div className="snap-center shrink-0 w-80 sm:w-96">
+              <div className="snap-center shrink-0 w-[340px] sm:w-96">
                 <LearningCardCheckBack baby={baby} nextUpdateAge={nextUpdate} />
               </div>
             );

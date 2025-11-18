@@ -121,4 +121,65 @@ export const familyMembersRouter = createTRPCRouter({
 
       return { success: true };
     }),
+
+  // Update a family member's role
+  updateRole: protectedProcedure
+    .input(
+      z.object({
+        memberId: z.string(),
+        newRole: z.enum(['primary', 'partner', 'caregiver']),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { userId: currentUserId, orgId: familyId } = ctx.auth;
+
+      if (!familyId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'You must be part of a family to update member roles',
+        });
+      }
+
+      // Verify the current user is a member of the family
+      const currentUserMember = await ctx.db.query.FamilyMembers.findFirst({
+        where: and(
+          eq(FamilyMembers.userId, currentUserId),
+          eq(FamilyMembers.familyId, familyId),
+        ),
+      });
+
+      if (!currentUserMember) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to update member roles',
+        });
+      }
+
+      // Verify the target member exists in this family
+      const targetMember = await ctx.db.query.FamilyMembers.findFirst({
+        where: and(
+          eq(FamilyMembers.id, input.memberId),
+          eq(FamilyMembers.familyId, familyId),
+        ),
+      });
+
+      if (!targetMember) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Member not found in this family',
+        });
+      }
+
+      // Update the role
+      const [updatedMember] = await ctx.db
+        .update(FamilyMembers)
+        .set({
+          role: input.newRole,
+          updatedAt: new Date(),
+        })
+        .where(eq(FamilyMembers.id, input.memberId))
+        .returning();
+
+      return updatedMember;
+    }),
 });

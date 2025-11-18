@@ -183,39 +183,28 @@ export function MilestoneCard({
 
   // Handler for yes/no button clicks
   const handleYesNoClick = useCallback(
-    async (answer: 'yes' | 'no') => {
+    (answer: 'yes' | 'no') => {
       if (!babyId) return;
 
       // If clicking the same answer, do nothing
       if (hasUserAnswered && userAnswer === answer) return;
 
-      try {
-        // Save the response (new or changed)
-        const result = await saveResponse({
-          answer,
-          babyId,
-          contextId: `${type}-${title}`,
-          contextType: 'milestone',
-          question: followUpQuestion,
-        });
+      // Update local state immediately for instant feedback
+      setHasUserAnswered(true);
+      setUserAnswer(answer);
+      setPrefillMessage(answer);
+      setIsChatOpen(true);
 
-        // Check for errors from the action
-        if (result?.serverError) {
-          console.error('Error saving response:', result.serverError);
-          return;
-        }
-
-        // Update local state to reflect the answer
-        setHasUserAnswered(true);
-        setUserAnswer(answer);
-
-        // For yes/no questions, always auto-send the answer
-        // The drawer will open and the AI will respond to the user's choice
-        setPrefillMessage(answer);
-        setIsChatOpen(true);
-      } catch (error) {
-        console.error('Unexpected error:', error);
-      }
+      // Save the response asynchronously in the background
+      saveResponse({
+        answer,
+        babyId,
+        contextId: `${type}-${title}`,
+        contextType: 'milestone',
+        question: followUpQuestion,
+      }).catch((error) => {
+        console.error('Error saving response:', error);
+      });
     },
     [
       babyId,
@@ -254,17 +243,24 @@ export function MilestoneCard({
         className={`flex flex-col gap-3 ${config.bgColor} p-5`}
         colorConfig={colorConfig}
       >
-        <div className="flex w-full items-start justify-between gap-3">
+        <div className="flex w-full items-start gap-3">
           <Icon className="size-6 shrink-0" />
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-sm">{title}</h3>
-            <p className="text-xs text-muted-foreground">{config.label}</p>
-          </div>
-          {ageLabel && (
-            <div className="inline-block w-fit rounded-full bg-primary/20 px-2 py-0.5 shrink-0">
-              <P className="text-xs font-medium text-primary">{ageLabel}</P>
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-muted-foreground">{config.label}</p>
+              {ageLabel && (
+                <>
+                  <span className="text-xs text-muted-foreground">•</span>
+                  <div className="inline-block w-fit rounded-full bg-primary/20 px-2 py-0.5">
+                    <P className="text-xs font-medium text-primary">
+                      {ageLabel}
+                    </P>
+                  </div>
+                </>
+              )}
             </div>
-          )}
+          </div>
         </div>
         <Button
           className={

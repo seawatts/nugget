@@ -53,11 +53,38 @@ function CropEditorContent({
   const imageRef = useRef<HTMLImageElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   // Touch gesture state
   const touchStartDistance = useRef<number>(0);
   const touchStartScale = useRef<number>(1);
   const isPinching = useRef<boolean>(false);
+
+  // Calculate optimal initial scale when image loads
+  const handleImageLoad = useCallback(() => {
+    if (!imageRef.current || !containerRef.current) return;
+
+    const img = imageRef.current;
+    const container = containerRef.current;
+
+    const containerWidth = container.offsetWidth;
+    const containerHeight = container.offsetHeight;
+    const imageWidth = img.naturalWidth;
+    const imageHeight = img.naturalHeight;
+
+    // Calculate scale to fit the image in the container with some padding
+    // This ensures portrait images show more context instead of zooming in
+    const scaleToFitWidth = containerWidth / imageWidth;
+    const scaleToFitHeight = containerHeight / imageHeight;
+    const optimalScale = Math.min(scaleToFitWidth, scaleToFitHeight) * 0.8;
+
+    setCrop((prev) => ({
+      ...prev,
+      scale: Math.max(0.5, Math.min(5, optimalScale)),
+    }));
+
+    setImageLoaded(true);
+  }, []);
 
   // Mouse/touch drag handlers
   const handlePointerDown = useCallback(
@@ -216,13 +243,16 @@ function CropEditorContent({
               alt="Crop preview"
               className="absolute top-1/2 left-1/2 select-none"
               draggable={false}
+              onLoad={handleImageLoad}
               ref={imageRef}
               src={imageDataUrl}
               style={{
                 height: 'auto',
                 maxWidth: 'none',
+                opacity: imageLoaded ? 1 : 0,
                 transform: `translate(calc(-50% + ${crop.x}px), calc(-50% + ${crop.y}px)) scale(${crop.scale})`,
                 transformOrigin: 'center',
+                transition: 'opacity 0.2s ease-in-out',
                 width: '100%',
               }}
             />

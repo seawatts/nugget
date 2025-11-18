@@ -84,6 +84,8 @@ const createActivityWithDetailsInputSchema = z.object({
   details: z
     .union([
       z.object({
+        coSleepingWith: z.array(z.string()).optional(),
+        isCoSleeping: z.boolean().optional(),
         location: z
           .enum([
             'crib',

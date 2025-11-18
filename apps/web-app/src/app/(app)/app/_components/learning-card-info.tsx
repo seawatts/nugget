@@ -101,39 +101,28 @@ export function LearningCardInfo({
 
   // Handler for yes/no button clicks
   const handleYesNoClick = useCallback(
-    async (answer: 'yes' | 'no') => {
+    (answer: 'yes' | 'no') => {
       if (!babyId || !tip) return;
 
       // If clicking the same answer, do nothing
       if (hasUserAnswered && userAnswer === answer) return;
 
-      try {
-        // Save the response (new or changed)
-        const result = await saveResponse({
-          answer,
-          babyId,
-          contextId: `${tip.category}-${tip.subtitle}`,
-          contextType: 'learning_tip',
-          question: tip.followUpQuestion,
-        });
+      // Update local state immediately for instant feedback
+      setHasUserAnswered(true);
+      setUserAnswer(answer);
+      setPrefillMessage(answer);
+      setIsChatOpen(true);
 
-        // Check for errors from the action
-        if (result?.serverError) {
-          console.error('Error saving response:', result.serverError);
-          return;
-        }
-
-        // Update local state to reflect the answer
-        setHasUserAnswered(true);
-        setUserAnswer(answer);
-
-        // For yes/no questions, always auto-send the answer
-        // The drawer will open and the AI will respond to the user's choice
-        setPrefillMessage(answer);
-        setIsChatOpen(true);
-      } catch (error) {
-        console.error('Unexpected error:', error);
-      }
+      // Save the response asynchronously in the background
+      saveResponse({
+        answer,
+        babyId,
+        contextId: `${tip.category}-${tip.subtitle}`,
+        contextType: 'learning_tip',
+        question: tip.followUpQuestion,
+      }).catch((error) => {
+        console.error('Error saving response:', error);
+      });
     },
     [babyId, tip, saveResponse, hasUserAnswered, userAnswer],
   );
