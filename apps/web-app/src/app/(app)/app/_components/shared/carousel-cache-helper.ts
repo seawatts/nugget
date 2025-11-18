@@ -46,11 +46,11 @@ export async function withCache<T>({
     const cached = await cache.get(cacheKey);
 
     if (cached && cached.exp > Date.now()) {
-      const val = cached.val as unknown;
+      const val = cached.val as Record<string, unknown>;
 
       // Skip pending states - don't try to regenerate while generating
       if (val?._status === 'pending') {
-        const pendingAge = Date.now() - (val._timestamp || 0);
+        const pendingAge = Date.now() - ((val._timestamp as number) || 0);
         console.log(
           `[Cache] Entry is pending generation (${Math.round(pendingAge / 1000)}s ago)`,
         );

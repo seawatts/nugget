@@ -6,40 +6,31 @@
 'use client';
 
 import { api } from '@nugget/api/react';
-import type { Activities } from '@nugget/db/schema';
+import type { Activities, ActivityDetails } from '@nugget/db/schema';
 import { toast } from '@nugget/ui/sonner';
 import { useCallback } from 'react';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 
 interface CreateActivityInput {
-  activityType: string;
+  activityType: typeof Activities.$inferSelect.type;
   amount?: number;
   duration?: number;
-  feedingSource?: 'direct' | 'pumped' | 'formula' | 'donor';
+  feedingSource?: typeof Activities.$inferSelect.feedingSource;
   notes?: string;
   startTime?: Date;
-  details?: {
-    type: string;
-    sleepType?: string;
-    quality?: string;
-    location?: string;
-    wakeReason?: string;
-    size?: string;
-    color?: string;
-    consistency?: string;
-  } | null;
+  details?: ActivityDetails;
 }
 
 interface UpdateActivityInput {
   id: string;
   amount?: number;
   duration?: number;
-  feedingSource?: 'direct' | 'pumped' | 'formula' | 'donor';
+  feedingSource?: typeof Activities.$inferSelect.feedingSource;
   notes?: string;
   startTime?: Date;
   endTime?: Date;
-  type?: string;
-  details?: unknown;
+  type?: typeof Activities.$inferSelect.type;
+  details?: ActivityDetails;
 }
 
 /**

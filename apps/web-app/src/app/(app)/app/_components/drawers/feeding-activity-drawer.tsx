@@ -77,10 +77,7 @@ export function FeedingActivityDrawer({
           await updateActivity({
             ...baseData,
             amount: formData.amountMl,
-            details: {
-              bottleType: formData.bottleType || 'breast_milk',
-              type: 'bottle',
-            },
+            details: null,
             feedingSource:
               formData.bottleType === 'formula' ? 'formula' : 'pumped',
             id: existingActivity.id,
@@ -89,8 +86,7 @@ export function FeedingActivityDrawer({
           await updateActivity({
             ...baseData,
             details: {
-              leftDuration: formData.leftDuration,
-              rightDuration: formData.rightDuration,
+              side: 'both', // TODO: Allow user to select side
               type: 'nursing',
             },
             duration:
@@ -111,12 +107,9 @@ export function FeedingActivityDrawer({
         // Create new activity
         if (formData.type === 'bottle') {
           await createActivity({
-            activityType: 'feeding',
+            activityType: 'bottle',
             amount: formData.amountMl,
-            details: {
-              bottleType: formData.bottleType || 'breast_milk',
-              type: 'bottle',
-            },
+            details: null,
             feedingSource:
               formData.bottleType === 'formula' ? 'formula' : 'pumped',
             notes: formData.notes || undefined,
@@ -124,10 +117,9 @@ export function FeedingActivityDrawer({
           });
         } else if (formData.type === 'nursing') {
           await createActivity({
-            activityType: 'feeding',
+            activityType: 'nursing',
             details: {
-              leftDuration: formData.leftDuration,
-              rightDuration: formData.rightDuration,
+              side: 'both', // TODO: Allow user to select side
               type: 'nursing',
             },
             duration:

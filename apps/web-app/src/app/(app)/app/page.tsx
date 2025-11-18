@@ -54,7 +54,7 @@ export default async function Home() {
             </Button>
           </Link>
 
-          <P className="text-muted-foreground" variant="small">
+          <P className="text-sm text-muted-foreground">
             You can also wait for other family members to add a baby
           </P>
         </div>

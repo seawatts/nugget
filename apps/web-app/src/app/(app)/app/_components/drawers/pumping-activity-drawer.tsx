@@ -71,22 +71,19 @@ export function PumpingActivityDrawer({
         // Convert stored ml to user's preferred unit
         const mlToOz = (ml: number) => Math.round((ml / 29.5735) * 2) / 2;
 
-        if (existingActivity.details.leftAmount) {
+        if (existingActivity.details.leftBreastMl) {
           setLeftAmount(
             userUnitPref === 'OZ'
-              ? mlToOz(existingActivity.details.leftAmount)
-              : existingActivity.details.leftAmount,
+              ? mlToOz(existingActivity.details.leftBreastMl)
+              : existingActivity.details.leftBreastMl,
           );
         }
-        if (existingActivity.details.rightAmount) {
+        if (existingActivity.details.rightBreastMl) {
           setRightAmount(
             userUnitPref === 'OZ'
-              ? mlToOz(existingActivity.details.rightAmount)
-              : existingActivity.details.rightAmount,
+              ? mlToOz(existingActivity.details.rightBreastMl)
+              : existingActivity.details.rightBreastMl,
           );
-        }
-        if (existingActivity.details.method) {
-          setSelectedMethod(existingActivity.details.method);
         }
       }
     }

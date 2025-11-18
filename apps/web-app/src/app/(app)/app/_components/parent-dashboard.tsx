@@ -81,10 +81,7 @@ export function ParentDashboard({ userId }: ParentDashboardProps) {
       </div>
 
       {/* Activity Timeline */}
-      <ActivityTimeline
-        optimisticActivities={[]}
-        refreshTrigger={refreshTrigger}
-      />
+      <ActivityTimeline />
     </main>
   );
 }

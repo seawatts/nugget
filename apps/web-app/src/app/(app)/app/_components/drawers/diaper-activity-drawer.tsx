@@ -52,7 +52,10 @@ export function DiaperActivityDrawer({
     // Initialize diaper-specific fields from existing activity
     if (existingActivity) {
       if (existingActivity.notes) {
-        setFormData((prev) => ({ ...prev, notes: existingActivity.notes }));
+        setFormData((prev) => ({
+          ...prev,
+          notes: existingActivity.notes || '',
+        }));
       }
       // Parse diaper details from details field
       if (
@@ -62,10 +65,10 @@ export function DiaperActivityDrawer({
         setFormData({
           color: existingActivity.details.color || null,
           consistency: existingActivity.details.consistency || null,
-          hasRash: existingActivity.details.hasRash || false,
+          hasRash: false,
           notes: existingActivity.notes || '',
           size: existingActivity.details.size || null,
-          type: existingActivity.details.diaperType || null,
+          type: null, // TODO: Map from activity type
         });
       }
     }
@@ -109,11 +112,9 @@ export function DiaperActivityDrawer({
 
       // Create details object
       const diaperDetails = {
-        color: formData.color,
-        consistency: formData.consistency,
-        diaperType: formData.type,
-        hasRash: formData.hasRash,
-        size: formData.size,
+        color: formData.color ?? undefined,
+        consistency: formData.consistency ?? undefined,
+        size: formData.size ?? undefined,
         type: 'diaper' as const,
       };
 
