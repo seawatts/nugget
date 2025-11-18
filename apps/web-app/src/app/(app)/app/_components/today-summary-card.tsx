@@ -83,7 +83,6 @@ interface TodaySummaryCardProps {
   babyPhotoUrl?: string | null;
   measurementUnit?: 'metric' | 'imperial';
   optimisticActivities?: Array<typeof Activities.$inferSelect>;
-  refreshTrigger?: number;
 }
 
 function formatDuration(minutes: number): string {
@@ -179,7 +178,6 @@ export function TodaySummaryCard({
   babyPhotoUrl,
   measurementUnit = 'metric',
   optimisticActivities = [],
-  refreshTrigger = 0,
 }: TodaySummaryCardProps) {
   const [activitiesData, setActivitiesData] = useState<
     Array<typeof Activities.$inferSelect>
@@ -194,12 +192,6 @@ export function TodaySummaryCard({
 
   // Load today's summary data
   useEffect(() => {
-    // Only trigger on mount or when refreshTrigger changes
-    if (refreshTrigger === 0 && activitiesData.length > 0) {
-      // Skip initial load if we already have data
-      return;
-    }
-
     async function loadData() {
       // Prevent multiple simultaneous calls
       if (isLoadingRef.current) {
@@ -247,8 +239,7 @@ export function TodaySummaryCard({
     }
 
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshTrigger, activitiesData.length]);
+  }, []);
 
   // Merge optimistic activities with fetched activities
   // Optimistic activities override fetched activities with the same ID

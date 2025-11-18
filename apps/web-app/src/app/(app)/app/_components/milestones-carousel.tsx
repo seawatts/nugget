@@ -124,8 +124,6 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
                             bulletPoints: aiContent.bulletPoints,
                             followUpQuestion: aiContent.followUpQuestion,
                             isYesNoQuestion: aiContent.isYesNoQuestion,
-                            openChatOnNo: aiContent.openChatOnNo,
-                            openChatOnYes: aiContent.openChatOnYes,
                             summary: aiContent.summary,
                           }
                         : m,
@@ -316,8 +314,6 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
                   isEnhancing={false}
                   isYesNoQuestion={milestone.isYesNoQuestion}
                   onMarkComplete={() => handleMarkComplete(milestone)}
-                  openChatOnNo={milestone.openChatOnNo}
-                  openChatOnYes={milestone.openChatOnYes}
                   summary={milestone.summary}
                   title={milestone.title}
                   type={milestone.type}

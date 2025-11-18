@@ -72,21 +72,27 @@ export function QuickChatDialogContent({
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
   const hasAttemptedAutoSend = useRef(false);
 
   const { executeAsync: findOrCreateChat } = useAction(
     findOrCreateContextChatAction,
   );
 
-  // Reset auto-send flag when prefillMessage changes (new session)
+  const hasFetchedChat = useRef(false);
+
+  // Reset flags when opening a new dialog context
+  // biome-ignore lint/correctness/useExhaustiveDependencies: We intentionally reset refs when context changes
   useEffect(() => {
     hasAttemptedAutoSend.current = false;
-  }, [prefillMessage]);
+    hasFetchedChat.current = false;
+  }, [contextType, contextId, prefillMessage]);
 
   // Load or create chat when component mounts (if context is provided)
+  // Only run once per dialog instance to prevent overwriting streaming messages
+  // biome-ignore lint/correctness/useExhaustiveDependencies: initialMessages intentionally excluded to prevent race condition with streaming
   useEffect(() => {
-    if (contextType && contextId && babyId) {
+    if (contextType && contextId && babyId && !hasFetchedChat.current) {
+      hasFetchedChat.current = true;
       setIsLoadingChat(true);
       findOrCreateChat({
         babyId,
@@ -131,14 +137,7 @@ export function QuickChatDialogContent({
           setIsLoadingChat(false);
         });
     }
-  }, [
-    contextType,
-    contextId,
-    babyId,
-    title,
-    initialMessages,
-    findOrCreateChat,
-  ]);
+  }, [contextType, contextId, babyId, title, findOrCreateChat]);
 
   // Focus input on mount
   useEffect(() => {
@@ -365,7 +364,6 @@ export function QuickChatDialogContent({
             event.preventDefault();
             void handleSendMessage();
           }}
-          ref={formRef}
         >
           <input
             className={cn(

@@ -36,8 +36,6 @@ interface MilestoneCardProps {
   babyId?: string;
   // Yes/No question fields
   isYesNoQuestion?: boolean | null;
-  openChatOnYes?: boolean | null;
-  openChatOnNo?: boolean | null;
 }
 
 interface ChatReplier {
@@ -112,8 +110,6 @@ export function MilestoneCard({
   summary,
   babyId,
   isYesNoQuestion,
-  openChatOnYes,
-  openChatOnNo,
 }: MilestoneCardProps) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [repliers, setRepliers] = useState<ChatReplier[]>([]);

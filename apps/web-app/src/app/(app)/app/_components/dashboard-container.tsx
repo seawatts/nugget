@@ -69,7 +69,6 @@ export function DashboardContainer() {
           babyPhotoUrl={baby?.photoUrl}
           measurementUnit={user?.measurementUnit || 'metric'}
           optimisticActivities={optimisticActivities}
-          refreshTrigger={refreshTrigger}
         />
       </div>
 
