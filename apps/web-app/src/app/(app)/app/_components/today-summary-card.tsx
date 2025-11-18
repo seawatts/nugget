@@ -20,6 +20,7 @@ import {
   UtensilsCrossed,
 } from 'lucide-react';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getTodaySummaryAction } from './today-summary.actions';
 import { formatVolumeDisplay } from './volume-utils';
 
@@ -82,7 +83,6 @@ interface TodaySummaryCardProps {
   babyName?: string;
   babyPhotoUrl?: string | null;
   measurementUnit?: 'metric' | 'imperial';
-  optimisticActivities?: Array<typeof Activities.$inferSelect>;
 }
 
 function formatDuration(minutes: number): string {
@@ -177,7 +177,6 @@ export function TodaySummaryCard({
   babyName,
   babyPhotoUrl,
   measurementUnit = 'metric',
-  optimisticActivities = [],
 }: TodaySummaryCardProps) {
   const [activitiesData, setActivitiesData] = useState<
     Array<typeof Activities.$inferSelect>
@@ -241,19 +240,44 @@ export function TodaySummaryCard({
     loadData();
   }, []);
 
-  // Merge optimistic activities with fetched activities
-  // Optimistic activities override fetched activities with the same ID
+  // Get optimistic activities from Zustand store
+  const optimisticActivities = useOptimisticActivitiesStore.use.activities();
+
+  // Merge optimistic activities with loaded activities
   const allActivities = useMemo(() => {
-    const optimisticIds = new Set(optimisticActivities.map((a) => a.id));
-    return [
-      ...optimisticActivities,
-      ...activitiesData.filter((a) => !optimisticIds.has(a.id)),
-    ];
+    // Filter optimistic activities to only include today's activities
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todaysOptimistic = optimisticActivities.filter((activity) => {
+      const activityDate = new Date(activity.startTime);
+      activityDate.setHours(0, 0, 0, 0);
+      return activityDate.getTime() === today.getTime();
+    });
+
+    return [...todaysOptimistic, ...activitiesData];
   }, [optimisticActivities, activitiesData]);
 
   // Map activity types to display categories
   const mapActivityTypeToCategory = (type: string): string => {
-    if (type === 'bottle' || type === 'nursing') return 'feeding';
+    // Feeding variants
+    if (type === 'feeding' || type === 'bottle' || type === 'nursing') {
+      return 'feeding';
+    }
+    // Diaper variants
+    if (
+      type === 'diaper' ||
+      type === 'wet' ||
+      type === 'dirty' ||
+      type === 'both'
+    ) {
+      return 'diaper';
+    }
+    // Tummy time conversion (underscore to dash)
+    if (type === 'tummy_time') {
+      return 'tummy-time';
+    }
+    // Everything else passes through as-is
     return type;
   };
 

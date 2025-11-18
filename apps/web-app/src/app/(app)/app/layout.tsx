@@ -8,8 +8,10 @@ export default function Layout({ children }: { children: ReactNode }) {
   return (
     <ScrollProvider>
       <div className="flex min-h-screen flex-col bg-background">
-        <main className="flex-1 pb-24">{children}</main>
-        <BottomNav />
+        <div className="mx-auto w-full max-w-3xl">
+          <main className="flex-1 pb-24">{children}</main>
+          <BottomNav />
+        </div>
         <InstallPrompt />
         <ServiceWorkerUpdatePrompt />
       </div>

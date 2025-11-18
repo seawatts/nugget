@@ -116,9 +116,10 @@ export namespace partial_types {
       openChatOnNo?: boolean | null
     }
     export interface MilestoneEnhancementOutput {
+      subtitle?: string | null
+      summary?: string | null
       bulletPoints: string[]
       followUpQuestion?: string | null
-      summary?: string | null
       isYesNoQuestion?: boolean | null
       openChatOnYes?: boolean | null
       openChatOnNo?: boolean | null

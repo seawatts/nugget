@@ -137,23 +137,24 @@ function buildPlannerContext(context: MilestoneContext) {
  * Get the correct stage-specific BAML function for milestone generation
  */
 function getStageMilestoneFunction(stage: LearningStage) {
+  // Bind methods to the BAML client to preserve 'this' context
   switch (stage) {
     case 'immediate-postbirth':
-      return b.ImmediatePostbirthMilestone;
+      return b.ImmediatePostbirthMilestone.bind(b);
     case 'first-week':
-      return b.FirstWeekMilestone;
+      return b.FirstWeekMilestone.bind(b);
     case 'second-week':
-      return b.SecondWeekMilestone;
+      return b.SecondWeekMilestone.bind(b);
     case 'third-week':
-      return b.ThirdWeekMilestone;
+      return b.ThirdWeekMilestone.bind(b);
     case 'month-one':
-      return b.MonthOneMilestone;
+      return b.MonthOneMilestone.bind(b);
     case 'month-two':
-      return b.MonthTwoMilestone;
+      return b.MonthTwoMilestone.bind(b);
     case 'month-three-four':
-      return b.MonthThreeFourMilestone;
+      return b.MonthThreeFourMilestone.bind(b);
     default:
-      return b.MonthThreeFourMilestone; // Default for older babies
+      return b.MonthThreeFourMilestone.bind(b); // Default for older babies
   }
 }
 

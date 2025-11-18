@@ -6,9 +6,10 @@
 // ============================================================================
 
 class MilestoneEnhancementOutput {
+  subtitle string @description("A catchy subtitle (max 5 words)")
+  summary string @description("One sentence summary (max 20 words)")
   bulletPoints string[] @description("2-3 developmental tips (each max 12 words)")
   followUpQuestion string @description("ONE focused question (max 15 words)")
-  summary string @description("One sentence summary (max 20 words)")
 
   // Yes/No Question Support
   isYesNoQuestion bool? @description("If true, this is a yes/no question (not open-ended). If false or omitted, it's an open-ended question.")
@@ -138,12 +139,19 @@ function EnhanceMilestone(
 
     Provide:
 
-    1. **bulletPoints**: 2-3 actionable bullet points (each max 12 words):
+    1. **subtitle**: A catchy subtitle (max 5 words)
+       - Captures the essence of the milestone
+       - Engaging and memorable for parents
+
+    2. **summary**: One sentence (max 20 words)
+       {% if babyName %}Use {{babyName}}'s name{% endif %}
+
+    3. **bulletPoints**: 2-3 actionable bullet points (each max 12 words):
        - What parents might observe
        - Why this milestone matters
        - One practical suggestion
 
-    2. **followUpQuestion**: ONE focused question (max 15 words)
+    4. **followUpQuestion**: ONE focused question (max 15 words)
        * Ask ONE question only - NO compound questions
        * Use {% if babyName %}{{babyName}}'s{% else %}baby's{% endif %} name
 
@@ -164,9 +172,6 @@ function EnhanceMilestone(
     * OPEN-ENDED QUESTIONS (isYesNoQuestion: false) - Use ONLY for qualitative details:
       - "What behaviors have you noticed?"
       - "How does {% if babyName %}{{babyName}}{% else %}baby{% endif %} respond?"
-
-    3. **summary**: One sentence (max 20 words)
-       {% if babyName %}Use {{babyName}}'s name{% endif %}
 
     Keep the tone:
     - Warm and supportive

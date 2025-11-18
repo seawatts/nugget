@@ -109,17 +109,21 @@ function ImmediatePostbirthMilestone(input: MilestoneInput) -> MilestoneEnhancem
 
     Generate ONE milestone enhancement with these requirements:
 
-    1. **bulletPoints** (2-3 points, each max 12 words):
+    1. **subtitle** (max 5 words):
+       - Catchy and memorable for parents
+
+    2. **summary** (max 20 words):
+       - Warm, supportive sentence with {{input.babyName}}'s name
+
+    3. **bulletPoints** (2-3 points, each max 12 words):
        - What parents might observe
        - Why this milestone matters (brief science/research note)
        - One practical suggestion for observation or support
 
-    2. **followUpQuestion** (max 15 words):
+    4. **followUpQuestion** (max 15 words):
        - ONE focused question (no compound questions)
        - Use {{input.babyName}}'s name
        - Ask about specific observable behaviors
-
-    3. **summary** (max 20 words):
        - One warm, supportive sentence
        - Use {{input.babyName}}'s name
        - Emphasize normal variation in development

@@ -4,7 +4,7 @@ import type { Baby } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { H3, P } from '@nugget/ui/custom/typography';
 import { differenceInDays } from 'date-fns';
-import { Calendar, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 interface LearningCardCheckBackProps {
   baby: Baby;
@@ -39,21 +39,15 @@ export function LearningCardCheckBack({
 
         <div className="space-y-3">
           <P className="text-sm text-muted-foreground">
-            Come back for more tips when{' '}
-            <span className="font-bold text-primary">{babyName}'s</span>{' '}
+            Come back for more tips{' '}
+            <span className="font-semibold text-foreground">
+              {daysUntilNext === 1 ? 'tomorrow' : `in ${daysUntilNext} days`}
+            </span>{' '}
+            when <span className="font-bold text-primary">{babyName}'s</span>{' '}
             <span className="font-semibold text-foreground">
               {currentAgeInDays + daysUntilNext} days old
             </span>
           </P>
-
-          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-1">
-            <Calendar className="size-4" />
-            <span>
-              {daysUntilNext === 1
-                ? 'New tips tomorrow'
-                : `New tips in ${daysUntilNext} days`}
-            </span>
-          </div>
         </div>
 
         <div className="pt-4 w-full">

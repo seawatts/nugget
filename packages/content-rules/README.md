@@ -43,5 +43,6 @@ const card = await pickForSlot(P.build(), Screen.Learning, Slot.Header, context,
 - `dynamic.ts` - Core DSL, builder, and evaluator
 - `dynamic-baml.ts` - BAML integration with caching
 - `cache-adapter.ts` - TTL-based caching implementation
-- `example-program.ts` - Pre-built rules for new parents
+- `learning-ai-program.ts` - AI-powered learning content program
+- `milestones-ai-program.ts` - AI-powered milestones program
 

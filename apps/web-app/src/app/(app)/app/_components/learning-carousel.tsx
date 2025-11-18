@@ -1,148 +1,49 @@
 'use client';
 
-import type { Screen, Slot } from '@nugget/content-rules';
-import type { Baby } from '@nugget/db/schema';
+import { api } from '@nugget/api/react';
 import { H2, P } from '@nugget/ui/custom/typography';
 import { Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { LearningCardCheckBack } from './learning-card-check-back';
-import { LearningCardCTA } from './learning-card-cta';
 import { LearningCardInfo } from './learning-card-info';
 import { LearningCardLoading } from './learning-card-loading';
-import { LearningCardProgress } from './learning-card-progress';
-import { LearningCardPromptList } from './learning-card-prompt-list';
-import { LearningCardSuccess } from './learning-card-success';
 import {
   getLearningCarouselContent,
-  resolveCardAIContent,
+  type LearningTip,
 } from './learning-carousel.actions';
-
-interface LearningCard {
-  id: string;
-  template: string;
-  props: Record<string, unknown>;
-  screen: Screen;
-  slot: Slot;
-}
 
 interface LearningCarouselProps {
   babyId: string;
 }
 
 export function LearningCarousel({ babyId }: LearningCarouselProps) {
-  const [cards, setCards] = useState<LearningCard[]>([]);
-  const [baby, setBaby] = useState<Baby | null>(null);
+  const [tips, setTips] = useState<LearningTip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isResolvingAI, setIsResolvingAI] = useState(false);
+
+  // Fetch baby info using tRPC for immediate display in loading card
+  const { data: baby } = api.babies.getById.useQuery({ id: babyId });
+
+  const babyName = baby?.firstName ?? 'Baby';
+  const ageInDays = baby?.birthDate
+    ? Math.floor(
+        (Date.now() - baby.birthDate.getTime()) / (1000 * 60 * 60 * 24),
+      )
+    : 0;
 
   useEffect(() => {
     async function loadContent() {
       try {
         setIsLoading(true);
-        const { cards: content, baby: babyData } =
-          await getLearningCarouselContent(babyId);
-        setCards(content);
-        setBaby(babyData);
-        setIsLoading(false);
+        console.log('[LearningCarousel] Loading content for baby:', babyId);
 
-        // Resolve AI content for each card progressively (non-blocking)
-        const cardsWithPendingAI = content.filter((card) =>
-          Object.values(card.props).some((val) => val === '[AI_PENDING]'),
-        );
+        const { tips: loadedTips } = await getLearningCarouselContent(babyId);
 
-        if (cardsWithPendingAI.length > 0) {
-          setIsResolvingAI(true);
-        }
+        console.log('[LearningCarousel] Loaded tips:', loadedTips.length);
 
-        let resolvedCount = 0;
-        for (const card of content) {
-          // Check if card has any pending AI content
-          const hasPendingAI = Object.values(card.props).some(
-            (val) => val === '[AI_PENDING]',
-          );
-
-          if (hasPendingAI) {
-            // Resolve AI content in the background
-            resolveCardAIContent(card.id, card.screen, card.slot)
-              .then((aiProps) => {
-                resolvedCount++;
-                if (resolvedCount === cardsWithPendingAI.length) {
-                  setIsResolvingAI(false);
-                }
-                if (aiProps) {
-                  // Check if AI props contain an array of tips that should be expanded
-                  const bodyValue = aiProps.body || aiProps.subtext;
-                  const shouldExpand =
-                    Array.isArray(bodyValue) && bodyValue.length > 0;
-
-                  if (shouldExpand) {
-                    // Expand array into multiple cards
-                    setCards((prevCards) => {
-                      const cardIndex = prevCards.findIndex(
-                        (c) => c.id === card.id,
-                      );
-                      if (cardIndex === -1) return prevCards;
-
-                      const newCards: LearningCard[] = [];
-
-                      // Create a card for each tip - pass the full tip object
-                      (
-                        bodyValue as Array<{
-                          category: string;
-                          summary: string;
-                          bulletPoints: string[];
-                          followUpQuestion: string;
-                        }>
-                      ).forEach((tip, tipIndex) => {
-                        newCards.push({
-                          ...card,
-                          id: `${card.id}-tip-${tipIndex}`,
-                          props: {
-                            ...card.props,
-                            tip, // Pass the full tip object
-                          },
-                        });
-                      });
-
-                      // Replace the original card with expanded cards
-                      return [
-                        ...prevCards.slice(0, cardIndex),
-                        ...newCards,
-                        ...prevCards.slice(cardIndex + 1),
-                      ];
-                    });
-                  } else {
-                    // Update the card with resolved AI content normally
-                    setCards((prevCards) =>
-                      prevCards.map((c) =>
-                        c.id === card.id
-                          ? {
-                              ...c,
-                              props: {
-                                ...c.props,
-                                ...aiProps,
-                              },
-                            }
-                          : c,
-                      ),
-                    );
-                  }
-                }
-              })
-              .catch((error) => {
-                console.error(
-                  `Failed to resolve AI content for ${card.id}:`,
-                  error,
-                );
-                resolvedCount++;
-                if (resolvedCount === cardsWithPendingAI.length) {
-                  setIsResolvingAI(false);
-                }
-              });
-          }
-        }
+        setTips(loadedTips);
       } catch (error) {
-        console.error('Failed to load learning content:', error);
+        console.error('[LearningCarousel] Failed to load content:', error);
+      } finally {
         setIsLoading(false);
       }
     }
@@ -150,37 +51,38 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
     loadContent();
   }, [babyId]);
 
-  // Handle AI advice click
-  const handleGetAIAdvice = () => {
-    window.location.href = '/app/chat';
-  };
-
-  // Show full-width loading card while initial data loads OR AI content is resolving
-  if (isLoading || isResolvingAI) {
+  // Show loading state
+  if (isLoading) {
     return (
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="size-5 text-primary" />
           <H2 className="text-xl">Learning</H2>
-          <P className="text-xs text-muted-foreground ml-auto">Generating...</P>
+          <P className="text-xs text-muted-foreground ml-auto">Loading...</P>
         </div>
-        <LearningCardLoading
-          ageInDays={
-            baby?.birthDate
-              ? Math.floor(
-                  (Date.now() - baby.birthDate.getTime()) /
-                    (1000 * 60 * 60 * 24),
-                )
-              : 0
-          }
-          babyName={baby?.firstName ?? 'Baby'}
-        />
+        <LearningCardLoading ageInDays={ageInDays} babyName={babyName} />
       </div>
     );
   }
 
-  if (cards.length === 0) {
-    return null;
+  // Show message if no tips (don't hide completely)
+  if (tips.length === 0) {
+    console.log('[LearningCarousel] No tips to display');
+    return (
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Sparkles className="size-5 text-primary" />
+          <H2 className="text-xl">Learning</H2>
+        </div>
+        <div className="bg-muted/30 rounded-lg p-6 text-center">
+          <P className="text-muted-foreground">
+            {baby
+              ? 'Generating personalized learning content...'
+              : 'No content available'}
+          </P>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -190,134 +92,55 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
         <H2 className="text-xl">Learning</H2>
       </div>
 
-      {/* Horizontal scrolling container */}
-      <div className="relative">
-        <div
-          className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide"
-          style={{
-            msOverflowStyle: 'none',
-            scrollbarWidth: 'none',
-          }}
-        >
-          {cards.map((card) => (
-            <div className="snap-start" key={card.id}>
-              {renderCard(card, handleGetAIAdvice, baby)}
-            </div>
-          ))}
+      {/* Horizontal scroll container */}
+      <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
+        {tips.map((tip) => (
+          <div
+            className="snap-center shrink-0 first:ml-0 w-80 sm:w-96"
+            key={`${tip.category}-${tip.summary.slice(0, 30)}`}
+          >
+            <LearningCardInfo
+              ageInDays={ageInDays}
+              babyId={baby?.id}
+              tip={tip}
+            />
+          </div>
+        ))}
 
-          {/* Check Back card at the end */}
-          {baby && (
-            <div className="snap-start">
-              <LearningCardCheckBack baby={baby} />
-            </div>
-          )}
-        </div>
+        {/* Check back card - shown at the end */}
+        {baby &&
+          (() => {
+            // Calculate next update based on AI generation schedule:
+            // - Days 0-112: Daily updates
+            // - Week 17+ (day 119+): Weekly updates
+            let nextUpdate: number;
+            if (ageInDays < 112) {
+              nextUpdate = ageInDays + 1; // Tomorrow
+            } else if (ageInDays < 119) {
+              nextUpdate = 119; // Week 17 starts
+            } else {
+              // Next week boundary (weeks are 7-day intervals)
+              nextUpdate = (Math.floor(ageInDays / 7) + 1) * 7;
+            }
 
-        {/* Gradient fade on edges */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-2 bg-gradient-to-r from-background to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-2 bg-gradient-to-l from-background to-transparent" />
+            return (
+              <div className="snap-center shrink-0 w-80 sm:w-96">
+                <LearningCardCheckBack baby={baby} nextUpdateAge={nextUpdate} />
+              </div>
+            );
+          })()}
       </div>
+
+      {/* Add custom scrollbar styles */}
+      <style jsx>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </div>
   );
-}
-
-/**
- * Render the appropriate card component based on template
- */
-function renderCard(
-  card: LearningCard,
-  _onGetAIAdvice: () => void,
-  baby: Baby | null,
-) {
-  const { template, props } = card;
-
-  switch (template) {
-    case 'CTA.GoTo':
-      return (
-        <LearningCardCTA
-          ageLabel={props.ageLabel as string | undefined}
-          deeplink={props.deeplink as string}
-          headline={props.headline as string}
-          subtext={props.subtext as string | undefined}
-        />
-      );
-
-    case 'Card.WeekSummary':
-      // Use InfoCard-styled component
-      return (
-        <LearningCardInfo
-          ageInDays={props.ageInDays as number | undefined}
-          babyId={baby?.id}
-          tip={
-            props.tip as
-              | import('./learning-carousel.actions').LearningTip
-              | undefined
-          }
-        />
-      );
-
-    case 'Card.Success':
-      return (
-        <LearningCardSuccess
-          ageLabel={props.ageLabel as string | undefined}
-          body={props.body as string}
-          deeplink={props.deeplink as string | undefined}
-          title={props.title as string}
-        />
-      );
-
-    case 'Card.Progress':
-      return (
-        <LearningCardProgress
-          ageLabel={props.ageLabel as string | undefined}
-          current={props.current as number}
-          deeplink={props.deeplink as string | undefined}
-          label={props.label as string}
-          total={props.total as number}
-        />
-      );
-
-    case 'Nav.Directive':
-      // Render as CTA for now
-      return (
-        <LearningCardCTA
-          ageLabel={props.ageLabel as string | undefined}
-          deeplink={props.deeplink as string}
-          headline="Plan ahead"
-        />
-      );
-
-    case 'Carousel.PromptList':
-      return (
-        <LearningCardPromptList
-          ageLabel={props.ageLabel as string | undefined}
-          prompts={props.prompts as Array<{ text: string; category?: string }>}
-          title={props.title as string}
-        />
-      );
-
-    default:
-      return null;
-  }
-}
-
-// CSS to hide scrollbar
-const scrollbarHideStyles = `
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-`;
-
-if (
-  typeof document !== 'undefined' &&
-  !document.getElementById('scrollbar-hide-styles')
-) {
-  const style = document.createElement('style');
-  style.id = 'scrollbar-hide-styles';
-  style.innerHTML = scrollbarHideStyles;
-  document.head.appendChild(style);
 }

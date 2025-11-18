@@ -46,7 +46,7 @@ export function InviteDialog({
 
   const createInvitationMutation = api.invitations.create.useMutation({
     onSuccess: (data) => {
-      const url = `${window.location.origin}/invite/accept/${data.code}`;
+      const url = `${window.location.origin}/app/invite/accept/${data.code}`;
       setInviteUrl(url);
     },
   });
@@ -128,7 +128,7 @@ export function InviteDialog({
     if (isOpen) {
       if (existingInvitation) {
         // Use existing invitation
-        const url = `${window.location.origin}/invite/accept/${existingInvitation.code}`;
+        const url = `${window.location.origin}/app/invite/accept/${existingInvitation.code}`;
         setInviteUrl(url);
       } else if (!inviteUrl && !createInvitationMutation.isPending) {
         // Automatically generate new invitation with default role (partner)

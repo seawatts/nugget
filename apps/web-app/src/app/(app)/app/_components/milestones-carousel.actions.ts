@@ -1,103 +1,78 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import {
-  buildBamlContext,
-  formatActivityContext,
-  formatChatContext,
-  formatMedicalContext,
-  formatMilestoneContext,
-  formatParentWellnessContext,
-} from '@nugget/ai';
-import { b } from '@nugget/ai/async_client';
+import { generateMilestoneSuggestions } from '@nugget/ai';
 import { getApi } from '@nugget/api/server';
-import {
-  evalCond,
-  type RuleContext,
-  Scope,
-  Screen,
-  Slot,
-} from '@nugget/content-rules';
-import { DbCache } from '@nugget/content-rules/db-cache-adapter';
-import {
-  aiTextBaml,
-  bamlCall,
-  resolveAIProps,
-} from '@nugget/content-rules/dynamic-baml';
-import { createMilestonesProgram } from '@nugget/content-rules/milestones-program';
 import { db } from '@nugget/db/client';
-import { Activities, Milestones } from '@nugget/db/schema';
-import { createId } from '@nugget/id';
-import {
-  differenceInDays,
-  differenceInWeeks,
-  subDays,
-  subWeeks,
-} from 'date-fns';
-import { and, eq, gte } from 'drizzle-orm';
-import { createSafeActionClient } from 'next-safe-action';
-import { z } from 'zod';
-
-const action = createSafeActionClient();
+import { type Baby, Milestones } from '@nugget/db/schema';
+import { differenceInDays, differenceInWeeks } from 'date-fns';
+import { and, eq } from 'drizzle-orm';
+import { getDateKey, withCache } from './shared/carousel-cache-helper';
 
 export interface MilestoneCardData {
   id: string;
   title: string;
+  subtitle?: string;
   description: string;
   type: 'physical' | 'cognitive' | 'social' | 'language' | 'self_care';
   ageLabel: string;
-  suggestedDay?: number;
+  suggestedDay: number;
   isCompleted: boolean;
-  bulletPoints: string[];
-  followUpQuestion: string;
+  bulletPoints?: string[];
+  followUpQuestion?: string;
   summary?: string;
-  // Yes/No question fields
-  isYesNoQuestion?: boolean | null;
-  openChatOnYes?: boolean | null;
-  openChatOnNo?: boolean | null;
+  isYesNoQuestion?: boolean;
+  openChatOnYes?: boolean;
+  openChatOnNo?: boolean;
 }
 
 interface MilestonesCarouselData {
-  milestones: MilestoneCardData[];
+  baby: Baby | null;
   babyName: string;
   ageInDays: number;
-  nextMilestoneDay?: number;
-  baby: {
-    id: string;
-    firstName: string;
-    middleName: string | null;
-    lastName: string | null;
-    birthDate: Date | null;
-    dueDate: Date | null;
-    journeyStage: string | null;
-    gender: string | null;
-  } | null;
+  milestones: MilestoneCardData[];
 }
 
 /**
- * Fetch milestones carousel content based on baby's age
+ * Get milestones carousel content with cache-first loading
+ * Simple, focused approach: check cache → generate if needed → return
  */
 export async function getMilestonesCarouselContent(
   babyId: string,
 ): Promise<MilestonesCarouselData> {
   try {
-    // Verify authentication
     const authResult = await auth();
     if (!authResult.userId) {
-      return { ageInDays: 0, baby: null, babyName: '', milestones: [] };
+      console.error('[Milestones] No authenticated user');
+      return {
+        ageInDays: 0,
+        baby: null,
+        babyName: 'Baby',
+        milestones: [],
+      };
     }
 
-    // Create tRPC API helper
+    // Get baby data
     const api = await getApi();
+    const babies = await api.babies.list();
+    const baby = babies.find((b) => b.id === babyId) || babies[0];
 
-    // Get the specific baby by ID
-    const baby = await api.babies.getById({ id: babyId });
-
-    if (!baby) {
-      return { ageInDays: 0, baby: null, babyName: '', milestones: [] };
+    if (!baby || !baby.birthDate) {
+      console.error('[Milestones] No baby or birth date found');
+      return {
+        ageInDays: 0,
+        baby: null,
+        babyName: 'Baby',
+        milestones: [],
+      };
     }
 
-    // Get completed milestones for this baby
+    const ageInDays = differenceInDays(new Date(), baby.birthDate);
+    const ageInWeeks = differenceInWeeks(new Date(), baby.birthDate);
+
+    console.log('[Milestones] Baby age:', { ageInDays, ageInWeeks });
+
+    // Get completed milestones
     const completedMilestones = await db
       .select()
       .from(Milestones)
@@ -112,437 +87,118 @@ export async function getMilestonesCarouselContent(
         .map((m) => m.title),
     );
 
-    // Create database-backed cache for this baby
-    const _cache = new DbCache(db, baby.id, baby.familyId, authResult.userId);
+    // Cache key based on age and date
+    const dateKey = await getDateKey();
+    const cacheKey = `milestones:${baby.id}:day${ageInDays}:${dateKey}`;
 
-    // Build rule context
-    const context = buildRuleContext(baby);
+    // Use cache-first helper
+    const generatedMilestones = await withCache<
+      Array<{
+        title: string;
+        type: string;
+        ageLabel: string;
+        subtitle: string;
+        summary: string;
+        bulletPoints: string[];
+        followUpQuestion: string;
+        isYesNoQuestion?: boolean;
+        openChatOnYes?: boolean;
+        openChatOnNo?: boolean;
+      }>
+    >({
+      babyId: baby.id,
+      cacheKey,
+      familyId: baby.familyId,
+      generate: async () => {
+        console.log('[Milestones] Generating AI content...');
 
-    // Create the milestones program with BAML client
-    const program = createMilestonesProgram(b);
-    const rules = program.build();
+        // Call AI orchestrator (both plan and execution)
+        const result = await generateMilestoneSuggestions({
+          achievedMilestones: completedMilestones.map((m) => ({
+            achievedAt: m.achievedDate ?? new Date(),
+            id: m.id,
+            title: m.title,
+          })),
+          activityTrends: undefined,
+          ageInDays,
+          ageInWeeks,
+          avgDiaperChangesPerDay: undefined,
+          avgFeedingInterval: undefined,
+          avgFeedingsPerDay: undefined,
+          avgSleepHoursPerDay: undefined,
+          babyName: baby.firstName ?? 'Baby',
+          babySex: baby.gender ?? undefined,
+          birthWeightOz: baby.birthWeightOz ?? undefined,
+          currentWeightOz: baby.currentWeightOz ?? undefined,
+          diaperCount24h: undefined,
+          feedingCount24h: undefined,
+          hasTummyTimeActivity: undefined,
+          height: undefined,
+          medicalRecords: undefined,
+          recentChatMessages: undefined,
+          recentlySuggestedMilestones: undefined,
+          sleepCount24h: undefined,
+          totalSleepHours24h: undefined,
+        });
 
-    // Get all matching rules for the Milestones screen, Header slot
-    const matchingRules = rules
-      .filter(
-        (r) =>
-          r.screen === Screen.Milestones &&
-          r.slot === Slot.Header &&
-          r.conditions.every((c) => evalCond(c, context)),
-      )
-      .sort((a, b) => b.priority - a.priority);
+        // Use the full milestone details (from execution phase) plus plan metadata
+        return result.milestones.slice(0, 5).map((milestone, index) => {
+          const planItem = result.plan.items[index];
+          return {
+            ageLabel: planItem?.ageLabel || `Day ${ageInDays}`,
+            bulletPoints: milestone.bulletPoints,
+            followUpQuestion: milestone.followUpQuestion,
+            isYesNoQuestion: milestone.isYesNoQuestion ?? true,
+            openChatOnNo: milestone.openChatOnNo ?? undefined,
+            openChatOnYes: milestone.openChatOnYes ?? undefined,
+            subtitle: milestone.subtitle,
+            summary: milestone.summary,
+            title: planItem?.title || 'Milestone',
+            type: planItem?.type || 'physical',
+          };
+        });
+      },
+      ttlMs: 86400000, // 1 day
+    });
 
-    // Convert matching rules to milestone cards
-    const baseMilestones: Array<{
-      title: string;
-      description: string;
-      type: 'physical' | 'cognitive' | 'social' | 'language' | 'self_care';
-      ageLabel: string;
-      suggestedDay?: number;
-    }> = [];
-
-    for (const rule of matchingRules) {
-      if (rule.render.template === 'Card.Milestone') {
-        const props = rule.render.props as {
-          title: string;
-          description: string;
-          type: 'physical' | 'cognitive' | 'social' | 'language' | 'self_care';
-          ageLabel: string;
-          suggestedDay?: number;
-        };
-
-        baseMilestones.push(props);
-
-        // Limit to 5 milestones
-        if (baseMilestones.length >= 5) break;
-      }
-    }
-
-    // Calculate baby's age in days
-    const ageInDays = baby.birthDate
-      ? differenceInDays(new Date(), baby.birthDate)
-      : undefined;
-
-    // Return base milestones with [AI_PENDING] placeholders
-    // AI enhancement will be resolved progressively on the client side
-    const milestones: MilestoneCardData[] = baseMilestones.map(
-      (props, index) => ({
-        ageLabel: props.ageLabel,
-        bulletPoints: '[AI_PENDING]' as unknown as string[],
-        description: props.description,
-        followUpQuestion: '[AI_PENDING]' as unknown as string,
-        id: `milestone-${index}-${props.title.toLowerCase().replace(/\s+/g, '-')}`,
-        isCompleted: completedTitles.has(props.title),
-        suggestedDay: props.suggestedDay,
-        summary: '[AI_PENDING]' as unknown as string,
-        title: props.title,
-        type: props.type,
+    // Map to milestone card data
+    const milestones: MilestoneCardData[] = (generatedMilestones || []).map(
+      (item, index) => ({
+        ageLabel: item.ageLabel,
+        bulletPoints: item.bulletPoints,
+        description: item.summary,
+        followUpQuestion: item.followUpQuestion,
+        id: `milestone-${index}-${item.title.toLowerCase().replace(/\s+/g, '-')}`,
+        isCompleted: completedTitles.has(item.title),
+        isYesNoQuestion: item.isYesNoQuestion,
+        openChatOnNo: item.openChatOnNo,
+        openChatOnYes: item.openChatOnYes,
+        subtitle: item.subtitle,
+        suggestedDay: ageInDays,
+        summary: item.summary,
+        title: item.title,
+        type: item.type as MilestoneCardData['type'],
       }),
     );
 
-    // Find the next upcoming milestone
-    let nextMilestoneDay: number | undefined;
-    if (ageInDays !== undefined) {
-      // Get all milestone rules (not just matching ones)
-      const allMilestoneRules = rules.filter(
-        (r) =>
-          r.screen === Screen.Milestones &&
-          r.slot === Slot.Header &&
-          r.render.template === 'Card.Milestone',
-      );
-
-      // Filter for future milestones with suggestedDay
-      const futureMilestones = allMilestoneRules
-        .map((rule) => {
-          const props = rule.render.props as {
-            suggestedDay?: number;
-          };
-          return props.suggestedDay;
-        })
-        .filter((day): day is number => day !== undefined && day > ageInDays)
-        .sort((a, b) => a - b);
-
-      // Take the first (soonest) future milestone
-      nextMilestoneDay = futureMilestones[0];
-    }
+    console.log('[Milestones] Returning result:', {
+      hasBaby: !!baby,
+      milestonesCount: milestones.length,
+    });
 
     return {
-      ageInDays: ageInDays ?? 0,
+      ageInDays,
       baby,
       babyName: baby.firstName ?? 'Baby',
       milestones,
-      nextMilestoneDay,
     };
   } catch (error) {
-    console.error('Error fetching milestones carousel content:', error);
+    console.error('[Milestones] Error:', error);
     return {
       ageInDays: 0,
       baby: null,
       babyName: 'Baby',
       milestones: [],
-      nextMilestoneDay: undefined,
     };
   }
-}
-
-/**
- * Build rule context from baby data
- */
-function buildRuleContext(baby: {
-  id: string;
-  firstName: string;
-  middleName: string | null;
-  lastName: string | null;
-  birthDate: Date | null;
-  dueDate: Date | null;
-  journeyStage: string | null;
-  gender: string | null;
-}): RuleContext {
-  const now = new Date();
-  let scope: Scope | undefined;
-  let ppDay: number | undefined;
-  let ppWeek: number | undefined;
-
-  // Determine scope and time-based values
-  if (baby.birthDate) {
-    // Baby is born - postpartum
-    scope = Scope.Postpartum;
-    const ageInDays = differenceInDays(now, baby.birthDate);
-    const ageInWeeks = differenceInWeeks(now, baby.birthDate);
-    ppDay = ageInDays;
-    ppWeek = ageInWeeks;
-  } else if (baby.dueDate) {
-    // Pregnancy
-    scope = Scope.Pregnancy;
-  }
-
-  return {
-    baby: {
-      ageInDays: baby.birthDate ? differenceInDays(now, baby.birthDate) : 0,
-      firstName: baby.firstName,
-      lastName: baby.lastName,
-      middleName: baby.middleName,
-      sex: baby.gender || 'U',
-    },
-    ppDay,
-    ppWeek,
-    scope,
-  };
-}
-
-/**
- * Complete a milestone for a baby
- */
-export const completeMilestoneAction = action
-  .schema(
-    z.object({
-      babyId: z.string(),
-      milestoneTitle: z.string(),
-      milestoneType: z.enum([
-        'physical',
-        'cognitive',
-        'social',
-        'language',
-        'self_care',
-      ]),
-      note: z.string().optional(),
-      photoUrl: z.string().optional(),
-      suggestedDay: z.number().optional(),
-    }),
-  )
-  .action(async ({ parsedInput: input }) => {
-    const { userId } = await auth();
-    if (!userId) throw new Error('Unauthorized');
-
-    // Create tRPC API helper to get familyId
-    const api = await getApi();
-    const baby = await api.babies.getById({ id: input.babyId });
-
-    if (!baby) {
-      throw new Error('Baby not found');
-    }
-
-    // Insert milestone record
-    const milestone = await db
-      .insert(Milestones)
-      .values({
-        achievedDate: new Date(),
-        babyId: input.babyId,
-        description: input.note || null,
-        familyId: baby.familyId,
-        id: createId({ prefix: 'milestone' }),
-        isSuggested: true,
-        metadata: {},
-        photoUrl: input.photoUrl || null,
-        suggestedDay: input.suggestedDay || null,
-        title: input.milestoneTitle,
-        type: input.milestoneType,
-        userId,
-      })
-      .returning()
-      .execute();
-
-    return {
-      milestone: milestone[0],
-      success: true,
-    };
-  });
-
-/**
- * Resolve AI content for a specific milestone (non-blocking)
- * This follows the same pattern as the learning carousel
- */
-export async function resolveMilestoneAIContent(
-  _milestoneId: string,
-  babyId: string,
-  title: string,
-  description: string,
-  type: 'physical' | 'cognitive' | 'social' | 'language' | 'self_care',
-  ageLabel: string,
-  ageInDays?: number,
-): Promise<{
-  bulletPoints: string[];
-  followUpQuestion: string;
-  summary: string;
-  isYesNoQuestion?: boolean | null;
-  openChatOnYes?: boolean | null;
-  openChatOnNo?: boolean | null;
-} | null> {
-  try {
-    // Verify authentication
-    const authResult = await auth();
-    if (!authResult.userId) {
-      return null;
-    }
-
-    // Get baby info for AI context
-    const api = await getApi();
-    const baby = await api.babies.getById({ id: babyId });
-
-    if (!baby) {
-      return null;
-    }
-
-    // Create database-backed cache
-    const cache = new DbCache(db, baby.id, baby.familyId, authResult.userId);
-
-    // Build rule context for caching
-    const context = buildRuleContext(baby);
-
-    // Generate cache key
-    const cacheKey = `milestone:${baby.id}:${type}:${title.toLowerCase().replace(/\s+/g, '-')}`;
-
-    // Build context for BAML
-    const bamlContext = await buildBamlContext({
-      babyId: baby.id,
-      familyId: baby.familyId,
-      includeActivities: true,
-      includeChat: true,
-      includeMedical: true,
-      includeMilestones: true,
-      includeParentWellness: true,
-      userId: authResult.userId,
-    });
-
-    // Format context for BAML prompts
-    const recentChatTopics = formatChatContext(bamlContext);
-    const achievedMilestones = formatMilestoneContext(bamlContext);
-    const activitySummary = formatActivityContext(bamlContext);
-    const parentWellness = formatParentWellnessContext(bamlContext);
-    const medicalContext = formatMedicalContext(bamlContext);
-
-    // Structure the enhancement as an aiTextBaml prop for caching
-    const enhancementProp = aiTextBaml({
-      call: () =>
-        bamlCall(
-          () =>
-            b.EnhanceMilestone(
-              title,
-              description,
-              type,
-              ageLabel,
-              baby.firstName ?? null,
-              baby.gender ?? null,
-              ageInDays ?? null,
-              recentChatTopics,
-              achievedMilestones,
-              activitySummary,
-              parentWellness,
-              medicalContext,
-            ),
-          (output) => output,
-        ),
-      // Cache key includes milestone title and type to uniquely identify content
-      key: () => cacheKey,
-      // Cache for 7 days (milestones don't change frequently)
-      ttl: '7d',
-    });
-
-    // Resolve the prop using cache (will use cached value if available)
-    const resolved = await resolveAIProps(
-      { enhancement: enhancementProp },
-      context,
-      cache,
-    );
-
-    const enhancement = resolved.enhancement as {
-      bulletPoints: string[];
-      followUpQuestion: string;
-      summary: string;
-      isYesNoQuestion?: boolean | null;
-      openChatOnYes?: boolean | null;
-      openChatOnNo?: boolean | null;
-    };
-
-    return enhancement;
-  } catch (error) {
-    console.error(
-      `Error resolving milestone AI content for "${title}":`,
-      error,
-    );
-    return null;
-  }
-}
-
-/**
- * Legacy action for backward compatibility
- * This is called progressively on the client side
- * Uses database caching to avoid regenerating content
- */
-export const enhanceMilestoneAction = action
-  .schema(
-    z.object({
-      ageInDays: z.number().optional(),
-      ageLabel: z.string(),
-      babyId: z.string(),
-      description: z.string(),
-      title: z.string(),
-      type: z.enum([
-        'physical',
-        'cognitive',
-        'social',
-        'language',
-        'self_care',
-      ]),
-    }),
-  )
-  .action(async ({ parsedInput: input }) => {
-    const result = await resolveMilestoneAIContent(
-      `milestone-${input.title}`,
-      input.babyId,
-      input.title,
-      input.description,
-      input.type,
-      input.ageLabel,
-      input.ageInDays,
-    );
-
-    if (result) {
-      return {
-        bulletPoints: result.bulletPoints,
-        followUpQuestion: result.followUpQuestion,
-        isYesNoQuestion: result.isYesNoQuestion,
-        openChatOnNo: result.openChatOnNo,
-        openChatOnYes: result.openChatOnYes,
-        success: true,
-        summary: result.summary,
-      };
-    }
-
-    return {
-      success: false,
-    };
-  });
-
-/**
- * Get enhanced baby data with activities and growth records
- * Similar to learning carousel but focused on milestone-relevant data
- */
-async function _getEnhancedBabyData(babyId: string, birthDate: Date | null) {
-  if (!birthDate) {
-    return null;
-  }
-
-  const now = new Date();
-  const oneDayAgo = subDays(now, 1);
-  const oneWeekAgo = subWeeks(now, 1);
-
-  // Get activities from last 24 hours
-  const activities24h = await db
-    .select()
-    .from(Activities)
-    .where(
-      and(eq(Activities.babyId, babyId), gte(Activities.startTime, oneDayAgo)),
-    )
-    .execute();
-
-  // Get activities from last week
-  const activitiesWeek = await db
-    .select()
-    .from(Activities)
-    .where(
-      and(eq(Activities.babyId, babyId), gte(Activities.startTime, oneWeekAgo)),
-    )
-    .execute();
-
-  // Calculate activity summaries
-  const feedingCount24h = activities24h.filter((a) =>
-    ['feeding', 'nursing', 'bottle'].includes(a.type),
-  ).length;
-  const sleepCount24h = activities24h.filter((a) => a.type === 'sleep').length;
-  const diaperCount24h = activities24h.filter((a) =>
-    ['diaper', 'wet', 'dirty', 'both'].includes(a.type),
-  ).length;
-
-  const avgFeedingsPerDay =
-    activitiesWeek.filter((a) =>
-      ['feeding', 'nursing', 'bottle'].includes(a.type),
-    ).length / 7;
-
-  return {
-    avgFeedingsPerDay,
-    diaperCount24h,
-    feedingCount24h,
-    sleepCount24h,
-  };
 }

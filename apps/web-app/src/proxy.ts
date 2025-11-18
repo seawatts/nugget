@@ -12,12 +12,20 @@ export default clerkMiddleware(async (auth, request) => {
   if (isPrivateRoute(request)) {
     const authResponse = await auth.protect();
 
-    // Skip org check for onboarding page itself
+    // Skip org check for onboarding page and invite accept page
     const isOnboardingPage =
       request.nextUrl.pathname.startsWith('/app/onboarding');
+    const isInviteAcceptPage = request.nextUrl.pathname.startsWith(
+      '/app/invite/accept/',
+    );
 
-    // All app routes require org except onboarding
-    if (authResponse.userId && !authResponse.orgId && !isOnboardingPage) {
+    // All app routes require org except onboarding and invite accept
+    if (
+      authResponse.userId &&
+      !authResponse.orgId &&
+      !isOnboardingPage &&
+      !isInviteAcceptPage
+    ) {
       const url = request.nextUrl.clone();
       url.pathname = '/app/onboarding';
       url.searchParams.set('redirectTo', request.nextUrl.pathname);

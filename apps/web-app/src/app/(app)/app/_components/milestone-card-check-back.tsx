@@ -2,7 +2,7 @@
 
 import { Button } from '@nugget/ui/button';
 import { H3, P } from '@nugget/ui/custom/typography';
-import { Award, Calendar } from 'lucide-react';
+import { Award } from 'lucide-react';
 
 interface MilestoneCardCheckBackProps {
   baby: {
@@ -36,23 +36,17 @@ export function MilestoneCardCheckBack({
 
         <div className="space-y-3">
           <P className="text-sm text-muted-foreground">
-            Check back when{' '}
-            <span className="font-bold text-primary">{babyName}</span>{' '}
+            Check back{' '}
+            <span className="font-semibold text-foreground">
+              {daysUntilNext === 1 ? 'tomorrow' : `in ${daysUntilNext} days`}
+            </span>{' '}
+            when <span className="font-bold text-primary">{babyName}</span>{' '}
             <span className="font-semibold text-foreground">
               {nextMilestoneDay
                 ? `is ${nextMilestoneDay} days old`
                 : 'reaches the next milestone'}
             </span>
           </P>
-
-          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-1">
-            <Calendar className="size-4" />
-            <span>
-              {daysUntilNext === 1
-                ? 'New milestone tomorrow'
-                : `New milestone in ${daysUntilNext} days`}
-            </span>
-          </div>
         </div>
 
         <div className="pt-4 w-full">

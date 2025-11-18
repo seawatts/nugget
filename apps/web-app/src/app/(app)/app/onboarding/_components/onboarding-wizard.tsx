@@ -6,23 +6,33 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import {
   completeOnboardingAction,
+  completeOnboardingForExistingFamilyAction,
   createFamilyEarlyAction,
   upsertUserAction,
 } from '../actions';
+import { FamilySelectionStep } from './family-selection-step';
 import { InviteCaregiversStep } from './invite-caregivers-step';
 import { JourneyStageStep } from './journey-stage-step';
 import { NavigationButtons } from './navigation-buttons';
 import { StageDetailsStep } from './stage-details-step';
 import { StepIndicator } from './step-indicator';
-import type { JourneyStage, TTCMethod } from './types';
+import type {
+  JourneyStage,
+  OnboardingLocalStorageState,
+  TTCMethod,
+} from './types';
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4; // Updated to include family selection step
+const ONBOARDING_STORAGE_KEY = 'onboarding_wizard_state';
 
 export function OnboardingWizard() {
   const router = useRouter();
-  const { setActive } = useOrganizationList();
+  const { setActive, userMemberships } = useOrganizationList({
+    userMemberships: { infinite: true },
+  });
   const [isPending, startTransition] = useTransition();
-  const [step, setStep] = useState(1);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [step, setStep] = useState(0);
   const [journeyStage, setJourneyStage] = useState<JourneyStage | null>(null);
   const [ttcMethod, setTTCMethod] = useState<TTCMethod | null>(null);
   const [lastPeriodDate, setLastPeriodDate] = useState('');
@@ -33,7 +43,106 @@ export function OnboardingWizard() {
   const [birthWeightLbs, setBirthWeightLbs] = useState('');
   const [birthWeightOz, setBirthWeightOz] = useState('');
   const [gender, setGender] = useState('');
+  const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Determine if user has multiple families
+  const familyCount = userMemberships?.data?.length ?? 0;
+  const hasMultipleFamilies = familyCount > 1;
+
+  // Load state from localStorage on mount
+  useEffect(() => {
+    const loadFromLocalStorage = () => {
+      try {
+        const stored = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored) as OnboardingLocalStorageState;
+          setStep(parsed.step);
+          setJourneyStage(parsed.journeyStage);
+          setTTCMethod(parsed.ttcMethod);
+          setLastPeriodDate(parsed.lastPeriodDate);
+          setDueDate(parsed.dueDate);
+          setDueDateManuallySet(parsed.dueDateManuallySet);
+          setBirthDate(parsed.birthDate);
+          setFullName(parsed.fullName);
+          setBirthWeightLbs(parsed.birthWeightLbs);
+          setBirthWeightOz(parsed.birthWeightOz);
+          setGender(parsed.gender);
+          setSelectedFamilyId(parsed.selectedFamilyId);
+        } else {
+          // No saved state, determine starting step based on family count
+          if (hasMultipleFamilies) {
+            setStep(0); // Start with family selection
+          } else {
+            setStep(1); // Start with journey stage
+          }
+        }
+      } catch (error) {
+        console.error(
+          'Failed to load onboarding state from localStorage:',
+          error,
+        );
+        // On error, use default based on family count
+        if (hasMultipleFamilies) {
+          setStep(0);
+        } else {
+          setStep(1);
+        }
+      }
+      setIsInitialized(true);
+    };
+
+    // Only load once userMemberships data is available
+    if (userMemberships?.data) {
+      loadFromLocalStorage();
+    }
+  }, [hasMultipleFamilies, userMemberships?.data]);
+
+  // Save state to localStorage whenever relevant state changes
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    const saveTimeout = setTimeout(() => {
+      try {
+        const state: OnboardingLocalStorageState = {
+          birthDate,
+          birthWeightLbs,
+          birthWeightOz,
+          dueDate,
+          dueDateManuallySet,
+          fullName,
+          gender,
+          journeyStage,
+          lastPeriodDate,
+          selectedFamilyId,
+          step,
+          ttcMethod,
+        };
+        localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(state));
+      } catch (error) {
+        console.error(
+          'Failed to save onboarding state to localStorage:',
+          error,
+        );
+      }
+    }, 300); // Debounce to avoid excessive writes
+
+    return () => clearTimeout(saveTimeout);
+  }, [
+    isInitialized,
+    step,
+    journeyStage,
+    ttcMethod,
+    lastPeriodDate,
+    dueDate,
+    dueDateManuallySet,
+    birthDate,
+    fullName,
+    birthWeightLbs,
+    birthWeightOz,
+    gender,
+    selectedFamilyId,
+  ]);
 
   // Upsert user when component mounts to ensure user exists in database
   useEffect(() => {
@@ -67,6 +176,74 @@ export function OnboardingWizard() {
   const handleDueDateChange = (date: string) => {
     setDueDate(date);
     setDueDateManuallySet(true);
+  };
+
+  const handleFamilySelect = (familyId: string) => {
+    setSelectedFamilyId(familyId);
+  };
+
+  const handleFamilySelectionComplete = async () => {
+    if (!selectedFamilyId) {
+      setError('Please select a family');
+      return;
+    }
+
+    setError(null);
+    startTransition(async () => {
+      try {
+        // FIRST: Switch to the selected family in Clerk
+        if (setActive) {
+          try {
+            await setActive({ organization: selectedFamilyId });
+            console.log(
+              'Successfully switched to organization:',
+              selectedFamilyId,
+            );
+            // Give Clerk time to update the session in cookies/storage
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          } catch (orgError) {
+            console.error('Failed to switch organization:', orgError);
+            setError(
+              'Failed to switch to the selected family. Please try again.',
+            );
+            return;
+          }
+        }
+
+        // THEN: Mark onboarding as complete for this family
+        const result = await completeOnboardingForExistingFamilyAction({
+          clerkOrgId: selectedFamilyId,
+        });
+
+        if (result?.serverError) {
+          console.error('Server error:', result.serverError);
+          setError(result.serverError);
+          return;
+        }
+
+        if (!result?.data?.success) {
+          setError('Failed to complete onboarding. Please try again.');
+          return;
+        }
+
+        // Clear localStorage after successful completion
+        localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+        localStorage.setItem(
+          'onboardingData',
+          JSON.stringify({
+            clerkOrgId: selectedFamilyId,
+            completedAt: new Date().toISOString(),
+          }),
+        );
+
+        // Force a full page reload to ensure Clerk session is fully updated
+        // This ensures middleware and all auth checks use the new organization context
+        window.location.href = '/app';
+      } catch (error) {
+        console.error('Failed to complete family selection:', error);
+        setError('An error occurred. Please try again.');
+      }
+    });
   };
 
   const handleComplete = () => {
@@ -139,6 +316,9 @@ export function OnboardingWizard() {
               await setActive({ organization: result.data.family.clerkOrgId });
             }
 
+            // Clear localStorage after successful completion
+            localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+
             // Now navigate to the app
             router.push('/app');
           } else {
@@ -157,6 +337,12 @@ export function OnboardingWizard() {
   };
 
   const handleNext = async () => {
+    // If moving from step 0, complete family selection
+    if (step === 0) {
+      await handleFamilySelectionComplete();
+      return;
+    }
+
     // If moving from step 2 to step 3, create the family and baby first
     if (step === 2) {
       setError(null);
@@ -228,7 +414,9 @@ export function OnboardingWizard() {
 
   const canProceed = () => {
     let result = false;
-    if (step === 1) {
+    if (step === 0) {
+      result = selectedFamilyId !== null;
+    } else if (step === 1) {
       result = journeyStage !== null;
     } else if (step === 2) {
       if (journeyStage === 'ttc') result = ttcMethod !== null;
@@ -241,10 +429,36 @@ export function OnboardingWizard() {
     return result;
   };
 
+  // Show loading state while initializing
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate display steps (exclude step 0 from count if user has only one family)
+  const effectiveTotalSteps = hasMultipleFamilies
+    ? TOTAL_STEPS
+    : TOTAL_STEPS - 1;
+  const displayStep = hasMultipleFamilies ? step : Math.max(step - 1, 1);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         <div className="w-full max-w-md space-y-8">
+          {step === 0 && hasMultipleFamilies && (
+            <FamilySelectionStep
+              families={userMemberships?.data ?? []}
+              onSelect={handleFamilySelect}
+              selectedFamilyId={selectedFamilyId}
+            />
+          )}
+
           {step === 1 && (
             <JourneyStageStep
               onSelect={setJourneyStage}
@@ -285,15 +499,26 @@ export function OnboardingWizard() {
 
           <NavigationButtons
             canProceed={canProceed()}
-            currentStep={step}
+            currentStep={displayStep}
             isPending={isPending}
-            onBack={() => setStep(step - 1)}
+            onBack={() => {
+              if (step > 0) {
+                // Don't go back to step 0 if user only has one family
+                if (!hasMultipleFamilies && step === 1) {
+                  return;
+                }
+                setStep(step - 1);
+              }
+            }}
             onComplete={handleComplete}
             onNext={handleNext}
-            totalSteps={TOTAL_STEPS}
+            totalSteps={effectiveTotalSteps}
           />
 
-          <StepIndicator currentStep={step} totalSteps={TOTAL_STEPS} />
+          <StepIndicator
+            currentStep={displayStep}
+            totalSteps={effectiveTotalSteps}
+          />
         </div>
       </div>
     </div>

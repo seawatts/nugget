@@ -30,9 +30,10 @@ function MonthOneMilestone(input: MilestoneInput) -> MilestoneEnhancementOutput 
     {% if input.activitySummary %}Activity: {{input.activitySummary}}{% endif %}
 
     Provide:
-    1. bulletPoints (2-3, each max 12 words)
-    2. followUpQuestion (max 15 words, use {{input.babyName}}'s name)
-    3. summary (max 20 words)
+    1. subtitle (max 5 words, catchy and memorable)
+    2. summary (max 20 words)
+    3. bulletPoints (2-3, each max 12 words)
+    4. followUpQuestion (max 15 words, use {{input.babyName}}'s name)
 
     YES/NO REQUIREMENTS:
     - Prefer isYesNoQuestion: true

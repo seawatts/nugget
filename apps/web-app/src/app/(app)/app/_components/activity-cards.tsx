@@ -2,7 +2,6 @@
 
 import { useUser } from '@clerk/nextjs';
 import type { Activities } from '@nugget/db/schema';
-import { createId } from '@nugget/id';
 import { toast } from '@nugget/ui/sonner';
 import {
   Baby,
@@ -17,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
 import { ActivityDrawer } from '~/app/(app)/app/_components/activity-drawer';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { createActivityAction } from './activity-cards.actions';
 import {
   formatActivityForToast,
@@ -105,19 +105,9 @@ const activities = [
 
 interface ActivityCardsProps {
   compact?: boolean;
-  onOptimisticActivity?: (activity: typeof Activities.$inferSelect) => void;
-  onActivityCreated?: () => void;
-  onActivityUpdated?: () => void;
-  refreshTrigger?: number;
 }
 
-export function ActivityCards({
-  compact = false,
-  onOptimisticActivity,
-  onActivityCreated,
-  onActivityUpdated,
-  refreshTrigger = 0,
-}: ActivityCardsProps = {}) {
+export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
   const { user } = useUser();
   const [openDrawer, setOpenDrawer] = useState<string | null>(null);
   const [editingActivity, setEditingActivity] = useState<
@@ -126,9 +116,11 @@ export function ActivityCards({
   const [babyAgeDays, setBabyAgeDays] = useState<number | null>(null);
   const [loadingActivity, setLoadingActivity] = useState<string | null>(null);
   const [_isPending, startTransition] = useTransition();
-  const [_optimisticActivities, setOptimisticActivities] = useState<
-    Array<typeof Activities.$inferSelect>
-  >([]);
+
+  // Use Zustand store for optimistic updates
+  const addOptimisticActivity = useOptimisticActivitiesStore(
+    (state) => state.addActivity,
+  );
 
   useEffect(() => {
     const onboardingData = localStorage.getItem('onboardingData');
@@ -237,7 +229,7 @@ export function ActivityCards({
       duration: null,
       endTime: null,
       feedingSource: null,
-      id: createId({ prefix: 'activity-optimistic' }),
+      id: `temp-activity-${Date.now()}`,
       isScheduled: false,
       notes: null,
       startTime: new Date(),
@@ -245,11 +237,8 @@ export function ActivityCards({
       userId: user?.id ?? 'temp-user-id',
     } as typeof Activities.$inferSelect;
 
-    // Add to optimistic state
-    setOptimisticActivities((prev) => [...prev, optimisticActivity]);
-
-    // Notify parent component for timeline update
-    onOptimisticActivity?.(optimisticActivity);
+    // Add to Zustand optimistic state
+    addOptimisticActivity(optimisticActivity);
 
     startTransition(async () => {
       try {
@@ -257,9 +246,6 @@ export function ActivityCards({
 
         if (result?.data?.activity) {
           const activity = result.data.activity;
-
-          // Notify parent that activity was created successfully
-          onActivityCreated?.();
 
           // Show success toast with edit action
           toast.success(formatActivityForToast(activityId, optimisticData), {
@@ -275,19 +261,15 @@ export function ActivityCards({
           });
         } else if (result?.serverError) {
           toast.error(result.serverError);
-          // Remove optimistic activity on error
-          setOptimisticActivities((prev) =>
-            prev.filter((a) => a.id !== optimisticActivity.id),
-          );
+          // Note: Optimistic activity will be automatically cleared by mutation hook on success
+          // or can be manually removed on error if needed
         }
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : 'Failed to create activity',
         );
-        // Remove optimistic activity on error
-        setOptimisticActivities((prev) =>
-          prev.filter((a) => a.id !== optimisticActivity.id),
-        );
+        // Note: Optimistic activity will be automatically cleared by mutation hook on success
+        // or can be manually removed on error if needed
       } finally {
         setLoadingActivity(null);
       }
@@ -299,36 +281,11 @@ export function ActivityCards({
     setEditingActivity(null);
   };
 
-  const handleActivityUpdated = (
-    updatedActivity: typeof Activities.$inferSelect,
-  ) => {
-    // Update optimistic activities if present
-    setOptimisticActivities((prev) => {
-      const existingIndex = prev.findIndex((a) => a.id === updatedActivity.id);
-      if (existingIndex !== -1) {
-        const updated = [...prev];
-        updated[existingIndex] = updatedActivity;
-        return updated;
-      }
-      return [...prev, updatedActivity];
-    });
-
-    // Notify parent component of optimistic update
-    onOptimisticActivity?.(updatedActivity);
-  };
-
-  const handleActivitySaved = () => {
-    // Called after server action completes successfully
-    // Triggers refresh to get latest data from server
-    onActivityUpdated?.();
-  };
-
   const handleActivityLogged = (activity: typeof Activities.$inferSelect) => {
     // When a quick log button is pressed on a predictive card:
-    // 1. Add optimistic activity to local state
-    onOptimisticActivity?.(activity);
-    // 2. Trigger parent refresh (increments refreshTrigger)
-    onActivityCreated?.();
+    // Add optimistic activity to Zustand store for immediate feedback
+    // tRPC will handle cache invalidation and clearing optimistic state after mutation completes
+    addOptimisticActivity(activity);
   };
 
   if (compact) {
@@ -367,8 +324,6 @@ export function ActivityCards({
             }
             isOpen={openDrawer === activity.id}
             key={activity.id}
-            onActivitySaved={handleActivitySaved}
-            onActivityUpdated={handleActivityUpdated}
             onClose={handleDrawerClose}
           />
         ))}
@@ -386,22 +341,18 @@ export function ActivityCards({
             // Open unified feeding drawer for selection
             setOpenDrawer('feeding');
           }}
-          refreshTrigger={refreshTrigger}
         />
         <PredictiveSleepCard
           onActivityLogged={handleActivityLogged}
           onCardClick={() => setOpenDrawer('sleep')}
-          refreshTrigger={refreshTrigger}
         />
         <PredictiveDiaperCard
           onActivityLogged={handleActivityLogged}
           onCardClick={() => setOpenDrawer('diaper')}
-          refreshTrigger={refreshTrigger}
         />
         <PredictivePumpingCard
           onActivityLogged={handleActivityLogged}
           onCardClick={() => setOpenDrawer('pumping')}
-          refreshTrigger={refreshTrigger}
         />
       </div>
 
@@ -412,8 +363,6 @@ export function ActivityCards({
           existingActivity={openDrawer === activity.id ? editingActivity : null}
           isOpen={openDrawer === activity.id}
           key={activity.id}
-          onActivitySaved={handleActivitySaved}
-          onActivityUpdated={handleActivityUpdated}
           onClose={handleDrawerClose}
         />
       ))}

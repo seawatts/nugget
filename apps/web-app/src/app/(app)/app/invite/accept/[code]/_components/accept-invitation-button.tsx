@@ -1,23 +1,20 @@
 'use client';
 
-import { SignInButton } from '@clerk/nextjs';
 import { api } from '@nugget/api/react';
 import { Button } from '@nugget/ui/button';
 import { Icons } from '@nugget/ui/custom/icons';
-import { Check, UserPlus } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 interface AcceptInvitationButtonProps {
   code: string;
   familyName: string;
-  isAuthenticated: boolean;
 }
 
 export function AcceptInvitationButton({
   code,
   familyName: _familyName,
-  isAuthenticated,
 }: AcceptInvitationButtonProps) {
   const router = useRouter();
 
@@ -44,20 +41,6 @@ export function AcceptInvitationButton({
   const handleAccept = () => {
     acceptMutation.mutate({ code });
   };
-
-  if (!isAuthenticated) {
-    return (
-      <SignInButton
-        forceRedirectUrl={`/app/invite/accept/${code}`}
-        mode="modal"
-      >
-        <Button className="w-full" size="lg">
-          <UserPlus className="size-4 mr-2" />
-          Sign In to Accept
-        </Button>
-      </SignInButton>
-    );
-  }
 
   return (
     <Button

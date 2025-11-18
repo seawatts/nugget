@@ -105,7 +105,12 @@ export function NursingDrawerContent({
             <Button
               className="h-12 bg-transparent"
               key={min}
-              onClick={() => handleQuickAdd(min)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleQuickAdd(min);
+              }}
+              type="button"
               variant="outline"
             >
               {min}m

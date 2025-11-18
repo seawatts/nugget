@@ -35,7 +35,9 @@ interface MilestoneCardProps {
   summary?: string;
   babyId?: string;
   // Yes/No question fields
-  isYesNoQuestion?: boolean | null;
+  isYesNoQuestion?: boolean;
+  openChatOnYes?: boolean;
+  openChatOnNo?: boolean;
 }
 
 interface ChatReplier {

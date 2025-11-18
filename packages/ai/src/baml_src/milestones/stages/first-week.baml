@@ -70,18 +70,21 @@ function FirstWeekMilestone(input: MilestoneInput) -> MilestoneEnhancementOutput
 
     Generate ONE milestone enhancement:
 
-    1. **bulletPoints** (2-3 points, each max 12 words):
+    1. **subtitle** (max 5 words):
+       - Catchy and memorable for parents
+
+    2. **summary** (max 20 words):
+       - Warm, supportive sentence with {{input.babyName}}'s name
+       - Emphasize normal developmental variation
+
+    3. **bulletPoints** (2-3 points, each max 12 words):
        - Observable behavior for this milestone
        - Developmental significance (brief evidence note)
        - How parents can support or observe
 
-    2. **followUpQuestion** (max 15 words):
+    4. **followUpQuestion** (max 15 words):
        - ONE question using {{input.babyName}}'s name
        - Focus on specific observable signs
-
-    3. **summary** (max 20 words):
-       - Warm, supportive sentence with {{input.babyName}}'s name
-       - Emphasize normal developmental variation
 
     CRITICAL YES/NO QUESTION REQUIREMENTS:
 

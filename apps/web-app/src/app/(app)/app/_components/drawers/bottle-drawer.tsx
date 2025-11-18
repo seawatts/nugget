@@ -59,7 +59,12 @@ export function BottleDrawerContent({
             <Button
               className="h-12 bg-transparent"
               key={value}
-              onClick={() => setAmount(value)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setAmount(value);
+              }}
+              type="button"
               variant="outline"
             >
               {value} {unitPref === 'OZ' ? 'oz' : 'ml'}
@@ -103,11 +108,16 @@ export function BottleDrawerContent({
           <Button
             className={`h-12 ${
               bottleType === 'breast_milk'
-                ? 'border-[oklch(0.68_0.18_35)] bg-[oklch(0.68_0.18_35)]/10'
+                ? 'bg-[oklch(0.68_0.18_35)] text-white hover:bg-[oklch(0.68_0.18_35)]/90'
                 : 'bg-transparent'
             }`}
-            onClick={() => setBottleType('breast_milk')}
-            variant="outline"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setBottleType('breast_milk');
+            }}
+            type="button"
+            variant={bottleType === 'breast_milk' ? 'default' : 'outline'}
           >
             <Milk className="mr-2 h-4 w-4" />
             Breast Milk
@@ -115,11 +125,16 @@ export function BottleDrawerContent({
           <Button
             className={`h-12 ${
               bottleType === 'formula'
-                ? 'border-[oklch(0.68_0.18_35)] bg-[oklch(0.68_0.18_35)]/10'
+                ? 'bg-[oklch(0.68_0.18_35)] text-white hover:bg-[oklch(0.68_0.18_35)]/90'
                 : 'bg-transparent'
             }`}
-            onClick={() => setBottleType('formula')}
-            variant="outline"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setBottleType('formula');
+            }}
+            type="button"
+            variant={bottleType === 'formula' ? 'default' : 'outline'}
           >
             <Milk className="mr-2 h-4 w-4" />
             Formula

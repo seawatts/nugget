@@ -164,9 +164,10 @@ export interface LearningTip {
 }
 
 export interface MilestoneEnhancementOutput {
+  subtitle: string
+  summary: string
   bulletPoints: string[]
   followUpQuestion: string
-  summary: string
   isYesNoQuestion?: boolean | null
   openChatOnYes?: boolean | null
   openChatOnNo?: boolean | null

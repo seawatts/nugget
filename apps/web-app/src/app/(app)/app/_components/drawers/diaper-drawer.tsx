@@ -164,12 +164,17 @@ export function DiaperDrawerContent({
               <Button
                 className={`h-12 ${
                   size === sizeOption.id
-                    ? 'border-[oklch(0.78_0.14_60)] bg-[oklch(0.78_0.14_60)]/10'
+                    ? 'bg-[oklch(0.78_0.14_60)] text-[oklch(0.18_0.02_250)] hover:bg-[oklch(0.78_0.14_60)]/90'
                     : 'bg-transparent'
                 }`}
                 key={sizeOption.id}
-                onClick={() => setSize(sizeOption.id)}
-                variant="outline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSize(sizeOption.id);
+                }}
+                type="button"
+                variant={size === sizeOption.id ? 'default' : 'outline'}
               >
                 {sizeOption.label}
               </Button>
@@ -212,12 +217,19 @@ export function DiaperDrawerContent({
               <Button
                 className={`h-12 ${
                   consistency === consistencyOption.id
-                    ? 'border-[oklch(0.78_0.14_60)] bg-[oklch(0.78_0.14_60)]/10'
+                    ? 'bg-[oklch(0.78_0.14_60)] text-[oklch(0.18_0.02_250)] hover:bg-[oklch(0.78_0.14_60)]/90'
                     : 'bg-transparent'
                 }`}
                 key={consistencyOption.id}
-                onClick={() => setConsistency(consistencyOption.id)}
-                variant="outline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setConsistency(consistencyOption.id);
+                }}
+                type="button"
+                variant={
+                  consistency === consistencyOption.id ? 'default' : 'outline'
+                }
               >
                 {consistencyOption.label}
               </Button>
@@ -235,22 +247,32 @@ export function DiaperDrawerContent({
           <Button
             className={`h-12 ${
               !hasRash
-                ? 'border-[oklch(0.78_0.14_60)] bg-[oklch(0.78_0.14_60)]/10'
+                ? 'bg-[oklch(0.78_0.14_60)] text-[oklch(0.18_0.02_250)] hover:bg-[oklch(0.78_0.14_60)]/90'
                 : 'bg-transparent'
             }`}
-            onClick={() => setHasRash(false)}
-            variant="outline"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setHasRash(false);
+            }}
+            type="button"
+            variant={!hasRash ? 'default' : 'outline'}
           >
             No Rash
           </Button>
           <Button
             className={`h-12 ${
               hasRash
-                ? 'border-[oklch(0.78_0.14_60)] bg-[oklch(0.78_0.14_60)]/10'
+                ? 'bg-[oklch(0.78_0.14_60)] text-[oklch(0.18_0.02_250)] hover:bg-[oklch(0.78_0.14_60)]/90'
                 : 'bg-transparent'
             }`}
-            onClick={() => setHasRash(true)}
-            variant="outline"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setHasRash(true);
+            }}
+            type="button"
+            variant={hasRash ? 'default' : 'outline'}
           >
             Has Rash
           </Button>

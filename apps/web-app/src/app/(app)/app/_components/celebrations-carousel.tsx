@@ -1,6 +1,5 @@
 'use client';
 
-import { Icons } from '@nugget/ui/custom/icons';
 import { useEffect, useState } from 'react';
 import { CelebrationCard } from './celebration-card';
 import type { CelebrationCardData } from './celebration-card.actions';
@@ -38,16 +37,8 @@ export function CelebrationsCarousel({ babyId }: CelebrationsCarouselProps) {
     loadCelebration();
   }, [babyId]);
 
-  // Don't render anything if there's no celebration today
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Icons.Spinner className="animate-spin" size="lg" />
-      </div>
-    );
-  }
-
-  if (error || !celebration) {
+  // Don't render anything while loading or if there's no celebration today
+  if (isLoading || error || !celebration) {
     return null;
   }
 

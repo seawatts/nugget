@@ -10,7 +10,7 @@ import {
   SupplyInventory,
   Users,
 } from '@nugget/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';
@@ -354,6 +354,161 @@ export const completeOnboardingAction = action
         baby,
         family,
         familyMember,
+        success: true,
+      };
+    });
+  });
+
+// Complete onboarding for a user joining an existing family
+const completeOnboardingForExistingFamilySchema = z.object({
+  clerkOrgId: z.string(),
+});
+
+export const completeOnboardingForExistingFamilyAction = action
+  .inputSchema(completeOnboardingForExistingFamilySchema)
+  .action(async ({ parsedInput }) => {
+    const { userId } = await auth();
+
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+
+    const client = await clerkClient();
+
+    return await db.transaction(async (tx) => {
+      // 1. Find the family by Clerk organization ID
+      let family = await tx.query.Families.findFirst({
+        where: eq(Families.clerkOrgId, parsedInput.clerkOrgId),
+      });
+
+      // If family doesn't exist, try to create/update it from Clerk data
+      if (!family) {
+        console.log(
+          `Family not found for clerkOrgId: ${parsedInput.clerkOrgId}, attempting to create from Clerk data`,
+        );
+
+        try {
+          // Get the organization from Clerk
+          const clerkOrg = await client.organizations.getOrganization({
+            organizationId: parsedInput.clerkOrgId,
+          });
+
+          // Get the user who created the org (or use current user as fallback)
+          const createdByUserId = clerkOrg.createdBy || userId;
+
+          // Create or update the family record using onConflictDoUpdate
+          // This handles cases where a family with the same name exists
+          const [createdFamily] = await tx
+            .insert(Families)
+            .values({
+              clerkOrgId: parsedInput.clerkOrgId,
+              createdByUserId,
+              id: parsedInput.clerkOrgId,
+              name: clerkOrg.name,
+            })
+            .onConflictDoUpdate({
+              set: {
+                clerkOrgId: parsedInput.clerkOrgId,
+                updatedAt: new Date(),
+              },
+              target: Families.name,
+            })
+            .returning();
+
+          family = createdFamily;
+          console.log(
+            `Created/updated family record for clerkOrgId: ${parsedInput.clerkOrgId}`,
+          );
+        } catch (error) {
+          console.error('Failed to create family from Clerk data:', error);
+
+          // If creation still fails, try to find by name as a fallback
+          try {
+            const clerkOrg = await client.organizations.getOrganization({
+              organizationId: parsedInput.clerkOrgId,
+            });
+
+            family = await tx.query.Families.findFirst({
+              where: eq(Families.name, clerkOrg.name),
+            });
+
+            if (family) {
+              console.log(
+                `Found existing family by name: ${clerkOrg.name}, updating clerkOrgId`,
+              );
+              // Update the clerkOrgId to match
+              const [updated] = await tx
+                .update(Families)
+                .set({
+                  clerkOrgId: parsedInput.clerkOrgId,
+                  updatedAt: new Date(),
+                })
+                .where(eq(Families.id, family.id))
+                .returning();
+              family = updated;
+            }
+          } catch (fallbackError) {
+            console.error('Fallback lookup also failed:', fallbackError);
+          }
+
+          if (!family) {
+            throw new Error(
+              'Family not found and could not be created. Please contact support.',
+            );
+          }
+        }
+      }
+
+      if (!family) {
+        throw new Error('Family not found.');
+      }
+
+      // 2. Find or create the family member record for this user and family
+      let familyMember = await tx.query.FamilyMembers.findFirst({
+        where: and(
+          eq(FamilyMembers.userId, userId),
+          eq(FamilyMembers.familyId, family.id),
+        ),
+      });
+
+      if (!familyMember) {
+        console.log(
+          `Family member not found for user ${userId} in family ${family.id}, creating record`,
+        );
+
+        // Create the family member record
+        const [createdMember] = await tx
+          .insert(FamilyMembers)
+          .values({
+            familyId: family.id,
+            role: 'partner', // Default role for invited members
+            userId,
+          })
+          .returning();
+
+        familyMember = createdMember;
+      }
+
+      if (!familyMember) {
+        throw new Error('Failed to create or find family member record.');
+      }
+
+      // 3. Mark onboarding as complete
+      const [updatedMember] = await tx
+        .update(FamilyMembers)
+        .set({
+          onboardingCompletedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(FamilyMembers.id, familyMember.id))
+        .returning();
+
+      // Revalidate paths
+      revalidatePath('/app');
+      revalidatePath('/app/onboarding');
+
+      return {
+        familyMember: updatedMember,
         success: true,
       };
     });

@@ -53,7 +53,7 @@ export function InviteCaregiversStep() {
 
   const createInvitationMutation = api.invitations.create.useMutation({
     onSuccess: (data) => {
-      const url = `${window.location.origin}/invite/accept/${data.code}`;
+      const url = `${window.location.origin}/app/invite/accept/${data.code}`;
       setInviteUrl(url);
     },
   });

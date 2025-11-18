@@ -28,9 +28,10 @@ import {
   Tablet as Toilet,
   UtensilsCrossed,
 } from 'lucide-react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityDrawer } from '~/app/(app)/app/_components/activity-drawer';
 import { ActivityTimelineFilters } from '~/app/(app)/app/_components/activity-timeline-filters';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import {
   getActivitiesAction,
   type TimelineItem,
@@ -139,11 +140,6 @@ const activities = [
   textColor: string;
 }>;
 
-interface ActivityTimelineProps {
-  optimisticActivities?: Array<typeof Activities.$inferSelect>;
-  refreshTrigger?: number;
-}
-
 const activityIcons: Record<string, typeof Moon> = {
   activity: Activity,
   bath: Bath,
@@ -236,10 +232,7 @@ function formatTimeGap(minutes: number): string {
   return `${hours}h ${remainingMinutes}m`;
 }
 
-export function ActivityTimeline({
-  optimisticActivities = [],
-  refreshTrigger = 0,
-}: ActivityTimelineProps) {
+export function ActivityTimeline() {
   const [timelineItems, setTimelineItems] = useState<TimelineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -263,9 +256,24 @@ export function ActivityTimeline({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
+  // Get optimistic activities from Zustand store
+  const optimisticActivities = useOptimisticActivitiesStore.use.activities();
+
   // Fetch user preferences for volume display
   const { data: user } = api.user.current.useQuery();
   const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
+
+  // Merge optimistic activities with timeline items
+  const allTimelineItems = useMemo(() => {
+    const optimisticTimelineItems: TimelineItem[] = optimisticActivities.map(
+      (activity) => ({
+        data: activity,
+        timestamp: new Date(activity.startTime),
+        type: 'activity' as const,
+      }),
+    );
+    return [...optimisticTimelineItems, ...timelineItems];
+  }, [optimisticActivities, timelineItems]);
 
   const loadActivities = useCallback(
     async (offset = 0, append = false, skipAnimation = false) => {
@@ -324,13 +332,6 @@ export function ActivityTimeline({
     setIsInitialLoad(false);
   }, [loadActivities]);
 
-  // Refetch data when refresh is triggered
-  useEffect(() => {
-    if (refreshTrigger > 0) {
-      loadActivities(0, false, true);
-    }
-  }, [refreshTrigger, loadActivities]);
-
   // Set up intersection observer for infinite scroll
   useEffect(() => {
     if (!hasMore || loadingMore) return;
@@ -338,7 +339,7 @@ export function ActivityTimeline({
     observerRef.current = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting && !loadingMore && hasMore) {
-          loadActivities(timelineItems.length, true, true);
+          loadActivities(allTimelineItems.length, true, true);
         }
       },
       { threshold: 0.1 },
@@ -353,7 +354,7 @@ export function ActivityTimeline({
         observerRef.current.disconnect();
       }
     };
-  }, [timelineItems.length, hasMore, loadActivities, loadingMore]);
+  }, [allTimelineItems.length, hasMore, loadActivities, loadingMore]);
 
   const handleItemClick = (item: TimelineItem) => {
     if (item.type === 'activity') {
@@ -375,33 +376,6 @@ export function ActivityTimeline({
     setEditingActivity(null);
   };
 
-  const handleActivityUpdated = (
-    updatedActivity: typeof Activities.$inferSelect,
-  ) => {
-    // Optimistically update the local state
-    setTimelineItems((prev) => {
-      const existingIndex = prev.findIndex(
-        (item) =>
-          item.type === 'activity' && item.data.id === updatedActivity.id,
-      );
-      if (existingIndex !== -1) {
-        const updated = [...prev];
-        updated[existingIndex] = {
-          data: updatedActivity,
-          timestamp: new Date(updatedActivity.startTime),
-          type: 'activity',
-        };
-        return updated;
-      }
-      return prev;
-    });
-  };
-
-  const handleActivitySaved = () => {
-    // Reload data from server after successful save (skip animations)
-    loadActivities(0, false, true);
-  };
-
   const handleFilterChange = (
     userIds: string[],
     itemTypes: string[],
@@ -414,27 +388,7 @@ export function ActivityTimeline({
     loadActivities(0, false, false);
   };
 
-  // Merge optimistic activities with fetched timeline items
-  // Optimistic activities override fetched activities with the same ID
-  const allItems = React.useMemo(() => {
-    const optimisticIds = new Set(optimisticActivities.map((a) => a.id));
-    const optimisticItems: TimelineItem[] = optimisticActivities.map((a) => ({
-      data: a,
-      timestamp: new Date(a.startTime),
-      type: 'activity' as const,
-    }));
-
-    const filteredItems = timelineItems.filter(
-      (item) => !(item.type === 'activity' && optimisticIds.has(item.data.id)),
-    );
-
-    const mergedItems = [...optimisticItems, ...filteredItems];
-    return mergedItems.sort(
-      (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
-    );
-  }, [optimisticActivities, timelineItems]);
-
-  const groupedItems = groupTimelineItemsByDay(allItems);
+  const groupedItems = groupTimelineItemsByDay(allTimelineItems);
 
   if (loading) {
     return (
@@ -454,7 +408,7 @@ export function ActivityTimeline({
     );
   }
 
-  if (timelineItems.length === 0) {
+  if (allTimelineItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4">
         <div className="rounded-full bg-muted/30 p-4 mb-4">
@@ -671,7 +625,7 @@ export function ActivityTimeline({
         </div>
       )}
 
-      {!hasMore && timelineItems.length > 0 && (
+      {!hasMore && allTimelineItems.length > 0 && (
         <div className="flex justify-center py-6">
           <p className="text-xs text-muted-foreground">
             That's all your timeline items
@@ -688,8 +642,6 @@ export function ActivityTimeline({
           }
           isOpen={openDrawer === activityType.id}
           key={activityType.id}
-          onActivitySaved={handleActivitySaved}
-          onActivityUpdated={handleActivityUpdated}
           onClose={handleDrawerClose}
         />
       ))}

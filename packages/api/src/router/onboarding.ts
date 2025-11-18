@@ -6,7 +6,7 @@ import {
   SupplyInventory,
   Users,
 } from '@nugget/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { createOrg } from '../services';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
@@ -23,13 +23,31 @@ export const onboardingRouter = createTRPCRouter({
       };
     }
 
-    const familyMember = await ctx.db.query.FamilyMembers.findFirst({
-      where: eq(FamilyMembers.userId, ctx.auth.userId),
+    // Get the family for the current organization
+    const family = await ctx.db.query.Families.findFirst({
+      where: eq(Families.clerkOrgId, ctx.auth.orgId),
     });
 
-    // Get journey stage from the first baby if it exists
+    if (!family) {
+      return {
+        completed: false,
+        journeyStage: null,
+        ttcMethod: null,
+        userRole: null,
+      };
+    }
+
+    // Get the family member record for this user in the current family
+    const familyMember = await ctx.db.query.FamilyMembers.findFirst({
+      where: and(
+        eq(FamilyMembers.userId, ctx.auth.userId),
+        eq(FamilyMembers.familyId, family.id),
+      ),
+    });
+
+    // Get journey stage from the first baby in this family
     const baby = await ctx.db.query.Babies.findFirst({
-      where: eq(Babies.userId, ctx.auth.userId),
+      where: eq(Babies.familyId, family.id),
     });
 
     return {

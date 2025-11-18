@@ -1,4 +1,3 @@
-import { auth } from '@clerk/nextjs/server';
 import { getApi } from '@nugget/api/server';
 import { Card } from '@nugget/ui/card';
 import {
@@ -38,9 +37,8 @@ export default async function InviteAcceptPage(props: {
   params: Promise<{ code: string }>;
 }) {
   const params = await props.params;
-  const { userId } = await auth();
 
-  // Fetch invitation details (public, no auth required)
+  // Fetch invitation details
   const api = await getApi();
   let invitation: Awaited<ReturnType<typeof api.invitations.get>>;
   try {
@@ -175,16 +173,7 @@ export default async function InviteAcceptPage(props: {
           <AcceptInvitationButton
             code={params.code}
             familyName={invitation.family.name}
-            isAuthenticated={!!userId}
           />
-        )}
-
-        {/* Sign In Prompt */}
-        {!userId && !isExpired && !isUsed && (
-          <p className="text-xs text-center text-muted-foreground">
-            You'll be asked to sign in or create an account to accept this
-            invitation
-          </p>
         )}
       </Card>
     </main>

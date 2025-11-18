@@ -57,7 +57,7 @@ export default class TypeBuilder {
     
     LearningTip: ClassViewer<'LearningTip', "category" | "subtitle" | "summary" | "bulletPoints" | "followUpQuestion" | "isYesNoQuestion" | "openChatOnYes" | "openChatOnNo">;
     
-    MilestoneEnhancementOutput: ClassViewer<'MilestoneEnhancementOutput', "bulletPoints" | "followUpQuestion" | "summary" | "isYesNoQuestion" | "openChatOnYes" | "openChatOnNo">;
+    MilestoneEnhancementOutput: ClassViewer<'MilestoneEnhancementOutput', "subtitle" | "summary" | "bulletPoints" | "followUpQuestion" | "isYesNoQuestion" | "openChatOnYes" | "openChatOnNo">;
     
     MilestoneExplanationOutput: ClassViewer<'MilestoneExplanationOutput', "explanation" | "whyItMatters" | "whatToExpect" | "tips" | "reassurance">;
     
@@ -169,7 +169,7 @@ export default class TypeBuilder {
         ]);
         
         this.MilestoneEnhancementOutput = this.tb.classViewer("MilestoneEnhancementOutput", [
-          "bulletPoints","followUpQuestion","summary","isYesNoQuestion","openChatOnYes","openChatOnNo",
+          "subtitle","summary","bulletPoints","followUpQuestion","isYesNoQuestion","openChatOnYes","openChatOnNo",
         ]);
         
         this.MilestoneExplanationOutput = this.tb.classViewer("MilestoneExplanationOutput", [
