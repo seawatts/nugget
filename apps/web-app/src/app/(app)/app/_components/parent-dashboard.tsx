@@ -15,18 +15,12 @@ interface ParentDashboardProps {
 }
 
 export function ParentDashboard({ userId }: ParentDashboardProps) {
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showWellnessAssessment, _setShowWellnessAssessment] = useState(false);
   const [checkInCompleted, setCheckInCompleted] = useState(false);
   const [wellnessModalOpen, setWellnessModalOpen] = useState(false);
 
-  const handleSleepLogged = useCallback(() => {
-    setRefreshTrigger((prev) => prev + 1);
-  }, []);
-
   const handleCheckInComplete = useCallback(() => {
     setCheckInCompleted(true);
-    setRefreshTrigger((prev) => prev + 1);
   }, []);
 
   const handleStartAssessment = useCallback(() => {

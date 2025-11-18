@@ -98,6 +98,7 @@ export function FeedingActivityDrawer({
           await updateActivity({
             ...baseData,
             details: {
+              items: [], // TODO: Allow user to input solid food items
               type: 'solids',
             },
             id: existingActivity.id,
@@ -130,8 +131,9 @@ export function FeedingActivityDrawer({
           });
         } else if (formData.type === 'solids') {
           await createActivity({
-            activityType: 'feeding',
+            activityType: 'solids',
             details: {
+              items: [], // TODO: Allow user to input solid food items
               type: 'solids',
             },
             notes: formData.notes || undefined,
