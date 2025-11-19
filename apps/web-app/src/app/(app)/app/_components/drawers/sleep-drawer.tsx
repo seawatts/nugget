@@ -108,7 +108,7 @@ export function SleepDrawerContent({
 
   // Set tracking state if there's an active activity
   useEffect(() => {
-    if (activeActivityId) {
+    if (activeActivityId && !isTimerStopped) {
       setIsTracking(true);
       // Calculate elapsed time from startTime
       const elapsedSeconds = Math.floor(
@@ -116,10 +116,10 @@ export function SleepDrawerContent({
       );
       setDuration(elapsedSeconds);
     } else {
-      // Reset tracking state when activity is cleared
+      // Reset tracking state when activity is cleared or timer is stopped
       setIsTracking(false);
     }
-  }, [activeActivityId, startTime, setDuration]);
+  }, [activeActivityId, isTimerStopped, startTime, setDuration]);
 
   // Timer effect - runs when isTracking is true
   useEffect(() => {
