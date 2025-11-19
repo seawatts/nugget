@@ -2,12 +2,19 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useState } from 'react';
+import { PullToRefresh } from '~/components/pull-to-refresh';
 
 interface ScrollContextValue {
   scrollY: number;
+  refreshing: boolean;
+  triggerRefresh: () => Promise<void>;
 }
 
-const ScrollContext = createContext<ScrollContextValue>({ scrollY: 0 });
+const ScrollContext = createContext<ScrollContextValue>({
+  refreshing: false,
+  scrollY: 0,
+  triggerRefresh: async () => {},
+});
 
 export function useScroll() {
   return useContext(ScrollContext);
@@ -15,6 +22,7 @@ export function useScroll() {
 
 export function ScrollProvider({ children }: { children: ReactNode }) {
   const [scrollY, setScrollY] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     let rafId: number | null = null;
@@ -44,8 +52,29 @@ export function ScrollProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const triggerRefresh = async () => {
+    setRefreshing(true);
+
+    try {
+      // Check for service worker updates
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          await registration.update();
+        }
+      }
+
+      // Reload the page to get fresh data
+      window.location.reload();
+    } catch (error) {
+      console.error('Refresh failed:', error);
+      setRefreshing(false);
+    }
+  };
+
   return (
-    <ScrollContext.Provider value={{ scrollY }}>
+    <ScrollContext.Provider value={{ refreshing, scrollY, triggerRefresh }}>
+      <PullToRefresh disabled={refreshing} onRefresh={triggerRefresh} />
       {children}
     </ScrollContext.Provider>
   );
