@@ -11,6 +11,7 @@ interface PullToRefreshProps {
 
 const PULL_THRESHOLD = 80;
 const MAX_PULL = 120;
+const MIN_PULL_TO_ACTIVATE = 30; // Minimum distance before showing any UI
 
 export function PullToRefresh({
   onRefresh,
@@ -21,6 +22,7 @@ export function PullToRefresh({
   const [isPulling, setIsPulling] = useState(false);
   const touchStartY = useRef(0);
   const rafId = useRef<number | null>(null);
+  const canActivate = useRef(false);
 
   useEffect(() => {
     if (disabled) return;
@@ -29,23 +31,63 @@ export function PullToRefresh({
     let currentY = 0;
     let pulling = false;
 
+    const isScrollableContainer = (element: Element | null): boolean => {
+      if (!element) return false;
+
+      // Check if element is in a drawer, dialog, or has its own scroll
+      const hasScrollableParent = element.closest(
+        '[role="dialog"], [data-vaul-drawer], [data-radix-dialog-content], .overflow-y-auto, .overflow-auto',
+      );
+
+      if (hasScrollableParent) return true;
+
+      // Check if element itself is scrollable
+      const style = window.getComputedStyle(element);
+      const isScrollable =
+        style.overflowY === 'auto' ||
+        style.overflowY === 'scroll' ||
+        style.overflow === 'auto' ||
+        style.overflow === 'scroll';
+
+      return isScrollable && element.scrollHeight > element.clientHeight;
+    };
+
     const handleTouchStart = (e: TouchEvent) => {
       // Only activate if at the top of the page
-      if (window.scrollY > 0) return;
+      if (window.scrollY !== 0) {
+        canActivate.current = false;
+        return;
+      }
 
+      // Check if touch started in a scrollable container
+      const target = e.target as Element;
+      if (isScrollableContainer(target)) {
+        canActivate.current = false;
+        return;
+      }
+
+      canActivate.current = true;
       startY = e.touches[0]?.clientY ?? 0;
       touchStartY.current = startY;
       pulling = false;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (isRefreshing || window.scrollY > 0) return;
+      if (isRefreshing || !canActivate.current) return;
+
+      // Double check we're still at the top
+      if (window.scrollY !== 0) {
+        canActivate.current = false;
+        setPullDistance(0);
+        setIsPulling(false);
+        return;
+      }
 
       currentY = e.touches[0]?.clientY ?? 0;
       const distance = currentY - startY;
 
-      // Only pull down, not up
-      if (distance > 0) {
+      // Only pull down, not up, and require minimum distance
+      if (distance > MIN_PULL_TO_ACTIVATE) {
         pulling = true;
         setIsPulling(true);
 
@@ -61,14 +103,20 @@ export function PullToRefresh({
         });
 
         // Prevent scrolling when pulling
-        if (distance > 10) {
+        if (distance > MIN_PULL_TO_ACTIVATE) {
           e.preventDefault();
         }
       }
     };
 
     const handleTouchEnd = async () => {
-      if (!pulling) return;
+      if (!pulling || !canActivate.current) {
+        setPullDistance(0);
+        setIsPulling(false);
+        pulling = false;
+        canActivate.current = false;
+        return;
+      }
 
       setIsPulling(false);
 
@@ -97,6 +145,7 @@ export function PullToRefresh({
       }
 
       pulling = false;
+      canActivate.current = false;
     };
 
     // Add event listeners
