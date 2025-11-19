@@ -2,8 +2,10 @@
 
 import { useOrganizationList } from '@clerk/nextjs';
 import { parseBabyName } from '@nugget/utils';
+import { LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
+import { SignOutButton } from '~/components/sign-out-button';
 import {
   completeOnboardingAction,
   completeOnboardingForExistingFamilyAction,
@@ -48,6 +50,7 @@ export function OnboardingWizard() {
   const [gender, setGender] = useState('');
   const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isAutoCompleting, setIsAutoCompleting] = useState(false);
 
   // Determine if user has any families
   const familyCount = userMemberships?.data?.length ?? 0;
@@ -158,6 +161,168 @@ export function OnboardingWizard() {
       }
     });
   }, []);
+
+  // Handle URL parameters for reset/force-complete
+  useEffect(() => {
+    if (!isInitialized || !userMemberships?.data) return;
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const resetParam = searchParams.get('reset');
+    const forceCompleteParam = searchParams.get('force_complete');
+
+    // Reset onboarding state
+    if (resetParam === 'true') {
+      console.log('Resetting onboarding state via URL parameter');
+      localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+      setStep(hasFamilies ? 0 : 1);
+      setSelectedFamilyId(null);
+      // Clear URL parameter
+      window.history.replaceState({}, '', '/app/onboarding');
+      return;
+    }
+
+    // Force complete onboarding for first family
+    if (forceCompleteParam === 'true' && familyCount > 0 && !isAutoCompleting) {
+      console.log('Force completing onboarding via URL parameter');
+      setIsAutoCompleting(true);
+
+      const completeForFirstFamily = async () => {
+        const family = userMemberships.data?.[0];
+        if (!family) {
+          setIsAutoCompleting(false);
+          return;
+        }
+
+        try {
+          // Switch to the family in Clerk
+          if (setActive) {
+            await setActive({ organization: family.organization.id });
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          }
+
+          // Mark onboarding as complete
+          const result = await completeOnboardingForExistingFamilyAction({
+            clerkOrgId: family.organization.id,
+          });
+
+          if (result?.data?.success) {
+            localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+            localStorage.setItem(
+              'onboardingData',
+              JSON.stringify({
+                clerkOrgId: family.organization.id,
+                completedAt: new Date().toISOString(),
+              }),
+            );
+            window.location.href = '/app';
+          } else {
+            console.error('Failed to force complete:', result?.serverError);
+            setIsAutoCompleting(false);
+            window.history.replaceState({}, '', '/app/onboarding');
+          }
+        } catch (error) {
+          console.error('Error force completing:', error);
+          setIsAutoCompleting(false);
+          window.history.replaceState({}, '', '/app/onboarding');
+        }
+      };
+
+      void completeForFirstFamily();
+    }
+  }, [
+    isInitialized,
+    userMemberships,
+    hasFamilies,
+    familyCount,
+    isAutoCompleting,
+    setActive,
+  ]);
+
+  // Auto-complete onboarding for users with exactly 1 family
+  useEffect(() => {
+    // Only auto-complete if:
+    // - User is initialized
+    // - User has exactly 1 family
+    // - User is at step 0 (family selection)
+    // - Not already auto-completing
+    if (!isInitialized || familyCount !== 1 || step !== 0 || isAutoCompleting) {
+      return;
+    }
+
+    const autoCompleteOnboarding = async () => {
+      setIsAutoCompleting(true);
+      const family = userMemberships?.data?.[0];
+
+      if (!family) {
+        setIsAutoCompleting(false);
+        return;
+      }
+
+      try {
+        console.log(
+          'Auto-completing onboarding for single family:',
+          family.organization.name,
+        );
+
+        // Switch to the family in Clerk
+        if (setActive) {
+          try {
+            await setActive({ organization: family.organization.id });
+            // Give Clerk time to update
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          } catch (orgError) {
+            console.error('Failed to switch organization:', orgError);
+            setIsAutoCompleting(false);
+            return;
+          }
+        }
+
+        // Mark onboarding as complete
+        const result = await completeOnboardingForExistingFamilyAction({
+          clerkOrgId: family.organization.id,
+        });
+
+        if (result?.serverError || !result?.data?.success) {
+          console.error(
+            'Failed to auto-complete onboarding:',
+            result?.serverError,
+          );
+          setIsAutoCompleting(false);
+          return;
+        }
+
+        // Clear localStorage and set completion flag
+        localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+        localStorage.setItem(
+          'onboardingData',
+          JSON.stringify({
+            clerkOrgId: family.organization.id,
+            completedAt: new Date().toISOString(),
+          }),
+        );
+
+        // Redirect to app
+        window.location.href = '/app';
+      } catch (error) {
+        console.error('Error during auto-complete:', error);
+        setIsAutoCompleting(false);
+      }
+    };
+
+    // Add a small delay to avoid race conditions
+    const timeoutId = setTimeout(() => {
+      void autoCompleteOnboarding();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    isInitialized,
+    familyCount,
+    step,
+    isAutoCompleting,
+    userMemberships,
+    setActive,
+  ]);
 
   const calculateDueDate = (lmpDate: string) => {
     if (!lmpDate) return '';
@@ -438,13 +603,15 @@ export function OnboardingWizard() {
     return result;
   };
 
-  // Show loading state while initializing
-  if (!isInitialized) {
+  // Show loading state while initializing or auto-completing
+  if (!isInitialized || isAutoCompleting) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto" />
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">
+            {isAutoCompleting ? 'Setting up your family...' : 'Loading...'}
+          </p>
         </div>
       </div>
     );
@@ -455,7 +622,17 @@ export function OnboardingWizard() {
   const displayStep = hasFamilies ? step : Math.max(step - 1, 1);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative">
+      {/* Sign Out Button */}
+      <div className="absolute top-4 right-4 z-10">
+        <SignOutButton>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+            <LogOut className="size-4" />
+            <span>Sign Out</span>
+          </div>
+        </SignOutButton>
+      </div>
+
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         <div className="w-full max-w-md space-y-8">
           {step === 0 && hasFamilies && (

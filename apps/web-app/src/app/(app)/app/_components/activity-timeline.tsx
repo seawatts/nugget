@@ -28,14 +28,11 @@ import {
   Tablet as Toilet,
   UtensilsCrossed,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityDrawer } from '~/app/(app)/app/_components/activity-drawer';
 import { ActivityTimelineFilters } from '~/app/(app)/app/_components/activity-timeline-filters';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
-import {
-  getActivitiesAction,
-  type TimelineItem,
-} from './activity-timeline.actions';
+import type { TimelineItem } from './activity-timeline.actions';
 import { getDisplayNotes } from './activity-utils';
 import { ChatDialog } from './chat-dialog';
 import { formatVolumeDisplay, getVolumeUnit } from './volume-utils';
@@ -233,11 +230,6 @@ function formatTimeGap(minutes: number): string {
 }
 
 export function ActivityTimeline() {
-  const [timelineItems, setTimelineItems] = useState<TimelineItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [openDrawer, setOpenDrawer] = useState<string | null>(null);
   const [editingActivity, setEditingActivity] = useState<
     typeof Activities.$inferSelect | null
@@ -247,14 +239,14 @@ export function ActivityTimeline() {
   const [selectedActivityTypes, setSelectedActivityTypes] = useState<string[]>(
     [],
   );
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [selectedChatData, setSelectedChatData] = useState<{
     chatId: string;
     babyId: string;
   } | null>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Get the most recent baby using tRPC query
+  const { data: baby } = api.babies.getMostRecent.useQuery();
 
   // Get optimistic activities from Zustand store
   const optimisticActivities = useOptimisticActivitiesStore.use.activities();
@@ -263,98 +255,104 @@ export function ActivityTimeline() {
   const { data: user } = api.user.current.useQuery();
   const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
 
-  // Merge optimistic activities with timeline items
-  const allTimelineItems = useMemo(() => {
-    const optimisticTimelineItems: TimelineItem[] = optimisticActivities.map(
-      (activity) => ({
+  // Build filters for activities query
+  const activityFilters = useMemo(() => {
+    const shouldFetchActivities =
+      selectedItemTypes.length === 0 || selectedItemTypes.includes('activity');
+
+    if (!shouldFetchActivities) return null;
+
+    return {
+      activityTypes:
+        selectedActivityTypes.length > 0 ? selectedActivityTypes : undefined,
+      babyId: baby?.id ?? '',
+      isScheduled: false,
+      limit: 100,
+      userIds: selectedUserIds.length > 0 ? selectedUserIds : undefined,
+    };
+  }, [baby?.id, selectedActivityTypes, selectedUserIds, selectedItemTypes]);
+
+  // Fetch activities using tRPC query
+  const {
+    data: activitiesData = [],
+    isLoading: activitiesLoading,
+    error: activitiesError,
+  } = api.activities.list.useQuery(
+    activityFilters ?? { babyId: '', limit: 0 },
+    {
+      enabled: !!activityFilters && !!baby?.id,
+    },
+  );
+
+  // Build filters for milestones query
+  const milestonesFilters = useMemo(() => {
+    const shouldFetchMilestones =
+      selectedItemTypes.length === 0 || selectedItemTypes.includes('milestone');
+
+    if (!shouldFetchMilestones) return null;
+
+    return {
+      babyId: baby?.id ?? '',
+      limit: 100,
+    };
+  }, [baby?.id, selectedItemTypes]);
+
+  // Fetch milestones using tRPC query
+  const { data: milestonesData = [], isLoading: milestonesLoading } =
+    api.milestones.list.useQuery(
+      milestonesFilters ?? { babyId: '', limit: 0 },
+      {
+        enabled: !!milestonesFilters && !!baby?.id,
+      },
+    );
+
+  // Filter to only achieved milestones and convert to timeline items
+  const milestoneTimelineItems = useMemo(() => {
+    return milestonesData
+      .filter((m) => m.achievedDate)
+      .map(
+        (milestone): TimelineItem => ({
+          data: milestone,
+          timestamp: new Date(milestone.achievedDate ?? new Date()),
+          type: 'milestone' as const,
+        }),
+      );
+  }, [milestonesData]);
+
+  // Convert activities to timeline items
+  const activityTimelineItems = useMemo(() => {
+    return activitiesData.map(
+      (activity): TimelineItem => ({
         data: activity,
         timestamp: new Date(activity.startTime),
         type: 'activity' as const,
       }),
     );
-    return [...optimisticTimelineItems, ...timelineItems];
-  }, [optimisticActivities, timelineItems]);
+  }, [activitiesData]);
 
-  const loadActivities = useCallback(
-    async (offset = 0, append = false, skipAnimation = false) => {
-      try {
-        if (offset === 0) {
-          setLoading(true);
-        } else {
-          setLoadingMore(true);
-        }
-
-        const result = await getActivitiesAction({
-          activityTypes:
-            selectedActivityTypes.length > 0
-              ? selectedActivityTypes
-              : undefined,
-          itemTypes:
-            selectedItemTypes.length > 0
-              ? (selectedItemTypes as Array<'activity' | 'milestone' | 'chat'>)
-              : undefined,
-          limit: 30,
-          offset,
-          userIds: selectedUserIds.length > 0 ? selectedUserIds : undefined,
-        });
-
-        if (result?.data) {
-          const { items: newItems, hasMore: more } = result.data;
-          if (append) {
-            setTimelineItems((prev) => [...prev, ...newItems]);
-          } else {
-            setTimelineItems(newItems);
-          }
-          setHasMore(more);
-          // Disable animations after initial load if skipAnimation is true
-          if (skipAnimation && isInitialLoad) {
-            setIsInitialLoad(false);
-          }
-        } else if (result?.serverError) {
-          setError(result.serverError);
-        }
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to load timeline items',
-        );
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-      }
-    },
-    [selectedUserIds, selectedItemTypes, selectedActivityTypes, isInitialLoad],
-  );
-
-  // Initial load
-  useEffect(() => {
-    loadActivities(0, false, false);
-    // Mark as no longer initial load after first load
-    setIsInitialLoad(false);
-  }, [loadActivities]);
-
-  // Set up intersection observer for infinite scroll
-  useEffect(() => {
-    if (!hasMore || loadingMore) return;
-
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting && !loadingMore && hasMore) {
-          loadActivities(allTimelineItems.length, true, true);
-        }
-      },
-      { threshold: 0.1 },
+  // Merge optimistic activities with timeline items
+  const optimisticTimelineItems = useMemo(() => {
+    return optimisticActivities.map(
+      (activity): TimelineItem => ({
+        data: activity,
+        timestamp: new Date(activity.startTime),
+        type: 'activity' as const,
+      }),
     );
+  }, [optimisticActivities]);
 
-    if (loadMoreRef.current) {
-      observerRef.current.observe(loadMoreRef.current);
-    }
+  // Merge all timeline items and sort by timestamp
+  const allTimelineItems = useMemo(() => {
+    const merged = [
+      ...optimisticTimelineItems,
+      ...activityTimelineItems,
+      ...milestoneTimelineItems,
+    ];
+    return merged.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }, [optimisticTimelineItems, activityTimelineItems, milestoneTimelineItems]);
 
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
-  }, [allTimelineItems.length, hasMore, loadActivities, loadingMore]);
+  const loading = activitiesLoading || milestonesLoading;
+  const error = activitiesError?.message ?? null;
 
   const handleItemClick = (item: TimelineItem) => {
     if (item.type === 'activity') {
@@ -384,8 +382,7 @@ export function ActivityTimeline() {
     setSelectedUserIds(userIds);
     setSelectedItemTypes(itemTypes);
     setSelectedActivityTypes(activityTypes);
-    // Reload activities from the beginning (with animation since it's a user action)
-    loadActivities(0, false, false);
+    // React Query will automatically refetch with new filters
   };
 
   const groupedItems = groupTimelineItemsByDay(allTimelineItems);
@@ -426,10 +423,7 @@ export function ActivityTimeline() {
     <div className="flex flex-col gap-6">
       {Array.from(groupedItems.entries()).map(
         ([dayLabel, dayItems], groupIndex) => (
-          <div
-            className={isInitialLoad ? 'animate-in fade-in duration-300' : ''}
-            key={dayLabel}
-          >
+          <div key={dayLabel}>
             <div className="sticky top-0 bg-background/95 backdrop-blur-sm py-2 mb-3 z-10 border-b border-border/50 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide">
                 {dayLabel}
@@ -548,20 +542,12 @@ export function ActivityTimeline() {
                         isOptimistic
                           ? 'opacity-100 animate-pulse cursor-not-allowed'
                           : 'opacity-60 hover:opacity-90 cursor-pointer'
-                      } transition-all duration-200 hover:scale-[1.01] hover:shadow-sm ${isInitialLoad ? 'animate-in slide-in-from-bottom-2' : ''} w-full text-left`}
+                      } transition-all duration-200 hover:scale-[1.01] hover:shadow-sm w-full text-left`}
                       disabled={
                         isOptimistic ||
                         (item.type !== 'activity' && item.type !== 'chat')
                       }
                       onClick={() => !isOptimistic && handleItemClick(item)}
-                      style={
-                        isInitialLoad
-                          ? {
-                              animationDelay: `${index * 30}ms`,
-                              animationFillMode: 'backwards',
-                            }
-                          : undefined
-                      }
                       type="button"
                     >
                       <div
@@ -612,25 +598,6 @@ export function ActivityTimeline() {
             </div>
           </div>
         ),
-      )}
-
-      {hasMore && (
-        <div className="flex justify-center py-6" ref={loadMoreRef}>
-          {loadingMore && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Icons.Spinner className="size-5" />
-              <span className="text-sm">Loading more...</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {!hasMore && allTimelineItems.length > 0 && (
-        <div className="flex justify-center py-6">
-          <p className="text-xs text-muted-foreground">
-            That's all your timeline items
-          </p>
-        </div>
       )}
 
       {/* Activity Drawers */}

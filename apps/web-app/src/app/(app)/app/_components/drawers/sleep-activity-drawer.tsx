@@ -7,6 +7,7 @@ import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { cn } from '@nugget/ui/lib/utils';
 import { Moon, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getInProgressSleepActivityAction } from '../activity-cards.actions';
 import { getFamilyMembersAction } from '../activity-timeline-filters.actions';
 import { useActivityMutations } from '../use-activity-mutations';
@@ -30,6 +31,9 @@ export function SleepActivityDrawer({
   const { userId } = useAuth();
   const { createActivity, updateActivity, isCreating, isUpdating } =
     useActivityMutations();
+  const addOptimisticActivity = useOptimisticActivitiesStore(
+    (state) => state.addActivity,
+  );
 
   // Sleep-specific state
   const [startTime, setStartTime] = useState(new Date());
@@ -255,6 +259,29 @@ export function SleepActivityDrawer({
         wakeReason: wakeReason,
       };
 
+      // For new activities (not updates), add optimistic activity immediately
+      if (!activeActivityId && !existingActivity) {
+        const optimisticActivity = {
+          amount: null,
+          babyId: 'temp',
+          createdAt: new Date(),
+          details: sleepDetails,
+          duration: durationMinutes,
+          endTime: endTime,
+          feedingSource: null,
+          id: `optimistic-sleep-${Date.now()}`,
+          isScheduled: false,
+          notes: notes || null,
+          startTime: startTime,
+          type: 'sleep' as const,
+          updatedAt: new Date(),
+          userId: userId ?? 'temp',
+        } as typeof Activities.$inferSelect;
+
+        // Add to optimistic store immediately for instant UI feedback
+        addOptimisticActivity(optimisticActivity);
+      }
+
       // Close drawer immediately for better UX
       onClose();
 
@@ -280,7 +307,7 @@ export function SleepActivityDrawer({
           startTime,
         });
       } else {
-        // Create new activity
+        // Create new activity - mutation hook handles invalidation and clears optimistic state
         await createActivity({
           activityType: 'sleep',
           details: sleepDetails,

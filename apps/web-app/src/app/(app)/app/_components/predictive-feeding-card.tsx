@@ -45,6 +45,7 @@ export function PredictiveFeedingCard({
   const [claiming, setClaiming] = useState(false);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [quickLogging, setQuickLogging] = useState(false);
+  const [skipTimestamp, setSkipTimestamp] = useState<number | null>(null);
   const [inProgressActivity, setInProgressActivity] = useState<
     typeof Activities.$inferSelect | null
   >(null);
@@ -122,6 +123,14 @@ export function PredictiveFeedingCard({
       }
     };
   }, [inProgressActivity]);
+
+  // Load skip timestamp from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('skip-feeding');
+    if (stored) {
+      setSkipTimestamp(Number.parseInt(stored, 10));
+    }
+  }, []);
 
   const handleClaim = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -216,6 +225,12 @@ export function PredictiveFeedingCard({
   } = data;
   const isAssignedToCurrentUser = assignedMember?.userId === user?.id;
 
+  // Check if we should suppress overdue state due to recent skip
+  const isRecentlySkipped = skipTimestamp
+    ? Date.now() - skipTimestamp < prediction.intervalHours * 60 * 60 * 1000
+    : false;
+  const effectiveIsOverdue = prediction.isOverdue && !isRecentlySkipped;
+
   // Get learning content for the baby's age
   const learningContent =
     babyAgeDays !== null ? getFeedingLearningContent(babyAgeDays) : null;
@@ -258,6 +273,9 @@ export function PredictiveFeedingCard({
 
       if (result?.data) {
         toast.success('Feeding logged!');
+        // Clear skip timestamp when activity is logged
+        localStorage.removeItem('skip-feeding');
+        setSkipTimestamp(null);
         // Notify parent component for optimistic updates and timeline refresh
         onActivityLogged?.(result.data.activity);
         await loadData(); // Reload to show updated state
@@ -270,6 +288,14 @@ export function PredictiveFeedingCard({
     } finally {
       setQuickLogging(false);
     }
+  };
+
+  const handleSkip = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const now = Date.now();
+    localStorage.setItem('skip-feeding', now.toString());
+    setSkipTimestamp(now);
+    toast.success('Feeding reminder skipped');
   };
 
   // Format elapsed time for display
@@ -286,7 +312,7 @@ export function PredictiveFeedingCard({
         className={cn(
           'relative overflow-hidden p-6 transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer col-span-2',
           'bg-[oklch(0.68_0.18_35)] text-white',
-          prediction.isOverdue
+          effectiveIsOverdue
             ? 'border-4 border-dashed border-amber-500'
             : 'border-0',
         )}
@@ -319,7 +345,7 @@ export function PredictiveFeedingCard({
                     {formatElapsedTime(elapsedTime)}
                   </span>
                 </div>
-              ) : prediction.isOverdue ? (
+              ) : effectiveIsOverdue ? (
                 // Show overdue warning
                 <>
                   <div className="flex items-baseline gap-2">
@@ -358,7 +384,7 @@ export function PredictiveFeedingCard({
         </div>
 
         {/* Overdue Actions - Only show if not actively tracking */}
-        {!inProgressActivity && prediction.isOverdue && (
+        {!inProgressActivity && effectiveIsOverdue && (
           <div className="flex gap-2">
             <Button
               className="flex-1 bg-amber-950 hover:bg-amber-900 text-amber-50"
@@ -377,11 +403,20 @@ export function PredictiveFeedingCard({
             >
               Log with Details
             </Button>
+            <Button
+              className="flex-1 bg-muted hover:bg-muted/80 text-foreground"
+              disabled={quickLogging}
+              onClick={handleSkip}
+              size="sm"
+              variant="ghost"
+            >
+              Skip
+            </Button>
           </div>
         )}
 
         {/* Assignment Section - Only show if multiple family members, not overdue, and not actively tracking */}
-        {showAssignment && !prediction.isOverdue && !inProgressActivity && (
+        {showAssignment && !effectiveIsOverdue && !inProgressActivity && (
           <div className="flex items-center justify-between pt-4 mt-4 border-t border-white/20">
             {assignedMember ? (
               <>

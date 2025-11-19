@@ -44,6 +44,7 @@ export function PredictivePumpingCard({
   const [error, setError] = useState<string | null>(null);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [quickLogging, setQuickLogging] = useState(false);
+  const [skipTimestamp, setSkipTimestamp] = useState<number | null>(null);
 
   // Fetch user preferences for volume display
   const { data: user } = api.user.current.useQuery();
@@ -75,6 +76,14 @@ export function PredictivePumpingCard({
   useEffect(() => {
     loadData();
   }, [loadData, refreshTrigger]);
+
+  // Load skip timestamp from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('skip-pumping');
+    if (stored) {
+      setSkipTimestamp(Number.parseInt(stored, 10));
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -111,6 +120,12 @@ export function PredictivePumpingCard({
   if (!data) return null;
 
   const { prediction, babyAgeDays } = data;
+
+  // Check if we should suppress overdue state due to recent skip
+  const isRecentlySkipped = skipTimestamp
+    ? Date.now() - skipTimestamp < prediction.intervalHours * 60 * 60 * 1000
+    : false;
+  const effectiveIsOverdue = prediction.isOverdue && !isRecentlySkipped;
 
   // Get learning content for the baby's age
   const learningContent =
@@ -151,6 +166,9 @@ export function PredictivePumpingCard({
 
       if (result?.data) {
         toast.success('Pumping logged!');
+        // Clear skip timestamp when activity is logged
+        localStorage.removeItem('skip-pumping');
+        setSkipTimestamp(null);
         // Notify parent component for optimistic updates and timeline refresh
         onActivityLogged?.(result.data.activity);
         await loadData(); // Reload to show updated state
@@ -162,6 +180,14 @@ export function PredictivePumpingCard({
     } finally {
       setQuickLogging(false);
     }
+  };
+
+  const handleSkip = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const now = Date.now();
+    localStorage.setItem('skip-pumping', now.toString());
+    setSkipTimestamp(now);
+    toast.success('Pumping reminder skipped');
   };
 
   // Format amount for display based on user preference
@@ -176,7 +202,7 @@ export function PredictivePumpingCard({
         className={cn(
           'relative overflow-hidden p-6 transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer col-span-2',
           'bg-[oklch(0.65_0.18_280)] text-white',
-          prediction.isOverdue
+          effectiveIsOverdue
             ? 'border-4 border-dashed border-amber-500'
             : 'border-0',
         )}
@@ -198,7 +224,7 @@ export function PredictivePumpingCard({
               </button>
             </div>
             <div className="space-y-1">
-              {prediction.isOverdue ? (
+              {effectiveIsOverdue ? (
                 // Show overdue warning
                 <>
                   <div className="flex items-baseline gap-2">
@@ -243,7 +269,7 @@ export function PredictivePumpingCard({
         </div>
 
         {/* Overdue Actions */}
-        {prediction.isOverdue && (
+        {effectiveIsOverdue && (
           <div className="flex gap-2 mt-4">
             <Button
               className="flex-1 bg-amber-950 hover:bg-amber-900 text-amber-50"
@@ -261,6 +287,15 @@ export function PredictivePumpingCard({
               variant="outline"
             >
               Log with Details
+            </Button>
+            <Button
+              className="flex-1 bg-muted hover:bg-muted/80 text-foreground"
+              disabled={quickLogging}
+              onClick={handleSkip}
+              size="sm"
+              variant="ghost"
+            >
+              Skip
             </Button>
           </div>
         )}

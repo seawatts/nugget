@@ -49,8 +49,9 @@ export function useActivityMutations() {
       toast.success('Activity created successfully');
       // Clear optimistic state
       useOptimisticActivitiesStore.getState().clear();
-      // Invalidate activity queries - React Query handles the rest
+      // Invalidate activity and baby queries - React Query handles the rest
       await utils.activities.invalidate();
+      await utils.babies.invalidate();
     },
   });
 
@@ -63,8 +64,9 @@ export function useActivityMutations() {
       toast.success('Activity updated successfully');
       // Clear optimistic state
       useOptimisticActivitiesStore.getState().clear();
-      // Invalidate activity queries - React Query handles the rest
+      // Invalidate activity and baby queries - React Query handles the rest
       await utils.activities.invalidate();
+      await utils.babies.invalidate();
     },
   });
 
@@ -77,8 +79,9 @@ export function useActivityMutations() {
       toast.success('Activity deleted successfully');
       // Clear optimistic state
       useOptimisticActivitiesStore.getState().clear();
-      // Invalidate activity queries - React Query handles the rest
+      // Invalidate activity and baby queries - React Query handles the rest
       await utils.activities.invalidate();
+      await utils.babies.invalidate();
     },
   });
 

@@ -1,6 +1,7 @@
 export function clearAppLocalStorage(): void {
   const keysToRemove = [
     'onboardingData',
+    'onboarding_wizard_state',
     'nugget-sync-queue',
     'nugget-install-prompt-dismissed',
     'milkInventory',

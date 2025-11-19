@@ -137,7 +137,7 @@ export function FeedingActivityDrawer({
 
       if (existingActivity || activeActivityId) {
         // Update existing or in-progress activity
-        const activityId = existingActivity?.id || activeActivityId!;
+        const activityId = existingActivity?.id ?? activeActivityId ?? '';
 
         if (formData.type === 'bottle') {
           await updateActivity({
@@ -246,7 +246,9 @@ export function FeedingActivityDrawer({
       <div className="flex-1 overflow-y-auto p-6">
         <FeedingDrawerContent
           existingActivityType={
-            existingActivity ? (formData?.type ?? null) : null
+            existingActivity || activeActivityId
+              ? (formData?.type ?? null)
+              : null
           }
           onFormDataChange={setFormData}
         />

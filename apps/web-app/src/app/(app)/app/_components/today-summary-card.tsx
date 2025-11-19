@@ -1,7 +1,8 @@
 'use client';
 
-import type { Activities, Milestone } from '@nugget/db/schema';
+import { api } from '@nugget/api/react';
 import { NuggetAvatar } from '@nugget/ui/custom/nugget-avatar';
+import { startOfDay } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
@@ -19,9 +20,8 @@ import {
   Tablet as Toilet,
   UtensilsCrossed,
 } from 'lucide-react';
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
-import { getTodaySummaryAction } from './today-summary.actions';
 import { formatVolumeDisplay } from './volume-utils';
 
 const activityIcons: Record<string, LucideIcon> = {
@@ -180,67 +180,60 @@ export function TodaySummaryCard({
   babyPhotoUrl,
   measurementUnit = 'metric',
 }: TodaySummaryCardProps) {
-  const [activitiesData, setActivitiesData] = useState<
-    Array<typeof Activities.$inferSelect>
-  >([]);
-  const [milestonesData, setMilestonesData] = useState<Array<Milestone>>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const isLoadingRef = useRef(false);
-
   // Determine volume unit based on measurement preference
   const userUnitPref = measurementUnit === 'imperial' ? 'OZ' : 'ML';
 
-  // Load today's summary data
-  useEffect(() => {
-    async function loadData() {
-      // Prevent multiple simultaneous calls
-      if (isLoadingRef.current) {
-        return;
-      }
+  // Get the most recent baby using tRPC query
+  const { data: baby } = api.babies.getMostRecent.useQuery();
 
-      try {
-        isLoadingRef.current = true;
-        setLoading(true);
-        setError(null);
+  // Fetch activities from today using tRPC query
+  const {
+    data: activitiesData = [],
+    isLoading: activitiesLoading,
+    error: activitiesError,
+  } = api.activities.list.useQuery(
+    {
+      babyId: baby?.id ?? '',
+      isScheduled: false,
+      limit: 100,
+    },
+    {
+      enabled: !!baby?.id,
+    },
+  );
 
-        const result = await getTodaySummaryAction();
+  // Fetch milestones achieved today using tRPC query
+  const { data: allMilestones = [], isLoading: milestonesLoading } =
+    api.milestones.list.useQuery(
+      {
+        babyId: baby?.id ?? '',
+        limit: 100,
+      },
+      {
+        enabled: !!baby?.id,
+      },
+    );
 
-        if (!result) {
-          console.error('[TodaySummaryCard] No result returned from action');
-          setError('No data received');
-          setActivitiesData([]);
-          setMilestonesData([]);
-        } else if (result?.data) {
-          setActivitiesData(result.data.activities);
-          setMilestonesData(result.data.milestones);
-          setError(null);
-        } else if (result?.serverError) {
-          console.error('[TodaySummaryCard] Server error:', result.serverError);
-          setError(result.serverError);
-          setActivitiesData([]);
-          setMilestonesData([]);
-        } else {
-          console.error('[TodaySummaryCard] Unexpected result format:', result);
-          setError('Unexpected response format');
-          setActivitiesData([]);
-          setMilestonesData([]);
-        }
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Failed to load today summary';
-        console.error('[TodaySummaryCard] Error loading data:', err);
-        setError(errorMessage);
-        setActivitiesData([]);
-        setMilestonesData([]);
-      } finally {
-        setLoading(false);
-        isLoadingRef.current = false;
-      }
-    }
+  // Filter to only today's activities and milestones
+  const todayStart = useMemo(() => startOfDay(new Date()), []);
 
-    loadData();
-  }, []);
+  const todayActivities = useMemo(() => {
+    return activitiesData.filter((activity) => {
+      const activityDate = new Date(activity.startTime);
+      return activityDate >= todayStart;
+    });
+  }, [activitiesData, todayStart]);
+
+  const milestonesData = useMemo(() => {
+    return allMilestones.filter((milestone) => {
+      if (!milestone.achievedDate) return false;
+      const achievedDate = new Date(milestone.achievedDate);
+      return achievedDate >= todayStart;
+    });
+  }, [allMilestones, todayStart]);
+
+  const loading = activitiesLoading || milestonesLoading;
+  const error = activitiesError?.message ?? null;
 
   // Get optimistic activities from Zustand store
   const optimisticActivities = useOptimisticActivitiesStore.use.activities();
@@ -248,17 +241,13 @@ export function TodaySummaryCard({
   // Merge optimistic activities with loaded activities
   const allActivities = useMemo(() => {
     // Filter optimistic activities to only include today's activities
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     const todaysOptimistic = optimisticActivities.filter((activity) => {
       const activityDate = new Date(activity.startTime);
-      activityDate.setHours(0, 0, 0, 0);
-      return activityDate.getTime() === today.getTime();
+      return activityDate >= todayStart;
     });
 
-    return [...todaysOptimistic, ...activitiesData];
-  }, [optimisticActivities, activitiesData]);
+    return [...todaysOptimistic, ...todayActivities];
+  }, [optimisticActivities, todayActivities, todayStart]);
 
   // Map activity types to display categories
   const mapActivityTypeToCategory = (type: string): string => {

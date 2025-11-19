@@ -15,14 +15,15 @@ import { cn } from '@nugget/ui/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Info, Moon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getInProgressSleepActivityAction } from './activity-cards.actions';
 import { LearningSection } from './learning-section';
 import {
   getUpcomingSleepAction,
-  quickLogSleepAction,
   type UpcomingSleepData,
 } from './upcoming-sleep/actions';
 import { getSleepLearningContent } from './upcoming-sleep/learning-content';
+import { useActivityMutations } from './use-activity-mutations';
 
 interface PredictiveSleepCardProps {
   refreshTrigger?: number;
@@ -39,12 +40,18 @@ export function PredictiveSleepCard({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
+  const [skipTimestamp, setSkipTimestamp] = useState<number | null>(null);
   const [inProgressActivity, setInProgressActivity] = useState<
     typeof Activities.$inferSelect | null
   >(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const [quickLogging, setQuickLogging] = useState(false);
+
+  // Use activity mutations hook for creating sleep activities
+  const { createActivity, isCreating } = useActivityMutations();
+  const addOptimisticActivity = useOptimisticActivitiesStore(
+    (state) => state.addActivity,
+  );
 
   const loadInProgressActivity = useCallback(async () => {
     try {
@@ -118,6 +125,14 @@ export function PredictiveSleepCard({
     };
   }, [inProgressActivity]);
 
+  // Load skip timestamp from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('skip-sleep');
+    if (stored) {
+      setSkipTimestamp(Number.parseInt(stored, 10));
+    }
+  }, []);
+
   if (loading) {
     return (
       <Card
@@ -154,6 +169,12 @@ export function PredictiveSleepCard({
 
   const { prediction, babyAgeDays } = data;
 
+  // Check if we should suppress overdue state due to recent skip
+  const isRecentlySkipped = skipTimestamp
+    ? Date.now() - skipTimestamp < prediction.intervalHours * 60 * 60 * 1000
+    : false;
+  const effectiveIsOverdue = prediction.isOverdue && !isRecentlySkipped;
+
   // Get learning content for the baby's age
   const learningContent =
     babyAgeDays !== null ? getSleepLearningContent(babyAgeDays) : null;
@@ -187,27 +208,69 @@ export function PredictiveSleepCard({
 
   const handleQuickLog = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setQuickLogging(true);
+
     try {
       // Use the suggested duration from prediction data
       const duration = prediction.suggestedDuration;
+      const now = new Date();
+      const startTime = new Date(now.getTime() - duration * 60 * 1000); // duration is in minutes
 
-      const result = await quickLogSleepAction({ duration });
+      // Create optimistic activity for immediate UI feedback
+      const optimisticActivity = {
+        amount: null,
+        babyId: 'temp',
+        createdAt: now,
+        details: {
+          sleepType: 'nap' as const,
+          type: 'sleep' as const,
+        },
+        duration: duration,
+        endTime: now,
+        feedingSource: null,
+        id: `optimistic-sleep-${Date.now()}`,
+        isScheduled: false,
+        notes: null,
+        startTime: startTime,
+        type: 'sleep' as const,
+        updatedAt: now,
+        userId: 'temp',
+      } as typeof Activities.$inferSelect;
 
-      if (result?.data) {
-        toast.success('Sleep logged!');
-        // Notify parent component for optimistic updates and timeline refresh
-        onActivityLogged?.(result.data.activity);
-        await loadData(); // Reload to show updated state
-        await loadInProgressActivity(); // Reload in-progress to ensure no stale state
-      } else if (result?.serverError) {
-        toast.error(result.serverError);
-      }
+      // Add to optimistic store immediately
+      addOptimisticActivity(optimisticActivity);
+
+      // Create the actual activity - mutation hook handles invalidation and optimistic state clearing
+      const activity = await createActivity({
+        activityType: 'sleep',
+        details: {
+          sleepType: 'nap' as const,
+          type: 'sleep' as const,
+        },
+        duration: duration,
+        startTime: startTime,
+      });
+
+      // Clear skip timestamp when activity is logged
+      localStorage.removeItem('skip-sleep');
+      setSkipTimestamp(null);
+
+      // Notify parent component
+      onActivityLogged?.(activity);
+
+      // Reload prediction data and in-progress state
+      await loadData();
+      await loadInProgressActivity();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to log sleep');
-    } finally {
-      setQuickLogging(false);
     }
+  };
+
+  const handleSkip = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const now = Date.now();
+    localStorage.setItem('skip-sleep', now.toString());
+    setSkipTimestamp(now);
+    toast.success('Sleep reminder skipped');
   };
 
   // Format elapsed time for display
@@ -224,7 +287,7 @@ export function PredictiveSleepCard({
         className={cn(
           'relative overflow-hidden p-6 transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer col-span-2',
           'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]',
-          prediction.isOverdue
+          effectiveIsOverdue
             ? 'border-4 border-dashed border-amber-500'
             : 'border-0',
         )}
@@ -257,7 +320,7 @@ export function PredictiveSleepCard({
                     {formatElapsedTime(elapsedTime)}
                   </span>
                 </div>
-              ) : prediction.isOverdue ? (
+              ) : effectiveIsOverdue ? (
                 // Show overdue warning
                 <>
                   <div className="flex items-baseline gap-2">
@@ -303,24 +366,33 @@ export function PredictiveSleepCard({
         </div>
 
         {/* Overdue Actions */}
-        {prediction.isOverdue && !inProgressActivity && (
+        {effectiveIsOverdue && !inProgressActivity && (
           <div className="flex gap-2">
             <Button
               className="flex-1 bg-amber-950 hover:bg-amber-900 text-amber-50"
-              disabled={quickLogging}
+              disabled={isCreating}
               onClick={handleQuickLog}
               size="sm"
             >
-              {quickLogging ? 'Logging...' : 'Log Now'}
+              {isCreating ? 'Logging...' : 'Log Now'}
             </Button>
             <Button
               className="flex-1 bg-amber-100 hover:bg-amber-200 text-amber-950 border-amber-950/20"
-              disabled={quickLogging}
+              disabled={isCreating}
               onClick={handleCardClick}
               size="sm"
               variant="outline"
             >
               Log with Details
+            </Button>
+            <Button
+              className="flex-1 bg-muted hover:bg-muted/80 text-foreground"
+              disabled={quickLogging}
+              onClick={handleSkip}
+              size="sm"
+              variant="ghost"
+            >
+              Skip
             </Button>
           </div>
         )}
