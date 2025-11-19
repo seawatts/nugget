@@ -3,13 +3,15 @@
 import type { OrganizationMembershipResource } from '@clerk/types';
 import { Icons } from '@nugget/ui/custom/icons';
 import { H2, P } from '@nugget/ui/custom/typography';
-import { Crown, Heart, Shield } from 'lucide-react';
+import { Crown, Heart, Plus, Shield } from 'lucide-react';
 
 interface FamilySelectionStepProps {
   families: OrganizationMembershipResource[];
   selectedFamilyId: string | null;
   onSelect: (familyId: string) => void;
 }
+
+const CREATE_NEW_FAMILY_ID = '__create_new_family__';
 
 const roleIcons = {
   admin: Crown,
@@ -39,8 +41,8 @@ export function FamilySelectionStep({
       <div className="text-center space-y-2">
         <H2>Select Your Family</H2>
         <P className="text-muted-foreground">
-          You're a member of multiple families. Choose which family you'd like
-          to continue with.
+          You're a member of multiple families. Choose an existing family or
+          create a new one to continue.
         </P>
       </div>
 
@@ -107,7 +109,59 @@ export function FamilySelectionStep({
             </button>
           );
         })}
+
+        {/* Create New Family Option */}
+        <button
+          className={`w-full p-6 rounded-2xl border-2 transition-all text-left ${
+            selectedFamilyId === CREATE_NEW_FAMILY_ID
+              ? 'border-primary bg-primary/5'
+              : 'border-border border-dashed bg-card hover:border-primary/50'
+          }`}
+          onClick={() => onSelect(CREATE_NEW_FAMILY_ID)}
+          type="button"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`size-10 rounded-full flex items-center justify-center ${
+                    selectedFamilyId === CREATE_NEW_FAMILY_ID
+                      ? 'bg-primary/20'
+                      : 'bg-muted'
+                  }`}
+                >
+                  <Plus
+                    className={
+                      selectedFamilyId === CREATE_NEW_FAMILY_ID
+                        ? 'text-primary'
+                        : 'text-muted-foreground'
+                    }
+                    size={20}
+                  />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">
+                    Create New Family
+                  </h3>
+                  <span className="text-xs text-muted-foreground">
+                    Start fresh with a new family profile
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {selectedFamilyId === CREATE_NEW_FAMILY_ID && (
+              <div className="flex-shrink-0">
+                <div className="size-6 rounded-full bg-primary flex items-center justify-center">
+                  <Icons.Check className="text-primary-foreground" size="xs" />
+                </div>
+              </div>
+            )}
+          </div>
+        </button>
       </div>
     </div>
   );
 }
+
+export { CREATE_NEW_FAMILY_ID };

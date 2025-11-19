@@ -794,18 +794,31 @@ export function BottomNav() {
             })}
 
             {/* Center Spacer for Avatar */}
-            <div className="flex justify-center items-end -mb-1 z-0 pointer-events-none">
+            <div className="flex flex-col justify-center items-center -mb-1 z-0 pointer-events-none gap-0.5">
               <motion.span
                 animate={{
                   height: animations.textHeight,
-                  opacity: animations.ageOpacity,
+                  opacity: animations.textOpacity,
                 }}
-                className="text-[12px] font-medium text-muted-foreground overflow-hidden"
+                className="text-[11px] font-semibold text-foreground overflow-hidden"
                 style={{ willChange: 'opacity, height' }}
                 transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
               >
-                {ageDisplay}
+                {babyName}
               </motion.span>
+              {ageDisplay && (
+                <motion.span
+                  animate={{
+                    height: animations.textHeight,
+                    opacity: animations.ageOpacity,
+                  }}
+                  className="text-[10px] font-medium text-muted-foreground overflow-hidden"
+                  style={{ willChange: 'opacity, height' }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                >
+                  {ageDisplay}
+                </motion.span>
+              )}
             </div>
 
             {/* Right Nav Item (1 item) */}

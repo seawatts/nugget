@@ -2,7 +2,6 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
-import { Checkbox } from '@nugget/ui/checkbox';
 import { Textarea } from '@nugget/ui/textarea';
 import {
   Baby,
@@ -369,54 +368,61 @@ export function SleepDrawerContent({
 
       {/* Co-sleeping */}
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            checked={isCoSleeping}
-            id="co-sleeping"
-            onCheckedChange={(checked) => {
-              const isChecked = checked === true;
-              setIsCoSleeping(isChecked);
-              if (isChecked && currentUserId) {
-                // Auto-select current user when enabling co-sleeping
-                setCoSleepingWith([currentUserId]);
-              } else if (!isChecked) {
-                // Clear selections when disabling
-                setCoSleepingWith([]);
-              }
-            }}
-          />
-          <label
-            className="text-sm font-medium text-muted-foreground cursor-pointer"
-            htmlFor="co-sleeping"
-          >
-            Co-sleeping
-          </label>
-        </div>
+        <p className="text-sm font-medium text-muted-foreground">
+          Co-sleeping (optional)
+        </p>
+        <Button
+          className={`h-12 w-full ${
+            isCoSleeping
+              ? 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]'
+              : 'bg-transparent'
+          }`}
+          onClick={() => {
+            const newValue = !isCoSleeping;
+            setIsCoSleeping(newValue);
+            if (newValue && currentUserId) {
+              // Auto-select current user when enabling co-sleeping
+              setCoSleepingWith([currentUserId]);
+            } else if (!newValue) {
+              // Clear selections when disabling
+              setCoSleepingWith([]);
+            }
+          }}
+          variant={isCoSleeping ? 'default' : 'outline'}
+        >
+          <BedDouble className="mr-2 h-4 w-4" />
+          Co-sleeping
+        </Button>
 
         {/* Family member selection - shown when co-sleeping is enabled */}
         {isCoSleeping && familyMembers.length > 0 && (
-          <div className="space-y-2 pl-6">
+          <div className="space-y-2">
             <p className="text-xs text-muted-foreground">Who is co-sleeping?</p>
-            <div className="grid grid-cols-1 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {familyMembers.map((member) => (
-                <div
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors"
+                <Button
+                  className={`h-12 justify-start ${
+                    coSleepingWith.includes(member.userId)
+                      ? 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]'
+                      : 'bg-transparent'
+                  }`}
                   key={member.userId}
+                  onClick={() => {
+                    if (coSleepingWith.includes(member.userId)) {
+                      setCoSleepingWith(
+                        coSleepingWith.filter((id) => id !== member.userId),
+                      );
+                    } else {
+                      setCoSleepingWith([...coSleepingWith, member.userId]);
+                    }
+                  }}
+                  variant={
+                    coSleepingWith.includes(member.userId)
+                      ? 'default'
+                      : 'outline'
+                  }
                 >
-                  <Checkbox
-                    checked={coSleepingWith.includes(member.userId)}
-                    id={`member-${member.userId}`}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setCoSleepingWith([...coSleepingWith, member.userId]);
-                      } else {
-                        setCoSleepingWith(
-                          coSleepingWith.filter((id) => id !== member.userId),
-                        );
-                      }
-                    }}
-                  />
-                  <Avatar className="size-8">
+                  <Avatar className="size-6 mr-2">
                     <AvatarImage
                       alt={member.name}
                       src={member.avatarUrl || undefined}
@@ -430,13 +436,8 @@ export function SleepDrawerContent({
                         .slice(0, 2)}
                     </AvatarFallback>
                   </Avatar>
-                  <label
-                    className="text-sm flex-1 cursor-pointer"
-                    htmlFor={`member-${member.userId}`}
-                  >
-                    {member.name}
-                  </label>
-                </div>
+                  <span className="truncate">{member.name}</span>
+                </Button>
               ))}
             </div>
           </div>

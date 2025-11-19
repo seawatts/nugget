@@ -111,17 +111,35 @@ export function ProfilePictureUpload({
         ctx.clip();
 
         // Calculate dimensions with crop
-        // Use naturalWidth/naturalHeight to ensure we're working with actual image dimensions
-        const scaledWidth = img.naturalWidth * crop.scale;
-        const scaledHeight = img.naturalHeight * crop.scale;
+        // The crop editor displays images at container width (300px mobile, 400px desktop)
+        // and applies scale on top of that. We need to match that coordinate system.
+        const editorContainerSize = window.innerWidth >= 768 ? 400 : 300;
+
+        // Calculate the base display dimensions (what the image would be at scale 1.0 in the editor)
+        const imageAspectRatio = img.naturalHeight / img.naturalWidth;
+        const baseDisplayWidth = editorContainerSize;
+        const baseDisplayHeight = baseDisplayWidth * imageAspectRatio;
+
+        // Apply the crop scale to get actual displayed dimensions in the editor
+        const displayedWidth = baseDisplayWidth * crop.scale;
+        const displayedHeight = baseDisplayHeight * crop.scale;
+
+        // Calculate the ratio to map from editor coordinates to canvas coordinates
+        const canvasToEditorRatio = size / editorContainerSize;
+
+        // Scale dimensions and offsets to canvas size
+        const canvasWidth = displayedWidth * canvasToEditorRatio;
+        const canvasHeight = displayedHeight * canvasToEditorRatio;
+        const canvasOffsetX = crop.x * canvasToEditorRatio;
+        const canvasOffsetY = crop.y * canvasToEditorRatio;
 
         // Draw image with crop settings, centered with offsets applied
         ctx.drawImage(
           img,
-          size / 2 - scaledWidth / 2 + crop.x,
-          size / 2 - scaledHeight / 2 + crop.y,
-          scaledWidth,
-          scaledHeight,
+          size / 2 - canvasWidth / 2 + canvasOffsetX,
+          size / 2 - canvasHeight / 2 + canvasOffsetY,
+          canvasWidth,
+          canvasHeight,
         );
 
         // Convert canvas to blob

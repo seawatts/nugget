@@ -10,7 +10,10 @@ import {
   createFamilyEarlyAction,
   upsertUserAction,
 } from '../actions';
-import { FamilySelectionStep } from './family-selection-step';
+import {
+  CREATE_NEW_FAMILY_ID,
+  FamilySelectionStep,
+} from './family-selection-step';
 import { InviteCaregiversStep } from './invite-caregivers-step';
 import { JourneyStageStep } from './journey-stage-step';
 import { NavigationButtons } from './navigation-buttons';
@@ -337,8 +340,14 @@ export function OnboardingWizard() {
   };
 
   const handleNext = async () => {
-    // If moving from step 0, complete family selection
+    // If moving from step 0, handle family selection
     if (step === 0) {
+      // If creating new family, proceed to journey stage
+      if (selectedFamilyId === CREATE_NEW_FAMILY_ID) {
+        setStep(1);
+        return;
+      }
+      // Otherwise, complete onboarding for existing family
       await handleFamilySelectionComplete();
       return;
     }
