@@ -148,7 +148,7 @@ export function NursingDrawerContent({
   const handleAmountChange = (value: string) => {
     setIsEditingAmount(true);
     const numValue = Number.parseFloat(value);
-    if (!isNaN(numValue) && numValue >= 0) {
+    if (!Number.isNaN(numValue) && numValue >= 0) {
       // Convert to ml if user is in OZ mode
       const mlValue = userUnitPref === 'OZ' ? ozToMl(numValue) : numValue;
       setAmountMl(mlValue);
