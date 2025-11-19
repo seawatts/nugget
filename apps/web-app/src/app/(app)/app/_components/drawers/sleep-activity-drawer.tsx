@@ -96,6 +96,7 @@ export function SleepActivityDrawer({
   const [activeActivityId, setActiveActivityId] = useState<string | null>(null);
   const [isTimerStopped, setIsTimerStopped] = useState(false);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
+  const [isLoadingInProgress, setIsLoadingInProgress] = useState(false);
 
   const isPending = isCreating || isUpdating;
   const isEditing = Boolean(existingActivity) || Boolean(activeActivityId);
@@ -189,6 +190,7 @@ export function SleepActivityDrawer({
   // Load in-progress sleep activity when drawer opens
   useEffect(() => {
     if (isOpen && !existingActivity) {
+      setIsLoadingInProgress(true);
       void (async () => {
         try {
           const result = await getInProgressSleepActivityAction({});
@@ -218,6 +220,8 @@ export function SleepActivityDrawer({
           }
         } catch (error) {
           console.error('Failed to load in-progress sleep:', error);
+        } finally {
+          setIsLoadingInProgress(false);
         }
       })();
     }
@@ -226,6 +230,7 @@ export function SleepActivityDrawer({
     if (!isOpen) {
       setActiveActivityId(null);
       setIsTimerStopped(false);
+      setIsLoadingInProgress(false);
       setDuration(0);
       setNotes('');
       setSleepQuality(undefined);
@@ -342,9 +347,6 @@ export function SleepActivityDrawer({
         addOptimisticActivity(optimisticActivity);
       }
 
-      // Close drawer immediately for better UX
-      onClose();
-
       if (activeActivityId && !existingActivity) {
         // Update in-progress activity - set endTime to complete it
         await updateActivity({
@@ -381,8 +383,13 @@ export function SleepActivityDrawer({
 
       // Explicitly invalidate all activity queries to ensure UI updates
       await utils.activities.invalidate();
+
+      // Close drawer AFTER save completes to prevent race conditions
+      onClose();
     } catch (error) {
       console.error('Failed to save sleep:', error);
+      // Still close on error
+      onClose();
     }
   };
 
@@ -422,31 +429,37 @@ export function SleepActivityDrawer({
 
       {/* Content - Scrollable */}
       <div className="flex-1 overflow-y-auto p-6">
-        <SleepDrawerContent
-          activeActivityId={activeActivityId}
-          coSleepingWith={coSleepingWith}
-          currentUserId={currentUserId}
-          duration={duration}
-          familyMembers={familyMembers}
-          isCoSleeping={isCoSleeping}
-          isTimerStopped={isTimerStopped}
-          notes={notes}
-          onTimerStart={handleTimerStart}
-          setCoSleepingWith={setCoSleepingWith}
-          setDuration={setDuration}
-          setIsCoSleeping={setIsCoSleeping}
-          setNotes={setNotes}
-          setSleepLocation={setSleepLocation}
-          setSleepQuality={setSleepQuality}
-          setSleepType={setSleepType}
-          setStartTime={setStartTime}
-          setWakeReason={setWakeReason}
-          sleepLocation={sleepLocation}
-          sleepQuality={sleepQuality}
-          sleepType={sleepType}
-          startTime={startTime}
-          wakeReason={wakeReason}
-        />
+        {isLoadingInProgress ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="size-8 animate-spin rounded-full border-4 border-[oklch(0.75_0.15_195)] border-t-transparent" />
+          </div>
+        ) : (
+          <SleepDrawerContent
+            activeActivityId={activeActivityId}
+            coSleepingWith={coSleepingWith}
+            currentUserId={currentUserId}
+            duration={duration}
+            familyMembers={familyMembers}
+            isCoSleeping={isCoSleeping}
+            isTimerStopped={isTimerStopped}
+            notes={notes}
+            onTimerStart={handleTimerStart}
+            setCoSleepingWith={setCoSleepingWith}
+            setDuration={setDuration}
+            setIsCoSleeping={setIsCoSleeping}
+            setNotes={setNotes}
+            setSleepLocation={setSleepLocation}
+            setSleepQuality={setSleepQuality}
+            setSleepType={setSleepType}
+            setStartTime={setStartTime}
+            setWakeReason={setWakeReason}
+            sleepLocation={sleepLocation}
+            sleepQuality={sleepQuality}
+            sleepType={sleepType}
+            startTime={startTime}
+            wakeReason={wakeReason}
+          />
+        )}
       </div>
 
       {/* Footer with Actions */}
@@ -454,6 +467,7 @@ export function SleepActivityDrawer({
         <div className="flex gap-3">
           <Button
             className="flex-1 h-12 text-base bg-transparent"
+            disabled={isLoadingInProgress}
             onClick={handleCancelClick}
             variant="outline"
           >
@@ -466,7 +480,7 @@ export function SleepActivityDrawer({
                 ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
                 : 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]',
             )}
-            disabled={isPending}
+            disabled={isPending || isLoadingInProgress}
             onClick={
               activeActivityId && !isTimerStopped ? handleStop : handleSave
             }
