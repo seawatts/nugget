@@ -15,7 +15,8 @@ import { cn } from '@nugget/ui/lib/utils';
 import { toast } from '@nugget/ui/sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Info, Milk, User, UserCheck } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { getInProgressFeedingActivityAction } from './activity-cards.actions';
 import { LearningSection } from './learning-section';
 import {
   claimFeedingAction,
@@ -44,6 +45,31 @@ export function PredictiveFeedingCard({
   const [claiming, setClaiming] = useState(false);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [quickLogging, setQuickLogging] = useState(false);
+  const [inProgressActivity, setInProgressActivity] = useState<
+    typeof Activities.$inferSelect | null
+  >(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const loadInProgressActivity = useCallback(async () => {
+    try {
+      const result = await getInProgressFeedingActivityAction({});
+      if (result?.data?.activity) {
+        setInProgressActivity(result.data.activity);
+        // Calculate initial elapsed time
+        const elapsed = Math.floor(
+          (Date.now() - new Date(result.data.activity.startTime).getTime()) /
+            1000,
+        );
+        setElapsedTime(elapsed);
+      } else {
+        setInProgressActivity(null);
+        setElapsedTime(0);
+      }
+    } catch (err) {
+      console.error('Failed to load in-progress feeding:', err);
+    }
+  }, []);
 
   const loadData = useCallback(async () => {
     try {
@@ -70,7 +96,32 @@ export function PredictiveFeedingCard({
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTrigger is intentionally used to trigger reloads from parent
   useEffect(() => {
     loadData();
-  }, [loadData, refreshTrigger]);
+    loadInProgressActivity();
+  }, [loadData, loadInProgressActivity, refreshTrigger]);
+
+  // Timer effect - updates elapsed time every second when tracking
+  useEffect(() => {
+    if (inProgressActivity) {
+      timerRef.current = setInterval(() => {
+        const elapsed = Math.floor(
+          (Date.now() - new Date(inProgressActivity.startTime).getTime()) /
+            1000,
+        );
+        setElapsedTime(elapsed);
+      }, 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [inProgressActivity]);
 
   const handleClaim = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -210,6 +261,7 @@ export function PredictiveFeedingCard({
         // Notify parent component for optimistic updates and timeline refresh
         onActivityLogged?.(result.data.activity);
         await loadData(); // Reload to show updated state
+        await loadInProgressActivity(); // Reload in-progress to ensure no stale state
       } else if (result?.serverError) {
         toast.error(result.serverError);
       }
@@ -218,6 +270,14 @@ export function PredictiveFeedingCard({
     } finally {
       setQuickLogging(false);
     }
+  };
+
+  // Format elapsed time for display
+  const formatElapsedTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -248,7 +308,19 @@ export function PredictiveFeedingCard({
               </button>
             </div>
             <div className="space-y-1">
-              {prediction.isOverdue ? (
+              {inProgressActivity ? (
+                // Show active timer
+                <div className="flex items-baseline gap-2">
+                  <span className="text-lg font-semibold">
+                    Feeding since{' '}
+                    {format(new Date(inProgressActivity.startTime), 'h:mm a')}
+                  </span>
+                  <span className="text-sm opacity-70 font-mono">
+                    {formatElapsedTime(elapsedTime)}
+                  </span>
+                </div>
+              ) : prediction.isOverdue ? (
+                // Show overdue warning
                 <>
                   <div className="flex items-baseline gap-2">
                     <span className="text-lg font-bold text-amber-400">
@@ -265,6 +337,7 @@ export function PredictiveFeedingCard({
                   )}
                 </>
               ) : (
+                // Show prediction
                 <>
                   <div className="flex items-baseline gap-2">
                     <span className="text-lg font-semibold">{timeUntil}</span>
@@ -284,8 +357,8 @@ export function PredictiveFeedingCard({
           </div>
         </div>
 
-        {/* Overdue Actions */}
-        {prediction.isOverdue && (
+        {/* Overdue Actions - Only show if not actively tracking */}
+        {!inProgressActivity && prediction.isOverdue && (
           <div className="flex gap-2">
             <Button
               className="flex-1 bg-amber-950 hover:bg-amber-900 text-amber-50"
@@ -307,8 +380,8 @@ export function PredictiveFeedingCard({
           </div>
         )}
 
-        {/* Assignment Section - Only show if multiple family members and not overdue */}
-        {showAssignment && !prediction.isOverdue && (
+        {/* Assignment Section - Only show if multiple family members, not overdue, and not actively tracking */}
+        {showAssignment && !prediction.isOverdue && !inProgressActivity && (
           <div className="flex items-center justify-between pt-4 mt-4 border-t border-white/20">
             {assignedMember ? (
               <>

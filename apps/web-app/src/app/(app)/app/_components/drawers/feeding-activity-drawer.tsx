@@ -6,6 +6,7 @@ import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { cn } from '@nugget/ui/lib/utils';
 import { Milk, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { getInProgressFeedingActivityAction } from '../activity-cards.actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { FeedingFormData } from './feeding-drawer';
 import { FeedingDrawerContent } from './feeding-drawer';
@@ -32,9 +33,10 @@ export function FeedingActivityDrawer({
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
   const [formData, setFormData] = useState<FeedingFormData | null>(null);
+  const [activeActivityId, setActiveActivityId] = useState<string | null>(null);
 
   const isPending = isCreating || isUpdating;
-  const isEditing = Boolean(existingActivity);
+  const isEditing = Boolean(existingActivity) || Boolean(activeActivityId);
 
   // Update state when existingActivity changes
   useEffect(() => {
@@ -62,15 +64,54 @@ export function FeedingActivityDrawer({
     }
   }, [existingActivity]);
 
-  // Reset state when drawer closes
+  // Load in-progress feeding activity when drawer opens
   useEffect(() => {
+    if (isOpen && !existingActivity) {
+      void (async () => {
+        try {
+          const result = await getInProgressFeedingActivityAction({});
+          if (result?.data?.activity) {
+            const inProgressActivity = result.data.activity;
+            setActiveActivityId(inProgressActivity.id);
+            setStartTime(new Date(inProgressActivity.startTime));
+            // Set endTime to now for in-progress activities
+            setEndTime(new Date());
+
+            // Set form data type based on activity type
+            if (inProgressActivity.type === 'bottle') {
+              setFormData({
+                amountMl: inProgressActivity.amount || undefined,
+                bottleType:
+                  inProgressActivity.feedingSource === 'formula'
+                    ? 'formula'
+                    : 'breast_milk',
+                notes: inProgressActivity.notes || undefined,
+                type: 'bottle',
+              });
+            } else if (inProgressActivity.type === 'nursing') {
+              setFormData({
+                notes: inProgressActivity.notes || undefined,
+                type: 'nursing',
+              });
+            }
+          } else {
+            setActiveActivityId(null);
+          }
+        } catch (error) {
+          console.error('Failed to load in-progress feeding:', error);
+        }
+      })();
+    }
+
+    // Reset state when drawer closes
     if (!isOpen) {
+      setActiveActivityId(null);
       const now = new Date();
       setStartTime(now);
       setEndTime(now);
       setFormData(null);
     }
-  }, [isOpen]);
+  }, [isOpen, existingActivity]);
 
   const handleSave = async () => {
     if (!formData) {
@@ -94,8 +135,10 @@ export function FeedingActivityDrawer({
         startTime,
       };
 
-      if (existingActivity) {
-        // Update existing activity
+      if (existingActivity || activeActivityId) {
+        // Update existing or in-progress activity
+        const activityId = existingActivity?.id || activeActivityId!;
+
         if (formData.type === 'bottle') {
           await updateActivity({
             ...baseData,
@@ -103,7 +146,7 @@ export function FeedingActivityDrawer({
             details: null,
             feedingSource:
               formData.bottleType === 'formula' ? 'formula' : 'pumped',
-            id: existingActivity.id,
+            id: activityId,
           });
         } else if (formData.type === 'nursing') {
           await updateActivity({
@@ -114,7 +157,7 @@ export function FeedingActivityDrawer({
             },
             duration: durationMinutes,
             feedingSource: 'direct',
-            id: existingActivity.id,
+            id: activityId,
           });
         } else if (formData.type === 'solids') {
           await updateActivity({
@@ -123,7 +166,7 @@ export function FeedingActivityDrawer({
               items: [], // TODO: Allow user to input solid food items
               type: 'solids',
             },
-            id: existingActivity.id,
+            id: activityId,
           });
         }
       } else {

@@ -217,3 +217,45 @@ export const getInProgressSleepActivityAction = action
       return { activity: inProgressSleep || null };
     },
   );
+
+/**
+ * Get in-progress feeding activity (one with startTime but no endTime)
+ */
+export const getInProgressFeedingActivityAction = action
+  .schema(z.object({}))
+  .action(
+    async (): Promise<{ activity: typeof Activities.$inferSelect | null }> => {
+      // Verify authentication
+      const authResult = await auth();
+      if (!authResult.userId) {
+        throw new Error('Authentication required');
+      }
+
+      // Create tRPC API helper
+      const api = await getApi();
+
+      // Get the most recent baby
+      const baby = await api.babies.getMostRecent();
+
+      if (!baby) {
+        throw new Error('No baby found. Please complete onboarding first.');
+      }
+
+      // Find in-progress feeding activity (has startTime but no endTime)
+      const activities = await api.activities.list({
+        babyId: baby.id,
+        limit: 50,
+      });
+
+      // Find the most recent feeding activity without an endTime
+      // Check for bottle or nursing types as both are feeding activities
+      const inProgressFeeding = activities.find(
+        (activity) =>
+          (activity.type === 'bottle' || activity.type === 'nursing') &&
+          activity.startTime &&
+          !activity.endTime,
+      );
+
+      return { activity: inProgressFeeding || null };
+    },
+  );
