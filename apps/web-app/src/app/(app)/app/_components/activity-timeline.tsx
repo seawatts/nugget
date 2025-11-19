@@ -239,6 +239,7 @@ export function ActivityTimeline() {
   const [selectedActivityTypes, setSelectedActivityTypes] = useState<string[]>(
     [],
   );
+  const [showSkipped, setShowSkipped] = useState(true);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [selectedChatData, setSelectedChatData] = useState<{
     chatId: string;
@@ -348,8 +349,29 @@ export function ActivityTimeline() {
       ...activityTimelineItems,
       ...milestoneTimelineItems,
     ];
-    return merged.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  }, [optimisticTimelineItems, activityTimelineItems, milestoneTimelineItems]);
+
+    // Filter out skipped activities if showSkipped is false
+    const filtered = showSkipped
+      ? merged
+      : merged.filter((item) => {
+          if (item.type !== 'activity') return true;
+          const activity = item.data;
+          return !(
+            activity.details &&
+            'skipped' in activity.details &&
+            activity.details.skipped
+          );
+        });
+
+    return filtered.sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
+    );
+  }, [
+    optimisticTimelineItems,
+    activityTimelineItems,
+    milestoneTimelineItems,
+    showSkipped,
+  ]);
 
   const loading = activitiesLoading || milestonesLoading;
   const error = activitiesError?.message ?? null;
@@ -378,10 +400,12 @@ export function ActivityTimeline() {
     userIds: string[],
     itemTypes: string[],
     activityTypes: string[],
+    showSkipped: boolean,
   ) => {
     setSelectedUserIds(userIds);
     setSelectedItemTypes(itemTypes);
     setSelectedActivityTypes(activityTypes);
+    setShowSkipped(showSkipped);
     // React Query will automatically refetch with new filters
   };
 
@@ -435,6 +459,7 @@ export function ActivityTimeline() {
                   selectedActivityTypes={selectedActivityTypes}
                   selectedItemTypes={selectedItemTypes}
                   selectedUserIds={selectedUserIds}
+                  showSkipped={showSkipped}
                 />
               )}
             </div>
@@ -464,12 +489,20 @@ export function ActivityTimeline() {
                 let itemTitle = '';
                 let itemNotes = '';
                 let itemId = '';
+                let isSkipped = false;
 
                 if (item.type === 'activity') {
                   const activity = item.data;
                   itemTitle = activity.type.replace('-', ' ');
                   itemNotes = activity.notes || '';
                   itemId = activity.id;
+
+                  // Check if activity is skipped
+                  isSkipped = Boolean(
+                    activity.details &&
+                      'skipped' in activity.details &&
+                      activity.details.skipped === true,
+                  );
 
                   if (activity.duration) {
                     details.push(`${activity.duration} min`);
@@ -561,7 +594,7 @@ export function ActivityTimeline() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 flex items-center gap-2">
                             <h4
                               className={`text-sm font-medium ${item.type === 'activity' ? 'capitalize' : ''} ${isOptimistic ? 'text-foreground' : ''}`}
                             >
@@ -572,6 +605,11 @@ export function ActivityTimeline() {
                                 </span>
                               )}
                             </h4>
+                            {isSkipped && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground shrink-0">
+                                Skipped
+                              </span>
+                            )}
                           </div>
                           <div className="flex flex-col items-end gap-0.5 shrink-0">
                             <span className="text-xs text-muted-foreground whitespace-nowrap">
