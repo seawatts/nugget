@@ -73,6 +73,7 @@
     "dev": "turbo watch dev dev:extension dev:webview",
     "dev:next": "turbo watch dev -F @nugget/web-app...",
     "dev:vscode": "turbo watch dev dev:extension dev:webview -F nugget-vscode... -F @nugget/web-app...",
+    "diagnose:user": "infisical --env=prod run -- bun run scripts/diagnose-user-onboarding.ts",
     "docs": "turbo run dev --filter=@nugget/docs...",
     "ensure:user-resources": "bun run scripts/ensure-user-resources.ts",
     "ensure:user-resources:dry-run": "bun run scripts/ensure-user-resources.ts --dry-run",

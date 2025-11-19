@@ -14,7 +14,6 @@ import {
   AlertDialogTitle,
 } from '@nugget/ui/alert-dialog';
 import { Button } from '@nugget/ui/button';
-import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { cn } from '@nugget/ui/lib/utils';
 import { Moon, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -415,50 +414,99 @@ export function SleepActivityDrawer({
             <X className="size-6" />
           </button>
         </div>
-
-        {/* Time Range Picker */}
-        <DateTimeRangePicker
-          className="text-[oklch(0.18_0.02_250)] opacity-90"
-          endDate={endTime}
-          mode="range"
-          setEndDate={setEndTime}
-          setStartDate={setStartTime}
-          startDate={startTime}
-        />
       </div>
 
       {/* Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {isLoadingInProgress ? (
           <div className="flex items-center justify-center h-full">
             <div className="size-8 animate-spin rounded-full border-4 border-[oklch(0.75_0.15_195)] border-t-transparent" />
           </div>
         ) : (
-          <SleepDrawerContent
-            activeActivityId={activeActivityId}
-            coSleepingWith={coSleepingWith}
-            currentUserId={currentUserId}
-            duration={duration}
-            familyMembers={familyMembers}
-            isCoSleeping={isCoSleeping}
-            isTimerStopped={isTimerStopped}
-            notes={notes}
-            onTimerStart={handleTimerStart}
-            setCoSleepingWith={setCoSleepingWith}
-            setDuration={setDuration}
-            setIsCoSleeping={setIsCoSleeping}
-            setNotes={setNotes}
-            setSleepLocation={setSleepLocation}
-            setSleepQuality={setSleepQuality}
-            setSleepType={setSleepType}
-            setStartTime={setStartTime}
-            setWakeReason={setWakeReason}
-            sleepLocation={sleepLocation}
-            sleepQuality={sleepQuality}
-            sleepType={sleepType}
-            startTime={startTime}
-            wakeReason={wakeReason}
-          />
+          <>
+            {/* Time & Date Section */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                Time & Date
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label
+                    className="text-xs text-muted-foreground"
+                    htmlFor="sleep-start-time"
+                  >
+                    Start Time
+                  </label>
+                  <input
+                    className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
+                    id="sleep-start-time"
+                    onChange={(e) => {
+                      const [hours, minutes] = e.target.value
+                        .split(':')
+                        .map(Number);
+                      if (hours !== undefined && minutes !== undefined) {
+                        const newStartTime = new Date(startTime);
+                        newStartTime.setHours(hours, minutes);
+                        setStartTime(newStartTime);
+                      }
+                    }}
+                    type="time"
+                    value={startTime.toTimeString().slice(0, 5)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label
+                    className="text-xs text-muted-foreground"
+                    htmlFor="sleep-end-time"
+                  >
+                    End Time
+                  </label>
+                  <input
+                    className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
+                    id="sleep-end-time"
+                    onChange={(e) => {
+                      const [hours, minutes] = e.target.value
+                        .split(':')
+                        .map(Number);
+                      if (hours !== undefined && minutes !== undefined) {
+                        const newEndTime = new Date(endTime);
+                        newEndTime.setHours(hours, minutes);
+                        setEndTime(newEndTime);
+                      }
+                    }}
+                    type="time"
+                    value={endTime.toTimeString().slice(0, 5)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <SleepDrawerContent
+              activeActivityId={activeActivityId}
+              coSleepingWith={coSleepingWith}
+              currentUserId={currentUserId}
+              duration={duration}
+              familyMembers={familyMembers}
+              isCoSleeping={isCoSleeping}
+              isTimerStopped={isTimerStopped}
+              notes={notes}
+              onTimerStart={handleTimerStart}
+              setCoSleepingWith={setCoSleepingWith}
+              setDuration={setDuration}
+              setIsCoSleeping={setIsCoSleeping}
+              setNotes={setNotes}
+              setSleepLocation={setSleepLocation}
+              setSleepQuality={setSleepQuality}
+              setSleepType={setSleepType}
+              setStartTime={setStartTime}
+              setWakeReason={setWakeReason}
+              sleepLocation={sleepLocation}
+              sleepQuality={sleepQuality}
+              sleepType={sleepType}
+              startTime={startTime}
+              wakeReason={wakeReason}
+            />
+          </>
         )}
       </div>
 

@@ -27,6 +27,13 @@ interface FeedingDrawerContentProps {
   onTypeSelect?: (type: FeedingType) => void;
   existingActivityType?: 'bottle' | 'nursing' | 'solids' | null;
   onFormDataChange?: (data: FeedingFormData | null) => void;
+  activeActivityId?: string | null;
+  onTimerStart?: () => Promise<void>;
+  isTimerStopped?: boolean;
+  duration?: number;
+  setDuration?: (duration: number) => void;
+  startTime?: Date;
+  setStartTime?: (date: Date) => void;
 }
 
 const feedingTypes = [
@@ -60,6 +67,13 @@ export function FeedingDrawerContent({
   onTypeSelect,
   existingActivityType,
   onFormDataChange,
+  activeActivityId,
+  onTimerStart,
+  isTimerStopped = false,
+  duration = 0,
+  setDuration,
+  startTime,
+  setStartTime,
 }: FeedingDrawerContentProps) {
   const [selectedType, setSelectedType] = useState<FeedingType>(null);
   const [bottleData, setBottleData] = useState<BottleFormData | null>(null);
@@ -132,12 +146,28 @@ export function FeedingDrawerContent({
         {/* Render the specific feeding form */}
         {selectedType === 'bottle' && (
           <BottleDrawerContent
+            activeActivityId={activeActivityId}
+            duration={duration}
+            isTimerStopped={isTimerStopped}
             onDataChange={setBottleData}
+            onTimerStart={onTimerStart}
+            setDuration={setDuration}
+            setStartTime={setStartTime}
+            startTime={startTime}
             unitPref={userUnitPref}
           />
         )}
         {selectedType === 'nursing' && (
-          <NursingDrawerContent onDataChange={setNursingData} />
+          <NursingDrawerContent
+            activeActivityId={activeActivityId}
+            duration={duration}
+            isTimerStopped={isTimerStopped}
+            onDataChange={setNursingData}
+            onTimerStart={onTimerStart}
+            setDuration={setDuration}
+            setStartTime={setStartTime}
+            startTime={startTime}
+          />
         )}
         {selectedType === 'solids' && <SolidsDrawerContent />}
       </div>

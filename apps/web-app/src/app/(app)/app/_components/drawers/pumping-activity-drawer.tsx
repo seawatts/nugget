@@ -3,7 +3,6 @@
 import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
-import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { cn } from '@nugget/ui/lib/utils';
 import { Droplets, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -230,20 +229,67 @@ export function PumpingActivityDrawer({
             <X className="size-6" />
           </button>
         </div>
-
-        {/* Time Range Picker */}
-        <DateTimeRangePicker
-          className="text-white opacity-90"
-          endDate={endTime}
-          mode="range"
-          setEndDate={setEndTime}
-          setStartDate={setStartTime}
-          startDate={startTime}
-        />
       </div>
 
       {/* Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        {/* Time & Date Section */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Time & Date
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label
+                className="text-xs text-muted-foreground"
+                htmlFor="pumping-start-time"
+              >
+                Start Time
+              </label>
+              <input
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
+                id="pumping-start-time"
+                onChange={(e) => {
+                  const [hours, minutes] = e.target.value
+                    .split(':')
+                    .map(Number);
+                  if (hours !== undefined && minutes !== undefined) {
+                    const newStartTime = new Date(startTime);
+                    newStartTime.setHours(hours, minutes);
+                    setStartTime(newStartTime);
+                  }
+                }}
+                type="time"
+                value={startTime.toTimeString().slice(0, 5)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label
+                className="text-xs text-muted-foreground"
+                htmlFor="pumping-end-time"
+              >
+                End Time
+              </label>
+              <input
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
+                id="pumping-end-time"
+                onChange={(e) => {
+                  const [hours, minutes] = e.target.value
+                    .split(':')
+                    .map(Number);
+                  if (hours !== undefined && minutes !== undefined) {
+                    const newEndTime = new Date(endTime);
+                    newEndTime.setHours(hours, minutes);
+                    setEndTime(newEndTime);
+                  }
+                }}
+                type="time"
+                value={endTime.toTimeString().slice(0, 5)}
+              />
+            </div>
+          </div>
+        </div>
+
         <PumpingDrawerContent
           leftAmount={leftAmount}
           notes={notes}

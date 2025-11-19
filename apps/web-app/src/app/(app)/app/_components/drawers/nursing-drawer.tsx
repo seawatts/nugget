@@ -21,10 +21,24 @@ export interface NursingFormData {
 
 interface NursingDrawerContentProps {
   onDataChange?: (data: NursingFormData) => void;
+  activeActivityId?: string | null;
+  onTimerStart?: () => Promise<void>;
+  isTimerStopped?: boolean;
+  duration?: number;
+  setDuration?: (duration: number) => void;
+  startTime?: Date;
+  setStartTime?: (date: Date) => void;
 }
 
 export function NursingDrawerContent({
   onDataChange,
+  activeActivityId,
+  onTimerStart,
+  isTimerStopped = false,
+  duration: externalDuration,
+  setDuration: externalSetDuration,
+  startTime: externalStartTime,
+  setStartTime: externalSetStartTime,
 }: NursingDrawerContentProps) {
   const [activeSide, setActiveSide] = useState<'left' | 'right' | null>(null);
   const [leftDuration, setLeftDuration] = useState(0); // in seconds
@@ -33,6 +47,7 @@ export function NursingDrawerContent({
   const [notes, setNotes] = useState('');
   const [amountMl, setAmountMl] = useState<number | null>(null);
   const [isEditingAmount, setIsEditingAmount] = useState(false);
+  const [hasStartedDbTracking, setHasStartedDbTracking] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch baby data to get birth date for age calculation
@@ -98,7 +113,7 @@ export function NursingDrawerContent({
     });
   }, [leftDuration, rightDuration, notes, amountMl, onDataChange]);
 
-  const handleSideSelect = (side: 'left' | 'right') => {
+  const handleSideSelect = async (side: 'left' | 'right') => {
     if (activeSide === side) {
       // If clicking the same side, toggle pause/resume
       setIsTimerRunning(!isTimerRunning);
@@ -106,6 +121,12 @@ export function NursingDrawerContent({
       // Switching to a different side
       setActiveSide(side);
       setIsTimerRunning(true);
+
+      // Start database tracking on first side selection
+      if (!hasStartedDbTracking && onTimerStart) {
+        await onTimerStart();
+        setHasStartedDbTracking(true);
+      }
     }
   };
 
@@ -127,7 +148,22 @@ export function NursingDrawerContent({
     setIsTimerRunning(false);
     setAmountMl(null);
     setIsEditingAmount(false);
+    setHasStartedDbTracking(false);
   };
+
+  // Sync with external duration if there's an active activity
+  useEffect(() => {
+    if (activeActivityId && externalDuration !== undefined) {
+      // When loading an in-progress activity, set the durations
+      // For nursing, we track left and right separately, but for persistence
+      // we use the total duration
+      const totalDuration = externalDuration;
+      // Split evenly for now - can be enhanced later
+      setLeftDuration(Math.floor(totalDuration / 2));
+      setRightDuration(Math.floor(totalDuration / 2));
+      setHasStartedDbTracking(true);
+    }
+  }, [activeActivityId, externalDuration]);
 
   // Format seconds to mm:ss
   const formatTime = (seconds: number) => {
