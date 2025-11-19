@@ -129,7 +129,11 @@ export const activitiesRouter = createTRPCRouter({
         },
       });
 
-      if (!activity || activity.baby.familyId !== ctx.auth.orgId) {
+      if (
+        !activity ||
+        !activity.baby ||
+        activity.baby.familyId !== ctx.auth.orgId
+      ) {
         throw new Error('Activity not found');
       }
 
@@ -331,7 +335,11 @@ export const activitiesRouter = createTRPCRouter({
         },
       });
 
-      if (!activity || activity.baby.familyId !== ctx.auth.orgId) {
+      if (
+        !activity ||
+        !activity.baby ||
+        activity.baby.familyId !== ctx.auth.orgId
+      ) {
         throw new Error('Activity not found');
       }
 
