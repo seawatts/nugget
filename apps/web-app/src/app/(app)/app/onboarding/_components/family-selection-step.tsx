@@ -41,8 +41,8 @@ export function FamilySelectionStep({
       <div className="text-center space-y-2">
         <H2>Select Your Family</H2>
         <P className="text-muted-foreground">
-          You're a member of multiple families. Choose an existing family or
-          create a new one to continue.
+          Choose an existing family you're a member of, or create a new one to
+          continue.
         </P>
       </div>
 

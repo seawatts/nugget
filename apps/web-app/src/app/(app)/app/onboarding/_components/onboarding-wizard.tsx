@@ -49,9 +49,9 @@ export function OnboardingWizard() {
   const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Determine if user has multiple families
+  // Determine if user has any families
   const familyCount = userMemberships?.data?.length ?? 0;
-  const hasMultipleFamilies = familyCount > 1;
+  const hasFamilies = familyCount > 0;
 
   // Load state from localStorage on mount
   useEffect(() => {
@@ -74,7 +74,7 @@ export function OnboardingWizard() {
           setSelectedFamilyId(parsed.selectedFamilyId);
         } else {
           // No saved state, determine starting step based on family count
-          if (hasMultipleFamilies) {
+          if (hasFamilies) {
             setStep(0); // Start with family selection
           } else {
             setStep(1); // Start with journey stage
@@ -86,7 +86,7 @@ export function OnboardingWizard() {
           error,
         );
         // On error, use default based on family count
-        if (hasMultipleFamilies) {
+        if (hasFamilies) {
           setStep(0);
         } else {
           setStep(1);
@@ -99,7 +99,7 @@ export function OnboardingWizard() {
     if (userMemberships?.data) {
       loadFromLocalStorage();
     }
-  }, [hasMultipleFamilies, userMemberships?.data]);
+  }, [hasFamilies, userMemberships?.data]);
 
   // Save state to localStorage whenever relevant state changes
   useEffect(() => {
@@ -450,17 +450,15 @@ export function OnboardingWizard() {
     );
   }
 
-  // Calculate display steps (exclude step 0 from count if user has only one family)
-  const effectiveTotalSteps = hasMultipleFamilies
-    ? TOTAL_STEPS
-    : TOTAL_STEPS - 1;
-  const displayStep = hasMultipleFamilies ? step : Math.max(step - 1, 1);
+  // Calculate display steps (exclude step 0 from count if user has no families)
+  const effectiveTotalSteps = hasFamilies ? TOTAL_STEPS : TOTAL_STEPS - 1;
+  const displayStep = hasFamilies ? step : Math.max(step - 1, 1);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         <div className="w-full max-w-md space-y-8">
-          {step === 0 && hasMultipleFamilies && (
+          {step === 0 && hasFamilies && (
             <FamilySelectionStep
               families={userMemberships?.data ?? []}
               onSelect={handleFamilySelect}
@@ -512,8 +510,8 @@ export function OnboardingWizard() {
             isPending={isPending}
             onBack={() => {
               if (step > 0) {
-                // Don't go back to step 0 if user only has one family
-                if (!hasMultipleFamilies && step === 1) {
+                // Don't go back to step 0 if user has no families
+                if (!hasFamilies && step === 1) {
                   return;
                 }
                 setStep(step - 1);
