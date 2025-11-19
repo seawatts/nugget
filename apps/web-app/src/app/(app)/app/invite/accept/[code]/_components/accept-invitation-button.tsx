@@ -1,5 +1,6 @@
 'use client';
 
+import { useOrganizationList } from '@clerk/nextjs';
 import { api } from '@nugget/api/react';
 import { Button } from '@nugget/ui/button';
 import { Icons } from '@nugget/ui/custom/icons';
@@ -17,6 +18,7 @@ export function AcceptInvitationButton({
   familyName: _familyName,
 }: AcceptInvitationButtonProps) {
   const router = useRouter();
+  const { setActive } = useOrganizationList();
 
   const acceptMutation = api.invitations.accept.useMutation({
     onError: (error) => {
@@ -31,9 +33,26 @@ export function AcceptInvitationButton({
       // For other errors, show the error message
       toast.error(error.message || 'Failed to accept invitation');
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       toast.success(`Welcome to ${data.familyName}!`);
-      // Redirect to main app after accepting
+
+      // CRITICAL: Set the active organization in Clerk
+      if (setActive) {
+        try {
+          await setActive({ organization: data.clerkOrgId });
+          console.log('Successfully set active organization:', data.clerkOrgId);
+          // Give Clerk time to update the session
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        } catch (error) {
+          console.error('Failed to set active organization:', error);
+          toast.error(
+            'Failed to switch to family. Please try refreshing the page.',
+          );
+          return;
+        }
+      }
+
+      // Redirect to main app after setting active org
       router.push('/app');
     },
   });

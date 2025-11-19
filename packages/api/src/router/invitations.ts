@@ -106,17 +106,43 @@ export const invitationsRouter = createTRPCRouter({
         // Add user to Clerk organization
         try {
           const client = await clerkClient();
-          await client.organizations.createOrganizationMembership({
-            organizationId: invitation.family.clerkOrgId,
-            role: invitation.role === 'primary' ? 'admin' : 'basic_member',
-            userId,
-          });
+
+          // Check if user is already a member in Clerk
+          const existingClerkMembership = await client.organizations
+            .getOrganizationMembershipList({
+              organizationId: invitation.family.clerkOrgId,
+            })
+            .then((list) =>
+              list.data.find(
+                (membership) => membership.publicUserData?.userId === userId,
+              ),
+            );
+
+          if (!existingClerkMembership) {
+            console.log(
+              `Adding user ${userId} to Clerk organization ${invitation.family.clerkOrgId}`,
+            );
+            await client.organizations.createOrganizationMembership({
+              organizationId: invitation.family.clerkOrgId,
+              role: invitation.role === 'primary' ? 'admin' : 'basic_member',
+              userId,
+            });
+            console.log(
+              `Successfully added user ${userId} to Clerk organization ${invitation.family.clerkOrgId}`,
+            );
+          } else {
+            console.log(
+              `User ${userId} is already a member of Clerk organization ${invitation.family.clerkOrgId}`,
+            );
+          }
         } catch (error) {
           console.error('Failed to add user to Clerk organization:', error);
           // Don't throw - the database record is created, Clerk can be synced later via webhook
+          // The frontend will still set the active organization
         }
 
         return {
+          clerkOrgId: invitation.family.clerkOrgId,
           familyId: invitation.familyId,
           familyMember,
           familyName: invitation.family.name,
