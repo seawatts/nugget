@@ -103,11 +103,18 @@ export function PredictiveSleepCard({
     }
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTrigger is intentionally used to trigger reloads from parent
+  // Listen for activity list invalidations to auto-refresh predictions
+  const { data: baby } = api.babies.getMostRecent.useQuery();
+  const { dataUpdatedAt } = api.activities.list.useQuery(
+    { babyId: baby?.id ?? '', limit: 1 }, // Minimal query just to detect changes
+    { enabled: !!baby?.id },
+  );
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTrigger and dataUpdatedAt are intentionally used to trigger reloads
   useEffect(() => {
     loadData();
     loadInProgressActivity();
-  }, [loadData, loadInProgressActivity, refreshTrigger]);
+  }, [loadData, loadInProgressActivity, refreshTrigger, dataUpdatedAt]);
 
   // Timer effect - updates elapsed time every second when tracking
   useEffect(() => {

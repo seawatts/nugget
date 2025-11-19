@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@clerk/nextjs';
+import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import {
   AlertDialog,
@@ -39,6 +40,7 @@ export function SleepActivityDrawer({
   onClose,
 }: SleepActivityDrawerProps) {
   const { userId } = useAuth();
+  const utils = api.useUtils();
   const {
     createActivity,
     updateActivity,
@@ -376,6 +378,9 @@ export function SleepActivityDrawer({
           startTime,
         });
       }
+
+      // Explicitly invalidate all activity queries to ensure UI updates
+      await utils.activities.invalidate();
     } catch (error) {
       console.error('Failed to save sleep:', error);
     }
