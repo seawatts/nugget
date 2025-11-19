@@ -1,9 +1,10 @@
 'use client';
 
 import { useUser } from '@clerk/nextjs';
+import { api } from '@nugget/api/react';
 import { Button } from '@nugget/ui/button';
 import { toast } from '@nugget/ui/sonner';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import {
   AlertCircle,
   ChevronDown,
@@ -13,6 +14,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { formatTimeWithPreference } from '~/lib/format-time';
 import {
   claimFeedingAction,
   getUpcomingFeedingAction,
@@ -29,6 +31,8 @@ export function UpcomingFeedingCard({
   refreshTrigger = 0,
 }: UpcomingFeedingCardProps) {
   const { user } = useUser();
+  const { data: userData } = api.user.current.useQuery();
+  const timeFormat = userData?.timeFormat || '12h';
   const [data, setData] = useState<UpcomingFeedingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -150,7 +154,10 @@ export function UpcomingFeedingCard({
   const timeUntil = formatDistanceToNow(prediction.nextFeedingTime, {
     addSuffix: true,
   });
-  const exactTime = format(prediction.nextFeedingTime, 'h:mm a');
+  const exactTime = formatTimeWithPreference(
+    prediction.nextFeedingTime,
+    timeFormat,
+  );
 
   // Status colors
   const statusColors = {
@@ -306,7 +313,7 @@ export function UpcomingFeedingCard({
                     key={feed.time.toISOString()}
                   >
                     <span className="text-muted-foreground">
-                      {format(feed.time, 'h:mm a')}
+                      {formatTimeWithPreference(feed.time, timeFormat)}
                     </span>
                     {feed.intervalFromPrevious !== null && (
                       <span className="text-foreground/70 font-medium">

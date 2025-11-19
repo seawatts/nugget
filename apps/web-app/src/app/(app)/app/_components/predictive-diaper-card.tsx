@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Card } from '@nugget/ui/card';
 import { Button } from '@nugget/ui/components/button';
@@ -12,9 +13,10 @@ import {
   DrawerTitle,
 } from '@nugget/ui/drawer';
 import { cn } from '@nugget/ui/lib/utils';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { Baby, Info } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { formatTimeWithPreference } from '~/lib/format-time';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { LearningSection } from './learning-section';
 import {
@@ -36,6 +38,9 @@ export function PredictiveDiaperCard({
   onCardClick,
   onActivityLogged,
 }: PredictiveDiaperCardProps) {
+  const utils = api.useUtils();
+  const { data: userData } = api.user.current.useQuery();
+  const timeFormat = userData?.timeFormat || '12h';
   const [data, setData] = useState<UpcomingDiaperData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -135,7 +140,7 @@ export function PredictiveDiaperCard({
   const timeUntil = formatDistanceToNow(displayNextTime, {
     addSuffix: true,
   });
-  const exactTime = format(displayNextTime, 'h:mm a');
+  const exactTime = formatTimeWithPreference(displayNextTime, timeFormat);
 
   // Format recovery time if overdue
   const recoveryTimeUntil = prediction.suggestedRecoveryTime
@@ -144,7 +149,7 @@ export function PredictiveDiaperCard({
       })
     : null;
   const recoveryExactTime = prediction.suggestedRecoveryTime
-    ? format(prediction.suggestedRecoveryTime, 'h:mm a')
+    ? formatTimeWithPreference(prediction.suggestedRecoveryTime, timeFormat)
     : null;
 
   // Format diaper type
@@ -229,6 +234,8 @@ export function PredictiveDiaperCard({
 
       if (result?.data) {
         toast.success('Diaper reminder skipped');
+        // Invalidate activities list to refresh timeline
+        await utils.activities.list.invalidate();
         // Reload to get updated prediction with skip info
         await loadData();
       } else if (result?.serverError) {
@@ -298,7 +305,11 @@ export function PredictiveDiaperCard({
                       {formatDistanceToNow(prediction.lastDiaperTime, {
                         addSuffix: true,
                       })}{' '}
-                      • {format(prediction.lastDiaperTime, 'h:mm a')}
+                      •{' '}
+                      {formatTimeWithPreference(
+                        prediction.lastDiaperTime,
+                        timeFormat,
+                      )}
                       {prediction.lastDiaperType && (
                         <span>
                           {' '}
@@ -379,7 +390,7 @@ export function PredictiveDiaperCard({
                       key={diaper.time.toISOString()}
                     >
                       <span className="text-muted-foreground">
-                        {format(diaper.time, 'h:mm a')}
+                        {formatTimeWithPreference(diaper.time, timeFormat)}
                       </span>
                       <div className="flex gap-2 items-center">
                         {diaper.type && (

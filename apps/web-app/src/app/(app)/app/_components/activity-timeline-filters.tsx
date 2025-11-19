@@ -14,6 +14,7 @@ import {
 import {
   Drawer,
   DrawerContent,
+  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
@@ -43,13 +44,8 @@ interface FamilyMember {
 
 interface ActivityTimelineFiltersProps {
   activityTypes: ActivityType[];
-  onFilterChange: (
-    userIds: string[],
-    itemTypes: string[],
-    activityTypes: string[],
-  ) => void;
+  onFilterChange: (userIds: string[], activityTypes: string[]) => void;
   selectedActivityTypes: string[];
-  selectedItemTypes: string[];
   selectedUserIds: string[];
 }
 
@@ -57,26 +53,20 @@ export function ActivityTimelineFilters({
   activityTypes,
   onFilterChange,
   selectedActivityTypes,
-  selectedItemTypes,
   selectedUserIds,
 }: ActivityTimelineFiltersProps) {
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
+
+  // Initialize with all items selected if parent passes empty arrays
   const [localUserIds, setLocalUserIds] = useState<string[]>(selectedUserIds);
-  const [localItemTypes, setLocalItemTypes] =
-    useState<string[]>(selectedItemTypes);
   const [localActivityTypes, setLocalActivityTypes] = useState<string[]>(
     selectedActivityTypes,
   );
   const [isOpen, setIsOpen] = useState(false);
 
-  // Sync local state with parent props
-  useEffect(() => {
-    setLocalUserIds(selectedUserIds);
-    setLocalItemTypes(selectedItemTypes);
-    setLocalActivityTypes(selectedActivityTypes);
-  }, [selectedUserIds, selectedItemTypes, selectedActivityTypes]);
-
+  // Load family members
   useEffect(() => {
     async function loadFamilyMembers() {
       try {
@@ -95,6 +85,42 @@ export function ActivityTimelineFilters({
     loadFamilyMembers();
   }, []);
 
+  // Initialize local state with all items selected if parent provides empty arrays
+  useEffect(() => {
+    if (
+      !initialized &&
+      !loading &&
+      familyMembers.length > 0 &&
+      activityTypes.length > 0
+    ) {
+      // If parent passes empty arrays (meaning "show all"), initialize with all items
+      if (selectedUserIds.length === 0) {
+        setLocalUserIds(familyMembers.map((m) => m.userId));
+      }
+      if (selectedActivityTypes.length === 0) {
+        setLocalActivityTypes(activityTypes.map((t) => t.id));
+      }
+      setInitialized(true);
+    }
+  }, [
+    initialized,
+    loading,
+    familyMembers,
+    activityTypes,
+    selectedUserIds,
+    selectedActivityTypes,
+  ]);
+
+  // Sync local state with parent props (only after initialization)
+  useEffect(() => {
+    if (initialized) {
+      // Only sync if parent has explicit values (not empty arrays)
+      if (selectedUserIds.length > 0) setLocalUserIds(selectedUserIds);
+      if (selectedActivityTypes.length > 0)
+        setLocalActivityTypes(selectedActivityTypes);
+    }
+  }, [initialized, selectedUserIds, selectedActivityTypes]);
+
   const handleUserToggle = (userId: string) => {
     setLocalUserIds((prev) =>
       prev.includes(userId)
@@ -103,12 +129,12 @@ export function ActivityTimelineFilters({
     );
   };
 
-  const handleItemTypeToggle = (itemType: string) => {
-    setLocalItemTypes((prev) =>
-      prev.includes(itemType)
-        ? prev.filter((type) => type !== itemType)
-        : [...prev, itemType],
-    );
+  const handleSelectAllUsers = (checked: boolean) => {
+    if (checked) {
+      setLocalUserIds(familyMembers.map((member) => member.userId));
+    } else {
+      setLocalUserIds([]);
+    }
   };
 
   const handleActivityTypeToggle = (activityType: string) => {
@@ -119,42 +145,76 @@ export function ActivityTimelineFilters({
     );
   };
 
+  const handleSelectAllActivityTypes = (checked: boolean) => {
+    if (checked) {
+      setLocalActivityTypes(activityTypes.map((type) => type.id));
+    } else {
+      setLocalActivityTypes([]);
+    }
+  };
+
   const handleApply = () => {
-    onFilterChange(localUserIds, localItemTypes, localActivityTypes);
+    onFilterChange(localUserIds, localActivityTypes);
     setIsOpen(false);
   };
 
-  const handleClear = () => {
-    setLocalUserIds([]);
-    setLocalItemTypes([]);
-    setLocalActivityTypes([]);
-    onFilterChange([], [], []);
-    setIsOpen(false);
+  const handleReset = () => {
+    const allUserIds = familyMembers.map((member) => member.userId);
+    const allActivityTypes = activityTypes.map((type) => type.id);
+
+    setLocalUserIds(allUserIds);
+    setLocalActivityTypes(allActivityTypes);
+    onFilterChange(allUserIds, allActivityTypes);
   };
 
-  const totalFilters =
-    selectedUserIds.length +
-    selectedItemTypes.length +
-    selectedActivityTypes.length;
   const isDesktop = useMediaQuery({ query: '(min-width: 768px)' });
 
-  const filterContent = (
-    <div className="flex flex-col gap-4">
-      {totalFilters > 0 && (
-        <div className="flex justify-end">
-          <Button
-            className="text-xs h-auto p-0"
-            onClick={handleClear}
-            variant="link"
-          >
-            Clear all
-          </Button>
-        </div>
-      )}
+  const allUsersSelected =
+    familyMembers.length > 0 && localUserIds.length === familyMembers.length;
+  const allActivityTypesSelected =
+    localActivityTypes.length === activityTypes.length;
+
+  // Calculate active filters (filters that are not showing all)
+  const activeFilterCount = [
+    familyMembers.length > 0 &&
+      selectedUserIds.length > 0 &&
+      selectedUserIds.length < familyMembers.length,
+    selectedActivityTypes.length > 0 &&
+      selectedActivityTypes.length < activityTypes.length,
+  ].filter(Boolean).length;
+
+  const filterScrollableContent = (
+    <>
+      <div className="flex justify-end">
+        <Button
+          className="text-xs h-auto p-0"
+          onClick={handleReset}
+          variant="link"
+        >
+          Reset
+        </Button>
+      </div>
 
       {/* Family Members Filter */}
       <div className="flex flex-col gap-3">
-        <Label className="text-sm font-semibold">Family Members</Label>
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-semibold">Family Members</Label>
+          {!loading && familyMembers.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={allUsersSelected}
+                id="select-all-users"
+                onCheckedChange={handleSelectAllUsers}
+              />
+              <Label
+                className="text-xs text-muted-foreground cursor-pointer"
+                htmlFor="select-all-users"
+              >
+                Select All
+              </Label>
+            </div>
+          )}
+        </div>
         {loading ? (
           <div className="flex items-center gap-2 text-muted-foreground text-sm">
             <Icons.Spinner size="sm" />
@@ -204,38 +264,25 @@ export function ActivityTimelineFilters({
 
       <Separator />
 
-      {/* Item Types Filter */}
-      <div className="flex flex-col gap-3">
-        <Label className="text-sm font-semibold">Item Types</Label>
-        <div className="flex flex-col gap-2">
-          {[
-            { id: 'activity', label: 'Activities' },
-            { id: 'milestone', label: 'Milestones' },
-            { id: 'chat', label: 'Chats' },
-          ].map((itemType) => (
-            <div className="flex items-center gap-2" key={itemType.id}>
-              <Checkbox
-                checked={localItemTypes.includes(itemType.id)}
-                id={`item-${itemType.id}`}
-                onCheckedChange={() => handleItemTypeToggle(itemType.id)}
-              />
-              <Label
-                className="text-sm cursor-pointer flex-1"
-                htmlFor={`item-${itemType.id}`}
-              >
-                {itemType.label}
-              </Label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <Separator />
-
       {/* Activity Types Filter */}
       <div className="flex flex-col gap-3">
-        <Label className="text-sm font-semibold">Activity Types</Label>
-        <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-semibold">Activity Types</Label>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={allActivityTypesSelected}
+              id="select-all-activity-types"
+              onCheckedChange={handleSelectAllActivityTypes}
+            />
+            <Label
+              className="text-xs text-muted-foreground cursor-pointer"
+              htmlFor="select-all-activity-types"
+            >
+              Select All
+            </Label>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
           {activityTypes.map((activityType) => {
             const Icon = activityType.icon;
             return (
@@ -263,22 +310,21 @@ export function ActivityTimelineFilters({
           })}
         </div>
       </div>
+    </>
+  );
 
-      <Separator />
-
-      {/* Actions */}
-      <div className="flex gap-2">
-        <Button
-          className="flex-1"
-          onClick={() => setIsOpen(false)}
-          variant="outline"
-        >
-          Cancel
-        </Button>
-        <Button className="flex-1" onClick={handleApply}>
-          Apply Filters
-        </Button>
-      </div>
+  const filterActions = (
+    <div className="flex gap-2">
+      <Button
+        className="flex-1"
+        onClick={() => setIsOpen(false)}
+        variant="outline"
+      >
+        Cancel
+      </Button>
+      <Button className="flex-1" onClick={handleApply}>
+        Apply Filters
+      </Button>
     </div>
   );
 
@@ -287,9 +333,9 @@ export function ActivityTimelineFilters({
       <Button className="size-8 p-0" size="sm" variant="ghost">
         <Filter className="size-4" />
       </Button>
-      {totalFilters > 0 && (
+      {activeFilterCount > 0 && (
         <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-5 h-5 px-1.5 text-[10px] font-bold rounded-full bg-primary text-primary-foreground border-2 border-background">
-          {totalFilters}
+          {activeFilterCount}
         </span>
       )}
     </div>
@@ -303,7 +349,11 @@ export function ActivityTimelineFilters({
           <DialogHeader>
             <DialogTitle>Filter Timeline</DialogTitle>
           </DialogHeader>
-          {filterContent}
+          <div className="flex flex-col gap-4">
+            {filterScrollableContent}
+            <Separator />
+            {filterActions}
+          </div>
         </DialogContent>
       </Dialog>
     );
@@ -312,13 +362,16 @@ export function ActivityTimelineFilters({
   return (
     <Drawer onOpenChange={setIsOpen} open={isOpen}>
       <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
-      <DrawerContent>
+      <DrawerContent className="max-h-[85vh]">
         <DrawerHeader>
           <DrawerTitle>Filter Timeline</DrawerTitle>
         </DrawerHeader>
-        <div className="px-4 pb-4 max-h-[80vh] overflow-y-auto">
-          {filterContent}
+        <div className="px-4 flex-1 overflow-y-auto">
+          <div className="flex flex-col gap-4 pb-4">
+            {filterScrollableContent}
+          </div>
         </div>
+        <DrawerFooter className="pt-2 border-t">{filterActions}</DrawerFooter>
       </DrawerContent>
     </Drawer>
   );

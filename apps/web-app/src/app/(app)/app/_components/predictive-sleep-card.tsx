@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
@@ -12,9 +13,10 @@ import {
   DrawerTitle,
 } from '@nugget/ui/drawer';
 import { cn } from '@nugget/ui/lib/utils';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { Info, Moon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { formatTimeWithPreference } from '~/lib/format-time';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getInProgressSleepActivityAction } from './activity-cards.actions';
 import { LearningSection } from './learning-section';
@@ -37,6 +39,9 @@ export function PredictiveSleepCard({
   onCardClick,
   onActivityLogged,
 }: PredictiveSleepCardProps) {
+  const utils = api.useUtils();
+  const { data: userData } = api.user.current.useQuery();
+  const timeFormat = userData?.timeFormat || '12h';
   const [data, setData] = useState<UpcomingSleepData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -188,7 +193,7 @@ export function PredictiveSleepCard({
   const timeUntil = formatDistanceToNow(displayNextTime, {
     addSuffix: true,
   });
-  const exactTime = format(displayNextTime, 'h:mm a');
+  const exactTime = formatTimeWithPreference(displayNextTime, timeFormat);
 
   // Format recovery time if overdue
   const recoveryTimeUntil = prediction.suggestedRecoveryTime
@@ -197,7 +202,7 @@ export function PredictiveSleepCard({
       })
     : null;
   const recoveryExactTime = prediction.suggestedRecoveryTime
-    ? format(prediction.suggestedRecoveryTime, 'h:mm a')
+    ? formatTimeWithPreference(prediction.suggestedRecoveryTime, timeFormat)
     : null;
 
   const handleCardClick = () => {
@@ -272,6 +277,8 @@ export function PredictiveSleepCard({
     try {
       await skipSleepAction();
       toast.success('Sleep reminder skipped');
+      // Invalidate activities list to refresh timeline
+      await utils.activities.list.invalidate();
       await loadData();
     } catch (error) {
       console.error('Failed to skip sleep:', error);
@@ -322,7 +329,10 @@ export function PredictiveSleepCard({
                 <div className="flex items-baseline gap-2">
                   <span className="text-lg font-semibold">
                     Sleeping since{' '}
-                    {format(new Date(inProgressActivity.startTime), 'h:mm a')}
+                    {formatTimeWithPreference(
+                      new Date(inProgressActivity.startTime),
+                      timeFormat,
+                    )}
                   </span>
                   <span className="text-sm opacity-70 font-mono">
                     {formatElapsedTime(elapsedTime)}
@@ -357,7 +367,11 @@ export function PredictiveSleepCard({
                       {formatDistanceToNow(prediction.lastSleepTime, {
                         addSuffix: true,
                       })}{' '}
-                      • {format(prediction.lastSleepTime, 'h:mm a')}
+                      •{' '}
+                      {formatTimeWithPreference(
+                        prediction.lastSleepTime,
+                        timeFormat,
+                      )}
                       {prediction.lastSleepDuration && (
                         <span>
                           {' '}
@@ -439,7 +453,7 @@ export function PredictiveSleepCard({
                       key={sleep.time.toISOString()}
                     >
                       <span className="text-muted-foreground">
-                        {format(sleep.time, 'h:mm a')}
+                        {formatTimeWithPreference(sleep.time, timeFormat)}
                       </span>
                       <div className="flex gap-2 items-center">
                         {sleep.duration !== null && (

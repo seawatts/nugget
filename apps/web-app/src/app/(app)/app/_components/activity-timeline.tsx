@@ -15,6 +15,7 @@ import {
   Activity,
   Award,
   Baby,
+  Ban,
   Bath,
   Droplet,
   Droplets,
@@ -31,6 +32,7 @@ import {
 import { useMemo, useState } from 'react';
 import { ActivityDrawer } from '~/app/(app)/app/_components/activity-drawer';
 import { ActivityTimelineFilters } from '~/app/(app)/app/_components/activity-timeline-filters';
+import { formatTimeWithPreference } from '~/lib/format-time';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import type { TimelineItem } from './activity-timeline.actions';
 import { getDisplayNotes } from './activity-utils';
@@ -127,6 +129,27 @@ const activities = [
     icon: Bath,
     id: 'bath',
     label: 'Bath',
+    textColor: 'text-white',
+  },
+  {
+    color: 'bg-yellow-500',
+    icon: Award,
+    id: 'milestone',
+    label: 'Milestones',
+    textColor: 'text-white',
+  },
+  {
+    color: 'bg-green-500',
+    icon: MessageSquare,
+    id: 'chat',
+    label: 'Chats',
+    textColor: 'text-white',
+  },
+  {
+    color: 'bg-gray-500',
+    icon: Ban,
+    id: 'skipped',
+    label: 'Skipped Activities',
     textColor: 'text-white',
   },
 ] satisfies Array<{
@@ -235,11 +258,9 @@ export function ActivityTimeline() {
     typeof Activities.$inferSelect | null
   >(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-  const [selectedItemTypes, setSelectedItemTypes] = useState<string[]>([]);
   const [selectedActivityTypes, setSelectedActivityTypes] = useState<string[]>(
     [],
   );
-  const [showSkipped, setShowSkipped] = useState(true);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [selectedChatData, setSelectedChatData] = useState<{
     chatId: string;
@@ -252,26 +273,34 @@ export function ActivityTimeline() {
   // Get optimistic activities from Zustand store
   const optimisticActivities = useOptimisticActivitiesStore.use.activities();
 
-  // Fetch user preferences for volume display
+  // Fetch user preferences for volume display and time format
   const { data: user } = api.user.current.useQuery();
   const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
+  const timeFormat = user?.timeFormat || '12h';
 
   // Build filters for activities query
   const activityFilters = useMemo(() => {
+    if (!baby?.id) return null;
+
+    // Check if any actual activity types are selected (excluding milestone, chat, and skipped)
+    const activityTypesList = selectedActivityTypes.filter(
+      (type) => type !== 'milestone' && type !== 'chat' && type !== 'skipped',
+    );
     const shouldFetchActivities =
-      selectedItemTypes.length === 0 || selectedItemTypes.includes('activity');
+      selectedActivityTypes.length === 0 || activityTypesList.length > 0;
 
     if (!shouldFetchActivities) return null;
 
     return {
       activityTypes:
-        selectedActivityTypes.length > 0 ? selectedActivityTypes : undefined,
-      babyId: baby?.id ?? '',
+        activityTypesList.length > 0 ? activityTypesList : undefined,
+      babyId: baby.id,
       isScheduled: false,
       limit: 100,
-      userIds: selectedUserIds.length > 0 ? selectedUserIds : undefined,
+      // Don't pass userIds filter at all - show activities from all family members
+      // The filter in the UI is just for display purposes
     };
-  }, [baby?.id, selectedActivityTypes, selectedUserIds, selectedItemTypes]);
+  }, [baby?.id, selectedActivityTypes]);
 
   // Fetch activities using tRPC query
   const {
@@ -279,31 +308,34 @@ export function ActivityTimeline() {
     isLoading: activitiesLoading,
     error: activitiesError,
   } = api.activities.list.useQuery(
-    activityFilters ?? { babyId: '', limit: 0 },
+    activityFilters ?? { babyId: '', isScheduled: false, limit: 0 },
     {
-      enabled: !!activityFilters && !!baby?.id,
+      enabled: !!activityFilters,
     },
   );
 
   // Build filters for milestones query
   const milestonesFilters = useMemo(() => {
+    if (!baby?.id) return null;
+
     const shouldFetchMilestones =
-      selectedItemTypes.length === 0 || selectedItemTypes.includes('milestone');
+      selectedActivityTypes.length === 0 ||
+      selectedActivityTypes.includes('milestone');
 
     if (!shouldFetchMilestones) return null;
 
     return {
-      babyId: baby?.id ?? '',
+      babyId: baby.id,
       limit: 100,
     };
-  }, [baby?.id, selectedItemTypes]);
+  }, [baby?.id, selectedActivityTypes]);
 
   // Fetch milestones using tRPC query
   const { data: milestonesData = [], isLoading: milestonesLoading } =
     api.milestones.list.useQuery(
       milestonesFilters ?? { babyId: '', limit: 0 },
       {
-        enabled: !!milestonesFilters && !!baby?.id,
+        enabled: !!milestonesFilters,
       },
     );
 
@@ -350,18 +382,35 @@ export function ActivityTimeline() {
       ...milestoneTimelineItems,
     ];
 
-    // Filter out skipped activities if showSkipped is false
-    const filtered = showSkipped
-      ? merged
-      : merged.filter((item) => {
-          if (item.type !== 'activity') return true;
-          const activity = item.data;
-          return !(
-            activity.details &&
-            'skipped' in activity.details &&
-            activity.details.skipped
-          );
-        });
+    // Check if skipped activities should be shown
+    const showSkipped =
+      selectedActivityTypes.length === 0 ||
+      selectedActivityTypes.includes('skipped');
+
+    // Apply filters
+    const filtered = merged.filter((item) => {
+      // Filter by user if userIds are selected
+      if (selectedUserIds.length > 0 && item.type === 'activity') {
+        const activity = item.data;
+        if (!selectedUserIds.includes(activity.userId)) {
+          return false;
+        }
+      }
+
+      // Filter out skipped activities if 'skipped' is not selected
+      if (!showSkipped && item.type === 'activity') {
+        const activity = item.data;
+        if (
+          activity.details &&
+          'skipped' in activity.details &&
+          activity.details.skipped
+        ) {
+          return false;
+        }
+      }
+
+      return true;
+    });
 
     return filtered.sort(
       (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
@@ -370,7 +419,8 @@ export function ActivityTimeline() {
     optimisticTimelineItems,
     activityTimelineItems,
     milestoneTimelineItems,
-    showSkipped,
+    selectedUserIds,
+    selectedActivityTypes,
   ]);
 
   const loading = activitiesLoading || milestonesLoading;
@@ -396,16 +446,9 @@ export function ActivityTimeline() {
     setEditingActivity(null);
   };
 
-  const handleFilterChange = (
-    userIds: string[],
-    itemTypes: string[],
-    activityTypes: string[],
-    showSkipped: boolean,
-  ) => {
+  const handleFilterChange = (userIds: string[], activityTypes: string[]) => {
     setSelectedUserIds(userIds);
-    setSelectedItemTypes(itemTypes);
     setSelectedActivityTypes(activityTypes);
-    setShowSkipped(showSkipped);
     // React Query will automatically refetch with new filters
   };
 
@@ -457,9 +500,7 @@ export function ActivityTimeline() {
                   activityTypes={activities}
                   onFilterChange={handleFilterChange}
                   selectedActivityTypes={selectedActivityTypes}
-                  selectedItemTypes={selectedItemTypes}
                   selectedUserIds={selectedUserIds}
-                  showSkipped={showSkipped}
                 />
               )}
             </div>
@@ -476,7 +517,10 @@ export function ActivityTimeline() {
                 const iconColorClass =
                   activityIconColors[iconKey] || 'text-primary';
                 const itemDate = item.timestamp;
-                const absoluteTime = format(itemDate, 'h:mm a');
+                const absoluteTime = formatTimeWithPreference(
+                  itemDate,
+                  timeFormat,
+                );
                 const relativeTime = formatDistanceToNow(itemDate, {
                   addSuffix: true,
                 });

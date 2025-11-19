@@ -1,6 +1,7 @@
 'use client';
 
 import { useUser } from '@clerk/nextjs';
+import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
@@ -13,9 +14,10 @@ import {
 } from '@nugget/ui/drawer';
 import { cn } from '@nugget/ui/lib/utils';
 import { toast } from '@nugget/ui/sonner';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { Info, Milk, User, UserCheck } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { formatTimeWithPreference } from '~/lib/format-time';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getInProgressFeedingActivityAction } from './activity-cards.actions';
 import { LearningSection } from './learning-section';
@@ -41,6 +43,9 @@ export function PredictiveFeedingCard({
   onActivityLogged,
 }: PredictiveFeedingCardProps) {
   const { user } = useUser();
+  const utils = api.useUtils();
+  const { data: userData } = api.user.current.useQuery();
+  const timeFormat = userData?.timeFormat || '12h';
   const [data, setData] = useState<UpcomingFeedingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -251,7 +256,7 @@ export function PredictiveFeedingCard({
   const timeUntil = formatDistanceToNow(displayNextTime, {
     addSuffix: true,
   });
-  const exactTime = format(displayNextTime, 'h:mm a');
+  const exactTime = formatTimeWithPreference(displayNextTime, timeFormat);
 
   // Format recovery time if overdue
   const recoveryTimeUntil = prediction.suggestedRecoveryTime
@@ -260,7 +265,7 @@ export function PredictiveFeedingCard({
       })
     : null;
   const recoveryExactTime = prediction.suggestedRecoveryTime
-    ? format(prediction.suggestedRecoveryTime, 'h:mm a')
+    ? formatTimeWithPreference(prediction.suggestedRecoveryTime, timeFormat)
     : null;
 
   const handleCardClick = () => {
@@ -331,6 +336,8 @@ export function PredictiveFeedingCard({
     try {
       await skipFeedingAction();
       toast.success('Feeding reminder skipped');
+      // Invalidate activities list to refresh timeline
+      await utils.activities.list.invalidate();
       await loadData();
     } catch (error) {
       console.error('Failed to skip feeding:', error);
@@ -381,7 +388,10 @@ export function PredictiveFeedingCard({
                 <div className="flex items-baseline gap-2">
                   <span className="text-lg font-semibold">
                     Feeding since{' '}
-                    {format(new Date(inProgressActivity.startTime), 'h:mm a')}
+                    {formatTimeWithPreference(
+                      new Date(inProgressActivity.startTime),
+                      timeFormat,
+                    )}
                   </span>
                   <span className="text-sm opacity-70 font-mono">
                     {formatElapsedTime(elapsedTime)}
@@ -416,7 +426,11 @@ export function PredictiveFeedingCard({
                       {formatDistanceToNow(prediction.lastFeedingTime, {
                         addSuffix: true,
                       })}{' '}
-                      • {format(prediction.lastFeedingTime, 'h:mm a')}
+                      •{' '}
+                      {formatTimeWithPreference(
+                        prediction.lastFeedingTime,
+                        timeFormat,
+                      )}
                     </div>
                   )}
                 </>
@@ -565,7 +579,7 @@ export function PredictiveFeedingCard({
                       key={feed.time.toISOString()}
                     >
                       <span className="text-muted-foreground">
-                        {format(feed.time, 'h:mm a')}
+                        {formatTimeWithPreference(feed.time, timeFormat)}
                       </span>
                       {feed.intervalFromPrevious !== null && (
                         <span className="text-foreground/70 font-medium">

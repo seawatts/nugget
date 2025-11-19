@@ -13,10 +13,11 @@ import {
   DrawerTitle,
 } from '@nugget/ui/drawer';
 import { cn } from '@nugget/ui/lib/utils';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { Droplets, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { formatTimeWithPreference } from '~/lib/format-time';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { InfoCard } from './info-card';
 import { LearningSection } from './learning-section';
@@ -41,15 +42,17 @@ export function PredictivePumpingCard({
   onActivityLogged,
 }: PredictivePumpingCardProps) {
   const router = useRouter();
+  const utils = api.useUtils();
   const [data, setData] = useState<UpcomingPumpingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [skipping, setSkipping] = useState(false);
 
-  // Fetch user preferences for volume display
-  const { data: user } = api.user.current.useQuery();
+  // Fetch user preferences for volume display and time format
+  const { data: user, isLoading: userLoading } = api.user.current.useQuery();
   const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
+  const timeFormat = user?.timeFormat || '12h';
 
   // Use activity mutations hook for creating pumping activities
   const { createActivity, isCreating } = useActivityMutations();
@@ -84,7 +87,7 @@ export function PredictivePumpingCard({
     loadData();
   }, [loadData, refreshTrigger]);
 
-  if (loading) {
+  if (loading || userLoading) {
     return (
       <Card
         className={cn(
@@ -144,7 +147,7 @@ export function PredictivePumpingCard({
   const timeUntil = formatDistanceToNow(displayNextTime, {
     addSuffix: true,
   });
-  const exactTime = format(displayNextTime, 'h:mm a');
+  const exactTime = formatTimeWithPreference(displayNextTime, timeFormat);
 
   // Format recovery time if overdue
   const recoveryTimeUntil = prediction.suggestedRecoveryTime
@@ -153,7 +156,7 @@ export function PredictivePumpingCard({
       })
     : null;
   const recoveryExactTime = prediction.suggestedRecoveryTime
-    ? format(prediction.suggestedRecoveryTime, 'h:mm a')
+    ? formatTimeWithPreference(prediction.suggestedRecoveryTime, timeFormat)
     : null;
 
   const handleCardClick = () => {
@@ -222,6 +225,8 @@ export function PredictivePumpingCard({
     try {
       await skipPumpingAction();
       toast.success('Pumping reminder skipped');
+      // Invalidate activities list to refresh timeline
+      await utils.activities.list.invalidate();
       await loadData();
     } catch (error) {
       console.error('Failed to skip pumping:', error);
@@ -294,7 +299,11 @@ export function PredictivePumpingCard({
                       {formatDistanceToNow(prediction.lastPumpingTime, {
                         addSuffix: true,
                       })}{' '}
-                      • {format(prediction.lastPumpingTime, 'h:mm a')}
+                      •{' '}
+                      {formatTimeWithPreference(
+                        prediction.lastPumpingTime,
+                        timeFormat,
+                      )}
                       {prediction.lastPumpingAmount && (
                         <span>
                           {' '}
@@ -447,7 +456,7 @@ export function PredictivePumpingCard({
                         key={pumping.time.toISOString()}
                       >
                         <span className="text-muted-foreground">
-                          {format(pumping.time, 'h:mm a')}
+                          {formatTimeWithPreference(pumping.time, timeFormat)}
                         </span>
                         <div className="flex gap-2 items-center">
                           {pumping.amount !== null && (

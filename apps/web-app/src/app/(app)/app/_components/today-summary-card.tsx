@@ -188,32 +188,28 @@ export function TodaySummaryCard({
     api.babies.getMostRecent.useQuery();
 
   // Fetch activities from today using tRPC query
-  const {
-    data: activitiesData = [],
-    isLoading: activitiesLoading,
-    error: activitiesError,
-  } = api.activities.list.useQuery(
-    {
-      babyId: baby?.id ?? '',
-      isScheduled: false,
-      limit: 100,
-    },
-    {
-      enabled: !!baby?.id,
-    },
-  );
-
-  // Fetch milestones achieved today using tRPC query
-  const { data: allMilestones = [], isLoading: milestonesLoading } =
-    api.milestones.list.useQuery(
+  const { data: activitiesData = [], error: activitiesError } =
+    api.activities.list.useQuery(
       {
         babyId: baby?.id ?? '',
+        isScheduled: false,
         limit: 100,
       },
       {
         enabled: !!baby?.id,
       },
     );
+
+  // Fetch milestones achieved today using tRPC query
+  const { data: allMilestones = [] } = api.milestones.list.useQuery(
+    {
+      babyId: baby?.id ?? '',
+      limit: 100,
+    },
+    {
+      enabled: !!baby?.id,
+    },
+  );
 
   // Filter to only today's activities and milestones
   const todayStart = useMemo(() => startOfDay(new Date()), []);
@@ -233,7 +229,9 @@ export function TodaySummaryCard({
     });
   }, [allMilestones, todayStart]);
 
-  const loading = babyLoading || activitiesLoading || milestonesLoading;
+  // Only show loading skeleton if we haven't loaded the baby yet
+  // Once we have baby data, show the card even if activities/milestones are still loading
+  const loading = !baby && babyLoading;
   const error = activitiesError?.message ?? null;
 
   // Get optimistic activities from Zustand store
