@@ -5,7 +5,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
 import { NuggetAvatar } from '@nugget/ui/custom/nugget-avatar';
 import { cn } from '@nugget/ui/lib/utils';
-import { formatDistanceToNowStrict } from 'date-fns';
 import {
   AlertTriangle,
   Baby,
@@ -40,7 +39,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 import type { KeyboardEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -344,25 +343,44 @@ function getRoleLabel(
   return roleLabels[role];
 }
 
+function calculateAgeInDays(birthDate: Date | string): number {
+  const birth = typeof birthDate === 'string' ? new Date(birthDate) : birthDate;
+  const now = new Date();
+  const diffMs = now.getTime() - birth.getTime();
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const params = useParams();
   const { scrollY } = useScroll();
   const [showDrawer, setShowDrawer] = useState(false);
   const [showFamilyMenu, setShowFamilyMenu] = useState(false);
   const [familyMembers, setFamilyMembers] = useState<FamilyTabMember[]>([]);
   const [journeyStage, setJourneyStage] = useState<string | null>(null);
-  const [babyName, setBabyName] = useState('Baby');
-  const [ageDisplay, setAgeDisplay] = useState<string | undefined>(undefined);
-  const [babyPhotoUrl, setBabyPhotoUrl] = useState<string | null>(null);
   const familyMenuRef = useRef<HTMLDivElement>(null);
   const avatarButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Fetch baby data to get profile picture
+  // Get baby ID from URL params or fall back to most recent baby
   const { data: babies = [] } = api.babies.list.useQuery();
+  const babyIdFromParams = params.userId as string | undefined;
   const mostRecentBaby = babies[0];
+  const babyId = babyIdFromParams || mostRecentBaby?.id;
+
+  // Fetch specific baby data based on URL params
+  const { data: baby } = api.babies.getById.useQuery(
+    { id: babyId || '' },
+    { enabled: !!babyId },
+  );
 
   const isOnboarding = pathname?.startsWith('/app/onboarding');
+
+  // Get baby name and age from API data
+  const babyName = baby?.firstName || 'Baby';
+  const ageInDays = baby?.birthDate ? calculateAgeInDays(baby.birthDate) : null;
+  const ageDisplay = ageInDays !== null ? `${ageInDays} days old` : undefined;
+  const babyPhotoUrl = baby?.photoUrl || null;
 
   // Calculate animation values based on scroll position (0-150px range for gradual transitions)
   const animations = useMemo(() => {
@@ -383,43 +401,7 @@ export function BottomNav() {
   useEffect(() => {
     const userData = getUserJourneyStage();
     setJourneyStage(userData?.journeyStage || 'born'); // Default to "born" if not set
-
-    // Get baby name and birthdate
-    const data = localStorage.getItem('onboardingData');
-    if (data) {
-      try {
-        const parsed = JSON.parse(data);
-        const firstName = parsed.firstName || parsed.babyName || 'Baby';
-        setBabyName(firstName);
-
-        // Calculate age if birthdate exists
-        if (parsed.birthDate || parsed.dueDate) {
-          const birthDate = new Date(parsed.birthDate || parsed.dueDate);
-          const now = new Date();
-          const age = formatDistanceToNowStrict(birthDate, {
-            addSuffix: false,
-            roundingMethod: 'floor',
-          });
-
-          // Add context based on whether baby is born or not
-          if (birthDate > now) {
-            setAgeDisplay(`${age} until due`);
-          } else {
-            setAgeDisplay(`${age} old`);
-          }
-        }
-      } catch (e) {
-        console.error('Error parsing onboarding data:', e);
-      }
-    }
   }, []);
-
-  // Update baby photo when data changes
-  useEffect(() => {
-    if (mostRecentBaby?.photoUrl) {
-      setBabyPhotoUrl(mostRecentBaby.photoUrl);
-    }
-  }, [mostRecentBaby?.photoUrl]);
 
   // Fetch family members data
   useEffect(() => {
@@ -794,8 +776,8 @@ export function BottomNav() {
             })}
 
             {/* Center Spacer for Avatar */}
-            <div className="flex flex-col justify-center items-center -mb-1 z-0 pointer-events-none gap-0.5">
-              <motion.span
+            <div className="flex flex-col justify-center items-center mt-10 z-0 pointer-events-none gap-0.5">
+              {/* <motion.span
                 animate={{
                   height: animations.textHeight,
                   opacity: animations.textOpacity,
@@ -805,7 +787,7 @@ export function BottomNav() {
                 transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
               >
                 {babyName}
-              </motion.span>
+              </motion.span> */}
               {ageDisplay && (
                 <motion.span
                   animate={{
