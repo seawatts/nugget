@@ -15,13 +15,14 @@ import { cn } from '@nugget/ui/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Baby, Info } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { LearningSection } from './learning-section';
 import {
   getUpcomingDiaperAction,
-  quickLogDiaperAction,
   type UpcomingDiaperData,
 } from './upcoming-diaper/actions';
 import { getDiaperLearningContent } from './upcoming-diaper/learning-content';
+import { useActivityMutations } from './use-activity-mutations';
 
 interface PredictiveDiaperCardProps {
   refreshTrigger?: number;
@@ -38,8 +39,14 @@ export function PredictiveDiaperCard({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
-  const [quickLogging, setQuickLogging] = useState(false);
   const [skipTimestamp, setSkipTimestamp] = useState<number | null>(null);
+  const [quickLogging, setQuickLogging] = useState(false);
+
+  // Use activity mutations hook for creating diaper activities
+  const { createActivity, isCreating } = useActivityMutations();
+  const addOptimisticActivity = useOptimisticActivitiesStore(
+    (state) => state.addActivity,
+  );
 
   const loadData = useCallback(async () => {
     try {
@@ -161,20 +168,51 @@ export function PredictiveDiaperCard({
   const handleQuickLog = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setQuickLogging(true);
-    try {
-      const result = await quickLogDiaperAction({});
 
-      if (result?.data) {
-        toast.success('Diaper change logged!');
-        // Clear skip timestamp when activity is logged
-        localStorage.removeItem('skip-diaper');
-        setSkipTimestamp(null);
-        // Notify parent component for optimistic updates and timeline refresh
-        onActivityLogged?.(result.data.activity);
-        await loadData(); // Reload to show updated state
-      } else if (result?.serverError) {
-        toast.error(result.serverError);
-      }
+    try {
+      const now = new Date();
+
+      // Create optimistic activity for immediate UI feedback
+      const optimisticActivity = {
+        amount: null,
+        babyId: 'temp',
+        createdAt: now,
+        details: {
+          type: 'both' as const, // Quick log defaults to both
+        },
+        duration: null,
+        endTime: null,
+        feedingSource: null,
+        id: `optimistic-diaper-${Date.now()}`,
+        isScheduled: false,
+        notes: null,
+        startTime: now,
+        type: 'diaper' as const,
+        updatedAt: now,
+        userId: 'temp',
+      } as typeof Activities.$inferSelect;
+
+      // Add to optimistic store immediately
+      addOptimisticActivity(optimisticActivity);
+
+      // Create the actual activity - mutation hook handles invalidation
+      const activity = await createActivity({
+        activityType: 'diaper',
+        details: {
+          type: 'both' as const,
+        },
+        startTime: now,
+      });
+
+      // Clear skip timestamp when activity is logged
+      localStorage.removeItem('skip-diaper');
+      setSkipTimestamp(null);
+
+      // Notify parent component
+      onActivityLogged?.(activity);
+
+      // Reload prediction data
+      await loadData();
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : 'Failed to log diaper change',
@@ -267,15 +305,15 @@ export function PredictiveDiaperCard({
           <div className="flex gap-2">
             <Button
               className="flex-1 bg-amber-950 hover:bg-amber-900 text-amber-50"
-              disabled={quickLogging}
+              disabled={isCreating}
               onClick={handleQuickLog}
               size="sm"
             >
-              {quickLogging ? 'Logging...' : 'Log Now'}
+              {isCreating ? 'Logging...' : 'Log Now'}
             </Button>
             <Button
               className="flex-1 bg-amber-100 hover:bg-amber-200 text-amber-950 border-amber-950/20"
-              disabled={quickLogging}
+              disabled={isCreating}
               onClick={handleCardClick}
               size="sm"
               variant="outline"

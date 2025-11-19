@@ -17,14 +17,15 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { Droplets, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { InfoCard } from './info-card';
 import { LearningSection } from './learning-section';
 import {
   getUpcomingPumpingAction,
-  quickLogPumpingAction,
   type UpcomingPumpingData,
 } from './upcoming-pumping/actions';
 import { getPumpingLearningContent } from './upcoming-pumping/learning-content';
+import { useActivityMutations } from './use-activity-mutations';
 import { formatVolumeDisplay, getVolumeUnit } from './volume-utils';
 
 interface PredictivePumpingCardProps {
@@ -43,12 +44,17 @@ export function PredictivePumpingCard({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
-  const [quickLogging, setQuickLogging] = useState(false);
   const [skipTimestamp, setSkipTimestamp] = useState<number | null>(null);
 
   // Fetch user preferences for volume display
   const { data: user } = api.user.current.useQuery();
   const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
+
+  // Use activity mutations hook for creating pumping activities
+  const { createActivity, isCreating } = useActivityMutations();
+  const addOptimisticActivity = useOptimisticActivitiesStore(
+    (state) => state.addActivity,
+  );
 
   const loadData = useCallback(async () => {
     try {
