@@ -53,6 +53,13 @@ export function PredictiveDiaperCard({
     (state) => state.addActivity,
   );
 
+  // Listen for activity list invalidations to auto-refresh predictions
+  const { data: baby } = api.babies.getMostRecent.useQuery();
+  const { dataUpdatedAt } = api.activities.list.useQuery(
+    { babyId: baby?.id ?? '', limit: 1 }, // Minimal query just to detect changes
+    { enabled: !!baby?.id },
+  );
+
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
@@ -75,10 +82,10 @@ export function PredictiveDiaperCard({
     }
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTrigger is intentionally used to trigger reloads from parent
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTrigger and dataUpdatedAt are intentionally used to trigger reloads
   useEffect(() => {
     loadData();
-  }, [loadData, refreshTrigger]);
+  }, [loadData, refreshTrigger, dataUpdatedAt]);
 
   if (loading) {
     return (

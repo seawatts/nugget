@@ -92,6 +92,7 @@ export function FeedingDrawerContent({
       });
     } else if (selectedType === 'nursing' && nursingData) {
       onFormDataChange?.({
+        amountMl: nursingData.amountMl,
         leftDuration: nursingData.leftDuration,
         notes: nursingData.notes,
         rightDuration: nursingData.rightDuration,

@@ -136,7 +136,12 @@ export function FeedingActivityDrawer({
       if (!existingActivity && !activeActivityId) {
         // Create optimistic activity for immediate UI feedback
         const optimisticActivity = {
-          amount: formData.type === 'bottle' ? formData.amountMl : null,
+          amount:
+            formData.type === 'bottle'
+              ? formData.amountMl
+              : formData.type === 'nursing'
+                ? (formData.amountMl ?? null)
+                : null,
           assignedUserId: null,
           babyId: 'temp',
           createdAt: startTime,
@@ -194,6 +199,7 @@ export function FeedingActivityDrawer({
         } else if (formData.type === 'nursing') {
           await updateActivity({
             ...baseData,
+            amount: formData.amountMl,
             details: {
               side: 'both', // TODO: Allow user to select side
               type: 'nursing',
@@ -227,6 +233,7 @@ export function FeedingActivityDrawer({
         } else if (formData.type === 'nursing') {
           await createActivity({
             activityType: 'nursing',
+            amount: formData.amountMl,
             details: {
               side: 'both', // TODO: Allow user to select side
               type: 'nursing',
