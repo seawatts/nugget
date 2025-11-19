@@ -450,6 +450,8 @@ export const Invitations = pgTable('invitations', {
 // Nursing/Breastfeeding details
 export const nursingDetailsSchema = z.object({
   side: z.enum(['left', 'right', 'both']),
+  skipped: z.boolean().optional(),
+  skipReason: z.string().optional(),
 });
 
 // Diaper details
@@ -461,6 +463,8 @@ export const diaperDetailsSchema = z.object({
     .enum(['solid', 'loose', 'runny', 'mucousy', 'hard', 'pebbles', 'diarrhea'])
     .optional(),
   size: z.enum(['little', 'medium', 'large']).optional(),
+  skipped: z.boolean().optional(),
+  skipReason: z.string().optional(),
 });
 
 // Medicine details
@@ -474,6 +478,8 @@ export const pumpingDetailsSchema = z.object({
   isColostrum: z.boolean().optional(),
   leftBreastMl: z.number().optional(),
   rightBreastMl: z.number().optional(),
+  skipped: z.boolean().optional(),
+  skipReason: z.string().optional(),
 });
 
 // Solid food details
@@ -524,6 +530,8 @@ export const sleepDetailsSchema = z.object({
     ])
     .optional(),
   quality: z.enum(['peaceful', 'restless', 'fussy', 'crying']).optional(),
+  skipped: z.boolean().optional(),
+  skipReason: z.string().optional(),
   sleepType: z.enum(['nap', 'night']),
   wakeReason: z
     .enum(['hungry', 'diaper', 'crying', 'naturally', 'noise', 'unknown'])

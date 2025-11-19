@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { InstallPrompt } from '~/components/install-prompt';
+import { IosInstallPrompt } from '~/components/ios-install-prompt';
 import { ServiceWorkerUpdatePrompt } from '~/components/sw-update-prompt';
 import { BottomNav } from './_components/bottom-nav';
 import { ScrollProvider } from './_components/scroll-provider';
@@ -13,6 +14,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <BottomNav />
         </div>
         <InstallPrompt />
+        <IosInstallPrompt />
         <ServiceWorkerUpdatePrompt />
       </div>
     </ScrollProvider>

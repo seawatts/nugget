@@ -20,6 +20,7 @@ import { getInProgressSleepActivityAction } from './activity-cards.actions';
 import { LearningSection } from './learning-section';
 import {
   getUpcomingSleepAction,
+  skipSleepAction,
   type UpcomingSleepData,
 } from './upcoming-sleep/actions';
 import { getSleepLearningContent } from './upcoming-sleep/learning-content';
@@ -40,7 +41,7 @@ export function PredictiveSleepCard({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
-  const [skipTimestamp, setSkipTimestamp] = useState<number | null>(null);
+  const [skipping, setSkipping] = useState(false);
   // Note: quickLogging kept for potential future use with quick-log functionality
   const [quickLogging] = useState(false);
   const [inProgressActivity, setInProgressActivity] = useState<
@@ -127,14 +128,6 @@ export function PredictiveSleepCard({
     };
   }, [inProgressActivity]);
 
-  // Load skip timestamp from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem('skip-sleep');
-    if (stored) {
-      setSkipTimestamp(Number.parseInt(stored, 10));
-    }
-  }, []);
-
   if (loading) {
     return (
       <Card
@@ -172,20 +165,30 @@ export function PredictiveSleepCard({
   const { prediction, babyAgeDays } = data;
 
   // Check if we should suppress overdue state due to recent skip
-  const isRecentlySkipped = skipTimestamp
-    ? Date.now() - skipTimestamp < prediction.intervalHours * 60 * 60 * 1000
+  const isRecentlySkipped = prediction.recentSkipTime
+    ? Date.now() - new Date(prediction.recentSkipTime).getTime() <
+      prediction.intervalHours * 60 * 60 * 1000
     : false;
   const effectiveIsOverdue = prediction.isOverdue && !isRecentlySkipped;
+
+  // Calculate display time - if recently skipped, show next predicted time from skip moment
+  const displayNextTime =
+    isRecentlySkipped && prediction.recentSkipTime
+      ? new Date(
+          new Date(prediction.recentSkipTime).getTime() +
+            prediction.intervalHours * 60 * 60 * 1000,
+        )
+      : prediction.nextSleepTime;
 
   // Get learning content for the baby's age
   const learningContent =
     babyAgeDays !== null ? getSleepLearningContent(babyAgeDays) : null;
 
   // Format countdown
-  const timeUntil = formatDistanceToNow(prediction.nextSleepTime, {
+  const timeUntil = formatDistanceToNow(displayNextTime, {
     addSuffix: true,
   });
-  const exactTime = format(prediction.nextSleepTime, 'h:mm a');
+  const exactTime = format(displayNextTime, 'h:mm a');
 
   // Format recovery time if overdue
   const recoveryTimeUntil = prediction.suggestedRecoveryTime
@@ -252,10 +255,6 @@ export function PredictiveSleepCard({
         startTime: startTime,
       });
 
-      // Clear skip timestamp when activity is logged
-      localStorage.removeItem('skip-sleep');
-      setSkipTimestamp(null);
-
       // Notify parent component
       onActivityLogged?.(activity);
 
@@ -267,12 +266,19 @@ export function PredictiveSleepCard({
     }
   };
 
-  const handleSkip = (e: React.MouseEvent) => {
+  const handleSkip = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const now = Date.now();
-    localStorage.setItem('skip-sleep', now.toString());
-    setSkipTimestamp(now);
-    toast.success('Sleep reminder skipped');
+    setSkipping(true);
+    try {
+      await skipSleepAction();
+      toast.success('Sleep reminder skipped');
+      await loadData();
+    } catch (error) {
+      console.error('Failed to skip sleep:', error);
+      toast.error('Failed to skip sleep');
+    } finally {
+      setSkipping(false);
+    }
   };
 
   // Format elapsed time for display
@@ -389,12 +395,12 @@ export function PredictiveSleepCard({
             </Button>
             <Button
               className="flex-1 bg-muted hover:bg-muted/80 text-foreground"
-              disabled={quickLogging}
+              disabled={quickLogging || skipping}
               onClick={handleSkip}
               size="sm"
               variant="ghost"
             >
-              Skip
+              {skipping ? 'Skipping...' : 'Skip'}
             </Button>
           </div>
         )}

@@ -305,3 +305,45 @@ export const quickLogFeedingAction = action
       return { activity };
     },
   );
+
+/**
+ * Skip a feeding reminder
+ * Creates a skip activity to persist the skip state across devices/sessions
+ */
+export const skipFeedingAction = action.action(
+  async (): Promise<{ activity: typeof Activities.$inferSelect }> => {
+    const api = await getApi();
+
+    // Verify authentication
+    const authResult = await auth();
+    if (!authResult.userId) {
+      throw new Error('Authentication required');
+    }
+
+    // Get the most recent baby
+    const baby = await api.babies.getMostRecent();
+
+    if (!baby) {
+      throw new Error('No baby found. Please complete onboarding first.');
+    }
+
+    // Create a nursing/feeding activity marked as skipped
+    const activity = await api.activities.create({
+      babyId: baby.id,
+      details: {
+        side: 'both',
+        skipped: true,
+        skipReason: 'user_dismissed',
+        type: 'nursing',
+      },
+      isScheduled: false,
+      startTime: new Date(),
+      type: 'nursing',
+    });
+
+    // Revalidate pages
+    revalidatePath('/app');
+
+    return { activity };
+  },
+);

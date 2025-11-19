@@ -141,3 +141,51 @@ export const quickLogSleepAction = action
       return { activity };
     },
   );
+
+/**
+ * Skip a sleep activity (for dismissing overdue reminders)
+ */
+export const skipSleepAction = action.action(
+  async (): Promise<{ activity: typeof Activities.$inferSelect }> => {
+    const api = await getApi();
+
+    // Verify authentication
+    const authResult = await auth();
+    if (!authResult.userId) {
+      throw new Error('Authentication required');
+    }
+
+    // Get the most recent baby
+    const baby = await api.babies.getMostRecent();
+
+    if (!baby) {
+      throw new Error('No baby found. Please complete onboarding first.');
+    }
+
+    // Determine sleep type based on time of day
+    const now = new Date();
+    const hour = now.getHours();
+    const sleepType = hour >= 6 && hour < 18 ? 'nap' : 'night';
+
+    // Create the skip activity
+    const activity = await api.activities.create({
+      babyId: baby.id,
+      details: {
+        skipped: true,
+        skipReason: 'user_dismissed',
+        sleepType,
+        type: 'sleep',
+      },
+      duration: null,
+      endTime: null,
+      isScheduled: false,
+      startTime: now,
+      type: 'sleep',
+    });
+
+    // Revalidate pages
+    revalidatePath('/app');
+
+    return { activity };
+  },
+);

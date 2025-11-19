@@ -135,3 +135,44 @@ export const quickLogDiaperAction = action
       return { activity };
     },
   );
+
+/**
+ * Skip a diaper change reminder
+ * Creates a skip activity to persist the skip state across devices/sessions
+ */
+export const skipDiaperAction = action.action(
+  async (): Promise<{ activity: typeof Activities.$inferSelect }> => {
+    const api = await getApi();
+
+    // Verify authentication
+    const authResult = await auth();
+    if (!authResult.userId) {
+      throw new Error('Authentication required');
+    }
+
+    // Get the most recent baby
+    const baby = await api.babies.getMostRecent();
+
+    if (!baby) {
+      throw new Error('No baby found. Please complete onboarding first.');
+    }
+
+    // Create a diaper activity marked as skipped
+    const activity = await api.activities.create({
+      babyId: baby.id,
+      details: {
+        skipped: true,
+        skipReason: 'user_dismissed',
+        type: 'diaper',
+      },
+      isScheduled: false,
+      startTime: new Date(),
+      type: 'diaper',
+    });
+
+    // Revalidate pages
+    revalidatePath('/app');
+
+    return { activity };
+  },
+);

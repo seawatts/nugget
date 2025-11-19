@@ -124,3 +124,44 @@ export const quickLogPumpingAction = action
       return { activity };
     },
   );
+
+/**
+ * Skip a pumping activity (for dismissing overdue reminders)
+ */
+export const skipPumpingAction = action.action(
+  async (): Promise<{ activity: typeof Activities.$inferSelect }> => {
+    const api = await getApi();
+
+    // Verify authentication
+    const authResult = await auth();
+    if (!authResult.userId) {
+      throw new Error('Authentication required');
+    }
+
+    // Get the most recent baby
+    const baby = await api.babies.getMostRecent();
+
+    if (!baby) {
+      throw new Error('No baby found. Please complete onboarding first.');
+    }
+
+    // Create the skip activity
+    const activity = await api.activities.create({
+      amount: null,
+      babyId: baby.id,
+      details: {
+        skipped: true,
+        skipReason: 'user_dismissed',
+        type: 'pumping',
+      },
+      isScheduled: false,
+      startTime: new Date(),
+      type: 'pumping',
+    });
+
+    // Revalidate pages
+    revalidatePath('/app');
+
+    return { activity };
+  },
+);

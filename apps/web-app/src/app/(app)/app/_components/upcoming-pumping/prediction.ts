@@ -21,6 +21,7 @@ export interface PumpingPrediction {
   isOverdue: boolean;
   overdueMinutes: number | null;
   suggestedRecoveryTime: Date | null;
+  recentSkipTime: Date | null;
 }
 
 interface PumpingActivity {
@@ -75,6 +76,23 @@ export function predictNextPumping(
     ) // Most recent first
     .slice(0, 10); // Consider last 10 pumping sessions
 
+  // Find most recent skip activity
+  const skipActivities = recentPumpings
+    .filter(
+      (a) =>
+        a.type === 'pumping' &&
+        a.details &&
+        'skipped' in a.details &&
+        a.details.skipped === true,
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
+    );
+  const recentSkipTime = skipActivities[0]
+    ? new Date(skipActivities[0].startTime)
+    : null;
+
   // Calculate baby's age for age-based interval
   const ageDays = calculateBabyAgeDays(babyBirthDate);
   const ageBasedInterval =
@@ -95,6 +113,7 @@ export function predictNextPumping(
       nextPumpingTime,
       overdueMinutes: null,
       recentPumpingPattern: [],
+      recentSkipTime,
       suggestedRecoveryTime: null,
     };
   }
@@ -114,6 +133,7 @@ export function predictNextPumping(
       nextPumpingTime,
       overdueMinutes: null,
       recentPumpingPattern: [],
+      recentSkipTime,
       suggestedRecoveryTime: null,
     };
   }
@@ -202,6 +222,7 @@ export function predictNextPumping(
     nextPumpingTime,
     overdueMinutes,
     recentPumpingPattern: recentPattern,
+    recentSkipTime,
     suggestedRecoveryTime,
   };
 }

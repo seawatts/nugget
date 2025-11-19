@@ -19,6 +19,7 @@ import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { LearningSection } from './learning-section';
 import {
   getUpcomingDiaperAction,
+  skipDiaperAction,
   type UpcomingDiaperData,
 } from './upcoming-diaper/actions';
 import { getDiaperLearningContent } from './upcoming-diaper/learning-content';
@@ -39,7 +40,7 @@ export function PredictiveDiaperCard({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
-  const [skipTimestamp, setSkipTimestamp] = useState<number | null>(null);
+  const [skipping, setSkipping] = useState(false);
 
   // Use activity mutations hook for creating diaper activities
   const { createActivity, isCreating } = useActivityMutations();
@@ -73,14 +74,6 @@ export function PredictiveDiaperCard({
   useEffect(() => {
     loadData();
   }, [loadData, refreshTrigger]);
-
-  // Load skip timestamp from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem('skip-diaper');
-    if (stored) {
-      setSkipTimestamp(Number.parseInt(stored, 10));
-    }
-  }, []);
 
   if (loading) {
     return (
@@ -118,21 +111,31 @@ export function PredictiveDiaperCard({
 
   const { prediction, babyAgeDays } = data;
 
-  // Check if we should suppress overdue state due to recent skip
-  const isRecentlySkipped = skipTimestamp
-    ? Date.now() - skipTimestamp < prediction.intervalHours * 60 * 60 * 1000
+  // Check if we should suppress overdue state due to recent skip (from DB)
+  const isRecentlySkipped = prediction.recentSkipTime
+    ? Date.now() - new Date(prediction.recentSkipTime).getTime() <
+      prediction.intervalHours * 60 * 60 * 1000
     : false;
   const effectiveIsOverdue = prediction.isOverdue && !isRecentlySkipped;
+
+  // Calculate display time - if recently skipped, show next predicted time from skip moment
+  const displayNextTime =
+    isRecentlySkipped && prediction.recentSkipTime
+      ? new Date(
+          new Date(prediction.recentSkipTime).getTime() +
+            prediction.intervalHours * 60 * 60 * 1000,
+        )
+      : prediction.nextDiaperTime;
 
   // Get learning content for the baby's age
   const learningContent =
     babyAgeDays !== null ? getDiaperLearningContent(babyAgeDays) : null;
 
   // Format countdown
-  const timeUntil = formatDistanceToNow(prediction.nextDiaperTime, {
+  const timeUntil = formatDistanceToNow(displayNextTime, {
     addSuffix: true,
   });
-  const exactTime = format(prediction.nextDiaperTime, 'h:mm a');
+  const exactTime = format(displayNextTime, 'h:mm a');
 
   // Format recovery time if overdue
   const recoveryTimeUntil = prediction.suggestedRecoveryTime
@@ -206,14 +209,10 @@ export function PredictiveDiaperCard({
         startTime: now,
       });
 
-      // Clear skip timestamp when activity is logged
-      localStorage.removeItem('skip-diaper');
-      setSkipTimestamp(null);
-
       // Notify parent component
       onActivityLogged?.(activity);
 
-      // Reload prediction data
+      // Reload prediction data (will automatically clear skip state)
       await loadData();
     } catch (err) {
       toast.error(
@@ -222,12 +221,26 @@ export function PredictiveDiaperCard({
     }
   };
 
-  const handleSkip = (e: React.MouseEvent) => {
+  const handleSkip = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const now = Date.now();
-    localStorage.setItem('skip-diaper', now.toString());
-    setSkipTimestamp(now);
-    toast.success('Diaper reminder skipped');
+    setSkipping(true);
+    try {
+      const result = await skipDiaperAction();
+
+      if (result?.data) {
+        toast.success('Diaper reminder skipped');
+        // Reload to get updated prediction with skip info
+        await loadData();
+      } else if (result?.serverError) {
+        toast.error(result.serverError);
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to skip diaper reminder',
+      );
+    } finally {
+      setSkipping(false);
+    }
   };
 
   return (
@@ -305,7 +318,7 @@ export function PredictiveDiaperCard({
           <div className="flex gap-2">
             <Button
               className="flex-1 bg-amber-950 hover:bg-amber-900 text-amber-50"
-              disabled={isCreating}
+              disabled={isCreating || skipping}
               onClick={handleQuickLog}
               size="sm"
             >
@@ -313,7 +326,7 @@ export function PredictiveDiaperCard({
             </Button>
             <Button
               className="flex-1 bg-amber-100 hover:bg-amber-200 text-amber-950 border-amber-950/20"
-              disabled={isCreating}
+              disabled={isCreating || skipping}
               onClick={handleCardClick}
               size="sm"
               variant="outline"
@@ -322,12 +335,12 @@ export function PredictiveDiaperCard({
             </Button>
             <Button
               className="flex-1 bg-muted hover:bg-muted/80 text-foreground"
-              disabled={isCreating}
+              disabled={isCreating || skipping}
               onClick={handleSkip}
               size="sm"
               variant="ghost"
             >
-              Skip
+              {skipping ? 'Skipping...' : 'Skip'}
             </Button>
           </div>
         )}

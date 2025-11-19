@@ -19,6 +19,7 @@ export interface SleepPrediction {
   overdueMinutes: number | null;
   suggestedRecoveryTime: Date | null;
   suggestedDuration: number; // in minutes, suggested duration for quick log
+  recentSkipTime: Date | null;
 }
 
 interface SleepActivity {
@@ -122,6 +123,23 @@ export function predictNextSleep(
     ) // Most recent first
     .slice(0, 10); // Consider last 10 sleep sessions
 
+  // Find most recent skip activity
+  const skipActivities = recentSleeps
+    .filter(
+      (a) =>
+        a.type === 'sleep' &&
+        a.details &&
+        'skipped' in a.details &&
+        a.details.skipped === true,
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
+    );
+  const recentSkipTime = skipActivities[0]
+    ? new Date(skipActivities[0].startTime)
+    : null;
+
   // Calculate baby's age for age-based interval
   const ageDays = calculateBabyAgeDays(babyBirthDate);
   const ageBasedInterval =
@@ -142,6 +160,7 @@ export function predictNextSleep(
       lastSleepTime: null,
       nextSleepTime,
       overdueMinutes: null,
+      recentSkipTime,
       recentSleepPattern: [],
       suggestedDuration,
       suggestedRecoveryTime: null,
@@ -164,6 +183,7 @@ export function predictNextSleep(
       lastSleepTime: null,
       nextSleepTime,
       overdueMinutes: null,
+      recentSkipTime,
       recentSleepPattern: [],
       suggestedDuration,
       suggestedRecoveryTime: null,
@@ -257,6 +277,7 @@ export function predictNextSleep(
     lastSleepTime,
     nextSleepTime,
     overdueMinutes,
+    recentSkipTime,
     recentSleepPattern: recentPattern,
     suggestedDuration,
     suggestedRecoveryTime,

@@ -184,7 +184,8 @@ export function TodaySummaryCard({
   const userUnitPref = measurementUnit === 'imperial' ? 'OZ' : 'ML';
 
   // Get the most recent baby using tRPC query
-  const { data: baby } = api.babies.getMostRecent.useQuery();
+  const { data: baby, isLoading: babyLoading } =
+    api.babies.getMostRecent.useQuery();
 
   // Fetch activities from today using tRPC query
   const {
@@ -232,7 +233,7 @@ export function TodaySummaryCard({
     });
   }, [allMilestones, todayStart]);
 
-  const loading = activitiesLoading || milestonesLoading;
+  const loading = babyLoading || activitiesLoading || milestonesLoading;
   const error = activitiesError?.message ?? null;
 
   // Get optimistic activities from Zustand store

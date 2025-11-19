@@ -22,6 +22,7 @@ import { LearningSection } from './learning-section';
 import {
   claimFeedingAction,
   getUpcomingFeedingAction,
+  skipFeedingAction,
   type UpcomingFeedingData,
   unclaimFeedingAction,
 } from './upcoming-feeding/actions';
@@ -45,7 +46,7 @@ export function PredictiveFeedingCard({
   const [error, setError] = useState<string | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
-  const [skipTimestamp, setSkipTimestamp] = useState<number | null>(null);
+  const [skipping, setSkipping] = useState(false);
   const [inProgressActivity, setInProgressActivity] = useState<
     typeof Activities.$inferSelect | null
   >(null);
@@ -129,14 +130,6 @@ export function PredictiveFeedingCard({
       }
     };
   }, [inProgressActivity]);
-
-  // Load skip timestamp from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem('skip-feeding');
-    if (stored) {
-      setSkipTimestamp(Number.parseInt(stored, 10));
-    }
-  }, []);
 
   const handleClaim = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -232,10 +225,20 @@ export function PredictiveFeedingCard({
   const isAssignedToCurrentUser = assignedMember?.userId === user?.id;
 
   // Check if we should suppress overdue state due to recent skip
-  const isRecentlySkipped = skipTimestamp
-    ? Date.now() - skipTimestamp < prediction.intervalHours * 60 * 60 * 1000
+  const isRecentlySkipped = prediction.recentSkipTime
+    ? Date.now() - new Date(prediction.recentSkipTime).getTime() <
+      prediction.intervalHours * 60 * 60 * 1000
     : false;
   const effectiveIsOverdue = prediction.isOverdue && !isRecentlySkipped;
+
+  // Calculate display time - if recently skipped, show next predicted time from skip moment
+  const displayNextTime =
+    isRecentlySkipped && prediction.recentSkipTime
+      ? new Date(
+          new Date(prediction.recentSkipTime).getTime() +
+            prediction.intervalHours * 60 * 60 * 1000,
+        )
+      : prediction.nextFeedingTime;
 
   // Get learning content for the baby's age
   const learningContent =
@@ -245,10 +248,10 @@ export function PredictiveFeedingCard({
   const showAssignment = familyMemberCount > 1;
 
   // Format countdown
-  const timeUntil = formatDistanceToNow(prediction.nextFeedingTime, {
+  const timeUntil = formatDistanceToNow(displayNextTime, {
     addSuffix: true,
   });
-  const exactTime = format(prediction.nextFeedingTime, 'h:mm a');
+  const exactTime = format(displayNextTime, 'h:mm a');
 
   // Format recovery time if overdue
   const recoveryTimeUntil = prediction.suggestedRecoveryTime
@@ -311,10 +314,6 @@ export function PredictiveFeedingCard({
         startTime: now,
       });
 
-      // Clear skip timestamp when activity is logged
-      localStorage.removeItem('skip-feeding');
-      setSkipTimestamp(null);
-
       // Notify parent component
       onActivityLogged?.(activity);
 
@@ -326,12 +325,19 @@ export function PredictiveFeedingCard({
     }
   };
 
-  const handleSkip = (e: React.MouseEvent) => {
+  const handleSkip = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const now = Date.now();
-    localStorage.setItem('skip-feeding', now.toString());
-    setSkipTimestamp(now);
-    toast.success('Feeding reminder skipped');
+    setSkipping(true);
+    try {
+      await skipFeedingAction();
+      toast.success('Feeding reminder skipped');
+      await loadData();
+    } catch (error) {
+      console.error('Failed to skip feeding:', error);
+      toast.error('Failed to skip feeding');
+    } finally {
+      setSkipping(false);
+    }
   };
 
   // Format elapsed time for display
@@ -441,12 +447,12 @@ export function PredictiveFeedingCard({
             </Button>
             <Button
               className="flex-1 bg-muted hover:bg-muted/80 text-foreground"
-              disabled={isCreating}
+              disabled={isCreating || skipping}
               onClick={handleSkip}
               size="sm"
               variant="ghost"
             >
-              Skip
+              {skipping ? 'Skipping...' : 'Skip'}
             </Button>
           </div>
         )}

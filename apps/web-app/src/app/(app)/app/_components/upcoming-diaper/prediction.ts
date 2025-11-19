@@ -21,6 +21,7 @@ export interface DiaperPrediction {
   isOverdue: boolean;
   overdueMinutes: number | null;
   suggestedRecoveryTime: Date | null;
+  recentSkipTime: Date | null; // Time of most recent skip activity
 }
 
 interface DiaperActivity {
@@ -199,6 +200,19 @@ export function predictNextDiaper(
     ) // Most recent first
     .slice(0, 15); // Consider last 15 diaper changes
 
+  // Check for recent skip activities
+  const skipActivities = diaperActivities.filter(
+    (a) =>
+      a.details &&
+      typeof a.details === 'object' &&
+      'skipped' in a.details &&
+      a.details.skipped === true,
+  );
+  const recentSkipTime =
+    skipActivities.length > 0 && skipActivities[0]
+      ? new Date(skipActivities[0].startTime)
+      : null;
+
   // Calculate baby's age for age-based interval
   const ageDays = calculateBabyAgeDays(babyBirthDate);
   const ageBasedInterval =
@@ -219,6 +233,7 @@ export function predictNextDiaper(
       nextDiaperTime,
       overdueMinutes: null,
       recentDiaperPattern: [],
+      recentSkipTime: null,
       suggestedRecoveryTime: null,
     };
   }
@@ -238,6 +253,7 @@ export function predictNextDiaper(
       nextDiaperTime,
       overdueMinutes: null,
       recentDiaperPattern: [],
+      recentSkipTime: null,
       suggestedRecoveryTime: null,
     };
   }
@@ -404,6 +420,7 @@ export function predictNextDiaper(
     nextDiaperTime,
     overdueMinutes,
     recentDiaperPattern: recentPattern,
+    recentSkipTime,
     suggestedRecoveryTime,
   };
 }

@@ -19,6 +19,7 @@ export interface FeedingPrediction {
   isOverdue: boolean;
   overdueMinutes: number | null;
   suggestedRecoveryTime: Date | null;
+  recentSkipTime: Date | null;
 }
 
 interface FeedingActivity {
@@ -76,6 +77,23 @@ export function predictNextFeeding(
     ) // Most recent first
     .slice(0, 10); // Consider last 10 feedings
 
+  // Find most recent skip activity
+  const skipActivities = recentFeedings
+    .filter(
+      (a) =>
+        (a.type === 'bottle' || a.type === 'nursing') &&
+        a.details &&
+        'skipped' in a.details &&
+        a.details.skipped === true,
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
+    );
+  const recentSkipTime = skipActivities[0]
+    ? new Date(skipActivities[0].startTime)
+    : null;
+
   // Calculate baby's age for age-based interval
   const ageDays = calculateBabyAgeDays(babyBirthDate);
   const ageBasedInterval =
@@ -97,6 +115,7 @@ export function predictNextFeeding(
       nextFeedingTime,
       overdueMinutes: null,
       recentFeedingPattern: [],
+      recentSkipTime,
       suggestedRecoveryTime: null,
     };
   }
@@ -115,6 +134,7 @@ export function predictNextFeeding(
       nextFeedingTime,
       overdueMinutes: null,
       recentFeedingPattern: [],
+      recentSkipTime,
       suggestedRecoveryTime: null,
     };
   }
@@ -199,6 +219,7 @@ export function predictNextFeeding(
     nextFeedingTime,
     overdueMinutes,
     recentFeedingPattern: recentPattern,
+    recentSkipTime,
     suggestedRecoveryTime,
   };
 }
