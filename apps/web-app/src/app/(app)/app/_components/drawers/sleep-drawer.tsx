@@ -30,6 +30,7 @@ interface SleepDrawerContentProps {
   setNotes: (notes: string) => void;
   activeActivityId?: string | null;
   onTimerStart?: () => Promise<void>;
+  isTimerStopped?: boolean;
   sleepQuality?: 'peaceful' | 'restless' | 'fussy' | 'crying';
   setSleepQuality: (
     quality: 'peaceful' | 'restless' | 'fussy' | 'crying',
@@ -88,6 +89,7 @@ export function SleepDrawerContent({
   setNotes,
   activeActivityId,
   onTimerStart,
+  isTimerStopped = false,
   sleepQuality,
   setSleepQuality,
   sleepLocation,
@@ -191,24 +193,29 @@ export function SleepDrawerContent({
     { label: 'Unknown', value: 'unknown' as const },
   ];
 
+  // Determine if we should show detail fields
+  const showDetailFields = !activeActivityId || isTimerStopped;
+
   return (
     <div className="space-y-6">
-      {/* Quick Add - Moved to top */}
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-muted-foreground">Quick Add</p>
-        <div className="grid grid-cols-3 gap-3">
-          {quickDurations.map((quick) => (
-            <Button
-              className="h-12 bg-transparent"
-              key={quick.label}
-              onClick={() => setDuration(quick.seconds)}
-              variant="outline"
-            >
-              {quick.label}
-            </Button>
-          ))}
+      {/* Quick Add - Moved to top - Hide when timer is active */}
+      {showDetailFields && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">Quick Add</p>
+          <div className="grid grid-cols-3 gap-3">
+            {quickDurations.map((quick) => (
+              <Button
+                className="h-12 bg-transparent"
+                key={quick.label}
+                onClick={() => setDuration(quick.seconds)}
+                variant="outline"
+              >
+                {quick.label}
+              </Button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Timer Display */}
       <div className="bg-card rounded-2xl p-8 text-center">
@@ -234,115 +241,129 @@ export function SleepDrawerContent({
         )}
       </div>
 
-      {/* Start/Stop Button */}
-      <Button
-        className={`w-full h-16 text-lg font-semibold ${
-          isTracking
-            ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
-            : 'bg-[oklch(0.75_0.15_195)] hover:bg-[oklch(0.75_0.15_195)]/90 text-[oklch(0.18_0.02_250)]'
-        }`}
-        onClick={handleStartStop}
-      >
-        {isTracking ? (
-          <>
-            <Square className="mr-2 h-5 w-5" />
-            Stop Sleep
-          </>
-        ) : (
-          <>
-            <Play className="mr-2 h-5 w-5" />
-            Start Sleep
-          </>
-        )}
-      </Button>
+      {/* Start/Stop Button - Only show when not in active mode (button moved to footer) */}
+      {!activeActivityId && (
+        <Button
+          className={`w-full h-16 text-lg font-semibold ${
+            isTracking
+              ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
+              : 'bg-[oklch(0.75_0.15_195)] hover:bg-[oklch(0.75_0.15_195)]/90 text-[oklch(0.18_0.02_250)]'
+          }`}
+          onClick={handleStartStop}
+        >
+          {isTracking ? (
+            <>
+              <Square className="mr-2 h-5 w-5" />
+              Stop Sleep
+            </>
+          ) : (
+            <>
+              <Play className="mr-2 h-5 w-5" />
+              Start Sleep
+            </>
+          )}
+        </Button>
+      )}
 
-      {/* Sleep Type */}
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-muted-foreground">Sleep Type</p>
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            className={`h-12 ${
-              sleepType === 'nap'
-                ? 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]'
-                : 'bg-transparent'
-            }`}
-            onClick={() => setSleepType('nap')}
-            variant={sleepType === 'nap' ? 'default' : 'outline'}
-          >
-            <Moon className="mr-2 h-4 w-4" />
-            Nap
-          </Button>
-          <Button
-            className={`h-12 ${
-              sleepType === 'night'
-                ? 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]'
-                : 'bg-transparent'
-            }`}
-            onClick={() => setSleepType('night')}
-            variant={sleepType === 'night' ? 'default' : 'outline'}
-          >
-            <Moon className="mr-2 h-4 w-4" />
-            Night Sleep
-          </Button>
+      {/* Sleep Type - Hide when timer is active */}
+      {showDetailFields && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">
+            Sleep Type
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              className={`h-12 ${
+                sleepType === 'nap'
+                  ? 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]'
+                  : 'bg-transparent'
+              }`}
+              onClick={() => setSleepType('nap')}
+              variant={sleepType === 'nap' ? 'default' : 'outline'}
+            >
+              <Moon className="mr-2 h-4 w-4" />
+              Nap
+            </Button>
+            <Button
+              className={`h-12 ${
+                sleepType === 'night'
+                  ? 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]'
+                  : 'bg-transparent'
+              }`}
+              onClick={() => setSleepType('night')}
+              variant={sleepType === 'night' ? 'default' : 'outline'}
+            >
+              <Moon className="mr-2 h-4 w-4" />
+              Night Sleep
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Sleep Quality */}
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-muted-foreground">
-          Sleep Quality (optional)
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          {qualityOptions.map((option) => {
-            const Icon = option.icon;
-            return (
-              <Button
-                className={`h-12 ${
-                  sleepQuality === option.value
-                    ? 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]'
-                    : 'bg-transparent'
-                }`}
-                key={option.value}
-                onClick={() => setSleepQuality(option.value)}
-                variant={sleepQuality === option.value ? 'default' : 'outline'}
-              >
-                <Icon className="mr-2 h-4 w-4" />
-                {option.label}
-              </Button>
-            );
-          })}
+      {/* Sleep Quality - Hide when timer is active */}
+      {showDetailFields && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">
+            Sleep Quality (optional)
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {qualityOptions.map((option) => {
+              const Icon = option.icon;
+              return (
+                <Button
+                  className={`h-12 ${
+                    sleepQuality === option.value
+                      ? 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]'
+                      : 'bg-transparent'
+                  }`}
+                  key={option.value}
+                  onClick={() => setSleepQuality(option.value)}
+                  variant={
+                    sleepQuality === option.value ? 'default' : 'outline'
+                  }
+                >
+                  <Icon className="mr-2 h-4 w-4" />
+                  {option.label}
+                </Button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Sleep Location */}
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-muted-foreground">
-          Sleep Location (optional)
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          {locationOptions.map((option) => {
-            const Icon = option.icon;
-            return (
-              <Button
-                className={`h-12 ${
-                  sleepLocation === option.value
-                    ? 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]'
-                    : 'bg-transparent'
-                }`}
-                key={option.value}
-                onClick={() => setSleepLocation(option.value)}
-                variant={sleepLocation === option.value ? 'default' : 'outline'}
-              >
-                <Icon className="mr-2 h-4 w-4" />
-                {option.label}
-              </Button>
-            );
-          })}
+      {/* Sleep Location - Hide when timer is active */}
+      {showDetailFields && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">
+            Sleep Location (optional)
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {locationOptions.map((option) => {
+              const Icon = option.icon;
+              return (
+                <Button
+                  className={`h-12 ${
+                    sleepLocation === option.value
+                      ? 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]'
+                      : 'bg-transparent'
+                  }`}
+                  key={option.value}
+                  onClick={() => setSleepLocation(option.value)}
+                  variant={
+                    sleepLocation === option.value ? 'default' : 'outline'
+                  }
+                >
+                  <Icon className="mr-2 h-4 w-4" />
+                  {option.label}
+                </Button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Wake Reason - Only show when not tracking */}
-      {!isTracking && (
+      {/* Wake Reason - Only show when not tracking and detail fields are shown */}
+      {showDetailFields && !isTracking && (
         <div className="space-y-3">
           <p className="text-sm font-medium text-muted-foreground">
             Wake Reason (optional)
@@ -366,94 +387,100 @@ export function SleepDrawerContent({
         </div>
       )}
 
-      {/* Co-sleeping */}
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-muted-foreground">
-          Co-sleeping (optional)
-        </p>
-        <Button
-          className={`h-12 w-full ${
-            isCoSleeping
-              ? 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]'
-              : 'bg-transparent'
-          }`}
-          onClick={() => {
-            const newValue = !isCoSleeping;
-            setIsCoSleeping(newValue);
-            if (newValue && currentUserId) {
-              // Auto-select current user when enabling co-sleeping
-              setCoSleepingWith([currentUserId]);
-            } else if (!newValue) {
-              // Clear selections when disabling
-              setCoSleepingWith([]);
-            }
-          }}
-          variant={isCoSleeping ? 'default' : 'outline'}
-        >
-          <BedDouble className="mr-2 h-4 w-4" />
-          Co-sleeping
-        </Button>
+      {/* Co-sleeping - Hide when timer is active */}
+      {showDetailFields && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">
+            Co-sleeping (optional)
+          </p>
+          <Button
+            className={`h-12 w-full ${
+              isCoSleeping
+                ? 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]'
+                : 'bg-transparent'
+            }`}
+            onClick={() => {
+              const newValue = !isCoSleeping;
+              setIsCoSleeping(newValue);
+              if (newValue && currentUserId) {
+                // Auto-select current user when enabling co-sleeping
+                setCoSleepingWith([currentUserId]);
+              } else if (!newValue) {
+                // Clear selections when disabling
+                setCoSleepingWith([]);
+              }
+            }}
+            variant={isCoSleeping ? 'default' : 'outline'}
+          >
+            <BedDouble className="mr-2 h-4 w-4" />
+            Co-sleeping
+          </Button>
 
-        {/* Family member selection - shown when co-sleeping is enabled */}
-        {isCoSleeping && familyMembers.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">Who is co-sleeping?</p>
-            <div className="grid grid-cols-2 gap-2">
-              {familyMembers.map((member) => (
-                <Button
-                  className={`h-12 justify-start ${
-                    coSleepingWith.includes(member.userId)
-                      ? 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]'
-                      : 'bg-transparent'
-                  }`}
-                  key={member.userId}
-                  onClick={() => {
-                    if (coSleepingWith.includes(member.userId)) {
-                      setCoSleepingWith(
-                        coSleepingWith.filter((id) => id !== member.userId),
-                      );
-                    } else {
-                      setCoSleepingWith([...coSleepingWith, member.userId]);
+          {/* Family member selection - shown when co-sleeping is enabled */}
+          {isCoSleeping && familyMembers.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Who is co-sleeping?
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {familyMembers.map((member) => (
+                  <Button
+                    className={`h-12 justify-start ${
+                      coSleepingWith.includes(member.userId)
+                        ? 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]'
+                        : 'bg-transparent'
+                    }`}
+                    key={member.userId}
+                    onClick={() => {
+                      if (coSleepingWith.includes(member.userId)) {
+                        setCoSleepingWith(
+                          coSleepingWith.filter((id) => id !== member.userId),
+                        );
+                      } else {
+                        setCoSleepingWith([...coSleepingWith, member.userId]);
+                      }
+                    }}
+                    variant={
+                      coSleepingWith.includes(member.userId)
+                        ? 'default'
+                        : 'outline'
                     }
-                  }}
-                  variant={
-                    coSleepingWith.includes(member.userId)
-                      ? 'default'
-                      : 'outline'
-                  }
-                >
-                  <Avatar className="size-6 mr-2">
-                    <AvatarImage
-                      alt={member.name}
-                      src={member.avatarUrl || undefined}
-                    />
-                    <AvatarFallback className="text-xs">
-                      {member.name
-                        .split(' ')
-                        .map((n) => n[0])
-                        .join('')
-                        .toUpperCase()
-                        .slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="truncate">{member.name}</span>
-                </Button>
-              ))}
+                  >
+                    <Avatar className="size-6 mr-2">
+                      <AvatarImage
+                        alt={member.name}
+                        src={member.avatarUrl || undefined}
+                      />
+                      <AvatarFallback className="text-xs">
+                        {member.name
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')
+                          .toUpperCase()
+                          .slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="truncate">{member.name}</span>
+                  </Button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      {/* Notes */}
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-muted-foreground">Notes</p>
-        <Textarea
-          className="min-h-[100px] resize-none"
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Add any notes about this sleep session..."
-          value={notes}
-        />
-      </div>
+      {/* Notes - Hide when timer is active */}
+      {showDetailFields && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">Notes</p>
+          <Textarea
+            className="min-h-[100px] resize-none"
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Add any notes about this sleep session..."
+            value={notes}
+          />
+        </div>
+      )}
     </div>
   );
 }

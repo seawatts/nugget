@@ -2,6 +2,16 @@
 
 import { useAuth } from '@clerk/nextjs';
 import type { Activities } from '@nugget/db/schema';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@nugget/ui/alert-dialog';
 import { Button } from '@nugget/ui/button';
 import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { cn } from '@nugget/ui/lib/utils';
@@ -29,8 +39,13 @@ export function SleepActivityDrawer({
   onClose,
 }: SleepActivityDrawerProps) {
   const { userId } = useAuth();
-  const { createActivity, updateActivity, isCreating, isUpdating } =
-    useActivityMutations();
+  const {
+    createActivity,
+    updateActivity,
+    deleteActivity,
+    isCreating,
+    isUpdating,
+  } = useActivityMutations();
   const addOptimisticActivity = useOptimisticActivitiesStore(
     (state) => state.addActivity,
   );
@@ -77,6 +92,8 @@ export function SleepActivityDrawer({
   >([]);
   const [currentUserId, setCurrentUserId] = useState<string | undefined>();
   const [activeActivityId, setActiveActivityId] = useState<string | null>(null);
+  const [isTimerStopped, setIsTimerStopped] = useState(false);
+  const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
 
   const isPending = isCreating || isUpdating;
   const isEditing = Boolean(existingActivity) || Boolean(activeActivityId);
@@ -206,6 +223,7 @@ export function SleepActivityDrawer({
     // Reset state when drawer closes
     if (!isOpen) {
       setActiveActivityId(null);
+      setIsTimerStopped(false);
       setDuration(0);
       setNotes('');
       setSleepQuality(undefined);
@@ -235,10 +253,46 @@ export function SleepActivityDrawer({
 
       if (activity?.id) {
         setActiveActivityId(activity.id);
+        setIsTimerStopped(false); // Ensure timer stopped state is reset
       }
     } catch (error) {
       console.error('Failed to start tracking:', error);
     }
+  };
+
+  const handleStop = () => {
+    // Stop the timer and show detail fields
+    setIsTimerStopped(true);
+    // Duration is already being calculated by the timer, so we just need to stop it
+  };
+
+  const handleCancelClick = () => {
+    // If there's an active activity, show confirmation dialog
+    if (activeActivityId && !existingActivity) {
+      setShowCancelConfirmation(true);
+    } else {
+      // Otherwise just close the drawer
+      onClose();
+    }
+  };
+
+  const handleAbandonSleep = async () => {
+    if (activeActivityId) {
+      try {
+        await deleteActivity(activeActivityId);
+        setActiveActivityId(null);
+        setIsTimerStopped(false);
+        setShowCancelConfirmation(false);
+        onClose();
+      } catch (error) {
+        console.error('Failed to delete in-progress activity:', error);
+      }
+    }
+  };
+
+  const handleKeepRunning = () => {
+    setShowCancelConfirmation(false);
+    onClose();
   };
 
   const handleSave = async () => {
@@ -290,7 +344,7 @@ export function SleepActivityDrawer({
       onClose();
 
       if (activeActivityId && !existingActivity) {
-        // Update in-progress activity
+        // Update in-progress activity - set endTime to complete it
         await updateActivity({
           details: sleepDetails,
           duration: durationMinutes,
@@ -299,7 +353,9 @@ export function SleepActivityDrawer({
           notes: notes || undefined,
           startTime,
         });
+        // Clear state after successful save
         setActiveActivityId(null);
+        setIsTimerStopped(false);
       } else if (existingActivity) {
         // Update existing activity
         await updateActivity({
@@ -368,6 +424,7 @@ export function SleepActivityDrawer({
           duration={duration}
           familyMembers={familyMembers}
           isCoSleeping={isCoSleeping}
+          isTimerStopped={isTimerStopped}
           notes={notes}
           onTimerStart={handleTimerStart}
           setCoSleepingWith={setCoSleepingWith}
@@ -392,7 +449,7 @@ export function SleepActivityDrawer({
         <div className="flex gap-3">
           <Button
             className="flex-1 h-12 text-base bg-transparent"
-            onClick={onClose}
+            onClick={handleCancelClick}
             variant="outline"
           >
             Cancel
@@ -400,21 +457,54 @@ export function SleepActivityDrawer({
           <Button
             className={cn(
               'flex-1 h-12 text-base font-semibold',
-              'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]',
+              activeActivityId && !isTimerStopped
+                ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
+                : 'bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)]',
             )}
             disabled={isPending}
-            onClick={handleSave}
+            onClick={
+              activeActivityId && !isTimerStopped ? handleStop : handleSave
+            }
           >
-            {isPending
-              ? 'Saving...'
-              : activeActivityId && !existingActivity
-                ? 'Save'
-                : isEditing
-                  ? 'Update'
-                  : 'Save'}
+            {activeActivityId && !isTimerStopped
+              ? 'Stop'
+              : isPending
+                ? 'Saving...'
+                : activeActivityId && !existingActivity
+                  ? 'Save'
+                  : isEditing
+                    ? 'Update'
+                    : 'Save'}
           </Button>
         </div>
       </div>
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog
+        onOpenChange={setShowCancelConfirmation}
+        open={showCancelConfirmation}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Abandon Sleep Tracking?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have a sleep session currently in progress. What would you
+              like to do?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleKeepRunning}>
+              Keep Running
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleAbandonSleep}
+            >
+              Abandon Sleep
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
