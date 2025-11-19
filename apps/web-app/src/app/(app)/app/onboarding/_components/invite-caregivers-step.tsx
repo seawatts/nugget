@@ -191,19 +191,19 @@ export function InviteCaregiversStep() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium truncate">
-                        {member.user?.firstName || member.user?.email}{' '}
-                        {member.user?.lastName || ''}
-                      </p>
-                      <div className={`flex items-center gap-1 ${roleColor}`}>
-                        <RoleIcon className="size-3" />
-                        <span className="text-xs">{roleLabel}</span>
-                      </div>
-                    </div>
+                    <p className="font-medium truncate">
+                      {member.user?.firstName || member.user?.email}{' '}
+                      {member.user?.lastName || ''}
+                    </p>
                     <p className="text-sm text-muted-foreground truncate">
                       {member.user?.email}
                     </p>
+                    <div
+                      className={`flex items-center gap-1 mt-1 ${roleColor}`}
+                    >
+                      <RoleIcon className="size-3" />
+                      <span className="text-xs">{roleLabel}</span>
+                    </div>
                   </div>
                 </div>
               );

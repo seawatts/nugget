@@ -3,8 +3,9 @@
 import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
+import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { cn } from '@nugget/ui/lib/utils';
-import { Calendar, Clock, Droplets, X } from 'lucide-react';
+import { Droplets, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useActivityMutations } from '../use-activity-mutations';
 import { PumpingDrawerContent } from './pumping-drawer';
@@ -34,6 +35,7 @@ export function PumpingActivityDrawer({
 
   // Pumping-specific state
   const [startTime, setStartTime] = useState(new Date());
+  const [endTime, setEndTime] = useState(new Date());
   const [leftAmount, setLeftAmount] = useState(userUnitPref === 'OZ' ? 2 : 60);
   const [rightAmount, setRightAmount] = useState(
     userUnitPref === 'OZ' ? 2 : 60,
@@ -51,8 +53,21 @@ export function PumpingActivityDrawer({
   useEffect(() => {
     if (existingActivity?.startTime) {
       setStartTime(new Date(existingActivity.startTime));
+      // Calculate end time from start time and duration
+      if (existingActivity.duration) {
+        const calculatedEndTime = new Date(existingActivity.startTime);
+        calculatedEndTime.setMinutes(
+          calculatedEndTime.getMinutes() + existingActivity.duration,
+        );
+        setEndTime(calculatedEndTime);
+        setSelectedDuration(existingActivity.duration);
+      } else {
+        setEndTime(new Date(existingActivity.startTime));
+      }
     } else {
-      setStartTime(new Date());
+      const now = new Date();
+      setStartTime(now);
+      setEndTime(now);
     }
 
     // Initialize pumping-specific fields from existing activity
@@ -90,6 +105,9 @@ export function PumpingActivityDrawer({
 
     // Reset fields when drawer is opened for new activity
     if (!existingActivity) {
+      const now = new Date();
+      setStartTime(now);
+      setEndTime(now);
       setLeftAmount(userUnitPref === 'OZ' ? 2 : 60);
       setRightAmount(userUnitPref === 'OZ' ? 2 : 60);
       setSelectedDuration(null);
@@ -111,6 +129,11 @@ export function PumpingActivityDrawer({
 
   const handleSave = async () => {
     try {
+      // Calculate duration from time difference (in minutes)
+      const durationMinutes = Math.floor(
+        (endTime.getTime() - startTime.getTime()) / 1000 / 60,
+      );
+
       // Close drawer immediately for better UX
       onClose();
 
@@ -135,7 +158,8 @@ export function PumpingActivityDrawer({
         await updateActivity({
           amount: totalAmountMl,
           details: pumpingDetails,
-          duration: selectedDuration || undefined,
+          duration: durationMinutes > 0 ? durationMinutes : undefined,
+          endTime,
           feedingSource: 'pumped',
           id: existingActivity.id,
           notes: notes || undefined,
@@ -147,7 +171,7 @@ export function PumpingActivityDrawer({
           activityType: 'pumping',
           amount: totalAmountMl,
           details: pumpingDetails,
-          duration: selectedDuration || undefined,
+          duration: durationMinutes > 0 ? durationMinutes : undefined,
           feedingSource: 'pumped',
           notes: notes || undefined,
           startTime,
@@ -176,27 +200,15 @@ export function PumpingActivityDrawer({
           </button>
         </div>
 
-        {/* Time Display */}
-        <div className="flex items-center gap-4 text-sm text-white opacity-90">
-          <div className="flex items-center gap-2">
-            <Clock className="size-4" />
-            <span>
-              {startTime.toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="size-4" />
-            <span>
-              {startTime.toLocaleDateString([], {
-                day: 'numeric',
-                month: 'short',
-              })}
-            </span>
-          </div>
-        </div>
+        {/* Time Range Picker */}
+        <DateTimeRangePicker
+          className="text-white opacity-90"
+          endDate={endTime}
+          mode="range"
+          setEndDate={setEndTime}
+          setStartDate={setStartTime}
+          startDate={startTime}
+        />
       </div>
 
       {/* Content - Scrollable */}

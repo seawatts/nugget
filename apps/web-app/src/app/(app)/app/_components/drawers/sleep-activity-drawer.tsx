@@ -3,8 +3,9 @@
 import { useAuth } from '@clerk/nextjs';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
+import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { cn } from '@nugget/ui/lib/utils';
-import { Calendar, Clock, Moon, X } from 'lucide-react';
+import { Moon, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getInProgressSleepActivityAction } from '../activity-cards.actions';
 import { getFamilyMembersAction } from '../activity-timeline-filters.actions';
@@ -32,6 +33,7 @@ export function SleepActivityDrawer({
 
   // Sleep-specific state
   const [startTime, setStartTime] = useState(new Date());
+  const [endTime, setEndTime] = useState(new Date());
   const [duration, setDuration] = useState(0);
   const [sleepType, setSleepType] = useState<'nap' | 'night'>('nap');
   const [notes, setNotes] = useState('');
@@ -99,8 +101,20 @@ export function SleepActivityDrawer({
   useEffect(() => {
     if (existingActivity?.startTime) {
       setStartTime(new Date(existingActivity.startTime));
+      // Calculate end time from start time and duration
+      if (existingActivity.duration) {
+        const calculatedEndTime = new Date(existingActivity.startTime);
+        calculatedEndTime.setMinutes(
+          calculatedEndTime.getMinutes() + existingActivity.duration,
+        );
+        setEndTime(calculatedEndTime);
+      } else {
+        setEndTime(new Date(existingActivity.startTime));
+      }
     } else {
-      setStartTime(new Date());
+      const now = new Date();
+      setStartTime(now);
+      setEndTime(now);
     }
 
     // Initialize sleep-specific fields from existing activity
@@ -127,6 +141,9 @@ export function SleepActivityDrawer({
 
     // Reset fields when drawer is opened for new activity
     if (!existingActivity) {
+      const now = new Date();
+      setStartTime(now);
+      setEndTime(now);
       setDuration(0);
       setSleepType('nap');
       setNotes('');
@@ -137,6 +154,14 @@ export function SleepActivityDrawer({
       setCoSleepingWith([]);
     }
   }, [existingActivity]);
+
+  // Sync endTime with duration changes (when timer is running)
+  useEffect(() => {
+    if (duration > 0) {
+      const calculatedEndTime = new Date(startTime.getTime() + duration * 1000);
+      setEndTime(calculatedEndTime);
+    }
+  }, [duration, startTime]);
 
   // Load in-progress sleep activity when drawer opens
   useEffect(() => {
@@ -214,8 +239,10 @@ export function SleepActivityDrawer({
 
   const handleSave = async () => {
     try {
-      // Calculate end time from duration
-      const endTime = new Date(startTime.getTime() + duration * 1000);
+      // Calculate duration from time difference (in minutes)
+      const durationMinutes = Math.floor(
+        (endTime.getTime() - startTime.getTime()) / 1000 / 60,
+      );
 
       // Create details object
       const sleepDetails = {
@@ -235,7 +262,7 @@ export function SleepActivityDrawer({
         // Update in-progress activity
         await updateActivity({
           details: sleepDetails,
-          duration: Math.floor(duration / 60), // Convert seconds to minutes
+          duration: durationMinutes,
           endTime,
           id: activeActivityId,
           notes: notes || undefined,
@@ -246,7 +273,7 @@ export function SleepActivityDrawer({
         // Update existing activity
         await updateActivity({
           details: sleepDetails,
-          duration: Math.floor(duration / 60), // Convert seconds to minutes
+          duration: durationMinutes,
           endTime,
           id: existingActivity.id,
           notes: notes || undefined,
@@ -257,7 +284,7 @@ export function SleepActivityDrawer({
         await createActivity({
           activityType: 'sleep',
           details: sleepDetails,
-          duration: Math.floor(duration / 60), // Convert seconds to minutes
+          duration: durationMinutes,
           notes: notes || undefined,
           startTime,
         });
@@ -290,27 +317,15 @@ export function SleepActivityDrawer({
           </button>
         </div>
 
-        {/* Time Display */}
-        <div className="flex items-center gap-4 text-sm text-[oklch(0.18_0.02_250)] opacity-90">
-          <div className="flex items-center gap-2">
-            <Clock className="size-4" />
-            <span>
-              {startTime.toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="size-4" />
-            <span>
-              {startTime.toLocaleDateString([], {
-                day: 'numeric',
-                month: 'short',
-              })}
-            </span>
-          </div>
-        </div>
+        {/* Time Range Picker */}
+        <DateTimeRangePicker
+          className="text-[oklch(0.18_0.02_250)] opacity-90"
+          endDate={endTime}
+          mode="range"
+          setEndDate={setEndTime}
+          setStartDate={setStartTime}
+          startDate={startTime}
+        />
       </div>
 
       {/* Content - Scrollable */}

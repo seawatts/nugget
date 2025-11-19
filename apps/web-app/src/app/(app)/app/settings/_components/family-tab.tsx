@@ -224,13 +224,6 @@ export function FamilyTab() {
         ) : members && members.length > 0 ? (
           <div className="space-y-2">
             {members.map((member) => {
-              const RoleIcon = member.role
-                ? roleIcons[member.role as RoleType]
-                : User;
-              const roleColor = member.role
-                ? roleColors[member.role as RoleType]
-                : 'text-muted-foreground';
-
               return (
                 <div
                   className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors"
@@ -248,54 +241,47 @@ export function FamilyTab() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium truncate">
-                        {member.user?.firstName || member.user?.email}{' '}
-                        {member.user?.lastName || ''}
-                      </p>
-                      <Select
-                        disabled={updateRoleMutation.isPending}
-                        onValueChange={(value) => {
-                          updateRoleMutation.mutate({
-                            memberId: member.id,
-                            newRole: value as RoleType,
-                          });
-                        }}
-                        value={member.role || 'partner'}
-                      >
-                        <SelectTrigger className="w-[130px] h-7 text-xs">
-                          <div
-                            className={`flex items-center gap-1 ${roleColor}`}
-                          >
-                            <RoleIcon className="size-3" />
-                            <SelectValue />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="primary">
-                            <div className="flex items-center gap-2">
-                              <Crown className="size-3 text-primary" />
-                              <span>Primary</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="partner">
-                            <div className="flex items-center gap-2">
-                              <Heart className="size-3 text-accent" />
-                              <span>Partner</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="caregiver">
-                            <div className="flex items-center gap-2">
-                              <Shield className="size-3 text-secondary" />
-                              <span>Caregiver</span>
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <p className="font-medium truncate">
+                      {member.user?.firstName || member.user?.email}{' '}
+                      {member.user?.lastName || ''}
+                    </p>
                     <p className="text-sm text-muted-foreground truncate">
                       {member.user?.email}
                     </p>
+                    <Select
+                      disabled={updateRoleMutation.isPending}
+                      onValueChange={(value) => {
+                        updateRoleMutation.mutate({
+                          memberId: member.id,
+                          newRole: value as RoleType,
+                        });
+                      }}
+                      value={member.role || 'partner'}
+                    >
+                      <SelectTrigger className="w-[130px] h-7 text-xs mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="primary">
+                          <div className="flex items-center gap-2">
+                            <Crown className="size-3 text-primary" />
+                            <span>Primary</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="partner">
+                          <div className="flex items-center gap-2">
+                            <Heart className="size-3 text-accent" />
+                            <span>Partner</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="caregiver">
+                          <div className="flex items-center gap-2">
+                            <Shield className="size-3 text-secondary" />
+                            <span>Caregiver</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

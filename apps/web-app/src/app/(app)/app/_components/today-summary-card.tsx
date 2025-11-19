@@ -124,9 +124,11 @@ function formatTotal(
       if (totalDuration === 0) return '0 min';
       return formatDuration(totalDuration);
     }
-    case 'bath':
-    case 'milestone': {
+    case 'bath': {
       return `${count} ${count === 1 ? 'time' : 'times'}`;
+    }
+    case 'milestone': {
+      return `${count}`;
     }
     default:
       return `${count}`;

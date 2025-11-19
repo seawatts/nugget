@@ -2,12 +2,14 @@
 
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
+import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { Dialog, DialogContent, DialogTitle } from '@nugget/ui/dialog';
 import { Drawer, DrawerContent, DrawerTitle } from '@nugget/ui/drawer';
 import { useIsDesktop } from '@nugget/ui/hooks/use-media-query';
 import { cn } from '@nugget/ui/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 import { X } from 'lucide-react';
+import { useState } from 'react';
 import { ActivityDrawerContent } from '~/app/(app)/app/_components/drawers/activity-drawer-content';
 import { BathDrawer } from '~/app/(app)/app/_components/drawers/bath-drawer';
 import { DiaperActivityDrawer } from '~/app/(app)/app/_components/drawers/diaper-activity-drawer';
@@ -45,6 +47,9 @@ export function ActivityDrawer({
 }: ActivityDrawerProps) {
   const isDesktop = useIsDesktop();
   const Icon = activity.icon;
+
+  // State for generic activities time selection
+  const [startTime, setStartTime] = useState(new Date());
 
   const renderContent = () => {
     switch (activity.id) {
@@ -168,6 +173,14 @@ export function ActivityDrawer({
             <X className="size-6" />
           </button>
         </div>
+
+        {/* Time Picker */}
+        <DateTimeRangePicker
+          className={cn(activity.textColor, 'opacity-90')}
+          mode="single"
+          setStartDate={setStartTime}
+          startDate={startTime}
+        />
       </div>
 
       {/* Content - Scrollable */}

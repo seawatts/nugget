@@ -2,8 +2,9 @@
 
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
+import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { cn } from '@nugget/ui/lib/utils';
-import { Calendar, Clock, Milk, X } from 'lucide-react';
+import { Milk, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { FeedingFormData } from './feeding-drawer';
@@ -29,6 +30,7 @@ export function FeedingActivityDrawer({
 
   // Feeding-specific state
   const [startTime, setStartTime] = useState(new Date());
+  const [endTime, setEndTime] = useState(new Date());
   const [formData, setFormData] = useState<FeedingFormData | null>(null);
 
   const isPending = isCreating || isUpdating;
@@ -38,8 +40,20 @@ export function FeedingActivityDrawer({
   useEffect(() => {
     if (existingActivity?.startTime) {
       setStartTime(new Date(existingActivity.startTime));
+      // Calculate end time from start time and duration
+      if (existingActivity.duration) {
+        const calculatedEndTime = new Date(existingActivity.startTime);
+        calculatedEndTime.setMinutes(
+          calculatedEndTime.getMinutes() + existingActivity.duration,
+        );
+        setEndTime(calculatedEndTime);
+      } else {
+        setEndTime(new Date(existingActivity.startTime));
+      }
     } else {
-      setStartTime(new Date());
+      const now = new Date();
+      setStartTime(now);
+      setEndTime(now);
     }
 
     // Reset form data when drawer opens for new activity
@@ -51,6 +65,9 @@ export function FeedingActivityDrawer({
   // Reset state when drawer closes
   useEffect(() => {
     if (!isOpen) {
+      const now = new Date();
+      setStartTime(now);
+      setEndTime(now);
       setFormData(null);
     }
   }, [isOpen]);
@@ -62,11 +79,17 @@ export function FeedingActivityDrawer({
     }
 
     try {
+      // Calculate duration from time difference (in minutes)
+      const durationMinutes = Math.floor(
+        (endTime.getTime() - startTime.getTime()) / 1000 / 60,
+      );
+
       // Close drawer immediately for better UX
       onClose();
 
       // Prepare activity data based on feeding type
       const baseData = {
+        endTime,
         notes: formData.notes || undefined,
         startTime,
       };
@@ -89,8 +112,7 @@ export function FeedingActivityDrawer({
               side: 'both', // TODO: Allow user to select side
               type: 'nursing',
             },
-            duration:
-              (formData.leftDuration || 0) + (formData.rightDuration || 0),
+            duration: durationMinutes,
             feedingSource: 'direct',
             id: existingActivity.id,
           });
@@ -123,8 +145,7 @@ export function FeedingActivityDrawer({
               side: 'both', // TODO: Allow user to select side
               type: 'nursing',
             },
-            duration:
-              (formData.leftDuration || 0) + (formData.rightDuration || 0),
+            duration: durationMinutes,
             feedingSource: 'direct',
             notes: formData.notes || undefined,
             startTime,
@@ -167,27 +188,15 @@ export function FeedingActivityDrawer({
           </button>
         </div>
 
-        {/* Time Display */}
-        <div className="flex items-center gap-4 text-sm text-white opacity-90">
-          <div className="flex items-center gap-2">
-            <Clock className="size-4" />
-            <span>
-              {startTime.toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="size-4" />
-            <span>
-              {startTime.toLocaleDateString([], {
-                day: 'numeric',
-                month: 'short',
-              })}
-            </span>
-          </div>
-        </div>
+        {/* Time Range Picker */}
+        <DateTimeRangePicker
+          className="text-white opacity-90"
+          endDate={endTime}
+          mode="range"
+          setEndDate={setEndTime}
+          setStartDate={setStartTime}
+          startDate={startTime}
+        />
       </div>
 
       {/* Content - Scrollable */}

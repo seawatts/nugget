@@ -2,8 +2,9 @@
 
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
+import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { cn } from '@nugget/ui/lib/utils';
-import { Baby, Calendar, Clock, X } from 'lucide-react';
+import { Baby, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { DiaperFormData } from './diaper-drawer';
@@ -44,9 +45,11 @@ export function DiaperActivityDrawer({
   // Update state when existingActivity changes
   useEffect(() => {
     if (existingActivity?.startTime) {
-      setStartTime(new Date(existingActivity.startTime));
+      const start = new Date(existingActivity.startTime);
+      setStartTime(start);
     } else {
-      setStartTime(new Date());
+      const now = new Date();
+      setStartTime(now);
     }
 
     // Initialize diaper-specific fields from existing activity
@@ -75,6 +78,8 @@ export function DiaperActivityDrawer({
 
     // Reset form data when drawer opens for new activity
     if (!existingActivity) {
+      const now = new Date();
+      setStartTime(now);
       setFormData({
         color: null,
         consistency: null,
@@ -89,6 +94,8 @@ export function DiaperActivityDrawer({
   // Reset state when drawer closes
   useEffect(() => {
     if (!isOpen) {
+      const now = new Date();
+      setStartTime(now);
       setFormData({
         color: null,
         consistency: null,
@@ -166,27 +173,13 @@ export function DiaperActivityDrawer({
           </button>
         </div>
 
-        {/* Time Display */}
-        <div className="flex items-center gap-4 text-sm text-[oklch(0.18_0.02_250)] opacity-90">
-          <div className="flex items-center gap-2">
-            <Clock className="size-4" />
-            <span>
-              {startTime.toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="size-4" />
-            <span>
-              {startTime.toLocaleDateString([], {
-                day: 'numeric',
-                month: 'short',
-              })}
-            </span>
-          </div>
-        </div>
+        {/* Time Picker */}
+        <DateTimeRangePicker
+          className="text-[oklch(0.18_0.02_250)] opacity-90"
+          mode="single"
+          setStartDate={setStartTime}
+          startDate={startTime}
+        />
       </div>
 
       {/* Content - Scrollable */}
