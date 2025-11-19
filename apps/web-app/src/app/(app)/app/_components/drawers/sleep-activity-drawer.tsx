@@ -66,6 +66,7 @@ export function SleepActivityDrawer({
       name: string;
       avatarUrl?: string | null;
       userId: string;
+      isCurrentUser?: boolean;
     }>
   >([]);
   const [currentUserId, setCurrentUserId] = useState<string | undefined>();
@@ -83,9 +84,9 @@ export function SleepActivityDrawer({
       // Fetch family members
       void (async () => {
         try {
-          const members = await getFamilyMembersAction();
-          if (members) {
-            setFamilyMembers(members);
+          const result = await getFamilyMembersAction();
+          if (result?.data) {
+            setFamilyMembers(result.data);
           }
         } catch (error) {
           console.error('Failed to fetch family members:', error);
