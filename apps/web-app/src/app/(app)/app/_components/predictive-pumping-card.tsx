@@ -166,25 +166,54 @@ export function PredictivePumpingCard({
 
   const handleQuickLog = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setQuickLogging(true);
-    try {
-      const result = await quickLogPumpingAction({});
 
-      if (result?.data) {
-        toast.success('Pumping logged!');
-        // Clear skip timestamp when activity is logged
-        localStorage.removeItem('skip-pumping');
-        setSkipTimestamp(null);
-        // Notify parent component for optimistic updates and timeline refresh
-        onActivityLogged?.(result.data.activity);
-        await loadData(); // Reload to show updated state
-      } else if (result?.serverError) {
-        toast.error(result.serverError);
-      }
+    try {
+      const now = new Date();
+      const suggestedAmount = 0; // Default pumping amount
+
+      // Create optimistic activity for immediate UI feedback
+      const optimisticActivity = {
+        amount: suggestedAmount,
+        assignedUserId: null,
+        babyId: 'temp',
+        createdAt: now,
+        details: null,
+        duration: null,
+        endTime: null,
+        familyId: 'temp',
+        familyMemberId: null,
+        feedingSource: 'pumped' as const,
+        id: `optimistic-pumping-${Date.now()}`,
+        isScheduled: false,
+        notes: null,
+        startTime: now,
+        subjectType: 'baby' as const,
+        type: 'pumping' as const,
+        updatedAt: now,
+        userId: 'temp',
+      } as typeof Activities.$inferSelect;
+
+      // Add to optimistic store immediately
+      addOptimisticActivity(optimisticActivity);
+
+      // Create the actual activity - mutation hook handles invalidation
+      const activity = await createActivity({
+        activityType: 'pumping',
+        amount: suggestedAmount,
+        startTime: now,
+      });
+
+      // Clear skip timestamp when activity is logged
+      localStorage.removeItem('skip-pumping');
+      setSkipTimestamp(null);
+
+      // Notify parent component
+      onActivityLogged?.(activity);
+
+      // Reload prediction data
+      await loadData();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to log pumping');
-    } finally {
-      setQuickLogging(false);
     }
   };
 
@@ -279,15 +308,15 @@ export function PredictivePumpingCard({
           <div className="flex gap-2 mt-4">
             <Button
               className="flex-1 bg-amber-950 hover:bg-amber-900 text-amber-50"
-              disabled={quickLogging}
+              disabled={isCreating}
               onClick={handleQuickLog}
               size="sm"
             >
-              {quickLogging ? 'Logging...' : 'Log Now'}
+              {isCreating ? 'Logging...' : 'Log Now'}
             </Button>
             <Button
               className="flex-1 bg-amber-100 hover:bg-amber-200 text-amber-950 border-amber-950/20"
-              disabled={quickLogging}
+              disabled={isCreating}
               onClick={handleCardClick}
               size="sm"
               variant="outline"
@@ -296,7 +325,7 @@ export function PredictivePumpingCard({
             </Button>
             <Button
               className="flex-1 bg-muted hover:bg-muted/80 text-foreground"
-              disabled={quickLogging}
+              disabled={isCreating}
               onClick={handleSkip}
               size="sm"
               variant="ghost"

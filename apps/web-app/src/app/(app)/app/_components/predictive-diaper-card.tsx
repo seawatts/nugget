@@ -40,7 +40,6 @@ export function PredictiveDiaperCard({
   const [error, setError] = useState<string | null>(null);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [skipTimestamp, setSkipTimestamp] = useState<number | null>(null);
-  const [quickLogging, setQuickLogging] = useState(false);
 
   // Use activity mutations hook for creating diaper activities
   const { createActivity, isCreating } = useActivityMutations();
@@ -167,7 +166,6 @@ export function PredictiveDiaperCard({
 
   const handleQuickLog = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setQuickLogging(true);
 
     try {
       const now = new Date();
@@ -175,6 +173,7 @@ export function PredictiveDiaperCard({
       // Create optimistic activity for immediate UI feedback
       const optimisticActivity = {
         amount: null,
+        assignedUserId: null,
         babyId: 'temp',
         createdAt: now,
         details: {
@@ -182,11 +181,14 @@ export function PredictiveDiaperCard({
         },
         duration: null,
         endTime: null,
+        familyId: 'temp',
+        familyMemberId: null,
         feedingSource: null,
         id: `optimistic-diaper-${Date.now()}`,
         isScheduled: false,
         notes: null,
         startTime: now,
+        subjectType: 'baby' as const,
         type: 'diaper' as const,
         updatedAt: now,
         userId: 'temp',
@@ -217,8 +219,6 @@ export function PredictiveDiaperCard({
       toast.error(
         err instanceof Error ? err.message : 'Failed to log diaper change',
       );
-    } finally {
-      setQuickLogging(false);
     }
   };
 
@@ -322,7 +322,7 @@ export function PredictiveDiaperCard({
             </Button>
             <Button
               className="flex-1 bg-muted hover:bg-muted/80 text-foreground"
-              disabled={quickLogging}
+              disabled={isCreating}
               onClick={handleSkip}
               size="sm"
               variant="ghost"

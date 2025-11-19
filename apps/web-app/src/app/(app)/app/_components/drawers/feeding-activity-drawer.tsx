@@ -6,6 +6,7 @@ import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { cn } from '@nugget/ui/lib/utils';
 import { Milk, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getInProgressFeedingActivityAction } from '../activity-cards.actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { FeedingFormData } from './feeding-drawer';
@@ -28,6 +29,9 @@ export function FeedingActivityDrawer({
 }: FeedingActivityDrawerProps) {
   const { createActivity, updateActivity, isCreating, isUpdating } =
     useActivityMutations();
+  const addOptimisticActivity = useOptimisticActivitiesStore(
+    (state) => state.addActivity,
+  );
 
   // Feeding-specific state
   const [startTime, setStartTime] = useState(new Date());
@@ -127,6 +131,45 @@ export function FeedingActivityDrawer({
 
       // Close drawer immediately for better UX
       onClose();
+
+      // Only add optimistic activity for new activities (not updates)
+      if (!existingActivity && !activeActivityId) {
+        // Create optimistic activity for immediate UI feedback
+        const optimisticActivity = {
+          amount: formData.type === 'bottle' ? formData.amountMl : null,
+          assignedUserId: null,
+          babyId: 'temp',
+          createdAt: startTime,
+          details:
+            formData.type === 'nursing'
+              ? { side: 'both', type: 'nursing' }
+              : formData.type === 'solids'
+                ? { items: [], type: 'solids' }
+                : null,
+          duration: formData.type === 'nursing' ? durationMinutes : null,
+          endTime,
+          familyId: 'temp',
+          familyMemberId: null,
+          feedingSource:
+            formData.type === 'bottle'
+              ? formData.bottleType === 'formula'
+                ? 'formula'
+                : 'pumped'
+              : formData.type === 'nursing'
+                ? 'direct'
+                : null,
+          id: `optimistic-feeding-${Date.now()}`,
+          isScheduled: false,
+          notes: formData.notes || null,
+          startTime,
+          subjectType: 'baby' as const,
+          type: 'feeding' as const,
+          updatedAt: startTime,
+          userId: 'temp',
+        } as typeof Activities.$inferSelect;
+
+        addOptimisticActivity(optimisticActivity);
+      }
 
       // Prepare activity data based on feeding type
       const baseData = {

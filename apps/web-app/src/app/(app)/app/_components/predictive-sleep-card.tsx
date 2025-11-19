@@ -41,7 +41,8 @@ export function PredictiveSleepCard({
   const [error, setError] = useState<string | null>(null);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [skipTimestamp, setSkipTimestamp] = useState<number | null>(null);
-  const [quickLogging, setQuickLogging] = useState(false);
+  // Note: quickLogging kept for potential future use with quick-log functionality
+  const [quickLogging] = useState(false);
   const [inProgressActivity, setInProgressActivity] = useState<
     typeof Activities.$inferSelect | null
   >(null);

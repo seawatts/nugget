@@ -6,6 +6,7 @@ import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { cn } from '@nugget/ui/lib/utils';
 import { Baby, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { DiaperFormData } from './diaper-drawer';
 import { DiaperDrawerContent } from './diaper-drawer';
@@ -27,6 +28,9 @@ export function DiaperActivityDrawer({
 }: DiaperActivityDrawerProps) {
   const { createActivity, updateActivity, isCreating, isUpdating } =
     useActivityMutations();
+  const addOptimisticActivity = useOptimisticActivitiesStore(
+    (state) => state.addActivity,
+  );
 
   // Diaper-specific state
   const [startTime, setStartTime] = useState(new Date());
@@ -124,6 +128,38 @@ export function DiaperActivityDrawer({
         size: formData.size ?? undefined,
         type: 'diaper' as const,
       };
+
+      // Only add optimistic activity for new activities (not updates)
+      if (!existingActivity) {
+        // Create optimistic activity for immediate UI feedback
+        const optimisticActivity = {
+          amount: null,
+          assignedUserId: null,
+          babyId: 'temp',
+          createdAt: startTime,
+          details: {
+            color: formData.color,
+            consistency: formData.consistency,
+            size: formData.size,
+            type: formData.type,
+          },
+          duration: null,
+          endTime: null,
+          familyId: 'temp',
+          familyMemberId: null,
+          feedingSource: null,
+          id: `optimistic-diaper-${Date.now()}`,
+          isScheduled: false,
+          notes: formData.notes || null,
+          startTime,
+          subjectType: 'baby' as const,
+          type: 'diaper' as const,
+          updatedAt: startTime,
+          userId: 'temp',
+        } as typeof Activities.$inferSelect;
+
+        addOptimisticActivity(optimisticActivity);
+      }
 
       if (existingActivity) {
         // Update existing activity

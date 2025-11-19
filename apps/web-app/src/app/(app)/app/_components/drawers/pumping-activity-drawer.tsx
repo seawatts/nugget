@@ -7,6 +7,7 @@ import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { cn } from '@nugget/ui/lib/utils';
 import { Droplets, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { useActivityMutations } from '../use-activity-mutations';
 import { PumpingDrawerContent } from './pumping-drawer';
 
@@ -27,6 +28,9 @@ export function PumpingActivityDrawer({
 }: PumpingActivityDrawerProps) {
   const { createActivity, updateActivity, isCreating, isUpdating } =
     useActivityMutations();
+  const addOptimisticActivity = useOptimisticActivitiesStore(
+    (state) => state.addActivity,
+  );
 
   // Fetch user preferences to determine default unit
   const { data: user } = api.user.current.useQuery();
@@ -152,6 +156,33 @@ export function PumpingActivityDrawer({
         rightAmount: rightAmountMl,
         type: 'pumping' as const,
       };
+
+      // Only add optimistic activity for new activities (not updates)
+      if (!existingActivity) {
+        // Create optimistic activity for immediate UI feedback
+        const optimisticActivity = {
+          amount: totalAmountMl,
+          assignedUserId: null,
+          babyId: 'temp',
+          createdAt: startTime,
+          details: pumpingDetails,
+          duration: durationMinutes > 0 ? durationMinutes : null,
+          endTime,
+          familyId: 'temp',
+          familyMemberId: null,
+          feedingSource: 'pumped' as const,
+          id: `optimistic-pumping-${Date.now()}`,
+          isScheduled: false,
+          notes: notes || null,
+          startTime,
+          subjectType: 'baby' as const,
+          type: 'pumping' as const,
+          updatedAt: startTime,
+          userId: 'temp',
+        } as typeof Activities.$inferSelect;
+
+        addOptimisticActivity(optimisticActivity);
+      }
 
       if (existingActivity) {
         // Update existing activity

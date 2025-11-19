@@ -16,16 +16,17 @@ import { toast } from '@nugget/ui/sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Info, Milk, User, UserCheck } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getInProgressFeedingActivityAction } from './activity-cards.actions';
 import { LearningSection } from './learning-section';
 import {
   claimFeedingAction,
   getUpcomingFeedingAction,
-  quickLogFeedingAction,
   type UpcomingFeedingData,
   unclaimFeedingAction,
 } from './upcoming-feeding/actions';
 import { getFeedingLearningContent } from './upcoming-feeding/learning-content';
+import { useActivityMutations } from './use-activity-mutations';
 
 interface PredictiveFeedingCardProps {
   refreshTrigger?: number;
@@ -44,13 +45,18 @@ export function PredictiveFeedingCard({
   const [error, setError] = useState<string | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
-  const [quickLogging, setQuickLogging] = useState(false);
   const [skipTimestamp, setSkipTimestamp] = useState<number | null>(null);
   const [inProgressActivity, setInProgressActivity] = useState<
     typeof Activities.$inferSelect | null
   >(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Use activity mutations hook for creating feeding activities
+  const { createActivity, isCreating } = useActivityMutations();
+  const addOptimisticActivity = useOptimisticActivitiesStore(
+    (state) => state.addActivity,
+  );
 
   const loadInProgressActivity = useCallback(async () => {
     try {
@@ -267,26 +273,56 @@ export function PredictiveFeedingCard({
 
   const handleQuickLog = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setQuickLogging(true);
-    try {
-      const result = await quickLogFeedingAction({});
 
-      if (result?.data) {
-        toast.success('Feeding logged!');
-        // Clear skip timestamp when activity is logged
-        localStorage.removeItem('skip-feeding');
-        setSkipTimestamp(null);
-        // Notify parent component for optimistic updates and timeline refresh
-        onActivityLogged?.(result.data.activity);
-        await loadData(); // Reload to show updated state
-        await loadInProgressActivity(); // Reload in-progress to ensure no stale state
-      } else if (result?.serverError) {
-        toast.error(result.serverError);
-      }
+    try {
+      const now = new Date();
+      const defaultAmount = 120; // Default feeding amount in ml
+
+      // Create optimistic activity for immediate UI feedback
+      const optimisticActivity = {
+        amount: defaultAmount,
+        assignedUserId: null,
+        babyId: 'temp',
+        createdAt: now,
+        details: null,
+        duration: null,
+        endTime: null,
+        familyId: 'temp',
+        familyMemberId: null,
+        feedingSource: 'formula' as const, // Default to formula for quick log
+        id: `optimistic-feeding-${Date.now()}`,
+        isScheduled: false,
+        notes: null,
+        startTime: now,
+        subjectType: 'baby' as const,
+        type: 'feeding' as const,
+        updatedAt: now,
+        userId: 'temp',
+      } as typeof Activities.$inferSelect;
+
+      // Add to optimistic store immediately
+      addOptimisticActivity(optimisticActivity);
+
+      // Create the actual activity - mutation hook handles invalidation
+      const activity = await createActivity({
+        activityType: 'feeding',
+        amount: defaultAmount,
+        feedingSource: 'formula',
+        startTime: now,
+      });
+
+      // Clear skip timestamp when activity is logged
+      localStorage.removeItem('skip-feeding');
+      setSkipTimestamp(null);
+
+      // Notify parent component
+      onActivityLogged?.(activity);
+
+      // Reload prediction data and in-progress state
+      await loadData();
+      await loadInProgressActivity();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to log feeding');
-    } finally {
-      setQuickLogging(false);
     }
   };
 
@@ -388,15 +424,15 @@ export function PredictiveFeedingCard({
           <div className="flex gap-2">
             <Button
               className="flex-1 bg-amber-950 hover:bg-amber-900 text-amber-50"
-              disabled={quickLogging}
+              disabled={isCreating}
               onClick={handleQuickLog}
               size="sm"
             >
-              {quickLogging ? 'Logging...' : 'Log Now'}
+              {isCreating ? 'Logging...' : 'Log Now'}
             </Button>
             <Button
               className="flex-1 bg-amber-100 hover:bg-amber-200 text-amber-950 border-amber-950/20"
-              disabled={quickLogging}
+              disabled={isCreating}
               onClick={handleCardClick}
               size="sm"
               variant="outline"
@@ -405,7 +441,7 @@ export function PredictiveFeedingCard({
             </Button>
             <Button
               className="flex-1 bg-muted hover:bg-muted/80 text-foreground"
-              disabled={quickLogging}
+              disabled={isCreating}
               onClick={handleSkip}
               size="sm"
               variant="ghost"
