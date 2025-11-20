@@ -35,8 +35,6 @@ export function PredictiveDoctorVisitCard({
   const params = useParams<{ babyId?: string }>();
   const babyId = params?.babyId;
 
-  const { data: userData } = api.user.current.useQuery();
-
   // Use tRPC query for prediction data
   const {
     data: queryData,

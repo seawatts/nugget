@@ -26,17 +26,6 @@ export interface DoctorVisitPrediction {
 }
 
 /**
- * Calculate baby's age in days from birth date
- */
-function calculateBabyAgeDays(birthDate: Date | null): number | null {
-  if (!birthDate) return null;
-  const now = new Date();
-  const diffTime = now.getTime() - birthDate.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays;
-}
-
-/**
  * Predict next doctor visit based on baby's age and visit history
  * Combines standard AAP schedule with completed visits
  */

@@ -37,12 +37,12 @@ export function PumpingDrawerContent({
   rightAmount: controlledRightAmount,
   selectedDuration: controlledSelectedDuration,
   selectedMethod: controlledSelectedMethod,
-  notes: controlledNotes,
+  notes: _controlledNotes,
   setLeftAmount: setControlledLeftAmount,
   setRightAmount: setControlledRightAmount,
   setSelectedDuration: setControlledSelectedDuration,
   setSelectedMethod: setControlledSelectedMethod,
-  setNotes: setControlledNotes,
+  setNotes: _setControlledNotes,
 }: PumpingDrawerContentProps = {}) {
   // Fetch baby data and user preferences
   const { data: babies = [] } = api.babies.list.useQuery();
@@ -60,7 +60,6 @@ export function PumpingDrawerContent({
   const [internalSelectedMethod, setInternalSelectedMethod] = useState<
     'electric' | 'manual' | null
   >(null);
-  const [internalNotes, setInternalNotes] = useState('');
   const [hasInitialized, setHasInitialized] = useState(false);
 
   // Use controlled props if provided, otherwise use internal state

@@ -5,7 +5,7 @@ import { Button } from '@nugget/ui/button';
 import { Input } from '@nugget/ui/input';
 import { Label } from '@nugget/ui/label';
 import { Textarea } from '@nugget/ui/textarea';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   getLengthUnitLabel,
   getWeightUnitLabel,
@@ -67,29 +67,29 @@ export function DoctorVisitDrawerContent({
   const [notes, setNotes] = useState(initialData?.notes || '');
 
   // Convert input to metric for storage
-  const getWeightKg = (): string => {
+  const getWeightKg = useCallback((): string => {
     if (!weightInput) return '';
     if (measurementUnit === 'imperial') {
       return lbsToKg(Number.parseFloat(weightInput)).toString();
     }
     return weightInput;
-  };
+  }, [weightInput, measurementUnit]);
 
-  const getLengthCm = (): string => {
+  const getLengthCm = useCallback((): string => {
     if (!lengthInput) return '';
     if (measurementUnit === 'imperial') {
       return inchesToCm(Number.parseFloat(lengthInput)).toString();
     }
     return lengthInput;
-  };
+  }, [lengthInput, measurementUnit]);
 
-  const getHeadCircumferenceCm = (): string => {
+  const getHeadCircumferenceCm = useCallback((): string => {
     if (!headInput) return '';
     if (measurementUnit === 'imperial') {
       return inchesToCm(Number.parseFloat(headInput)).toString();
     }
     return headInput;
-  };
+  }, [headInput, measurementUnit]);
 
   // Call onDataChange whenever form data changes
   useEffect(() => {
