@@ -289,7 +289,7 @@ export function ProfilePictureUpload({
     try {
       setIsRemoving(true);
       await updateBaby.mutateAsync({
-        avatarBackgroundColor: AVATAR_COLORS[0].bg, // Default to first color
+        avatarBackgroundColor: AVATAR_COLORS[0]?.bg ?? '#FBBF24', // Default to first color
         id: babyId,
         photoUrl: null,
       });
