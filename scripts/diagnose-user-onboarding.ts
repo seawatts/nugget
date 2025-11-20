@@ -73,10 +73,12 @@ async function diagnoseUser(clerkUserId: string): Promise<DiagnosticResult> {
     },
   });
 
-  const familyMemberships = familyMembers.map((fm) => ({
-    family: fm.family!,
-    familyMember: fm,
-  }));
+  const familyMemberships = familyMembers
+    .filter((fm) => fm.family)
+    .map((fm) => ({
+      family: fm.family,
+      familyMember: fm,
+    }));
 
   // 3. Get all babies
   const babies = await db.query.Babies.findMany({
@@ -126,7 +128,7 @@ async function diagnoseUser(clerkUserId: string): Promise<DiagnosticResult> {
 }
 
 async function fixOnboarding(
-  clerkUserId: string,
+  _clerkUserId: string,
   result: DiagnosticResult,
 ): Promise<void> {
   if (!result.diagnosis.isStuck) {
@@ -196,14 +198,14 @@ function printResults(result: DiagnosticResult): void {
   console.log('👤 USER INFORMATION');
   console.log('───────────────────────────────────────────────────────────');
   console.log(
-    `Name:       ${user!.firstName || ''} ${user!.lastName || ''}`.trim() ||
+    `Name:       ${user?.firstName || ''} ${user?.lastName || ''}`.trim() ||
       'N/A',
   );
-  console.log(`Email:      ${user!.email}`);
-  console.log(`Clerk ID:   ${user!.clerkId}`);
-  console.log(`DB ID:      ${user!.id}`);
-  console.log(`Created:    ${user!.createdAt?.toISOString() || 'N/A'}`);
-  console.log(`Last Login: ${user!.lastLoggedInAt?.toISOString() || 'N/A'}`);
+  console.log(`Email:      ${user?.email}`);
+  console.log(`Clerk ID:   ${user?.clerkId}`);
+  console.log(`DB ID:      ${user?.id}`);
+  console.log(`Created:    ${user?.createdAt?.toISOString() || 'N/A'}`);
+  console.log(`Last Login: ${user?.lastLoggedInAt?.toISOString() || 'N/A'}`);
   console.log('');
 
   // Family Memberships
@@ -277,11 +279,11 @@ function printResults(result: DiagnosticResult): void {
     if (diagnosis.canFix) {
       console.log('  Run with --fix flag to mark onboarding as complete:\n');
       console.log(
-        `  infisical --env=prod run -- bun run scripts/diagnose-user-onboarding.ts ${user!.clerkId} --fix`,
+        `  infisical --env=prod run -- bun run scripts/diagnose-user-onboarding.ts ${user?.clerkId} --fix`,
       );
       console.log('');
       console.log('  Or use the npm script:');
-      console.log(`  bun diagnose:user ${user!.clerkId} --fix`);
+      console.log(`  bun diagnose:user ${user?.clerkId} --fix`);
     } else {
       console.log('  ⚠️  User needs to complete the onboarding flow.');
       console.log(

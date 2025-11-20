@@ -100,6 +100,24 @@ export const babiesRouter = createTRPCRouter({
       return baby;
     }),
 
+  // Get a specific baby by ID (lightweight version without nested relations)
+  getByIdLight: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const baby = await ctx.db.query.Babies.findFirst({
+        where: and(
+          eq(Babies.id, input.id),
+          eq(Babies.familyId, ctx.auth.orgId || ''),
+        ),
+      });
+
+      if (!baby) {
+        throw new Error('Baby not found');
+      }
+
+      return baby;
+    }),
+
   // Get the most recently updated baby
   getMostRecent: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.auth.orgId) {

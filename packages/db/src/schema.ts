@@ -572,80 +572,106 @@ export type SleepDetails = z.infer<typeof sleepDetailsSchema>;
 // Tables - Baby Tracking
 // ============================================================================
 
-export const Babies = pgTable('babies', {
-  avatarBackgroundColor: text('avatarBackgroundColor'), // Background color when photo is hidden
-  birthDate: timestamp('birthDate', { mode: 'date' }),
-  birthWeightOz: integer('birthWeightOz'), // Birth weight in ounces
-  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
-  currentWeightOz: integer('currentWeightOz'), // Current weight in ounces
-  dueDate: timestamp('dueDate', { mode: 'date' }),
-  familyId: varchar('familyId', { length: 128 })
-    .references(() => Families.id, {
-      onDelete: 'cascade',
-    })
-    .notNull()
-    .default(requestingFamilyId()),
-  feedIntervalHours: integer('feedIntervalHours').default(2.5), // Hours between feeds
-  firstName: text('firstName').notNull(),
-  gender: text('gender'),
-  id: varchar('id', { length: 128 })
-    .primaryKey()
-    .$defaultFn(() => createId({ prefix: 'baby' })),
-  journeyStage: journeyStageEnum('journeyStage'),
-  lastName: text('lastName'),
-  metadata: json('metadata').$type<Record<string, unknown>>(),
-  middleName: text('middleName'),
-  mlPerPump: integer('mlPerPump').default(24), // ML per pump session
-  photoUrl: text('photoUrl'),
-  pumpsPerDay: integer('pumpsPerDay').default(6), // Number of pumps per day
-  ttcMethod: ttcMethodEnum('ttcMethod'),
-  updatedAt: timestamp('updatedAt', { mode: 'date' })
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
-  userId: varchar('userId', { length: 128 })
-    .notNull()
-    .default(requestingUserId()),
-});
+export const Babies = pgTable(
+  'babies',
+  {
+    avatarBackgroundColor: text('avatarBackgroundColor'), // Background color when photo is hidden
+    birthDate: timestamp('birthDate', { mode: 'date' }),
+    birthWeightOz: integer('birthWeightOz'), // Birth weight in ounces
+    createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+    currentWeightOz: integer('currentWeightOz'), // Current weight in ounces
+    dueDate: timestamp('dueDate', { mode: 'date' }),
+    familyId: varchar('familyId', { length: 128 })
+      .references(() => Families.id, {
+        onDelete: 'cascade',
+      })
+      .notNull()
+      .default(requestingFamilyId()),
+    feedIntervalHours: integer('feedIntervalHours').default(2.5), // Hours between feeds
+    firstName: text('firstName').notNull(),
+    gender: text('gender'),
+    id: varchar('id', { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId({ prefix: 'baby' })),
+    journeyStage: journeyStageEnum('journeyStage'),
+    lastName: text('lastName'),
+    metadata: json('metadata').$type<Record<string, unknown>>(),
+    middleName: text('middleName'),
+    mlPerPump: integer('mlPerPump').default(24), // ML per pump session
+    photoUrl: text('photoUrl'),
+    pumpsPerDay: integer('pumpsPerDay').default(6), // Number of pumps per day
+    ttcMethod: ttcMethodEnum('ttcMethod'),
+    updatedAt: timestamp('updatedAt', { mode: 'date' })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+    userId: varchar('userId', { length: 128 })
+      .notNull()
+      .default(requestingUserId()),
+  },
+  (table) => [
+    // Composite index for efficient family baby queries sorted by update time
+    index('babies_familyId_updatedAt_idx').on(table.familyId, table.updatedAt),
+  ],
+);
 
-export const Activities = pgTable('activities', {
-  amount: integer('amount'), // for feeding, in ml
-  assignedUserId: varchar('assignedUserId', { length: 128 }).references(
-    () => Users.id,
-    { onDelete: 'set null' },
-  ), // User assigned to complete this scheduled feeding
-  babyId: varchar('babyId', { length: 128 }).references(() => Babies.id, {
-    onDelete: 'cascade',
-  }), // Baby the activity is about (when subjectType = 'baby')
-  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
-  details: json('details').$type<ActivityDetails>(),
-  duration: integer('duration'), // in minutes
-  endTime: timestamp('endTime', { mode: 'date' }),
-  familyId: varchar('familyId', { length: 128 })
-    .notNull()
-    .references(() => Families.id, { onDelete: 'cascade' })
-    .default(requestingFamilyId()),
-  familyMemberId: varchar('familyMemberId', { length: 128 }).references(
-    () => FamilyMembers.id,
-    { onDelete: 'cascade' },
-  ), // Family member the activity is about (when subjectType = 'family_member')
-  feedingSource: feedingSourceEnum('feedingSource'), // Source of milk/formula for feeding activities
-  id: varchar('id', { length: 128 })
-    .primaryKey()
-    .$defaultFn(() => createId({ prefix: 'activity' })),
-  isScheduled: boolean('isScheduled').default(false).notNull(), // Whether this is a scheduled/future feed
-  notes: text('notes'),
-  startTime: timestamp('startTime', { mode: 'date' }).notNull(),
-  subjectType: activitySubjectTypeEnum('subjectType').notNull().default('baby'), // What/who the activity is about
-  type: activityTypeEnum('type').notNull(),
-  updatedAt: timestamp('updatedAt', { mode: 'date' })
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
-  userId: varchar('userId', { length: 128 })
-    .notNull()
-    .default(requestingUserId()),
-});
+export const Activities = pgTable(
+  'activities',
+  {
+    amount: integer('amount'), // for feeding, in ml
+    assignedUserId: varchar('assignedUserId', { length: 128 }).references(
+      () => Users.id,
+      { onDelete: 'set null' },
+    ), // User assigned to complete this scheduled feeding
+    babyId: varchar('babyId', { length: 128 }).references(() => Babies.id, {
+      onDelete: 'cascade',
+    }), // Baby the activity is about (when subjectType = 'baby')
+    createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+    details: json('details').$type<ActivityDetails>(),
+    duration: integer('duration'), // in minutes
+    endTime: timestamp('endTime', { mode: 'date' }),
+    familyId: varchar('familyId', { length: 128 })
+      .notNull()
+      .references(() => Families.id, { onDelete: 'cascade' })
+      .default(requestingFamilyId()),
+    familyMemberId: varchar('familyMemberId', { length: 128 }).references(
+      () => FamilyMembers.id,
+      { onDelete: 'cascade' },
+    ), // Family member the activity is about (when subjectType = 'family_member')
+    feedingSource: feedingSourceEnum('feedingSource'), // Source of milk/formula for feeding activities
+    id: varchar('id', { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId({ prefix: 'activity' })),
+    isScheduled: boolean('isScheduled').default(false).notNull(), // Whether this is a scheduled/future feed
+    notes: text('notes'),
+    startTime: timestamp('startTime', { mode: 'date' }).notNull(),
+    subjectType: activitySubjectTypeEnum('subjectType')
+      .notNull()
+      .default('baby'), // What/who the activity is about
+    type: activityTypeEnum('type').notNull(),
+    updatedAt: timestamp('updatedAt', { mode: 'date' })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+    userId: varchar('userId', { length: 128 })
+      .notNull()
+      .default(requestingUserId()),
+  },
+  (table) => [
+    // Composite index for efficient baby activity queries sorted by time
+    index('activities_babyId_startTime_isScheduled_idx').on(
+      table.babyId,
+      table.startTime,
+      table.isScheduled,
+    ),
+    // Index for sorting by startTime (used in timeline queries)
+    index('activities_startTime_idx').on(table.startTime),
+    // Index for user queries
+    index('activities_userId_idx').on(table.userId),
+    // Index for family queries
+    index('activities_familyId_idx').on(table.familyId),
+  ],
+);
 
 export const MedicalRecords = pgTable('medicalRecords', {
   babyId: varchar('babyId', { length: 128 })
@@ -675,67 +701,94 @@ export const MedicalRecords = pgTable('medicalRecords', {
     .default(requestingUserId()),
 });
 
-export const Milestones = pgTable('milestones', {
-  achievedDate: timestamp('achievedDate', { mode: 'date' }), // Nullable - null means not yet completed
-  babyId: varchar('babyId', { length: 128 })
-    .notNull()
-    .references(() => Babies.id, { onDelete: 'cascade' }),
-  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
-  description: text('description'),
-  familyId: varchar('familyId', { length: 128 })
-    .notNull()
-    .references(() => Families.id, { onDelete: 'cascade' })
-    .default(requestingFamilyId()),
-  id: varchar('id', { length: 128 })
-    .primaryKey()
-    .$defaultFn(() => createId({ prefix: 'milestone' })),
-  isSuggested: boolean('isSuggested').default(false).notNull(), // True for system-suggested milestones
-  metadata: json('metadata').$type<Record<string, unknown>>(),
-  photoUrl: text('photoUrl'),
-  suggestedDay: integer('suggestedDay'), // Which postpartum day this milestone is suggested for (null for user-created)
-  title: text('title').notNull(),
-  type: milestoneTypeEnum('type').notNull(),
-  updatedAt: timestamp('updatedAt', { mode: 'date' })
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
-  userId: varchar('userId', { length: 128 })
-    .notNull()
-    .default(requestingUserId()),
-});
+export const Milestones = pgTable(
+  'milestones',
+  {
+    achievedDate: timestamp('achievedDate', { mode: 'date' }), // Nullable - null means not yet completed
+    babyId: varchar('babyId', { length: 128 })
+      .notNull()
+      .references(() => Babies.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+    description: text('description'),
+    familyId: varchar('familyId', { length: 128 })
+      .notNull()
+      .references(() => Families.id, { onDelete: 'cascade' })
+      .default(requestingFamilyId()),
+    id: varchar('id', { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId({ prefix: 'milestone' })),
+    isSuggested: boolean('isSuggested').default(false).notNull(), // True for system-suggested milestones
+    metadata: json('metadata').$type<Record<string, unknown>>(),
+    photoUrl: text('photoUrl'),
+    suggestedDay: integer('suggestedDay'), // Which postpartum day this milestone is suggested for (null for user-created)
+    title: text('title').notNull(),
+    type: milestoneTypeEnum('type').notNull(),
+    updatedAt: timestamp('updatedAt', { mode: 'date' })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+    userId: varchar('userId', { length: 128 })
+      .notNull()
+      .default(requestingUserId()),
+  },
+  (table) => [
+    // Composite index for efficient baby milestone queries sorted by achieved date
+    index('milestones_babyId_achievedDate_idx').on(
+      table.babyId,
+      table.achievedDate,
+    ),
+    // Index for suggested milestones lookup
+    index('milestones_babyId_isSuggested_idx').on(
+      table.babyId,
+      table.isSuggested,
+    ),
+    // Index for family queries
+    index('milestones_familyId_idx').on(table.familyId),
+  ],
+);
 
 // ============================================================================
 // Tables - Celebrations
 // ============================================================================
 
-export const CelebrationMemories = pgTable('celebrationMemories', {
-  babyId: varchar('babyId', { length: 128 })
-    .notNull()
-    .references(() => Babies.id, { onDelete: 'cascade' }),
-  celebrationDate: timestamp('celebrationDate', { mode: 'date' })
-    .notNull()
-    .defaultNow(),
-  celebrationType: celebrationTypeEnum('celebrationType').notNull(),
-  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
-  familyId: varchar('familyId', { length: 128 })
-    .notNull()
-    .references(() => Families.id, { onDelete: 'cascade' })
-    .default(requestingFamilyId()),
-  id: varchar('id', { length: 128 })
-    .primaryKey()
-    .$defaultFn(() => createId({ prefix: 'celebration' })),
-  metadata: json('metadata').$type<Record<string, unknown>>(),
-  note: text('note'),
-  photoUrls: json('photoUrls').$type<string[]>().default([]),
-  sharedWith: json('sharedWith').$type<string[]>().default([]), // Array of user IDs
-  updatedAt: timestamp('updatedAt', { mode: 'date' })
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
-  userId: varchar('userId', { length: 128 })
-    .notNull()
-    .default(requestingUserId()),
-});
+export const CelebrationMemories = pgTable(
+  'celebrationMemories',
+  {
+    babyId: varchar('babyId', { length: 128 })
+      .notNull()
+      .references(() => Babies.id, { onDelete: 'cascade' }),
+    celebrationDate: timestamp('celebrationDate', { mode: 'date' })
+      .notNull()
+      .defaultNow(),
+    celebrationType: celebrationTypeEnum('celebrationType').notNull(),
+    createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+    familyId: varchar('familyId', { length: 128 })
+      .notNull()
+      .references(() => Families.id, { onDelete: 'cascade' })
+      .default(requestingFamilyId()),
+    id: varchar('id', { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId({ prefix: 'celebration' })),
+    metadata: json('metadata').$type<Record<string, unknown>>(),
+    note: text('note'),
+    photoUrls: json('photoUrls').$type<string[]>().default([]),
+    sharedWith: json('sharedWith').$type<string[]>().default([]), // Array of user IDs
+    updatedAt: timestamp('updatedAt', { mode: 'date' })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+    userId: varchar('userId', { length: 128 })
+      .notNull()
+      .default(requestingUserId()),
+  },
+  (table) => [
+    // Composite index for efficient celebration lookups by baby and type
+    index('celebrationMemories_babyId_celebrationType_idx').on(
+      table.babyId,
+      table.celebrationType,
+    ),
+  ],
+);
 
 export const GrowthRecords = pgTable('growthRecords', {
   babyId: varchar('babyId', { length: 128 })

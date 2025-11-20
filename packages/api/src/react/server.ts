@@ -43,3 +43,6 @@ export const getApi = cache(async () =>
     transformer: superjson,
   }),
 );
+
+// Export HydrationBoundary for convenience
+export { HydrationBoundary } from './hydration-boundary';

@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
-import { formatVolumeDisplay } from './volume-utils';
+import { formatVolumeDisplay } from './activities/shared/volume-utils';
 
 const activityIcons: Record<string, LucideIcon> = {
   activity: Activity,
@@ -43,21 +43,21 @@ const activityIcons: Record<string, LucideIcon> = {
 };
 
 const activityColors: Record<string, string> = {
-  activity: 'text-[oklch(0.70_0.16_150)]',
-  bath: 'text-[oklch(0.62_0.18_260)]',
-  bottle: 'text-[oklch(0.68_0.18_35)]',
-  diaper: 'text-[oklch(0.78_0.14_60)]',
-  feeding: 'text-[oklch(0.68_0.18_35)]',
-  growth: 'text-[oklch(0.62_0.18_260)]',
-  medicine: 'text-[oklch(0.68_0.18_10)]',
-  milestone: 'text-[oklch(0.75_0.18_140)]',
-  nursing: 'text-[oklch(0.68_0.18_35)]',
-  potty: 'text-[oklch(0.78_0.14_60)]',
-  pumping: 'text-[oklch(0.65_0.18_280)]',
-  sleep: 'text-[oklch(0.75_0.15_195)]',
-  solids: 'text-[oklch(0.72_0.16_330)]',
-  temperature: 'text-[oklch(0.68_0.18_10)]',
-  'tummy-time': 'text-[oklch(0.70_0.16_150)]',
+  activity: 'text-activity-tummy-time',
+  bath: 'text-activity-bath',
+  bottle: 'text-activity-feeding',
+  diaper: 'text-activity-diaper',
+  feeding: 'text-activity-feeding',
+  growth: 'text-activity-growth',
+  medicine: 'text-activity-medicine',
+  milestone: 'text-activity-milestone',
+  nursing: 'text-activity-feeding',
+  potty: 'text-activity-potty',
+  pumping: 'text-activity-pumping',
+  sleep: 'text-activity-sleep',
+  solids: 'text-activity-solids',
+  temperature: 'text-activity-temperature',
+  'tummy-time': 'text-activity-tummy-time',
 };
 
 const activityLabels: Record<string, string> = {
@@ -185,33 +185,21 @@ export function TodaySummaryCard({
   // Determine volume unit based on measurement preference
   const userUnitPref = measurementUnit === 'imperial' ? 'OZ' : 'ML';
 
-  // Get the most recent baby using tRPC query
-  const { data: baby, isLoading: babyLoading } =
-    api.babies.getMostRecent.useQuery();
+  // Get the most recent baby using tRPC suspense query (prefetched on server)
+  const [baby] = api.babies.getMostRecent.useSuspenseQuery();
 
-  // Fetch activities from today using tRPC query
-  const { data: activitiesData = [], error: activitiesError } =
-    api.activities.list.useQuery(
-      {
-        babyId: baby?.id ?? '',
-        isScheduled: false,
-        limit: 100,
-      },
-      {
-        enabled: !!baby?.id,
-      },
-    );
+  // Fetch activities from today using tRPC suspense query (prefetched on server)
+  const [activitiesData = []] = api.activities.list.useSuspenseQuery({
+    babyId: baby?.id ?? '',
+    isScheduled: false,
+    limit: 100,
+  });
 
-  // Fetch milestones achieved today using tRPC query
-  const { data: allMilestones = [] } = api.milestones.list.useQuery(
-    {
-      babyId: baby?.id ?? '',
-      limit: 100,
-    },
-    {
-      enabled: !!baby?.id,
-    },
-  );
+  // Fetch milestones achieved today using tRPC suspense query (prefetched on server)
+  const [allMilestones = []] = api.milestones.list.useSuspenseQuery({
+    babyId: baby?.id ?? '',
+    limit: 100,
+  });
 
   // Filter to only today's activities and milestones
   const todayStart = useMemo(() => startOfDay(new Date()), []);
@@ -230,11 +218,6 @@ export function TodaySummaryCard({
       return achievedDate >= todayStart;
     });
   }, [allMilestones, todayStart]);
-
-  // Only show loading skeleton if we haven't loaded the baby yet
-  // Once we have baby data, show the card even if activities/milestones are still loading
-  const loading = !baby && babyLoading;
-  const error = activitiesError?.message ?? null;
 
   // Get optimistic activities from Zustand store
   const optimisticActivities = useOptimisticActivitiesStore.use.activities();
@@ -333,30 +316,6 @@ export function TodaySummaryCard({
       },
     };
   });
-
-  if (loading) {
-    return (
-      <div className="rounded-xl border border-border bg-card/50 p-5 animate-pulse">
-        <div className="h-6 bg-muted/30 rounded w-32 mb-4" />
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
-          <div className="h-16 bg-muted/30 rounded" />
-          <div className="h-16 bg-muted/30 rounded" />
-          <div className="h-16 bg-muted/30 rounded" />
-          <div className="h-16 bg-muted/30 rounded" />
-          <div className="h-16 bg-muted/30 rounded" />
-          <div className="h-16 bg-muted/30 rounded" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4">
-        <p className="text-sm text-destructive">{error}</p>
-      </div>
-    );
-  }
 
   return (
     <div className="rounded-xl border border-border bg-linear-to-br from-card/50 to-card/80 backdrop-blur-sm p-5 shadow-sm">
