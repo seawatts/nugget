@@ -17,10 +17,9 @@ import { cn } from '@nugget/ui/lib/utils';
 import { toast } from '@nugget/ui/sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { Info, Milk, User, UserCheck } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
-import { getInProgressFeedingActivityAction } from './activity-cards.actions';
 import { LearningSection } from './learning-section';
 import {
   claimFeedingAction,
@@ -61,9 +60,6 @@ export function PredictiveFeedingCard({
   const [claiming, setClaiming] = useState(false);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [skipping, setSkipping] = useState(false);
-  const [inProgressActivity, setInProgressActivity] = useState<
-    typeof Activities.$inferSelect | null
-  >(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -88,6 +84,7 @@ export function PredictiveFeedingCard({
           queryData.babyAgeDays !== null
             ? getFeedingGuidanceByAge(queryData.babyAgeDays)
             : "Follow your pediatrician's feeding recommendations.",
+        inProgressActivity: queryData.inProgressActivity,
         prediction: predictNextFeeding(
           queryData.recentActivities,
           queryData.babyBirthDate,
@@ -103,32 +100,9 @@ export function PredictiveFeedingCard({
       }
     : null;
 
+  const inProgressActivity = data?.inProgressActivity || null;
+
   const error = queryError?.message || null;
-
-  const loadInProgressActivity = useCallback(async () => {
-    try {
-      const result = await getInProgressFeedingActivityAction({});
-      if (result?.data?.activity) {
-        setInProgressActivity(result.data.activity);
-        // Calculate initial elapsed time
-        const elapsed = Math.floor(
-          (Date.now() - new Date(result.data.activity.startTime).getTime()) /
-            1000,
-        );
-        setElapsedTime(elapsed);
-      } else {
-        setInProgressActivity(null);
-        setElapsedTime(0);
-      }
-    } catch (err) {
-      console.error('Failed to load in-progress feeding:', err);
-    }
-  }, []);
-
-  // Load in-progress activity on mount
-  useEffect(() => {
-    loadInProgressActivity();
-  }, [loadInProgressActivity]);
 
   // Timer effect - updates elapsed time every second when tracking
   useEffect(() => {
@@ -322,9 +296,8 @@ export function PredictiveFeedingCard({
       // Notify parent component
       onActivityLogged?.(activity);
 
-      // Reload prediction data and in-progress state
+      // Reload prediction data (will include in-progress state)
       await utils.activities.getUpcomingFeeding.invalidate();
-      await loadInProgressActivity();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to log feeding');
     }

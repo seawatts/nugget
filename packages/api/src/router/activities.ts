@@ -347,6 +347,14 @@ export const activitiesRouter = createTRPCRouter({
         new Date(a.startTime) > new Date(),
     );
 
+    // Check for in-progress feeding activity (has startTime but no endTime)
+    const inProgressActivity = recentActivities.find(
+      (a) =>
+        (a.type === 'bottle' || a.type === 'nursing') &&
+        a.startTime &&
+        !a.endTime,
+    );
+
     // Return data - prediction logic will be handled on client side for now
     return {
       babyAgeDays,
@@ -354,6 +362,7 @@ export const activitiesRouter = createTRPCRouter({
       familyMemberCount: familyMembers.length,
       familyMembers,
       feedIntervalHours: baby.feedIntervalHours,
+      inProgressActivity: inProgressActivity || null,
       recentActivities,
       scheduledFeeding: scheduledFeeding || null,
     };
