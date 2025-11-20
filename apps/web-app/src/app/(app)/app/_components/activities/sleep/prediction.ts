@@ -115,8 +115,14 @@ export function predictNextSleep(
   babyBirthDate: Date | null,
 ): SleepPrediction {
   // Filter to only sleep activities
+  // Exclude scheduled activities and skipped activities (dismissals don't count as real sleep)
   const sleepActivities = recentSleeps
-    .filter((a) => a.type === 'sleep' && !a.isScheduled)
+    .filter(
+      (a) =>
+        a.type === 'sleep' &&
+        !a.isScheduled &&
+        !(a.details && 'skipped' in a.details && a.details.skipped === true),
+    )
     .sort(
       (a, b) =>
         new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),

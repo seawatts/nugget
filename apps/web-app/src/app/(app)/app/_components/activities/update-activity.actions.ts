@@ -3,9 +3,9 @@
 import { auth } from '@clerk/nextjs/server';
 import { getApi } from '@nugget/api/server';
 import type { Activities } from '@nugget/db/schema';
-import { revalidatePath } from 'next/cache';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';
+import { revalidateAppPaths } from '~/app/(app)/app/_utils/revalidation';
 
 const action = createSafeActionClient();
 
@@ -67,9 +67,7 @@ export const updateActivityAction = action
       });
 
       // Revalidate any pages that might display activities
-      revalidatePath('/app');
-      revalidatePath('/app/timeline');
-      revalidatePath('/app/activities');
+      revalidateAppPaths();
 
       return { activity };
     },

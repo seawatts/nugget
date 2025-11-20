@@ -154,11 +154,11 @@ export function FeedingActivityDrawer({
 
             {/* Time & Date Section - Only show when timer has been stopped or no active tracking */}
             {formData && (activeActivityId ? isTimerStopped : true) && (
-              <div className="space-y-3">
+              <div className="space-y-3 min-w-0">
                 <h3 className="text-sm font-medium text-muted-foreground">
                   Time & Date
                 </h3>
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 gap-3 min-w-0">
                   <TimeInput
                     id="feeding-start-time"
                     label="Start Time"

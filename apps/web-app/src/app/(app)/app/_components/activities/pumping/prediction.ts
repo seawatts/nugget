@@ -68,8 +68,14 @@ export function predictNextPumping(
   babyBirthDate: Date | null,
 ): PumpingPrediction {
   // Filter to only pumping activities
+  // Exclude scheduled activities and skipped activities (dismissals don't count as real pumping)
   const pumpingActivities = recentPumpings
-    .filter((a) => a.type === 'pumping' && !a.isScheduled)
+    .filter(
+      (a) =>
+        a.type === 'pumping' &&
+        !a.isScheduled &&
+        !(a.details && 'skipped' in a.details && a.details.skipped === true),
+    )
     .sort(
       (a, b) =>
         new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),

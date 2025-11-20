@@ -24,6 +24,7 @@ import {
   Moon,
   Pill,
   Scale,
+  Stethoscope,
   Thermometer,
   Timer,
   Tablet as Toilet,
@@ -35,6 +36,10 @@ import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { ChatDialog } from '../../chat/chat-dialog';
 import { ActivityDrawer } from '../activity-drawer';
 import { getDisplayNotes } from '../shared/activity-utils';
+import {
+  formatLengthDisplay,
+  formatWeightDisplay,
+} from '../shared/measurement-utils';
 import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
 import type { TimelineItem } from './activity-timeline.actions';
 import { ActivityTimelineFilters } from './activity-timeline-filters';
@@ -166,6 +171,7 @@ const activityIcons: Record<string, typeof Moon> = {
   bottle: Milk,
   chat: MessageSquare,
   diaper: Baby,
+  doctor_visit: Stethoscope,
   growth: Scale,
   medicine: Pill,
   milestone: Award,
@@ -184,6 +190,7 @@ const activityColors: Record<string, string> = {
   bottle: 'border-l-activity-feeding',
   chat: 'border-l-activity-chat',
   diaper: 'border-l-activity-diaper',
+  doctor_visit: 'border-l-activity-doctor-visit',
   growth: 'border-l-activity-growth',
   medicine: 'border-l-activity-medicine',
   milestone: 'border-l-activity-milestone',
@@ -277,6 +284,7 @@ export function ActivityTimeline() {
   const [user] = api.user.current.useSuspenseQuery();
   const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
   const timeFormat = user?.timeFormat || '12h';
+  const measurementUnit = user?.measurementUnit || 'metric';
 
   // Build filters for activities query
   const activityFilters = useMemo(() => {
@@ -555,9 +563,13 @@ export function ActivityTimeline() {
                   if (activity.duration) {
                     details.push(`${activity.duration} min`);
                   }
-                  if (activity.amount) {
+                  if (activity.amountMl) {
                     details.push(
-                      formatVolumeDisplay(activity.amount, userUnitPref, true),
+                      formatVolumeDisplay(
+                        activity.amountMl,
+                        userUnitPref,
+                        true,
+                      ),
                     );
                   }
 
@@ -580,6 +592,60 @@ export function ActivityTimeline() {
                       details.push('Pee');
                     } else if (diaperDetails.dirty) {
                       details.push('Poop');
+                    }
+                  }
+
+                  // Add doctor visit details
+                  if (activity.type === 'doctor_visit' && activity.details) {
+                    const visitDetails = activity.details as {
+                      visitType?: string;
+                      doctorName?: string;
+                      weightKg?: string;
+                      lengthCm?: string;
+                      vaccinations?: string[];
+                    };
+                    if (visitDetails.visitType) {
+                      const typeMap: Record<string, string> = {
+                        'follow-up': 'Follow-up',
+                        other: 'Visit',
+                        sick: 'Sick visit',
+                        'well-baby': 'Well-baby checkup',
+                      };
+                      details.push(
+                        typeMap[visitDetails.visitType] ||
+                          visitDetails.visitType,
+                      );
+                    }
+                    if (visitDetails.doctorName) {
+                      details.push(`Dr. ${visitDetails.doctorName}`);
+                    }
+                    if (visitDetails.weightKg) {
+                      const weightNum = Number.parseFloat(
+                        visitDetails.weightKg,
+                      );
+                      if (!Number.isNaN(weightNum)) {
+                        details.push(
+                          formatWeightDisplay(weightNum, measurementUnit),
+                        );
+                      }
+                    }
+                    if (visitDetails.lengthCm) {
+                      const lengthNum = Number.parseFloat(
+                        visitDetails.lengthCm,
+                      );
+                      if (!Number.isNaN(lengthNum)) {
+                        details.push(
+                          formatLengthDisplay(lengthNum, measurementUnit),
+                        );
+                      }
+                    }
+                    if (
+                      visitDetails.vaccinations &&
+                      visitDetails.vaccinations.length > 0
+                    ) {
+                      details.push(
+                        `${visitDetails.vaccinations.length} vaccine${visitDetails.vaccinations.length > 1 ? 's' : ''}`,
+                      );
                     }
                   }
                 } else if (item.type === 'milestone') {

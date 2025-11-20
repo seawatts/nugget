@@ -59,7 +59,7 @@ function getUserJourneyStage() {
   }
 }
 
-const navGroups = [
+const getNavGroups = (babyId?: string) => [
   {
     items: [
       {
@@ -74,7 +74,12 @@ const navGroups = [
   },
   {
     items: [
-      { href: '/app', icon: Home, id: 'home', label: 'Home' },
+      {
+        href: babyId ? `/app/babies/${babyId}/dashboard` : '/app/babies',
+        icon: Home,
+        id: 'home',
+        label: 'Home',
+      },
       {
         href: '/app/timeline',
         icon: CalendarDays,
@@ -82,7 +87,7 @@ const navGroups = [
         label: 'Timeline',
       },
       {
-        href: '/app/reports',
+        href: babyId ? `/app/babies/${babyId}/reports` : '/app',
         icon: BarChart3,
         id: 'reports',
         label: 'Reports',
@@ -371,7 +376,7 @@ export function BottomNav() {
 
   // Get baby ID from URL params or fall back to most recent baby
   const { data: babies = [] } = api.babies.list.useQuery();
-  const babyIdFromParams = params.userId as string | undefined;
+  const babyIdFromParams = params.babyId as string | undefined;
   const mostRecentBaby = babies[0];
   const babyId = babyIdFromParams || mostRecentBaby?.id;
 
@@ -451,6 +456,7 @@ export function BottomNav() {
 
   if (isOnboarding) return null;
 
+  const navGroups = getNavGroups(babyId);
   const filteredNavGroups = navGroups.filter((group) => {
     if (!journeyStage) return true;
     return group.showFor.includes(journeyStage);
@@ -496,9 +502,11 @@ export function BottomNav() {
         },
       ];
     }
-    // Default "born" stage
+    // Default "born" stage - use baby-specific routes
+    const reportsHref = babyId ? `/app/babies/${babyId}/reports` : '/app';
+    const homeHref = babyId ? `/app/babies/${babyId}/dashboard` : '/app/babies';
     return [
-      { href: '/app', icon: Home, id: 'home', label: 'Home' },
+      { href: homeHref, icon: Home, id: 'home', label: 'Home' },
       {
         href: '/app/timeline',
         icon: CalendarDays,
@@ -506,7 +514,7 @@ export function BottomNav() {
         label: 'Timeline',
       },
       {
-        href: '/app/reports',
+        href: reportsHref,
         icon: BarChart3,
         id: 'reports',
         label: 'Reports',
@@ -620,89 +628,106 @@ export function BottomNav() {
               variants={familyMenuContainer}
             >
               <div className="flex flex-col-reverse items-center gap-3">
-                {familyMembers.map((member) => {
-                  const displayName = member.firstName;
-                  const initials = displayName
-                    .split(' ')
-                    .map((n) => n[0])
-                    .join('')
-                    .toUpperCase()
-                    .slice(0, 2);
+                {[...familyMembers]
+                  .sort((a, b) => {
+                    // Sort order (reversed due to flex-col-reverse): other family members, then logged in user, then babies
+                    // This results in visual order from bottom to top: babies, logged in user, other family members
+                    if (a.type === 'baby' && b.type !== 'baby') return 1;
+                    if (a.type !== 'baby' && b.type === 'baby') return -1;
+                    if (a.type === 'baby' && b.type === 'baby') return 0;
 
-                  return (
-                    <motion.div
-                      className="flex items-center gap-2 bg-card/95 backdrop-blur-lg rounded-full pl-2 py-2 shadow-xl border border-border/50"
-                      key={member.id}
-                      variants={familyAvatarItem}
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <button
-                        className="flex items-center gap-3 flex-1 cursor-pointer pr-2"
-                        onClick={() => {
-                          router.push(`/app/${member.userId}`);
-                          setShowFamilyMenu(false);
-                        }}
-                        type="button"
-                      >
-                        <div className="flex items-center justify-center">
-                          {member.type === 'baby' ? (
-                            <div className="relative flex items-center justify-center size-12 rounded-full bg-linear-to-br from-primary to-primary/80 p-[2px] shadow-lg shadow-primary/30">
-                              <div className="size-full rounded-full bg-card flex items-center justify-center p-1">
-                                <NuggetAvatar
-                                  image={member.avatarUrl || undefined}
-                                  name={displayName}
-                                  size="sm"
-                                />
-                              </div>
-                            </div>
-                          ) : (
-                            <Avatar className="size-12">
-                              <AvatarImage
-                                alt={displayName}
-                                src={member.avatarUrl || ''}
-                              />
-                              <AvatarFallback className="text-sm">
-                                {initials}
-                              </AvatarFallback>
-                            </Avatar>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-start">
-                          <span className="text-sm font-medium text-foreground whitespace-nowrap">
-                            {displayName}
-                          </span>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap font-mono">
-                            {member.type === 'baby' && member.birthDate ? (
-                              <LiveBabyAge birthDate={member.birthDate} />
-                            ) : member.type === 'user' ? (
-                              getRoleLabel(member.role)
-                            ) : null}
-                          </span>
-                        </div>
-                      </button>
+                    // Both are users
+                    if (a.isCurrentUser && !b.isCurrentUser) return 1;
+                    if (!a.isCurrentUser && b.isCurrentUser) return -1;
+                    return 0;
+                  })
+                  .map((member) => {
+                    const displayName = member.firstName;
+                    const initials = displayName
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2);
+
+                    return (
                       <motion.div
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
+                        className="flex items-center gap-2 bg-card/95 backdrop-blur-lg rounded-full pl-2 py-2 shadow-xl border border-border/50"
+                        key={member.id}
+                        variants={familyAvatarItem}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.98 }}
                       >
-                        <Link
-                          className="flex items-center justify-center size-8 rounded-full hover:bg-muted/50 mr-1"
-                          href={
-                            member.type === 'baby'
-                              ? '/app/settings/baby'
-                              : '/app/settings/preferences'
-                          }
-                          onClick={(e) => {
-                            e.stopPropagation();
+                        <button
+                          className="flex items-center gap-3 flex-1 cursor-pointer pr-2"
+                          onClick={() => {
+                            const route =
+                              member.type === 'baby'
+                                ? `/app/babies/${member.userId}`
+                                : `/app/family/${member.userId}`;
+                            router.push(route);
                             setShowFamilyMenu(false);
                           }}
+                          type="button"
                         >
-                          <Settings className="size-4 text-muted-foreground" />
-                        </Link>
+                          <div className="flex items-center justify-center">
+                            {member.type === 'baby' ? (
+                              <div className="relative flex items-center justify-center size-12 rounded-full bg-linear-to-br from-primary to-primary/80 p-[2px] shadow-lg shadow-primary/30">
+                                <div className="size-full rounded-full bg-card flex items-center justify-center p-1">
+                                  <NuggetAvatar
+                                    image={member.avatarUrl || undefined}
+                                    name={displayName}
+                                    size="sm"
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <Avatar className="size-12">
+                                <AvatarImage
+                                  alt={displayName}
+                                  src={member.avatarUrl || ''}
+                                />
+                                <AvatarFallback className="text-sm">
+                                  {initials}
+                                </AvatarFallback>
+                              </Avatar>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-start">
+                            <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                              {displayName}
+                            </span>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap font-mono">
+                              {member.type === 'baby' && member.birthDate ? (
+                                <LiveBabyAge birthDate={member.birthDate} />
+                              ) : member.type === 'user' ? (
+                                getRoleLabel(member.role)
+                              ) : null}
+                            </span>
+                          </div>
+                        </button>
+                        <motion.div
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Link
+                            className="flex items-center justify-center size-8 rounded-full hover:bg-muted/50 mr-1"
+                            href={
+                              member.type === 'baby'
+                                ? '/app/settings/baby'
+                                : '/app/settings/preferences'
+                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowFamilyMenu(false);
+                            }}
+                          >
+                            <Settings className="size-4 text-muted-foreground" />
+                          </Link>
+                        </motion.div>
                       </motion.div>
-                    </motion.div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </motion.div>
           </>

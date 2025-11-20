@@ -24,7 +24,7 @@ import { b } from '../index';
 import type { Check, Checked  } from "../types";
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml";
 
-import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  DailyLearningPlan,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningPlanItem,  LearningTip,  MilestoneEnhancementOutput,  MilestoneExplanationOutput,  MilestoneInput,  MilestonePlan,  MilestonePlanItem,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsInput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "../types"
+import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  CelebrationQuestion,  CelebrationQuestionsOutput,  CelebrationStatistics,  CelebrationSummaryOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  DailyLearningPlan,  DoctorQuestionsOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningPlanItem,  LearningTip,  MilestoneEnhancementOutput,  MilestoneExplanationOutput,  MilestoneInput,  MilestonePlan,  MilestonePlanItem,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsInput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "../types"
 
 import type * as types from "../types"
 
@@ -306,6 +306,45 @@ export const FirstWeekMilestone = async (
 };
 
 /**
+ * Executes the "GenerateCelebrationSummary" BAML action.
+ *
+ * This server action calls the underlying BAML function "GenerateCelebrationSummary"
+ * with the specified parameters.
+ *
+ * @param { string } babyName - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { string } celebrationType - Input parameter.
+ * @param { string } celebrationTitle - Input parameter.
+ * @param { types.CelebrationStatistics } statistics - Input parameter.
+ * @param { string | null } recentMilestones (optional) - Input parameter.
+ * @param { string | null } recentActivities (optional) - Input parameter.
+ * @param { string | null } medicalContext (optional) - Input parameter.
+ *
+ * @returns {Promise<types.CelebrationSummaryOutput>} A promise that resolves with the result of the action.
+ */
+export const GenerateCelebrationSummary = async (
+  babyName: string,
+  ageInDays: number,
+  celebrationType: string,
+  celebrationTitle: string,
+  statistics: types.CelebrationStatistics,
+  recentMilestones?: string | null,
+  recentActivities?: string | null,
+  medicalContext?: string | null,
+): Promise<types.CelebrationSummaryOutput> => {
+  return b.GenerateCelebrationSummary(
+    babyName,
+    ageInDays,
+    celebrationType,
+    celebrationTitle,
+    statistics,
+    recentMilestones,
+    recentActivities,
+    medicalContext,
+  );
+};
+
+/**
  * Executes the "GenerateChatTitle" BAML action.
  *
  * This server action calls the underlying BAML function "GenerateChatTitle"
@@ -386,6 +425,72 @@ export const GenerateContextualMilestones = async (
     avgDiaperChangesPerDay,
     recentDiaperColors,
     hasTummyTimeActivity,
+  );
+};
+
+/**
+ * Executes the "GenerateDoctorQuestions" BAML action.
+ *
+ * This server action calls the underlying BAML function "GenerateDoctorQuestions"
+ * with the specified parameters.
+ *
+ * @param { string } babyName - Input parameter.
+ * @param { string | null } babySex (optional) - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { number } dayCount - Input parameter.
+ * @param { number } totalFeedings - Input parameter.
+ * @param { number } averageFeedingsPerDay - Input parameter.
+ * @param { number } totalFeedingMl - Input parameter.
+ * @param { number } averageMlPerFeeding - Input parameter.
+ * @param { number } totalSleeps - Input parameter.
+ * @param { number } totalSleepHours - Input parameter.
+ * @param { number } averageSleepHoursPerDay - Input parameter.
+ * @param { number } longestSleepHours - Input parameter.
+ * @param { number } totalDiapers - Input parameter.
+ * @param { number } averageDiapersPerDay - Input parameter.
+ * @param { number } wetDiapers - Input parameter.
+ * @param { number } dirtyDiapers - Input parameter.
+ * @param { number } bothDiapers - Input parameter.
+ *
+ * @returns {Promise<types.DoctorQuestionsOutput>} A promise that resolves with the result of the action.
+ */
+export const GenerateDoctorQuestions = async (
+  babyName: string,
+  babySex?: string | null,
+  ageInDays: number,
+  dayCount: number,
+  totalFeedings: number,
+  averageFeedingsPerDay: number,
+  totalFeedingMl: number,
+  averageMlPerFeeding: number,
+  totalSleeps: number,
+  totalSleepHours: number,
+  averageSleepHoursPerDay: number,
+  longestSleepHours: number,
+  totalDiapers: number,
+  averageDiapersPerDay: number,
+  wetDiapers: number,
+  dirtyDiapers: number,
+  bothDiapers: number,
+): Promise<types.DoctorQuestionsOutput> => {
+  return b.GenerateDoctorQuestions(
+    babyName,
+    babySex,
+    ageInDays,
+    dayCount,
+    totalFeedings,
+    averageFeedingsPerDay,
+    totalFeedingMl,
+    averageMlPerFeeding,
+    totalSleeps,
+    totalSleepHours,
+    averageSleepHoursPerDay,
+    longestSleepHours,
+    totalDiapers,
+    averageDiapersPerDay,
+    wetDiapers,
+    dirtyDiapers,
+    bothDiapers,
   );
 };
 
@@ -1151,6 +1256,66 @@ export const PersonalizedTasks = async (
     ppWeek,
     timeOfDay,
     feedingMethod,
+  );
+};
+
+/**
+ * Executes the "PlanCelebrationQuestions" BAML action.
+ *
+ * This server action calls the underlying BAML function "PlanCelebrationQuestions"
+ * with the specified parameters.
+ *
+ * @param { string } babyName - Input parameter.
+ * @param { number } ageInDays - Input parameter.
+ * @param { string } ageLabel - Input parameter.
+ * @param { string } celebrationType - Input parameter.
+ * @param { string } celebrationTitle - Input parameter.
+ * @param { string } babyId - Input parameter.
+ * @param { string } birthDate - Input parameter.
+ * @param { string | null } gender (optional) - Input parameter.
+ * @param { number | null } currentWeightOz (optional) - Input parameter.
+ * @param { number | null } birthWeightOz (optional) - Input parameter.
+ * @param { string | null } activitySummary (optional) - Input parameter.
+ * @param { string | null } achievedMilestones (optional) - Input parameter.
+ * @param { string | null } medicalRecords (optional) - Input parameter.
+ * @param { string | null } parentWellness (optional) - Input parameter.
+ * @param { string | null } recentChatTopics (optional) - Input parameter.
+ *
+ * @returns {Promise<types.CelebrationQuestionsOutput>} A promise that resolves with the result of the action.
+ */
+export const PlanCelebrationQuestions = async (
+  babyName: string,
+  ageInDays: number,
+  ageLabel: string,
+  celebrationType: string,
+  celebrationTitle: string,
+  babyId: string,
+  birthDate: string,
+  gender?: string | null,
+  currentWeightOz?: number | null,
+  birthWeightOz?: number | null,
+  activitySummary?: string | null,
+  achievedMilestones?: string | null,
+  medicalRecords?: string | null,
+  parentWellness?: string | null,
+  recentChatTopics?: string | null,
+): Promise<types.CelebrationQuestionsOutput> => {
+  return b.PlanCelebrationQuestions(
+    babyName,
+    ageInDays,
+    ageLabel,
+    celebrationType,
+    celebrationTitle,
+    babyId,
+    birthDate,
+    gender,
+    currentWeightOz,
+    birthWeightOz,
+    activitySummary,
+    achievedMilestones,
+    medicalRecords,
+    parentWellness,
+    recentChatTopics,
   );
 };
 

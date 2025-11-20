@@ -434,7 +434,7 @@ export function SleepActivityDrawer({
           <>
             {/* Time & Date Section - Hide when timer is running */}
             {(!activeActivityId || isTimerStopped) && (
-              <div className="space-y-3">
+              <div className="space-y-3 min-w-0">
                 <h3 className="text-sm font-medium text-muted-foreground">
                   Time & Date
                 </h3>

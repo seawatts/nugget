@@ -192,8 +192,13 @@ export function predictNextDiaper(
   allActivities?: Array<typeof Activities.$inferSelect>,
 ): DiaperPrediction {
   // Filter to only diaper activities
+  // Exclude skipped activities (dismissals don't count as real diaper changes)
   const diaperActivities = recentDiapers
-    .filter((a) => a.type === 'diaper')
+    .filter(
+      (a) =>
+        a.type === 'diaper' &&
+        !(a.details && 'skipped' in a.details && a.details.skipped === true),
+    )
     .sort(
       (a, b) =>
         new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),

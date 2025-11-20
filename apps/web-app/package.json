@@ -21,6 +21,7 @@
     "@tanstack/react-table": "8.21.3",
     "@trpc/server": "catalog:",
     "ai": "5.0.93",
+    "canvas-confetti": "1.9.4",
     "date-fns": "catalog:",
     "drizzle-orm": "catalog:",
     "geist": "1.5.1",
@@ -50,6 +51,7 @@
   "devDependencies": {
     "@nugget/next-config": "workspace:*",
     "@nugget/tsconfig": "workspace:*",
+    "@types/canvas-confetti": "1.9.0",
     "@types/node": "24.10.1",
     "@types/qrcode.react": "^3.0.0",
     "@types/react": "catalog:",

@@ -37,6 +37,14 @@ export default class TypeBuilder {
     
     BirthPlanHeadlineOutput: ClassViewer<'BirthPlanHeadlineOutput', "text">;
     
+    CelebrationQuestion: ClassViewer<'CelebrationQuestion', "question" | "systemPrompt" | "buttonLabel" | "icon">;
+    
+    CelebrationQuestionsOutput: ClassViewer<'CelebrationQuestionsOutput', "milestone" | "memory" | "guidance">;
+    
+    CelebrationStatistics: ClassViewer<'CelebrationStatistics', "ageInDays" | "ageLabel" | "feedingCount" | "sleepHours" | "diaperCount" | "weightGain">;
+    
+    CelebrationSummaryOutput: ClassViewer<'CelebrationSummaryOutput', "summary">;
+    
     ChatMessage: ClassViewer<'ChatMessage', "role" | "content">;
     
     ChatTitleOutput: ClassViewer<'ChatTitleOutput', "title">;
@@ -48,6 +56,8 @@ export default class TypeBuilder {
     DailyCheckInQuestionsOutput: ClassViewer<'DailyCheckInQuestionsOutput', "questions">;
     
     DailyLearningPlan: ClassViewer<'DailyLearningPlan', "items" | "reasoning" | "coveredCategories" | "urgentHealthChecks">;
+    
+    DoctorQuestionsOutput: ClassViewer<'DoctorQuestionsOutput', "summary" | "questions" | "concerns">;
     
     HospitalPackAdviceOutput: ClassViewer<'HospitalPackAdviceOutput', "headline" | "subtext">;
     
@@ -100,7 +110,7 @@ export default class TypeBuilder {
     constructor() {
         this.tb = new _TypeBuilder({
           classes: new Set([
-            "AppointmentNudgeOutput","BabyAssistantChatOutput","BabyContext","BabyVisitExplainerOutput","BirthPlanHeadlineOutput","ChatMessage","ChatTitleOutput","CheckInQuestion","ContextualMilestonesOutput","DailyCheckInQuestionsOutput","DailyLearningPlan","HospitalPackAdviceOutput","ImprovementSuggestions","LearningPlanItem","LearningTip","MilestoneEnhancementOutput","MilestoneExplanationOutput","MilestoneInput","MilestonePlan","MilestonePlanItem","MilestoneSuggestion","NewbornMilestoneOutput","ParentTask","ParentTip","PersonalizedTasksOutput","PostpartumTipsInput","PostpartumTipsOutput","PregnancyWeekSummaryOutput","RoleSpecificTipsOutput","SleepRegressionTipsOutput","StalePromptsOutput","WellnessQuestion","WellnessScreeningOutput",
+            "AppointmentNudgeOutput","BabyAssistantChatOutput","BabyContext","BabyVisitExplainerOutput","BirthPlanHeadlineOutput","CelebrationQuestion","CelebrationQuestionsOutput","CelebrationStatistics","CelebrationSummaryOutput","ChatMessage","ChatTitleOutput","CheckInQuestion","ContextualMilestonesOutput","DailyCheckInQuestionsOutput","DailyLearningPlan","DoctorQuestionsOutput","HospitalPackAdviceOutput","ImprovementSuggestions","LearningPlanItem","LearningTip","MilestoneEnhancementOutput","MilestoneExplanationOutput","MilestoneInput","MilestonePlan","MilestonePlanItem","MilestoneSuggestion","NewbornMilestoneOutput","ParentTask","ParentTip","PersonalizedTasksOutput","PostpartumTipsInput","PostpartumTipsOutput","PregnancyWeekSummaryOutput","RoleSpecificTipsOutput","SleepRegressionTipsOutput","StalePromptsOutput","WellnessQuestion","WellnessScreeningOutput",
           ]),
           enums: new Set([
             "ResponseType",
@@ -128,6 +138,22 @@ export default class TypeBuilder {
           "text",
         ]);
         
+        this.CelebrationQuestion = this.tb.classViewer("CelebrationQuestion", [
+          "question","systemPrompt","buttonLabel","icon",
+        ]);
+        
+        this.CelebrationQuestionsOutput = this.tb.classViewer("CelebrationQuestionsOutput", [
+          "milestone","memory","guidance",
+        ]);
+        
+        this.CelebrationStatistics = this.tb.classViewer("CelebrationStatistics", [
+          "ageInDays","ageLabel","feedingCount","sleepHours","diaperCount","weightGain",
+        ]);
+        
+        this.CelebrationSummaryOutput = this.tb.classViewer("CelebrationSummaryOutput", [
+          "summary",
+        ]);
+        
         this.ChatMessage = this.tb.classViewer("ChatMessage", [
           "role","content",
         ]);
@@ -150,6 +176,10 @@ export default class TypeBuilder {
         
         this.DailyLearningPlan = this.tb.classViewer("DailyLearningPlan", [
           "items","reasoning","coveredCategories","urgentHealthChecks",
+        ]);
+        
+        this.DoctorQuestionsOutput = this.tb.classViewer("DoctorQuestionsOutput", [
+          "summary","questions","concerns",
         ]);
         
         this.HospitalPackAdviceOutput = this.tb.classViewer("HospitalPackAdviceOutput", [

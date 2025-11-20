@@ -7,6 +7,7 @@ import {
   json,
   pgEnum,
   pgTable,
+  real,
   text,
   timestamp,
   unique,
@@ -69,6 +70,7 @@ export const activityTypeEnum = pgEnum('activityType', [
   'tummy_time',
   'growth',
   'potty',
+  'doctor_visit',
 ]);
 export const activitySubjectTypeEnum = pgEnum('activitySubjectType', [
   'baby',
@@ -618,7 +620,7 @@ export const Babies = pgTable(
 export const Activities = pgTable(
   'activities',
   {
-    amount: integer('amount'), // for feeding, in ml
+    amountMl: real('amountMl'), // for feeding, in ml
     assignedUserId: varchar('assignedUserId', { length: 128 }).references(
       () => Users.id,
       { onDelete: 'set null' },
@@ -674,24 +676,31 @@ export const Activities = pgTable(
 );
 
 export const MedicalRecords = pgTable('medicalRecords', {
+  activityId: varchar('activityId', { length: 128 }).references(
+    () => Activities.id,
+    { onDelete: 'set null' },
+  ), // Link to doctor visit activity
   babyId: varchar('babyId', { length: 128 })
     .notNull()
     .references(() => Babies.id, { onDelete: 'cascade' }),
   createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
   date: timestamp('date', { mode: 'date' }).notNull(),
   description: text('description'),
+  doctorName: text('doctorName'), // Doctor's name
   familyId: varchar('familyId', { length: 128 })
     .notNull()
     .references(() => Families.id, { onDelete: 'cascade' })
     .default(requestingFamilyId()),
+  headCircumferenceCm: real('headCircumferenceCm'), // Head circumference in cm
   id: varchar('id', { length: 128 })
     .primaryKey()
     .$defaultFn(() => createId({ prefix: 'medical' })),
+  lengthCm: real('lengthCm'), // Length/height in cm
   location: text('location'),
   metadata: json('metadata').$type<Record<string, unknown>>(),
   provider: text('provider'),
   title: text('title').notNull(),
-  type: text('type').notNull(), // 'vaccination', 'appointment', 'medication', 'illness'
+  type: text('type').notNull(), // 'vaccination', 'appointment', 'medication', 'illness', 'doctor_visit'
   updatedAt: timestamp('updatedAt', { mode: 'date' })
     .notNull()
     .defaultNow()
@@ -699,6 +708,9 @@ export const MedicalRecords = pgTable('medicalRecords', {
   userId: varchar('userId', { length: 128 })
     .notNull()
     .default(requestingUserId()),
+  vaccinations: json('vaccinations').$type<string[]>(), // Array of vaccination names
+  visitType: text('visitType'), // e.g., "Well-baby checkup", "Sick visit", "Follow-up"
+  weightKg: real('weightKg'), // Weight in kg
 });
 
 export const Milestones = pgTable(
@@ -754,6 +766,14 @@ export const Milestones = pgTable(
 export const CelebrationMemories = pgTable(
   'celebrationMemories',
   {
+    aiGeneratedAt: timestamp('aiGeneratedAt', { mode: 'date' }),
+    aiQuestions: json('aiQuestions').$type<{
+      milestone: { question: string; systemPrompt: string };
+      memory: { question: string; systemPrompt: string };
+      guidance: { question: string; systemPrompt: string };
+    }>(),
+    // AI-generated content cache
+    aiSummary: text('aiSummary'),
     babyId: varchar('babyId', { length: 128 })
       .notNull()
       .references(() => Babies.id, { onDelete: 'cascade' }),
@@ -826,16 +846,16 @@ export const SupplyInventory = pgTable('supplyInventory', {
     .notNull()
     .references(() => Babies.id, { onDelete: 'cascade' }),
   createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
-  donorMl: integer('donorMl').default(0).notNull(), // Donor milk in ml
+  donorMl: real('donorMl').default(0).notNull(), // Donor milk in ml
   familyId: varchar('familyId', { length: 128 })
     .notNull()
     .references(() => Families.id, { onDelete: 'cascade' })
     .default(requestingFamilyId()),
-  formulaMl: integer('formulaMl').default(0).notNull(), // Formula in ml
+  formulaMl: real('formulaMl').default(0).notNull(), // Formula in ml
   id: varchar('id', { length: 128 })
     .primaryKey()
     .$defaultFn(() => createId({ prefix: 'inventory' })),
-  pumpedMl: integer('pumpedMl').default(0).notNull(), // Pumped milk in ml
+  pumpedMl: real('pumpedMl').default(0).notNull(), // Pumped milk in ml
   updatedAt: timestamp('updatedAt', { mode: 'date' })
     .notNull()
     .defaultNow()
@@ -846,7 +866,7 @@ export const SupplyInventory = pgTable('supplyInventory', {
 });
 
 export const SupplyTransactions = pgTable('supplyTransactions', {
-  amountMl: integer('amountMl').notNull(), // Amount in ml
+  amountMl: real('amountMl').notNull(), // Amount in ml
   babyId: varchar('babyId', { length: 128 })
     .notNull()
     .references(() => Babies.id, { onDelete: 'cascade' }),

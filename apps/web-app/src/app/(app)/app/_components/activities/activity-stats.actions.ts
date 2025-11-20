@@ -66,7 +66,7 @@ export const getActivityStatsAction = action
     }).length;
 
     // Extract metrics from last activity
-    const lastAmount = lastActivity?.amount || null;
+    const lastAmount = lastActivity?.amountMl || null;
     const lastDuration = lastActivity?.duration || null;
 
     return {

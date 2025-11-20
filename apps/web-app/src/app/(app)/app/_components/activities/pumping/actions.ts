@@ -3,9 +3,9 @@
 import { auth } from '@clerk/nextjs/server';
 import { getApi } from '@nugget/api/server';
 import type { Activities } from '@nugget/db/schema';
-import { revalidatePath } from 'next/cache';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';
+import { revalidateAppPaths } from '~/app/(app)/app/_utils/revalidation';
 import { type PumpingPrediction, predictNextPumping } from './prediction';
 import { getPumpingGuidanceByAge } from './pumping-intervals';
 
@@ -80,7 +80,7 @@ export const getUpcomingPumpingAction = action.action(
 );
 
 const quickLogPumpingInputSchema = z.object({
-  amount: z.number().optional(), // amount in ml
+  amountMl: z.number().optional(), // amount in ml
   time: z.string().datetime().optional(), // defaults to now
 });
 
@@ -110,7 +110,7 @@ export const quickLogPumpingAction = action
 
       // Create the pumping activity
       const activity = await api.activities.create({
-        amount: parsedInput.amount || null,
+        amountMl: parsedInput.amountMl || null,
         babyId: baby.id,
         details: null,
         isScheduled: false,
@@ -119,7 +119,7 @@ export const quickLogPumpingAction = action
       });
 
       // Revalidate pages
-      revalidatePath('/app');
+      revalidateAppPaths();
 
       return { activity };
     },
@@ -147,7 +147,7 @@ export const skipPumpingAction = action.action(
 
     // Create the skip activity
     const activity = await api.activities.create({
-      amount: null,
+      amountMl: null,
       babyId: baby.id,
       details: {
         skipped: true,

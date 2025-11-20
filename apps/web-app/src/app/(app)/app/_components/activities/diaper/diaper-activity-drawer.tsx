@@ -5,8 +5,10 @@ import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
 import { Baby, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { TimeInput } from '../shared/components/time-input';
+import { autoStopInProgressSleepAction } from '../sleep/actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { DiaperFormData } from './diaper-drawer';
 import { DiaperDrawerContent } from './diaper-drawer';
@@ -129,6 +131,16 @@ export function DiaperActivityDrawer({
     }
 
     try {
+      // Auto-stop any in-progress sleep before saving diaper change
+      try {
+        const result = await autoStopInProgressSleepAction();
+        if (result?.data?.activity) {
+          toast.info('Sleep tracking stopped automatically');
+        }
+      } catch (error) {
+        console.error('Failed to auto-stop sleep:', error);
+      }
+
       // Close drawer immediately for better UX
       onClose();
 
@@ -226,7 +238,7 @@ export function DiaperActivityDrawer({
         <DiaperDrawerContent onDataChange={setFormData} />
 
         {/* Time & Date Section */}
-        <div className="space-y-3">
+        <div className="space-y-3 min-w-0">
           <h3 className="text-sm font-medium text-muted-foreground">
             Time & Date
           </h3>

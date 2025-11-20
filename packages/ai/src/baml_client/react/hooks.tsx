@@ -834,6 +834,70 @@ export function useFirstWeekMilestone(
   }
 }
 /**
+ * A specialized hook for the GenerateCelebrationSummary BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - babyName: string
+ *
+ * - ageInDays: number
+ *
+ * - celebrationType: string
+ *
+ * - celebrationTitle: string
+ *
+ * - statistics: types.CelebrationStatistics
+ *
+ * - recentMilestones (optional): string | null
+ *
+ * - recentActivities (optional): string | null
+ *
+ * - medicalContext (optional): string | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.CelebrationSummaryOutput
+ * - **Streaming Partial:** CelebrationSummaryOutput
+ * - **Streaming Final:** types.CelebrationSummaryOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useGenerateCelebrationSummary({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useGenerateCelebrationSummary({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useGenerateCelebrationSummary(props: HookInput<'GenerateCelebrationSummary', { stream: false }>): HookOutput<'GenerateCelebrationSummary', { stream: false }>
+export function useGenerateCelebrationSummary(props?: HookInput<'GenerateCelebrationSummary', { stream?: true }>): HookOutput<'GenerateCelebrationSummary', { stream: true }>
+export function useGenerateCelebrationSummary(
+  props: HookInput<'GenerateCelebrationSummary', { stream?: boolean }> = {},
+): HookOutput<'GenerateCelebrationSummary', { stream: true }> | HookOutput<'GenerateCelebrationSummary', { stream: false }> {
+  let action: ServerAction = Actions.GenerateCelebrationSummary;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.GenerateCelebrationSummary;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'GenerateCelebrationSummary', { stream: false }>)
+  }
+}
+/**
  * A specialized hook for the GenerateChatTitle BAML function that supports both streaming and non‑streaming responses.
  *
  * **Input Types:**
@@ -963,6 +1027,88 @@ export function useGenerateContextualMilestones(
     return useBamlAction(action, props)
   } else {
     return useBamlAction(action, props as HookInput<'GenerateContextualMilestones', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the GenerateDoctorQuestions BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - babyName: string
+ *
+ * - babySex (optional): string | null
+ *
+ * - ageInDays: number
+ *
+ * - dayCount: number
+ *
+ * - totalFeedings: number
+ *
+ * - averageFeedingsPerDay: number
+ *
+ * - totalFeedingMl: number
+ *
+ * - averageMlPerFeeding: number
+ *
+ * - totalSleeps: number
+ *
+ * - totalSleepHours: number
+ *
+ * - averageSleepHoursPerDay: number
+ *
+ * - longestSleepHours: number
+ *
+ * - totalDiapers: number
+ *
+ * - averageDiapersPerDay: number
+ *
+ * - wetDiapers: number
+ *
+ * - dirtyDiapers: number
+ *
+ * - bothDiapers: number
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.DoctorQuestionsOutput
+ * - **Streaming Partial:** DoctorQuestionsOutput
+ * - **Streaming Final:** types.DoctorQuestionsOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useGenerateDoctorQuestions({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useGenerateDoctorQuestions({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useGenerateDoctorQuestions(props: HookInput<'GenerateDoctorQuestions', { stream: false }>): HookOutput<'GenerateDoctorQuestions', { stream: false }>
+export function useGenerateDoctorQuestions(props?: HookInput<'GenerateDoctorQuestions', { stream?: true }>): HookOutput<'GenerateDoctorQuestions', { stream: true }>
+export function useGenerateDoctorQuestions(
+  props: HookInput<'GenerateDoctorQuestions', { stream?: boolean }> = {},
+): HookOutput<'GenerateDoctorQuestions', { stream: true }> | HookOutput<'GenerateDoctorQuestions', { stream: false }> {
+  let action: ServerAction = Actions.GenerateDoctorQuestions;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.GenerateDoctorQuestions;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'GenerateDoctorQuestions', { stream: false }>)
   }
 }
 /**
@@ -2081,6 +2227,84 @@ export function usePersonalizedTasks(
     return useBamlAction(action, props)
   } else {
     return useBamlAction(action, props as HookInput<'PersonalizedTasks', { stream: false }>)
+  }
+}
+/**
+ * A specialized hook for the PlanCelebrationQuestions BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - babyName: string
+ *
+ * - ageInDays: number
+ *
+ * - ageLabel: string
+ *
+ * - celebrationType: string
+ *
+ * - celebrationTitle: string
+ *
+ * - babyId: string
+ *
+ * - birthDate: string
+ *
+ * - gender (optional): string | null
+ *
+ * - currentWeightOz (optional): number | null
+ *
+ * - birthWeightOz (optional): number | null
+ *
+ * - activitySummary (optional): string | null
+ *
+ * - achievedMilestones (optional): string | null
+ *
+ * - medicalRecords (optional): string | null
+ *
+ * - parentWellness (optional): string | null
+ *
+ * - recentChatTopics (optional): string | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.CelebrationQuestionsOutput
+ * - **Streaming Partial:** CelebrationQuestionsOutput
+ * - **Streaming Final:** types.CelebrationQuestionsOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = usePlanCelebrationQuestions({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = usePlanCelebrationQuestions({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function usePlanCelebrationQuestions(props: HookInput<'PlanCelebrationQuestions', { stream: false }>): HookOutput<'PlanCelebrationQuestions', { stream: false }>
+export function usePlanCelebrationQuestions(props?: HookInput<'PlanCelebrationQuestions', { stream?: true }>): HookOutput<'PlanCelebrationQuestions', { stream: true }>
+export function usePlanCelebrationQuestions(
+  props: HookInput<'PlanCelebrationQuestions', { stream?: boolean }> = {},
+): HookOutput<'PlanCelebrationQuestions', { stream: true }> | HookOutput<'PlanCelebrationQuestions', { stream: false }> {
+  let action: ServerAction = Actions.PlanCelebrationQuestions;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.PlanCelebrationQuestions;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'PlanCelebrationQuestions', { stream: false }>)
   }
 }
 /**

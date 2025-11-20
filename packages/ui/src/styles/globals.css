@@ -74,6 +74,8 @@
   --activity-milestone-foreground: oklch(0.985 0 0);
   --activity-chat: oklch(0.6 0.2 220);
   --activity-chat-foreground: oklch(0.985 0 0);
+  --activity-doctor-visit: oklch(0.67 0.19 210);
+  --activity-doctor-visit-foreground: oklch(0.985 0 0);
 
   /* Custom --- */
   /* Animation durations */
@@ -149,6 +151,8 @@
   --activity-milestone-foreground: oklch(0.985 0 0);
   --activity-chat: oklch(0.6 0.2 220);
   --activity-chat-foreground: oklch(0.985 0 0);
+  --activity-doctor-visit: oklch(0.67 0.19 210);
+  --activity-doctor-visit-foreground: oklch(0.985 0 0);
 }
 
 @theme inline {
@@ -221,6 +225,10 @@
   --color-activity-milestone-foreground: var(--activity-milestone-foreground);
   --color-activity-chat: var(--activity-chat);
   --color-activity-chat-foreground: var(--activity-chat-foreground);
+  --color-activity-doctor-visit: var(--activity-doctor-visit);
+  --color-activity-doctor-visit-foreground: var(
+    --activity-doctor-visit-foreground
+  );
   --animate-accordion-down: accordion-down 0.1s ease-out;
   --animate-accordion-up: accordion-up 0.1s ease-out;
 
@@ -437,4 +445,19 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Celebration card animations */
+@keyframes gradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 3s ease infinite;
 }

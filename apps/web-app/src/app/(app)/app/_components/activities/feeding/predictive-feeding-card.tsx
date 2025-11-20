@@ -38,8 +38,8 @@ export function PredictiveFeedingCard({
   onActivityLogged,
 }: PredictiveFeedingCardProps) {
   const { user } = useUser();
-  const params = useParams<{ userId: string }>();
-  const babyId = params?.userId;
+  const params = useParams<{ babyId?: string }>();
+  const babyId = params?.babyId;
 
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';

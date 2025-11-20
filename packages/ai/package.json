@@ -10,7 +10,8 @@
     ".": "./src/index.ts",
     "./*": "./src/baml_client/*.ts",
     "./react/*": "./src/baml_client/react/*.ts",
-    "./async_client": "./src/baml_client/async_client.ts"
+    "./async_client": "./src/baml_client/async_client.ts",
+    "./celebration-orchestrator": "./src/celebration-orchestrator.ts"
   },
   "license": "MIT",
   "name": "@nugget/ai",

@@ -33,7 +33,7 @@ export function useFeedingActions({
     usePredictiveActions({
       activityType: 'feeding',
       defaultQuickLogData: {
-        amount: 120, // Default feeding amount in ml
+        amountMl: 120, // Default feeding amount in ml
         feedingSource: 'formula' as const,
       },
       onActivityLogged,

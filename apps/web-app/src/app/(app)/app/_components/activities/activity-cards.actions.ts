@@ -3,9 +3,9 @@
 import { auth } from '@clerk/nextjs/server';
 import { getApi } from '@nugget/api/server';
 import type { Activities } from '@nugget/db/schema';
-import { revalidatePath } from 'next/cache';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';
+import { revalidateAppPaths } from '~/app/(app)/app/_utils/revalidation';
 import { getDefaultActivityData } from './shared/activity-utils';
 
 const action = createSafeActionClient();
@@ -70,9 +70,7 @@ export const createActivityAction = action
       });
 
       // Revalidate any pages that might display activities
-      revalidatePath('/app');
-      revalidatePath('/app/timeline');
-      revalidatePath('/app/activities');
+      revalidateAppPaths();
 
       return { activity };
     },
@@ -80,7 +78,7 @@ export const createActivityAction = action
 
 const createActivityWithDetailsInputSchema = z.object({
   activityType: z.string(),
-  amount: z.number().optional(),
+  amountMl: z.number().optional(),
   details: z
     .union([
       z.object({
@@ -158,7 +156,7 @@ export const createActivityWithDetailsAction = action
 
       // Create the activity with provided details
       const activity = await api.activities.create({
-        amount: parsedInput.amount,
+        amountMl: parsedInput.amountMl,
         babyId: baby.id,
         details: parsedInput.details || null,
         duration: parsedInput.duration,
@@ -169,9 +167,7 @@ export const createActivityWithDetailsAction = action
       });
 
       // Revalidate any pages that might display activities
-      revalidatePath('/app');
-      revalidatePath('/app/timeline');
-      revalidatePath('/app/activities');
+      revalidateAppPaths();
 
       return { activity };
     },

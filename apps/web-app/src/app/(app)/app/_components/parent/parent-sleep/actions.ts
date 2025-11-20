@@ -5,9 +5,9 @@ import { getApi } from '@nugget/api/server';
 import { db } from '@nugget/db/client';
 import { Activities } from '@nugget/db/schema';
 import { and, eq, gte } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';
+import { revalidateAppPaths } from '~/app/(app)/app/_utils/revalidation';
 
 const action = createSafeActionClient();
 
@@ -73,7 +73,7 @@ export const logParentSleepAction = action
         })
         .returning();
 
-      revalidatePath('/app');
+      revalidateAppPaths();
       return activity;
     },
   );

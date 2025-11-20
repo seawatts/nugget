@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
 import {
@@ -17,6 +18,7 @@ import {
   Volume2,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { formatTimeWithPreference } from '~/lib/format-time';
 
 interface SleepDrawerContentProps {
   startTime: Date;
@@ -97,6 +99,7 @@ export function SleepDrawerContent({
   currentUserId,
   familyMembers = [],
 }: SleepDrawerContentProps) {
+  const { data: user } = api.user.current.useQuery();
   const [isTracking, setIsTracking] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -227,10 +230,7 @@ export function SleepDrawerContent({
         {isTracking && (
           <p className="mt-2 text-xs text-muted-foreground">
             Started{' '}
-            {startTime.toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
+            {formatTimeWithPreference(startTime, user?.timeFormat ?? '12h')}
           </p>
         )}
       </div>

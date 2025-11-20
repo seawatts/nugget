@@ -88,6 +88,36 @@ export interface BirthPlanHeadlineOutput {
   
 }
 
+export interface CelebrationQuestion {
+  question: string
+  systemPrompt: string
+  buttonLabel: string
+  icon: string
+  
+}
+
+export interface CelebrationQuestionsOutput {
+  milestone: CelebrationQuestion
+  memory: CelebrationQuestion
+  guidance: CelebrationQuestion
+  
+}
+
+export interface CelebrationStatistics {
+  ageInDays: number
+  ageLabel: string
+  feedingCount?: number | null
+  sleepHours?: number | null
+  diaperCount?: number | null
+  weightGain?: string | null
+  
+}
+
+export interface CelebrationSummaryOutput {
+  summary: string
+  
+}
+
 export interface ChatMessage {
   role: string
   content: string
@@ -123,6 +153,13 @@ export interface DailyLearningPlan {
   reasoning: string
   coveredCategories: string[]
   urgentHealthChecks: boolean
+  
+}
+
+export interface DoctorQuestionsOutput {
+  summary: string
+  questions: string[]
+  concerns: string[]
   
 }
 

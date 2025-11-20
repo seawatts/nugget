@@ -13,7 +13,7 @@ import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 
 interface CreateActivityInput {
   activityType: typeof Activities.$inferSelect.type;
-  amount?: number;
+  amountMl?: number;
   duration?: number;
   feedingSource?: typeof Activities.$inferSelect.feedingSource;
   notes?: string;
@@ -24,7 +24,7 @@ interface CreateActivityInput {
 
 interface UpdateActivityInput {
   id: string;
-  amount?: number;
+  amountMl?: number;
   duration?: number;
   feedingSource?: typeof Activities.$inferSelect.feedingSource;
   notes?: string;
@@ -100,7 +100,7 @@ export function useActivityMutations() {
 
       // Create the activity
       const activity = await createMutation.mutateAsync({
-        amount: input.amount,
+        amountMl: input.amountMl,
         babyId: baby.id,
         details: input.details || null,
         duration: input.duration,

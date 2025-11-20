@@ -10,6 +10,7 @@ import {
   Milk,
   Moon,
   Scale,
+  Stethoscope,
   Thermometer,
   Timer,
   Tablet as Toilet,
@@ -20,6 +21,7 @@ import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { createActivityAction } from './activity-cards.actions';
 import { ActivityDrawer } from './activity-drawer';
 import { PredictiveDiaperCard } from './diaper/predictive-diaper-card';
+import { PredictiveDoctorVisitCard } from './doctor-visit/predictive-doctor-visit-card';
 import { PredictiveFeedingCard } from './feeding/predictive-feeding-card';
 import { PredictivePumpingCard } from './pumping/predictive-pumping-card';
 import {
@@ -102,6 +104,14 @@ const activities = [
     label: 'Pumping',
     textColor: 'text-activity-pumping-foreground',
   },
+  {
+    color: 'bg-activity-doctor-visit',
+    fullWidth: false,
+    icon: Stethoscope,
+    id: 'doctor_visit' as const,
+    label: 'Doctor Visit',
+    textColor: 'text-activity-doctor-visit-foreground',
+  },
 ];
 
 interface ActivityCardsProps {
@@ -110,8 +120,8 @@ interface ActivityCardsProps {
 
 export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
   const { user } = useUser();
-  const params = useParams<{ userId: string }>();
-  const babyId = params?.userId;
+  const params = useParams<{ babyId?: string }>();
+  const babyId = params?.babyId;
 
   const [openDrawer, setOpenDrawer] = useState<string | null>(null);
   const [editingActivity, setEditingActivity] = useState<
@@ -206,7 +216,8 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
       | 'temperature'
       | 'tummy_time'
       | 'growth'
-      | 'potty',
+      | 'potty'
+      | 'doctor_visit',
   ) => {
     setLoadingActivity(activityId);
 
@@ -358,6 +369,10 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
         <PredictivePumpingCard
           onActivityLogged={handleActivityLogged}
           onCardClick={() => setOpenDrawer('pumping')}
+        />
+        <PredictiveDoctorVisitCard
+          onActivityLogged={handleActivityLogged}
+          onCardClick={() => setOpenDrawer('doctor_visit')}
         />
       </div>
 

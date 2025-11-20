@@ -4,12 +4,14 @@ import { api } from '@nugget/api/react';
 import { Button } from '@nugget/ui/button';
 import { Droplet, Minus, Pause, Play, Plus, Timer } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { calculateBabyAgeDays } from '../shared/baby-age-utils';
 import { AmountAdjuster } from '../shared/components/amount-adjuster';
 // import { NotesField } from '../shared/components/notes-field';
 import { QuickSelectButtons } from '../shared/components/quick-select-buttons';
 import { formatTime } from '../shared/time-formatting-utils';
 import { getVolumeStep, mlToOz, ozToMl } from '../shared/volume-utils';
+import { autoStopInProgressSleepAction } from '../sleep/actions';
 import { calculateNursingVolumes } from './nursing-volume-calculator';
 
 export interface NursingFormData {
@@ -121,6 +123,16 @@ export function NursingDrawerContent({
 
       // Start database tracking on first side selection
       if (!hasStartedDbTracking && onTimerStart) {
+        // Auto-stop any in-progress sleep before starting nursing
+        try {
+          const result = await autoStopInProgressSleepAction();
+          if (result?.data?.activity) {
+            toast.info('Sleep tracking stopped automatically');
+          }
+        } catch (error) {
+          console.error('Failed to auto-stop sleep:', error);
+        }
+
         await onTimerStart();
         setHasStartedDbTracking(true);
       }

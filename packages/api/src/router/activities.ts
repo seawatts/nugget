@@ -67,7 +67,7 @@ export const activitiesRouter = createTRPCRouter({
         babyId: z.string(),
         feedings: z.array(
           z.object({
-            amount: z.number().optional(),
+            amountMl: z.number().optional(),
             feedingSource: z
               .enum(Object.keys(FeedingSourceType) as [string, ...string[]])
               .optional(),
@@ -97,7 +97,7 @@ export const activitiesRouter = createTRPCRouter({
         .insert(Activities)
         .values(
           input.feedings.map((feeding) => ({
-            amount: feeding.amount,
+            amountMl: feeding.amountMl,
             babyId: input.babyId,
             familyId: ctx.auth.orgId,
             feedingSource: feeding.feedingSource as
@@ -224,6 +224,16 @@ export const activitiesRouter = createTRPCRouter({
         ),
       });
 
+      // Filter out skipped activities (defensive check)
+      // Skipped activities should have endTime set, but this ensures they never appear as in-progress
+      if (
+        activity?.details &&
+        'skipped' in activity.details &&
+        activity.details.skipped === true
+      ) {
+        return null;
+      }
+
       return activity || null;
     }),
 
@@ -328,6 +338,52 @@ export const activitiesRouter = createTRPCRouter({
         where: and(
           eq(Activities.babyId, baby.id),
           gte(Activities.startTime, seventyTwoHoursAgo),
+        ),
+      });
+
+      return {
+        babyAgeDays,
+        babyBirthDate: baby.birthDate,
+        recentActivities,
+      };
+    }),
+
+  // Get upcoming doctor visit prediction
+  getUpcomingDoctorVisit: protectedProcedure
+    .input(z.object({ babyId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.auth.orgId) {
+        throw new Error('Authentication required');
+      }
+
+      // Verify baby belongs to family
+      const baby = await ctx.db.query.Babies.findFirst({
+        where: and(
+          eq(Babies.id, input.babyId),
+          eq(Babies.familyId, ctx.auth.orgId),
+        ),
+      });
+
+      if (!baby) {
+        throw new Error('Baby not found or does not belong to your family');
+      }
+
+      // Calculate baby's age in days
+      let babyAgeDays: number | null = null;
+      if (baby.birthDate) {
+        const today = new Date();
+        const birth = new Date(baby.birthDate);
+        const diffTime = Math.abs(today.getTime() - birth.getTime());
+        babyAgeDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      }
+
+      // Fetch all doctor visit activities for first year
+      const recentActivities = await ctx.db.query.Activities.findMany({
+        limit: 100,
+        orderBy: [desc(Activities.startTime)],
+        where: and(
+          eq(Activities.babyId, baby.id),
+          eq(Activities.type, 'doctor_visit'),
         ),
       });
 
@@ -519,6 +575,7 @@ export const activitiesRouter = createTRPCRouter({
         recentActivities,
       };
     }),
+
   // List activities for a baby with optional filtering
   list: protectedProcedure
     .input(

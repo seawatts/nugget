@@ -3,9 +3,9 @@
 import { auth } from '@clerk/nextjs/server';
 import { getApi } from '@nugget/api/server';
 import type { Activities } from '@nugget/db/schema';
-import { revalidatePath } from 'next/cache';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';
+import { revalidateAppPaths } from '~/app/(app)/app/_utils/revalidation';
 import { getDiaperGuidanceByAge } from './diaper-intervals';
 import { type DiaperPrediction, predictNextDiaper } from './prediction';
 
@@ -130,7 +130,7 @@ export const quickLogDiaperAction = action
       });
 
       // Revalidate pages
-      revalidatePath('/app');
+      revalidateAppPaths();
 
       return { activity };
     },

@@ -20,7 +20,7 @@ $ pnpm add @boundaryml/baml
 
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml"
 import type { Checked, Check } from "./types"
-import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  DailyLearningPlan,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningPlanItem,  LearningTip,  MilestoneEnhancementOutput,  MilestoneExplanationOutput,  MilestoneInput,  MilestonePlan,  MilestonePlanItem,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsInput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "./types"
+import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  CelebrationQuestion,  CelebrationQuestionsOutput,  CelebrationStatistics,  CelebrationSummaryOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  DailyLearningPlan,  DoctorQuestionsOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningPlanItem,  LearningTip,  MilestoneEnhancementOutput,  MilestoneExplanationOutput,  MilestoneInput,  MilestonePlan,  MilestonePlanItem,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsInput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "./types"
 import type * as types from "./types"
 
 /******************************************************************************
@@ -60,6 +60,28 @@ export namespace partial_types {
     export interface BirthPlanHeadlineOutput {
       text?: string | null
     }
+    export interface CelebrationQuestion {
+      question?: string | null
+      systemPrompt?: string | null
+      buttonLabel?: string | null
+      icon?: string | null
+    }
+    export interface CelebrationQuestionsOutput {
+      milestone?: CelebrationQuestion | null
+      memory?: CelebrationQuestion | null
+      guidance?: CelebrationQuestion | null
+    }
+    export interface CelebrationStatistics {
+      ageInDays?: number | null
+      ageLabel?: string | null
+      feedingCount?: number | null
+      sleepHours?: number | null
+      diaperCount?: number | null
+      weightGain?: string | null
+    }
+    export interface CelebrationSummaryOutput {
+      summary?: string | null
+    }
     export interface ChatMessage {
       role?: string | null
       content?: string | null
@@ -85,6 +107,11 @@ export namespace partial_types {
       reasoning?: string | null
       coveredCategories: string[]
       urgentHealthChecks?: boolean | null
+    }
+    export interface DoctorQuestionsOutput {
+      summary?: string | null
+      questions: string[]
+      concerns: string[]
     }
     export interface HospitalPackAdviceOutput {
       headline?: string | null

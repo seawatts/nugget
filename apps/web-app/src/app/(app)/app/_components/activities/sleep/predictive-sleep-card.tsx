@@ -37,8 +37,8 @@ export function PredictiveSleepCard({
   onCardClick,
   onActivityLogged: _onActivityLogged,
 }: PredictiveSleepCardProps) {
-  const params = useParams<{ userId: string }>();
-  const babyId = params?.userId;
+  const params = useParams<{ babyId?: string }>();
+  const babyId = params?.babyId;
 
   const utils = api.useUtils();
   const { data: userData } = api.user.current.useQuery();

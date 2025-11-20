@@ -4,7 +4,15 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
-import { Baby, Droplet, Droplets, Milk, Moon, Thermometer } from 'lucide-react';
+import {
+  Baby,
+  Droplet,
+  Droplets,
+  Milk,
+  Moon,
+  Stethoscope,
+  Thermometer,
+} from 'lucide-react';
 
 export type ActivityType =
   | 'feeding'
@@ -19,7 +27,8 @@ export type ActivityType =
   | 'temperature'
   | 'tummy_time'
   | 'growth'
-  | 'potty';
+  | 'potty'
+  | 'doctor_visit';
 
 export interface ActivityTheme {
   /** OKLCH color value for the activity */
@@ -59,6 +68,13 @@ export const ACTIVITY_THEMES: Record<ActivityType, ActivityTheme> = {
     icon: Baby,
     label: 'Diaper',
     textColor: 'text-activity-diaper-foreground',
+  },
+  doctor_visit: {
+    color: 'activity-doctor-visit',
+    description: 'Well-baby checkups and doctor visits',
+    icon: Stethoscope,
+    label: 'Doctor Visit',
+    textColor: 'text-activity-doctor-visit-foreground',
   },
   feeding: {
     color: 'activity-feeding',

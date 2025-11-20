@@ -26,3 +26,15 @@ export * from './learning-stages';
 export { generateMilestoneSuggestions, extractRecentMilestoneIds } from './milestone-orchestrator';
 export type { MilestoneContext, MilestoneResult } from './milestone-orchestrator';
 
+// Export celebration orchestrator
+export {
+  generateCelebrationSummary,
+  generateCelebrationQuestions,
+  enhanceCelebration,
+} from './celebration-orchestrator';
+export type {
+  CelebrationContext,
+  CelebrationEnhancementContext,
+  CelebrationEnhancementResult,
+} from './celebration-orchestrator';
+

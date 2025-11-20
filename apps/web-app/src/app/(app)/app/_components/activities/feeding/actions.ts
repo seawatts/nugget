@@ -3,9 +3,9 @@
 import { auth } from '@clerk/nextjs/server';
 import { getApi } from '@nugget/api/server';
 import type { Activities } from '@nugget/db/schema';
-import { revalidatePath } from 'next/cache';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';
+import { revalidateAppPaths } from '~/app/(app)/app/_utils/revalidation';
 import { calculateBabyAgeDays } from '../shared/baby-age-utils';
 import {
   type FamilyMemberScore,
@@ -176,7 +176,7 @@ export const claimFeedingAction = action
       }
 
       // Revalidate pages
-      revalidatePath('/app');
+      revalidateAppPaths();
 
       return { activity };
     },
@@ -212,7 +212,7 @@ export const completeFeedingAction = action
       });
 
       // Revalidate pages
-      revalidatePath('/app');
+      revalidateAppPaths();
 
       return { activity };
     },
@@ -247,14 +247,14 @@ export const unclaimFeedingAction = action
       });
 
       // Revalidate pages
-      revalidatePath('/app');
+      revalidateAppPaths();
 
       return { activity };
     },
   );
 
 const quickLogFeedingInputSchema = z.object({
-  amount: z.number().optional(),
+  amountMl: z.number().optional(),
   time: z.string().datetime().optional(), // defaults to now
   type: z.enum(['bottle', 'nursing']).optional(), // defaults to bottle
 });
@@ -286,7 +286,7 @@ export const quickLogFeedingAction = action
 
       // Create the feeding activity
       const activity = await api.activities.create({
-        amount: parsedInput.amount,
+        amountMl: parsedInput.amountMl,
         babyId: baby.id,
         details: null,
         isScheduled: false,
@@ -295,7 +295,7 @@ export const quickLogFeedingAction = action
       });
 
       // Revalidate pages
-      revalidatePath('/app');
+      revalidateAppPaths();
 
       return { activity };
     },

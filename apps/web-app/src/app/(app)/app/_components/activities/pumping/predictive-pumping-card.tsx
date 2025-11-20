@@ -40,8 +40,8 @@ export function PredictivePumpingCard({
   onCardClick,
   onActivityLogged: _onActivityLogged,
 }: PredictivePumpingCardProps) {
-  const params = useParams<{ userId: string }>();
-  const babyId = params?.userId;
+  const params = useParams<{ babyId?: string }>();
+  const babyId = params?.babyId;
 
   const router = useRouter();
   const utils = api.useUtils();

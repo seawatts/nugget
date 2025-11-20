@@ -25,9 +25,9 @@ import {
   subDays,
 } from 'date-fns';
 import { and, desc, eq, gte } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';
+import { revalidateAppPaths } from '~/app/(app)/app/_utils/revalidation';
 
 const action = createSafeActionClient();
 
@@ -241,7 +241,7 @@ export const findOrCreateContextChatAction = action
     }
 
     // Revalidate the app page so chats appear in timeline
-    revalidatePath('/app');
+    revalidateAppPaths();
 
     return {
       chat,
@@ -560,7 +560,7 @@ export async function sendChatMessageStreamingAction(input: {
                 .where(eq(Chats.id, chatId));
 
               // Revalidate the app page so chats appear in timeline
-              revalidatePath('/app');
+              revalidateAppPaths();
 
               // If this is the first exchange, generate a title
               if (previousMessages.length === 0) {

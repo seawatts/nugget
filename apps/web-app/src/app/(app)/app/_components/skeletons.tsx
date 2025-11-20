@@ -1,8 +1,20 @@
 export function CelebrationsSkeleton() {
   return (
-    <div className="mb-6 rounded-xl border border-border bg-card/50 p-6 animate-pulse">
-      <div className="h-8 bg-muted/30 rounded w-3/4 mb-4" />
-      <div className="h-20 bg-muted/30 rounded" />
+    <div className="mb-6 rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-secondary/5 overflow-hidden">
+      <div className="relative p-6 gap-6 grid">
+        {/* Header skeleton - this will be replaced with actual title */}
+        <div className="text-center gap-2 grid animate-pulse">
+          <div className="h-9 bg-muted/30 rounded-lg w-3/4 mx-auto" />
+          <div className="h-5 bg-muted/30 rounded w-1/2 mx-auto" />
+        </div>
+
+        {/* Everything else will show as actual content with inline loading for AI */}
+        <div className="grid gap-6">
+          <div className="h-20 bg-muted/30 rounded-lg animate-pulse" />
+          <div className="h-32 bg-muted/30 rounded-lg animate-pulse" />
+          <div className="h-32 bg-muted/30 rounded-lg animate-pulse" />
+        </div>
+      </div>
     </div>
   );
 }

@@ -11,6 +11,7 @@ import type { LucideIcon } from 'lucide-react';
 import { X } from 'lucide-react';
 import { useState } from 'react';
 import { DiaperActivityDrawer } from './diaper/diaper-activity-drawer';
+import { DoctorVisitActivityDrawer } from './doctor-visit/doctor-visit-activity-drawer';
 import { FeedingActivityDrawer } from './feeding/feeding-activity-drawer';
 import { ActivityDrawerContent } from './other-activities/activity-drawer-content';
 import { BathDrawer } from './other-activities/bath-drawer';
@@ -98,6 +99,16 @@ export function ActivityDrawer({
             onClose={onClose}
           />
         );
+      case 'doctor_visit':
+        // Doctor visit has its own header, so return the full component
+        return (
+          <DoctorVisitActivityDrawer
+            babyId={babyId}
+            existingActivity={existingActivity}
+            isOpen={isOpen}
+            onClose={onClose}
+          />
+        );
       case 'potty':
         return <PottyDrawer />;
       case 'activity':
@@ -117,7 +128,7 @@ export function ActivityDrawer({
     }
   };
 
-  // For activities with their own headers (sleep, feeding, diaper, pumping), render without wrapper
+  // For activities with their own headers (sleep, feeding, diaper, pumping, doctor_visit), render without wrapper
   const hasOwnHeader = [
     'sleep',
     'feeding',
@@ -126,6 +137,7 @@ export function ActivityDrawer({
     'solids',
     'diaper',
     'pumping',
+    'doctor_visit',
   ].includes(activity.id);
 
   if (hasOwnHeader) {

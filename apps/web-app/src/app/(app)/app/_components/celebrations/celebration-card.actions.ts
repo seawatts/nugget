@@ -21,6 +21,8 @@ import {
 // Type for celebration type values
 type CelebrationType = (typeof celebrationTypeEnum.enumValues)[number];
 
+import type { CelebrationEnhancementContext } from '@nugget/ai/celebration-orchestrator';
+import { enhanceCelebration } from '@nugget/ai/celebration-orchestrator';
 import { createId } from '@nugget/id';
 import { differenceInDays, subDays } from 'date-fns';
 import { and, eq, gte } from 'drizzle-orm';
@@ -54,6 +56,12 @@ export interface CelebrationCardData {
     photoUrls: string[];
     sharedWith: string[];
   };
+  aiSummary?: string;
+  aiQuestions?: {
+    milestone: { question: string; systemPrompt: string };
+    memory: { question: string; systemPrompt: string };
+    guidance: { question: string; systemPrompt: string };
+  };
 }
 
 interface CelebrationCarouselData {
@@ -70,6 +78,7 @@ interface CelebrationCarouselData {
     journeyStage: string | null;
     gender: string | null;
   } | null;
+  aiContext?: CelebrationEnhancementContext & { celebrationMemoryId: string };
 }
 
 /**
@@ -246,7 +255,66 @@ export async function getCelebrationContent(
       )
       .limit(1);
 
-    const memory = existingMemory[0];
+    let memory = existingMemory[0];
+
+    // If no memory exists, create one automatically
+    // This allows us to cache AI content even if user hasn't manually saved anything
+    if (!memory) {
+      try {
+        const [newMemory] = await db
+          .insert(CelebrationMemories)
+          .values({
+            babyId,
+            celebrationDate: new Date(),
+            celebrationType: celebrationType as CelebrationType,
+            familyId: baby.familyId, // Required field from baby record
+            userId: authResult.userId,
+          })
+          .returning();
+        if (newMemory) {
+          memory = newMemory;
+        }
+      } catch (insertError) {
+        // If insert fails (maybe due to constraint), try to fetch again
+        console.error('Error creating celebration memory:', insertError);
+        const retryMemory = await db
+          .select()
+          .from(CelebrationMemories)
+          .where(
+            and(
+              eq(CelebrationMemories.babyId, babyId),
+              eq(CelebrationMemories.celebrationType, celebrationType),
+            ),
+          )
+          .limit(1);
+        memory = retryMemory[0];
+      }
+    }
+
+    // Safety check - if we still don't have a memory, something went wrong
+    if (!memory) {
+      console.error('Failed to create or fetch celebration memory');
+      return {
+        ageInDays,
+        baby,
+        babyName,
+        celebration: null,
+      };
+    }
+
+    // At this point, memory is guaranteed to exist
+    const validMemory = memory;
+
+    // Check if we have cached AI content in the database
+    const hasAICache =
+      validMemory.aiSummary &&
+      validMemory.aiQuestions &&
+      validMemory.aiGeneratedAt &&
+      // Cache is valid for 24 hours
+      differenceInDays(new Date(), validMemory.aiGeneratedAt) < 1;
+
+    // Note: AI enhancement is done in the client component to show static content immediately
+    // The card will display inline loading states for AI content
 
     // Build celebration card data
     const celebrationCard: CelebrationCardData = {
@@ -255,16 +323,23 @@ export async function getCelebrationContent(
         label: string;
       }>,
       ageLabel: props.ageLabel as string,
-      celebrationType: props.celebrationType as string,
-      id: memory?.id || createId({ prefix: 'celebration' }),
-      memory: memory
-        ? {
-            id: memory.id,
-            note: memory.note,
-            photoUrls: (memory.photoUrls as string[]) || [],
-            sharedWith: (memory.sharedWith as string[]) || [],
-          }
+      aiQuestions: hasAICache
+        ? (validMemory.aiQuestions as {
+            milestone: { question: string; systemPrompt: string };
+            memory: { question: string; systemPrompt: string };
+            guidance: { question: string; systemPrompt: string };
+          })
         : undefined,
+      // Include cached AI content if available
+      aiSummary: hasAICache ? (validMemory.aiSummary ?? undefined) : undefined,
+      celebrationType: props.celebrationType as string,
+      id: validMemory.id,
+      memory: {
+        id: validMemory.id,
+        note: validMemory.note,
+        photoUrls: (validMemory.photoUrls as string[]) || [],
+        sharedWith: (validMemory.sharedWith as string[]) || [],
+      },
       showPhotoUpload: props.showPhotoUpload as boolean,
       statistics: {
         ageInDays: (props.statistics as { ageInDays: number }).ageInDays,
@@ -277,8 +352,30 @@ export async function getCelebrationContent(
       type: 'celebration',
     };
 
+    // Return the context for AI enhancement along with the card data
+    // Only include aiContext if we need to generate AI content
     return {
       ageInDays,
+      aiContext: hasAICache
+        ? undefined
+        : {
+            ageInDays,
+            ageLabel: props.ageLabel as string,
+            babyId,
+            babyName,
+            birthDate: baby.birthDate.toISOString(),
+            celebrationMemoryId: validMemory.id,
+            celebrationTitle: props.title as string,
+            celebrationType: props.celebrationType as string,
+            gender: baby.gender || undefined,
+            statistics: {
+              ageInDays,
+              ageLabel: props.ageLabel as string,
+              diaperCount: stats.diaperCount,
+              feedingCount: stats.feedingCount,
+              sleepHours: stats.sleepHours,
+            },
+          },
       baby,
       babyName,
       celebration: celebrationCard,
@@ -290,6 +387,62 @@ export async function getCelebrationContent(
       baby: null,
       babyName: '',
       celebration: null,
+    };
+  }
+}
+
+/**
+ * Fetch AI enhancement for a celebration card
+ * This is called separately to show static content immediately
+ * Results are cached in the database for 24 hours
+ */
+export async function getCelebrationAIContent(
+  context: CelebrationEnhancementContext & { celebrationMemoryId: string },
+) {
+  try {
+    const authResult = await auth();
+    if (!authResult.userId) {
+      throw new Error('Unauthorized');
+    }
+
+    // Generate AI content
+    const enhancement = await enhanceCelebration(context);
+
+    const aiContent = {
+      aiQuestions: {
+        guidance: {
+          question: enhancement.questions.guidance.question,
+          systemPrompt: enhancement.questions.guidance.systemPrompt,
+        },
+        memory: {
+          question: enhancement.questions.memory.question,
+          systemPrompt: enhancement.questions.memory.systemPrompt,
+        },
+        milestone: {
+          question: enhancement.questions.milestone.question,
+          systemPrompt: enhancement.questions.milestone.systemPrompt,
+        },
+      },
+      aiSummary: enhancement.summary.summary,
+    };
+
+    // Save AI content to database cache
+    await db
+      .update(CelebrationMemories)
+      .set({
+        aiGeneratedAt: new Date(),
+        aiQuestions: aiContent.aiQuestions,
+        aiSummary: aiContent.aiSummary,
+      })
+      .where(eq(CelebrationMemories.id, context.celebrationMemoryId));
+
+    return aiContent;
+  } catch (error) {
+    console.error('Error fetching AI celebration content:', error);
+    // Return undefined to let the card show fallback UI
+    return {
+      aiQuestions: undefined,
+      aiSummary: undefined,
     };
   }
 }

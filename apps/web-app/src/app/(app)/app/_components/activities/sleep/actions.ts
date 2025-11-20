@@ -3,9 +3,9 @@
 import { auth } from '@clerk/nextjs/server';
 import { getApi } from '@nugget/api/server';
 import type { Activities } from '@nugget/db/schema';
-import { revalidatePath } from 'next/cache';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';
+import { revalidateAppPaths } from '~/app/(app)/app/_utils/revalidation';
 import { predictNextSleep, type SleepPrediction } from './prediction';
 import { getSleepGuidanceByAge } from './sleep-intervals';
 
@@ -136,7 +136,7 @@ export const quickLogSleepAction = action
       });
 
       // Revalidate pages
-      revalidatePath('/app');
+      revalidateAppPaths();
 
       return { activity };
     },
@@ -167,7 +167,8 @@ export const skipSleepAction = action.action(
     const hour = now.getHours();
     const sleepType = hour >= 6 && hour < 18 ? 'nap' : 'night';
 
-    // Create the skip activity
+    // Create the skip activity as a completed activity (endTime === startTime, duration = 0)
+    // This prevents it from appearing as an in-progress sleep session
     const activity = await api.activities.create({
       babyId: baby.id,
       details: {
@@ -176,8 +177,8 @@ export const skipSleepAction = action.action(
         sleepType,
         type: 'sleep',
       },
-      duration: null,
-      endTime: null,
+      duration: 0,
+      endTime: now,
       isScheduled: false,
       startTime: now,
       type: 'sleep',
@@ -187,5 +188,58 @@ export const skipSleepAction = action.action(
     revalidatePath('/app');
 
     return { activity };
+  },
+);
+
+/**
+ * Auto-stop any in-progress sleep activity
+ * Called when starting a feeding or diaper change
+ * Returns the stopped activity if one was found, null otherwise
+ */
+export const autoStopInProgressSleepAction = action.action(
+  async (): Promise<{ activity: typeof Activities.$inferSelect | null }> => {
+    const api = await getApi();
+
+    // Verify authentication
+    const authResult = await auth();
+    if (!authResult.userId) {
+      throw new Error('Authentication required');
+    }
+
+    // Get the most recent baby
+    const baby = await api.babies.getMostRecent();
+
+    if (!baby) {
+      throw new Error('No baby found. Please complete onboarding first.');
+    }
+
+    // Check for in-progress sleep activity
+    const inProgressSleep = await api.activities.getInProgressActivity({
+      activityType: 'sleep',
+      babyId: baby.id,
+    });
+
+    // If no in-progress sleep, return null
+    if (!inProgressSleep) {
+      return { activity: null };
+    }
+
+    // Stop the sleep by setting endTime to now
+    const now = new Date();
+    const startTime = new Date(inProgressSleep.startTime);
+    const durationMinutes = Math.floor(
+      (now.getTime() - startTime.getTime()) / (1000 * 60),
+    );
+
+    const stoppedActivity = await api.activities.update({
+      duration: durationMinutes,
+      endTime: now,
+      id: inProgressSleep.id,
+    });
+
+    // Revalidate pages
+    revalidatePath('/app');
+
+    return { activity: stoppedActivity };
   },
 );

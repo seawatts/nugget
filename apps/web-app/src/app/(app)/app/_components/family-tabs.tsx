@@ -14,7 +14,10 @@ import {
 
 export function FamilyTabs() {
   const params = useParams();
-  const activeUserId = params.userId as string | undefined;
+  // Check for babyId (new structure) or userId (fallback for family members)
+  const activeUserId =
+    (params.babyId as string | undefined) ||
+    (params.userId as string | undefined);
   const [tabs, setTabs] = useState<FamilyTabMember[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -67,13 +70,18 @@ export function FamilyTabs() {
             .toUpperCase()
             .slice(0, 2);
 
+          const route =
+            tab.type === 'baby'
+              ? `/app/babies/${tab.userId}`
+              : `/app/family/${tab.userId}`;
+
           return (
             <Link
               className={cn(
                 'flex flex-col items-center gap-1.5 shrink-0 transition-all rounded-2xl p-2',
                 isActive ? 'bg-primary/10' : 'hover:bg-muted/50',
               )}
-              href={`/app/${tab.userId}`}
+              href={route}
               key={tab.id}
             >
               <div className="flex items-center justify-center">

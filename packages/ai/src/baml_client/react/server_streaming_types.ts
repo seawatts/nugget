@@ -21,7 +21,7 @@ $ pnpm add @boundaryml/baml
 import type { Check, Checked  } from "../types";
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml";
 
-import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  DailyLearningPlan,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningPlanItem,  LearningTip,  MilestoneEnhancementOutput,  MilestoneExplanationOutput,  MilestoneInput,  MilestonePlan,  MilestonePlanItem,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsInput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "../types"
+import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  CelebrationQuestion,  CelebrationQuestionsOutput,  CelebrationStatistics,  CelebrationSummaryOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  DailyLearningPlan,  DoctorQuestionsOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningPlanItem,  LearningTip,  MilestoneEnhancementOutput,  MilestoneExplanationOutput,  MilestoneInput,  MilestonePlan,  MilestonePlanItem,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsInput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "../types"
 
 import type * as types from "../types"
 import type { partial_types }from "../partial_types";
@@ -35,8 +35,10 @@ export type StreamingServerTypes = {
   DailyLearningPlanner: DailyLearningPlan,
   EnhanceMilestone: MilestoneEnhancementOutput,
   FirstWeekMilestone: MilestoneEnhancementOutput,
+  GenerateCelebrationSummary: CelebrationSummaryOutput,
   GenerateChatTitle: ChatTitleOutput,
   GenerateContextualMilestones: ContextualMilestonesOutput,
+  GenerateDoctorQuestions: DoctorQuestionsOutput,
   GenerateLearningTip_FirstWeek: LearningTip,
   GenerateLearningTip_ImmediatePostbirth: LearningTip,
   GenerateLearningTip_MonthOne: LearningTip,
@@ -53,6 +55,7 @@ export type StreamingServerTypes = {
   MonthTwoMilestone: MilestoneEnhancementOutput,
   NewbornWeekMilestone: NewbornMilestoneOutput,
   PersonalizedTasks: PersonalizedTasksOutput,
+  PlanCelebrationQuestions: CelebrationQuestionsOutput,
   PostpartumTips: PostpartumTipsOutput,
   PregnancyWeekSummary: PregnancyWeekSummaryOutput,
   RoleSpecificTips: RoleSpecificTipsOutput,

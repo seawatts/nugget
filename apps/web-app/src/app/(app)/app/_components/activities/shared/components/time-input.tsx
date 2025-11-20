@@ -40,12 +40,12 @@ export function TimeInput({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 min-w-0">
       <label className="text-xs text-muted-foreground" htmlFor={id}>
         {label}
       </label>
       <input
-        className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full max-w-full min-w-0 px-3 py-2 rounded-md border border-border bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={disabled}
         id={id}
         onChange={handleTimeChange}
@@ -53,9 +53,9 @@ export function TimeInput({
         value={value.toTimeString().slice(0, 5)}
       />
       {showQuickOptions && !disabled && (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2 min-w-0">
           <Button
-            className="text-xs h-8"
+            className="text-xs h-8 min-w-0"
             onClick={() => handleQuickTimeSelect(15)}
             type="button"
             variant="outline"
@@ -63,7 +63,7 @@ export function TimeInput({
             15 mins ago
           </Button>
           <Button
-            className="text-xs h-8"
+            className="text-xs h-8 min-w-0"
             onClick={() => handleQuickTimeSelect(30)}
             type="button"
             variant="outline"
@@ -71,7 +71,7 @@ export function TimeInput({
             30 mins ago
           </Button>
           <Button
-            className="text-xs h-8"
+            className="text-xs h-8 min-w-0"
             onClick={() => handleQuickTimeSelect(60)}
             type="button"
             variant="outline"

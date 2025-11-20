@@ -487,8 +487,12 @@ export function OnboardingWizard() {
             // Clear localStorage after successful completion
             localStorage.removeItem(ONBOARDING_STORAGE_KEY);
 
-            // Now navigate to the app
-            router.push('/app');
+            // Navigate to baby's dashboard if we have a baby, otherwise to /app
+            if (result.data.baby) {
+              router.push(`/app/babies/${result.data.baby.id}`);
+            } else {
+              router.push('/app');
+            }
           } else {
             console.error('Unexpected result:', result);
             setError('Something went wrong. Please try again.');

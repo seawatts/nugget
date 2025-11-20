@@ -23,7 +23,7 @@ import { toBamlError } from "@boundaryml/baml"
 import type { Checked, Check } from "./types"
 import type { partial_types } from "./partial_types"
 import type * as types from "./types"
-import type {AppointmentNudgeOutput, BabyAssistantChatOutput, BabyContext, BabyVisitExplainerOutput, BirthPlanHeadlineOutput, ChatMessage, ChatTitleOutput, CheckInQuestion, ContextualMilestonesOutput, DailyCheckInQuestionsOutput, DailyLearningPlan, HospitalPackAdviceOutput, ImprovementSuggestions, LearningPlanItem, LearningTip, MilestoneEnhancementOutput, MilestoneExplanationOutput, MilestoneInput, MilestonePlan, MilestonePlanItem, MilestoneSuggestion, NewbornMilestoneOutput, ParentTask, ParentTip, PersonalizedTasksOutput, PostpartumTipsInput, PostpartumTipsOutput, PregnancyWeekSummaryOutput, ResponseType, RoleSpecificTipsOutput, SleepRegressionTipsOutput, StalePromptsOutput, WellnessQuestion, WellnessScreeningOutput} from "./types"
+import type {AppointmentNudgeOutput, BabyAssistantChatOutput, BabyContext, BabyVisitExplainerOutput, BirthPlanHeadlineOutput, CelebrationQuestion, CelebrationQuestionsOutput, CelebrationStatistics, CelebrationSummaryOutput, ChatMessage, ChatTitleOutput, CheckInQuestion, ContextualMilestonesOutput, DailyCheckInQuestionsOutput, DailyLearningPlan, DoctorQuestionsOutput, HospitalPackAdviceOutput, ImprovementSuggestions, LearningPlanItem, LearningTip, MilestoneEnhancementOutput, MilestoneExplanationOutput, MilestoneInput, MilestonePlan, MilestonePlanItem, MilestoneSuggestion, NewbornMilestoneOutput, ParentTask, ParentTip, PersonalizedTasksOutput, PostpartumTipsInput, PostpartumTipsOutput, PregnancyWeekSummaryOutput, ResponseType, RoleSpecificTipsOutput, SleepRegressionTipsOutput, StalePromptsOutput, WellnessQuestion, WellnessScreeningOutput} from "./types"
 import type TypeBuilder from "./type_builder"
 
 export class LlmResponseParser {
@@ -214,6 +214,29 @@ export class LlmResponseParser {
     }
   }
   
+  GenerateCelebrationSummary(
+      llmResponse: string,
+      __baml_options__?: { tb?: TypeBuilder, clientRegistry?: ClientRegistry, env?: Record<string, string | undefined> }
+  ): types.CelebrationSummaryOutput {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.parseLlmResponse(
+        "GenerateCelebrationSummary",
+        llmResponse,
+        false,
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        env,
+      ) as types.CelebrationSummaryOutput
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
   GenerateChatTitle(
       llmResponse: string,
       __baml_options__?: { tb?: TypeBuilder, clientRegistry?: ClientRegistry, env?: Record<string, string | undefined> }
@@ -255,6 +278,29 @@ export class LlmResponseParser {
         __baml_options__?.clientRegistry,
         env,
       ) as types.ContextualMilestonesOutput
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateDoctorQuestions(
+      llmResponse: string,
+      __baml_options__?: { tb?: TypeBuilder, clientRegistry?: ClientRegistry, env?: Record<string, string | undefined> }
+  ): types.DoctorQuestionsOutput {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.parseLlmResponse(
+        "GenerateDoctorQuestions",
+        llmResponse,
+        false,
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        env,
+      ) as types.DoctorQuestionsOutput
     } catch (error) {
       throw toBamlError(error);
     }
@@ -623,6 +669,29 @@ export class LlmResponseParser {
         __baml_options__?.clientRegistry,
         env,
       ) as types.PersonalizedTasksOutput
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  PlanCelebrationQuestions(
+      llmResponse: string,
+      __baml_options__?: { tb?: TypeBuilder, clientRegistry?: ClientRegistry, env?: Record<string, string | undefined> }
+  ): types.CelebrationQuestionsOutput {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.parseLlmResponse(
+        "PlanCelebrationQuestions",
+        llmResponse,
+        false,
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        env,
+      ) as types.CelebrationQuestionsOutput
     } catch (error) {
       throw toBamlError(error);
     }
@@ -1025,6 +1094,29 @@ export class LlmStreamParser {
     }
   }
   
+  GenerateCelebrationSummary(
+      llmResponse: string,
+      __baml_options__?: { tb?: TypeBuilder, clientRegistry?: ClientRegistry, env?: Record<string, string | undefined> }
+  ): partial_types.CelebrationSummaryOutput {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.parseLlmResponse(
+        "GenerateCelebrationSummary",
+        llmResponse,
+        true,
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        env,
+      ) as partial_types.CelebrationSummaryOutput
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
   GenerateChatTitle(
       llmResponse: string,
       __baml_options__?: { tb?: TypeBuilder, clientRegistry?: ClientRegistry, env?: Record<string, string | undefined> }
@@ -1066,6 +1158,29 @@ export class LlmStreamParser {
         __baml_options__?.clientRegistry,
         env,
       ) as partial_types.ContextualMilestonesOutput
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateDoctorQuestions(
+      llmResponse: string,
+      __baml_options__?: { tb?: TypeBuilder, clientRegistry?: ClientRegistry, env?: Record<string, string | undefined> }
+  ): partial_types.DoctorQuestionsOutput {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.parseLlmResponse(
+        "GenerateDoctorQuestions",
+        llmResponse,
+        true,
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        env,
+      ) as partial_types.DoctorQuestionsOutput
     } catch (error) {
       throw toBamlError(error);
     }
@@ -1434,6 +1549,29 @@ export class LlmStreamParser {
         __baml_options__?.clientRegistry,
         env,
       ) as partial_types.PersonalizedTasksOutput
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  PlanCelebrationQuestions(
+      llmResponse: string,
+      __baml_options__?: { tb?: TypeBuilder, clientRegistry?: ClientRegistry, env?: Record<string, string | undefined> }
+  ): partial_types.CelebrationQuestionsOutput {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.parseLlmResponse(
+        "PlanCelebrationQuestions",
+        llmResponse,
+        true,
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        env,
+      ) as partial_types.CelebrationQuestionsOutput
     } catch (error) {
       throw toBamlError(error);
     }

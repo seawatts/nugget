@@ -14,6 +14,7 @@ import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';
+import { revalidateAppPaths } from '~/app/(app)/app/_utils/revalidation';
 
 // Create the action client
 const action = createSafeActionClient();
@@ -347,7 +348,7 @@ export const completeOnboardingAction = action
       }
 
       // Revalidate paths
-      revalidatePath('/app');
+      revalidateAppPaths();
       revalidatePath('/app/onboarding');
 
       return {
@@ -504,7 +505,7 @@ export const completeOnboardingForExistingFamilyAction = action
         .returning();
 
       // Revalidate paths
-      revalidatePath('/app');
+      revalidateAppPaths();
       revalidatePath('/app/onboarding');
 
       return {

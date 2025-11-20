@@ -184,7 +184,7 @@ export function PumpingActivityDrawer({
       if (existingActivity) {
         // Update existing activity
         await updateActivity({
-          amount: totalAmountMl,
+          amountMl: totalAmountMl,
           details: pumpingDetails,
           duration: durationMinutes ?? undefined,
           endTime,
@@ -197,7 +197,7 @@ export function PumpingActivityDrawer({
         // Create new activity
         await createActivity({
           activityType: 'pumping',
-          amount: totalAmountMl,
+          amountMl: totalAmountMl,
           details: pumpingDetails,
           duration: durationMinutes ?? undefined,
           feedingSource: 'pumped',
@@ -250,7 +250,7 @@ export function PumpingActivityDrawer({
         />
 
         {/* Time & Date Section */}
-        <div className="space-y-3">
+        <div className="space-y-3 min-w-0">
           <h3 className="text-sm font-medium text-muted-foreground">
             Start Time
           </h3>

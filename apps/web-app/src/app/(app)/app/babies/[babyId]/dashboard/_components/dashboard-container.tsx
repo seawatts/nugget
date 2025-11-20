@@ -20,7 +20,7 @@ import { TodaySummaryCard } from '~/app/(app)/app/_components/today-summary-card
 
 export function DashboardContainer() {
   const params = useParams();
-  const babyId = params.userId as string;
+  const babyId = params.babyId as string;
 
   // Use suspense queries to leverage prefetched data (lightweight version without nested relations)
   const [baby] = api.babies.getByIdLight.useSuspenseQuery({ id: babyId });

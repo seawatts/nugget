@@ -76,7 +76,7 @@ function fixedMapActivityTypeToCategory(type: string): string {
 function aggregateActivities(
   activities: Array<{
     type: string;
-    amount: number | null;
+    amountMl: number | null;
     duration: number | null;
   }>,
   mapFn: (type: string) => string,
@@ -90,13 +90,13 @@ function aggregateActivities(
       if (!acc[category]) {
         acc[category] = {
           count: 1,
-          totalAmount: activity.amount || 0,
+          totalAmount: activity.amountMl || 0,
           totalDuration: activity.duration || 0,
         };
       } else {
         acc[category].count += 1;
         acc[category].totalDuration += activity.duration || 0;
-        acc[category].totalAmount += activity.amount || 0;
+        acc[category].totalAmount += activity.amountMl || 0;
       }
       return acc;
     },

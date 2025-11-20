@@ -1,8 +1,8 @@
 'use server';
 
 import { clerkClient } from '@clerk/nextjs/server';
-import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { revalidateAppPaths } from '~/app/(app)/app/_utils/revalidation';
 
 /**
  * Delete user from Clerk
@@ -31,7 +31,7 @@ export async function deleteOrgFromClerk(clerkOrgId: string) {
   try {
     const client = await clerkClient();
     await client.organizations.deleteOrganization(clerkOrgId);
-    revalidatePath('/app');
+    revalidateAppPaths();
     return { success: true };
   } catch (error) {
     console.error('Failed to delete organization from Clerk:', error);
