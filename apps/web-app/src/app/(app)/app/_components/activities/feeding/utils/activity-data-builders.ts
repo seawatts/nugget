@@ -2,7 +2,7 @@ import type { Activities } from '@nugget/db/schema';
 import type { FeedingFormData } from '../feeding-type-selector';
 
 interface NursingDetails {
-  side: string;
+  side: 'left' | 'right' | 'both';
   type: 'nursing';
 }
 
@@ -53,9 +53,11 @@ function getFeedingSource(
 ): typeof Activities.$inferSelect.feedingSource {
   switch (formData.type) {
     case 'bottle':
-      return formData.bottleType === 'formula' ? 'formula' : 'pumped';
+      return formData.bottleType === 'formula'
+        ? ('formula' as const)
+        : ('pumped' as const);
     case 'nursing':
-      return 'direct';
+      return 'direct' as const;
     default:
       return null;
   }
@@ -67,9 +69,9 @@ function getFeedingSource(
 function getDetails(formData: FeedingFormData): FeedingDetails {
   switch (formData.type) {
     case 'nursing':
-      return { side: 'both', type: 'nursing' };
+      return { side: 'both' as const, type: 'nursing' as const };
     case 'solids':
-      return { items: [], type: 'solids' };
+      return { items: [], type: 'solids' as const };
     default:
       return null;
   }

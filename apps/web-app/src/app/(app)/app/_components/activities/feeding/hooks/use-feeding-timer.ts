@@ -38,15 +38,15 @@ export function useFeedingTimer({
           amount: formData.amountMl,
           details:
             formData.type === 'nursing'
-              ? { side: 'both', type: 'nursing' as const }
+              ? { side: 'both' as const, type: 'nursing' as const }
               : null,
           feedingSource:
             formData.type === 'bottle'
               ? formData.bottleType === 'formula'
-                ? 'formula'
-                : 'pumped'
+                ? ('formula' as const)
+                : ('pumped' as const)
               : formData.type === 'nursing'
-                ? 'direct'
+                ? ('direct' as const)
                 : null,
           notes: formData.notes || undefined,
           startTime: newStartTime,
