@@ -265,28 +265,37 @@ const navGroups = [
 ];
 
 const familyMenuContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      delayChildren: 0.05,
-      staggerChildren: 0.05,
-    },
-  },
-};
-
-const familyAvatarItem = {
   hidden: {
     opacity: 0,
-    scale: 0.8,
+    scale: 0.9,
     y: 20,
   },
   visible: {
     opacity: 1,
     scale: 1,
     transition: {
-      damping: 30,
-      stiffness: 400,
+      damping: 25,
+      delayChildren: 0.1,
+      staggerChildren: 0.06,
+      stiffness: 300,
+      type: 'spring' as const,
+    },
+    y: 0,
+  },
+};
+
+const familyAvatarItem = {
+  hidden: {
+    opacity: 0,
+    scale: 0.85,
+    y: 15,
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      damping: 22,
+      stiffness: 350,
       type: 'spring' as const,
     },
     y: 0,
@@ -592,7 +601,11 @@ export function BottomNav() {
               exit={{ opacity: 0 }}
               initial={{ opacity: 0 }}
               onClick={() => setShowFamilyMenu(false)}
-              transition={{ duration: 0.2 }}
+              transition={{
+                damping: 30,
+                stiffness: 300,
+                type: 'spring',
+              }}
             />
 
             {/* Family Avatars Container */}
@@ -703,24 +716,61 @@ export function BottomNav() {
           {/* Center Avatar Button - Elevated TikTok Style */}
           <motion.div
             animate={{
-              scale: animations.avatarScale,
+              scale: showFamilyMenu ? 1.1 : animations.avatarScale,
               top: `${animations.avatarTop}px`,
             }}
             className="absolute left-1/2 -translate-x-1/2 z-50"
-            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+            transition={{
+              damping: 25,
+              stiffness: 300,
+              type: 'spring',
+            }}
           >
-            <button
+            <motion.button
+              animate={{
+                rotate: showFamilyMenu ? 0 : 0,
+              }}
               className="block relative"
               onClick={() => setShowFamilyMenu(!showFamilyMenu)}
               ref={avatarButtonRef}
+              transition={{
+                damping: 20,
+                stiffness: 400,
+                type: 'spring',
+              }}
               type="button"
+              whileTap={{ scale: 0.95 }}
             >
               <div className="relative group">
                 {/* Glow effect */}
-                <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl group-hover:bg-primary/30 transition-all pointer-events-none" />
+                <motion.div
+                  animate={{
+                    opacity: showFamilyMenu ? 0.4 : 0.2,
+                    scale: showFamilyMenu ? 1.2 : 1,
+                  }}
+                  className="absolute inset-0 rounded-full bg-primary blur-xl group-hover:bg-primary transition-colors pointer-events-none"
+                  transition={{
+                    damping: 20,
+                    stiffness: 300,
+                    type: 'spring',
+                  }}
+                />
 
                 {/* Avatar container */}
-                <div className="relative flex items-center justify-center size-16 rounded-full bg-linear-to-br from-primary to-primary/80 p-[3px] shadow-2xl shadow-primary/50 transition-all group-hover:scale-105 group-hover:shadow-primary/70 cursor-pointer">
+                <motion.div
+                  animate={{
+                    boxShadow: showFamilyMenu
+                      ? '0 25px 50px -12px rgba(var(--primary-rgb, 99 102 241) / 0.5)'
+                      : '0 20px 40px -12px rgba(var(--primary-rgb, 99 102 241) / 0.3)',
+                  }}
+                  className="relative flex items-center justify-center size-16 rounded-full bg-linear-to-br from-primary to-primary/80 p-[3px] cursor-pointer"
+                  transition={{
+                    damping: 20,
+                    stiffness: 300,
+                    type: 'spring',
+                  }}
+                  whileHover={{ scale: 1.05 }}
+                >
                   <div className="size-full rounded-full bg-card flex items-center justify-center p-1">
                     <NuggetAvatar
                       backgroundColor={babyAvatarBackgroundColor || undefined}
@@ -733,9 +783,9 @@ export function BottomNav() {
                       size="lg"
                     />
                   </div>
-                </div>
+                </motion.div>
               </div>
-            </button>
+            </motion.button>
           </motion.div>
 
           {/* Navigation Items Grid */}

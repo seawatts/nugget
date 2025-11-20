@@ -493,12 +493,10 @@ export function SleepActivityDrawer({
               familyMembers={familyMembers}
               isCoSleeping={isCoSleeping}
               isTimerStopped={isTimerStopped}
-              notes={notes}
               onTimerStart={handleTimerStart}
               setCoSleepingWith={setCoSleepingWith}
               setDuration={setDuration}
               setIsCoSleeping={setIsCoSleeping}
-              setNotes={setNotes}
               setSleepLocation={setSleepLocation}
               setSleepQuality={setSleepQuality}
               setSleepType={setSleepType}
