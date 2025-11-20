@@ -7,6 +7,7 @@ import { cn } from '@nugget/ui/lib/utils';
 import { Droplets, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import { TimeInput } from '../shared/components/time-input';
 import { useActivityMutations } from '../use-activity-mutations';
 import { PumpingDrawerContent } from './pumping-drawer';
 
@@ -108,14 +109,19 @@ export function PumpingActivityDrawer({
     }
   }, [existingActivity, userUnitPref]);
 
-  // Reset state when drawer closes
+  // Reset state when drawer closes - delay to allow closing animation to complete
   useEffect(() => {
     if (!isOpen) {
-      setLeftAmount(userUnitPref === 'OZ' ? 2 : 60);
-      setRightAmount(userUnitPref === 'OZ' ? 2 : 60);
-      setSelectedDuration(null);
-      setSelectedMethod(null);
-      setNotes('');
+      // Delay state reset to prevent flash during drawer closing animation
+      const timeoutId = setTimeout(() => {
+        setLeftAmount(userUnitPref === 'OZ' ? 2 : 60);
+        setRightAmount(userUnitPref === 'OZ' ? 2 : 60);
+        setSelectedDuration(null);
+        setSelectedMethod(null);
+        setNotes('');
+      }, 300); // Standard drawer animation duration
+
+      return () => clearTimeout(timeoutId);
     }
   }, [isOpen, userUnitPref]);
 
@@ -248,22 +254,12 @@ export function PumpingActivityDrawer({
           <h3 className="text-sm font-medium text-muted-foreground">
             Start Time
           </h3>
-          <div className="space-y-2 min-w-0">
-            <input
-              className="w-full min-w-0 px-3 py-2 rounded-md border border-border bg-background text-foreground"
-              id="pumping-start-time"
-              onChange={(e) => {
-                const [hours, minutes] = e.target.value.split(':').map(Number);
-                if (hours !== undefined && minutes !== undefined) {
-                  const newStartTime = new Date(startTime);
-                  newStartTime.setHours(hours, minutes);
-                  setStartTime(newStartTime);
-                }
-              }}
-              type="time"
-              value={startTime.toTimeString().slice(0, 5)}
-            />
-          </div>
+          <TimeInput
+            id="pumping-start-time"
+            label="Start Time"
+            onChange={setStartTime}
+            value={startTime}
+          />
         </div>
       </div>
 

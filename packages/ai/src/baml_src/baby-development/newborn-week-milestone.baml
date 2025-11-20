@@ -150,8 +150,9 @@ function NewbornWeekMilestone(
 
     * MANDATORY: At least TWO tips MUST have isYesNoQuestion: true
     * DEFAULT RULE: If the question can be answered with yes/no, SET isYesNoQuestion: true
+    * MILESTONE/HEALTH RULE: For 'development' or 'health' categories, ALWAYS use isYesNoQuestion: true
 
-    * YES/NO QUESTIONS (isYesNoQuestion: true) - PREFERRED for health/milestones:
+    * YES/NO QUESTIONS (isYesNoQuestion: true) - REQUIRED for milestones/health:
       Examples:
       - "Has {{babyName}} had a wet diaper in the last 12 hours?"
       - "Is {{babyName}} tracking your face when you move?"
@@ -162,16 +163,17 @@ function NewbornWeekMilestone(
     * When isYesNoQuestion: true, you MUST set openChatOnNo and/or openChatOnYes:
       - openChatOnNo: true → If "no" needs support (e.g., no wet diapers, not eating)
       - openChatOnYes: true → If "yes" needs support (e.g., showing distress)
-      - ALWAYS provide the corresponding prompt
+      - Both can be true if discussion is valuable either way
 
-    * OPEN-ENDED QUESTIONS (isYesNoQuestion: false) - Use for qualitative details:
+    * OPEN-ENDED QUESTIONS (isYesNoQuestion: false) - Use ONLY for qualitative details:
       - "What new sounds has {{babyName}} made today?"
       - "What does {{babyName}} do during tummy time?"
+      - Avoid for milestone tracking or health monitoring
 
     DECISION TREE FOR EACH TIP:
-    1. Can this be answered yes/no? → isYesNoQuestion: true
-    2. Does it need qualitative details? → isYesNoQuestion: false
-    3. For 'health' or 'diaper' categories → ALWAYS use isYesNoQuestion: true
+    1. Is this 'development' or 'health' category? → isYesNoQuestion: MUST be true
+    2. Can this be answered yes/no? → isYesNoQuestion: true
+    3. Does it need qualitative details only? → isYesNoQuestion: false
 
     Make each tip:
     - Include what parents might observe this week in their daily care

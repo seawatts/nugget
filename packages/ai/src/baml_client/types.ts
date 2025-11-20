@@ -168,7 +168,7 @@ export interface MilestoneEnhancementOutput {
   summary: string
   bulletPoints: string[]
   followUpQuestion: string
-  isYesNoQuestion?: boolean | null
+  isYesNoQuestion: boolean
   openChatOnYes?: boolean | null
   openChatOnNo?: boolean | null
   

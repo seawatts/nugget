@@ -21,7 +21,11 @@ function MonthThreeFourMilestone(input: MilestoneInput) -> MilestoneEnhancementO
     3. bulletPoints (2-3, max 12 words each)
     4. followUpQuestion (max 15 words, use {{input.babyName}}'s name)
 
-    YES/NO: Prefer isYesNoQuestion: true, set openChatOnYes/openChatOnNo appropriately
+    CRITICAL YES/NO QUESTION REQUIREMENTS:
+    * MANDATORY: isYesNoQuestion MUST ALWAYS be true for ALL milestones
+    * Milestones track binary achievement - always ask yes/no questions
+    * Open-ended questions are NOT ALLOWED for milestone cards
+    * MUST set openChatOnYes and/or openChatOnNo: true
 
     MONTHS 3-4 FOCUS: Rolling, reaching/grasping, loud laughter, pushing up during tummy time, hand play, tracking objects fully.
 

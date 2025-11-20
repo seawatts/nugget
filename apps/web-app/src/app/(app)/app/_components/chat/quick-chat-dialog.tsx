@@ -228,8 +228,11 @@ export function QuickChatDialogContent({
       const result = await sendChatMessageStreamingAction({
         babyId,
         chatId: chatId || undefined,
+        contextId: contextId || undefined,
+        contextType: contextType || undefined,
         message: trimmedInput,
         systemPrompt,
+        title: title || undefined,
       });
 
       // Update chatId if this was the first message
@@ -291,7 +294,17 @@ export function QuickChatDialogContent({
     } finally {
       setIsSending(false);
     }
-  }, [input, userId, babyId, systemPrompt, chatId, isSending]);
+  }, [
+    input,
+    userId,
+    babyId,
+    systemPrompt,
+    chatId,
+    isSending,
+    contextId,
+    contextType,
+    title,
+  ]);
 
   return (
     <div className="flex flex-col h-full max-h-[70vh]">

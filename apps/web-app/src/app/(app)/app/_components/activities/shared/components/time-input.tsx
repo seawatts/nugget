@@ -1,7 +1,9 @@
 'use client';
 
+import { Button } from '@nugget/ui/button';
+
 /**
- * Reusable time input component
+ * Reusable time input component with quick time selection options
  * Used for selecting start/end times in activity drawers
  */
 
@@ -11,6 +13,7 @@ interface TimeInputProps {
   onChange: (date: Date) => void;
   disabled?: boolean;
   id?: string;
+  showQuickOptions?: boolean;
 }
 
 export function TimeInput({
@@ -19,6 +22,7 @@ export function TimeInput({
   onChange,
   disabled = false,
   id,
+  showQuickOptions = true,
 }: TimeInputProps) {
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const [hours, minutes] = e.target.value.split(':').map(Number);
@@ -27,6 +31,12 @@ export function TimeInput({
       newDate.setHours(hours, minutes);
       onChange(newDate);
     }
+  };
+
+  const handleQuickTimeSelect = (minutesAgo: number) => {
+    const newDate = new Date();
+    newDate.setMinutes(newDate.getMinutes() - minutesAgo);
+    onChange(newDate);
   };
 
   return (
@@ -42,6 +52,34 @@ export function TimeInput({
         type="time"
         value={value.toTimeString().slice(0, 5)}
       />
+      {showQuickOptions && !disabled && (
+        <div className="grid grid-cols-3 gap-2">
+          <Button
+            className="text-xs h-8"
+            onClick={() => handleQuickTimeSelect(15)}
+            type="button"
+            variant="outline"
+          >
+            15 mins ago
+          </Button>
+          <Button
+            className="text-xs h-8"
+            onClick={() => handleQuickTimeSelect(30)}
+            type="button"
+            variant="outline"
+          >
+            30 mins ago
+          </Button>
+          <Button
+            className="text-xs h-8"
+            onClick={() => handleQuickTimeSelect(60)}
+            type="button"
+            variant="outline"
+          >
+            1 hour ago
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

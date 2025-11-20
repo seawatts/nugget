@@ -1,7 +1,7 @@
 'use client';
 
 import { api } from '@nugget/api/react';
-import type { Activities } from '@nugget/db/schema';
+import type { Activities, Chats } from '@nugget/db/schema';
 import { Icons } from '@nugget/ui/custom/icons';
 import {
   differenceInMinutes,
@@ -341,6 +341,40 @@ export function ActivityTimeline() {
       );
   }, [milestonesData]);
 
+  // Build filters for chats query
+  const chatsFilters = useMemo(() => {
+    if (!baby?.id) return null;
+
+    const shouldFetchChats =
+      selectedActivityTypes.length === 0 ||
+      selectedActivityTypes.includes('chat');
+
+    if (!shouldFetchChats) return null;
+
+    return {
+      babyId: baby.id,
+      limit: 100,
+    };
+  }, [baby?.id, selectedActivityTypes]);
+
+  // Fetch chats using tRPC suspense query
+  const [chatsData = []] = api.chats.list.useSuspenseQuery(
+    chatsFilters ?? { babyId: baby?.id || '', limit: 0 },
+  );
+
+  // Convert chats to timeline items
+  const chatTimelineItems = useMemo(() => {
+    return chatsData.map(
+      (chatMessage): TimelineItem => ({
+        data: chatMessage as typeof chatMessage & {
+          chat: typeof Chats.$inferSelect;
+        },
+        timestamp: new Date(chatMessage.createdAt),
+        type: 'chat' as const,
+      }),
+    );
+  }, [chatsData]);
+
   // Convert activities to timeline items
   const activityTimelineItems = useMemo(() => {
     return activitiesData.map(
@@ -369,6 +403,7 @@ export function ActivityTimeline() {
       ...optimisticTimelineItems,
       ...activityTimelineItems,
       ...milestoneTimelineItems,
+      ...chatTimelineItems,
     ];
 
     // Check if skipped activities should be shown
@@ -408,6 +443,7 @@ export function ActivityTimeline() {
     optimisticTimelineItems,
     activityTimelineItems,
     milestoneTimelineItems,
+    chatTimelineItems,
     selectedUserIds,
     selectedActivityTypes,
   ]);

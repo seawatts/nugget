@@ -19,6 +19,7 @@ import { Moon, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getInProgressSleepActivityAction } from '../activity-cards.actions';
+import { TimeInput } from '../shared/components/time-input';
 import { getFamilyMembersAction } from '../timeline/activity-timeline-filters.actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import { SleepDrawerContent } from './sleep-drawer';
@@ -227,18 +228,23 @@ export function SleepActivityDrawer({
       })();
     }
 
-    // Reset state when drawer closes
+    // Reset state when drawer closes - delay to allow closing animation to complete
     if (!isOpen) {
-      setActiveActivityId(null);
-      setIsTimerStopped(false);
-      setIsLoadingInProgress(false);
-      setDuration(0);
-      setNotes('');
-      setSleepQuality(undefined);
-      setSleepLocation(undefined);
-      setWakeReason(undefined);
-      setIsCoSleeping(false);
-      setCoSleepingWith([]);
+      // Delay state reset to prevent flash during drawer closing animation
+      const timeoutId = setTimeout(() => {
+        setActiveActivityId(null);
+        setIsTimerStopped(false);
+        setIsLoadingInProgress(false);
+        setDuration(0);
+        setNotes('');
+        setSleepQuality(undefined);
+        setSleepLocation(undefined);
+        setWakeReason(undefined);
+        setIsCoSleeping(false);
+        setCoSleepingWith([]);
+      }, 300); // Standard drawer animation duration
+
+      return () => clearTimeout(timeoutId);
     }
   }, [isOpen, existingActivity, babyId]);
 
@@ -432,56 +438,12 @@ export function SleepActivityDrawer({
                 <h3 className="text-sm font-medium text-muted-foreground">
                   Time & Date
                 </h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2 min-w-0">
-                    <label
-                      className="text-xs text-muted-foreground"
-                      htmlFor="sleep-start-time"
-                    >
-                      Start Time
-                    </label>
-                    <input
-                      className="w-full min-w-0 px-3 py-2 rounded-md border border-border bg-background text-foreground"
-                      id="sleep-start-time"
-                      onChange={(e) => {
-                        const [hours, minutes] = e.target.value
-                          .split(':')
-                          .map(Number);
-                        if (hours !== undefined && minutes !== undefined) {
-                          const newStartTime = new Date(startTime);
-                          newStartTime.setHours(hours, minutes);
-                          setStartTime(newStartTime);
-                        }
-                      }}
-                      type="time"
-                      value={startTime.toTimeString().slice(0, 5)}
-                    />
-                  </div>
-                  <div className="space-y-2 min-w-0">
-                    <label
-                      className="text-xs text-muted-foreground"
-                      htmlFor="sleep-end-time"
-                    >
-                      End Time
-                    </label>
-                    <input
-                      className="w-full min-w-0 px-3 py-2 rounded-md border border-border bg-background text-foreground"
-                      id="sleep-end-time"
-                      onChange={(e) => {
-                        const [hours, minutes] = e.target.value
-                          .split(':')
-                          .map(Number);
-                        if (hours !== undefined && minutes !== undefined) {
-                          const newEndTime = new Date(endTime);
-                          newEndTime.setHours(hours, minutes);
-                          setEndTime(newEndTime);
-                        }
-                      }}
-                      type="time"
-                      value={endTime.toTimeString().slice(0, 5)}
-                    />
-                  </div>
-                </div>
+                <TimeInput
+                  id="sleep-start-time"
+                  label="Start Time"
+                  onChange={setStartTime}
+                  value={startTime}
+                />
               </div>
             )}
 

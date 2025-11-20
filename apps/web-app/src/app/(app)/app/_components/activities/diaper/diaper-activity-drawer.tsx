@@ -6,6 +6,7 @@ import { cn } from '@nugget/ui/lib/utils';
 import { Baby, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import { TimeInput } from '../shared/components/time-input';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { DiaperFormData } from './diaper-drawer';
 import { DiaperDrawerContent } from './diaper-drawer';
@@ -100,19 +101,24 @@ export function DiaperActivityDrawer({
     }
   }, [existingActivity]);
 
-  // Reset state when drawer closes
+  // Reset state when drawer closes - delay to allow closing animation to complete
   useEffect(() => {
     if (!isOpen) {
-      const now = new Date();
-      setStartTime(now);
-      setFormData({
-        color: null,
-        consistency: null,
-        hasRash: false,
-        notes: '',
-        size: null,
-        type: null,
-      });
+      // Delay state reset to prevent flash during drawer closing animation
+      const timeoutId = setTimeout(() => {
+        const now = new Date();
+        setStartTime(now);
+        setFormData({
+          color: null,
+          consistency: null,
+          hasRash: false,
+          notes: '',
+          size: null,
+          type: null,
+        });
+      }, 300); // Standard drawer animation duration
+
+      return () => clearTimeout(timeoutId);
     }
   }, [isOpen]);
 
@@ -224,28 +230,12 @@ export function DiaperActivityDrawer({
           <h3 className="text-sm font-medium text-muted-foreground">
             Time & Date
           </h3>
-          <div className="space-y-2">
-            <label
-              className="text-xs text-muted-foreground"
-              htmlFor="diaper-time"
-            >
-              Time
-            </label>
-            <input
-              className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
-              id="diaper-time"
-              onChange={(e) => {
-                const [hours, minutes] = e.target.value.split(':').map(Number);
-                if (hours !== undefined && minutes !== undefined) {
-                  const newStartTime = new Date(startTime);
-                  newStartTime.setHours(hours, minutes);
-                  setStartTime(newStartTime);
-                }
-              }}
-              type="time"
-              value={startTime.toTimeString().slice(0, 5)}
-            />
-          </div>
+          <TimeInput
+            id="diaper-time"
+            label="Time"
+            onChange={setStartTime}
+            value={startTime}
+          />
         </div>
       </div>
 

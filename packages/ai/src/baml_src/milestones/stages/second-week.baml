@@ -75,9 +75,11 @@ function SecondWeekMilestone(input: MilestoneInput) -> MilestoneEnhancementOutpu
     3. **bulletPoints** (2-3, each max 12 words)
     4. **followUpQuestion** (max 15 words, use {{input.babyName}}'s name)
 
-    YES/NO QUESTION REQUIREMENTS:
-    - Prefer isYesNoQuestion: true for milestone tracking
-    - When true, set openChatOnYes/openChatOnNo: true
+    CRITICAL YES/NO QUESTION REQUIREMENTS:
+    * MANDATORY: isYesNoQuestion MUST ALWAYS be true for ALL milestones
+    * Milestones track binary achievement - always ask yes/no questions
+    * Open-ended questions are NOT ALLOWED for milestone cards
+    * When true, MUST set openChatOnYes and/or openChatOnNo: true
 
     SECOND WEEK SPECIFICS:
     - Parents more confident, noticing subtle changes

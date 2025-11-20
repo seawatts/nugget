@@ -25,6 +25,7 @@ import {
   subDays,
 } from 'date-fns';
 import { and, desc, eq, gte } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';
 
@@ -239,6 +240,9 @@ export const findOrCreateContextChatAction = action
       }
     }
 
+    // Revalidate the app page so chats appear in timeline
+    revalidatePath('/app');
+
     return {
       chat,
       isNew: true,
@@ -304,8 +308,11 @@ export const sendChatMessageAction = action
     z.object({
       babyId: z.string(),
       chatId: z.string().optional(),
+      contextId: z.string().optional(),
+      contextType: z.string().optional(),
       message: z.string(),
       systemPrompt: z.string().optional(),
+      title: z.string().optional(),
     }),
   )
   .action(async ({ parsedInput }) => {
@@ -324,8 +331,10 @@ export const sendChatMessageAction = action
     if (!chatId) {
       const newChat: NewChat = {
         babyId: parsedInput.babyId,
+        contextId: parsedInput.contextId || null,
+        contextType: parsedInput.contextType || null,
         familyId: baby.familyId,
-        title: 'New Chat',
+        title: parsedInput.title || 'New Chat',
         userId,
       };
       const [chat] = await db.insert(Chats).values(newChat).returning();
@@ -420,6 +429,9 @@ export async function sendChatMessageStreamingAction(input: {
   chatId?: string;
   message: string;
   systemPrompt?: string;
+  contextType?: string; // e.g., 'learning_tip', 'milestone'
+  contextId?: string; // e.g., tip ID, milestone ID
+  title?: string; // Custom title for the chat
 }): Promise<{
   stream: ReadableStream<Uint8Array>;
   chatId: string;
@@ -440,8 +452,10 @@ export async function sendChatMessageStreamingAction(input: {
   if (!chatId) {
     const newChat: NewChat = {
       babyId: input.babyId,
+      contextId: input.contextId || null,
+      contextType: input.contextType || null,
       familyId: baby.familyId,
-      title: 'New Chat',
+      title: input.title || 'New Chat',
       userId,
     };
     const [chat] = await db.insert(Chats).values(newChat).returning();
@@ -544,6 +558,9 @@ export async function sendChatMessageStreamingAction(input: {
                 .update(Chats)
                 .set({ updatedAt: new Date() })
                 .where(eq(Chats.id, chatId));
+
+              // Revalidate the app page so chats appear in timeline
+              revalidatePath('/app');
 
               // If this is the first exchange, generate a title
               if (previousMessages.length === 0) {

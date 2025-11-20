@@ -11,10 +11,10 @@ class MilestoneEnhancementOutput {
   bulletPoints string[] @description("2-3 developmental tips (each max 12 words)")
   followUpQuestion string @description("ONE focused question (max 15 words)")
 
-  // Yes/No Question Support
-  isYesNoQuestion bool? @description("If true, this is a yes/no question (not open-ended). If false or omitted, it's an open-ended question.")
-  openChatOnYes bool? @description("Whether to open chat dialog when user clicks 'Yes'. Only relevant if isYesNoQuestion is true.")
-  openChatOnNo bool? @description("Whether to open chat dialog when user clicks 'No'. Only relevant if isYesNoQuestion is true.")
+  // Yes/No Question Support - MANDATORY for milestones
+  isYesNoQuestion bool @description("MUST be true for all milestone questions. Milestones require yes/no answers to track achievement.")
+  openChatOnYes bool? @description("Whether to open chat dialog when user clicks 'Yes'. Set to true for celebration/discussion.")
+  openChatOnNo bool? @description("Whether to open chat dialog when user clicks 'No'. Set to true for guidance/support.")
 }
 
 // ============================================================================
@@ -157,21 +157,20 @@ function EnhanceMilestone(
 
     CRITICAL YES/NO QUESTION REQUIREMENTS:
 
-    * DEFAULT RULE: For milestones, PREFER isYesNoQuestion: true (binary achievement questions)
+    * MANDATORY RULE: isYesNoQuestion MUST ALWAYS be true for ALL milestones
+    * Milestones track binary achievement - always ask yes/no questions
+    * Open-ended questions are NOT ALLOWED for milestone cards
 
-    * YES/NO QUESTIONS (isYesNoQuestion: true) - PREFERRED for milestones:
-      Examples:
+    * YES/NO QUESTION EXAMPLES (isYesNoQuestion: true) - REQUIRED:
       - "Is {% if babyName %}{{babyName}}{% else %}baby{% endif %} showing this behavior?"
       - "Has {% if babyName %}{{babyName}}{% else %}baby{% endif %} achieved this milestone?"
       - "Does {% if babyName %}{{babyName}}{% else %}baby{% endif %} do this during activities?"
+      - "Have you noticed {% if babyName %}{{babyName}}{% else %}baby{% endif %} doing this?"
 
-    * When isYesNoQuestion: true, you MUST set openChatOnYes or openChatOnNo:
+    * When isYesNoQuestion: true, you MUST set openChatOnYes or openChatOnNo (or both):
       - openChatOnYes: true → For celebration/discussion (milestone achieved)
       - openChatOnNo: true → For guidance (milestone not yet seen)
-
-    * OPEN-ENDED QUESTIONS (isYesNoQuestion: false) - Use ONLY for qualitative details:
-      - "What behaviors have you noticed?"
-      - "How does {% if babyName %}{{babyName}}{% else %}baby{% endif %} respond?"
+      - Both can be true if discussion is valuable either way
 
     Keep the tone:
     - Warm and supportive

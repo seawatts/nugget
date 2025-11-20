@@ -77,7 +77,6 @@ interface SleepDrawerContentProps {
 
 export function SleepDrawerContent({
   startTime,
-  setStartTime,
   duration,
   setDuration,
   sleepType,
@@ -141,8 +140,8 @@ export function SleepDrawerContent({
 
   const handleStartStop = async () => {
     if (!isTracking) {
-      const newStartTime = new Date();
-      setStartTime(newStartTime);
+      // Don't reset startTime - respect whatever the user has already set
+      // Only reset duration to 0 when starting tracking
       setDuration(0);
       setIsTracking(true);
 

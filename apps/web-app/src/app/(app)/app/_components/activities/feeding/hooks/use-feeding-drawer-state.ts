@@ -133,9 +133,14 @@ export function useFeedingDrawerState({
       })();
     }
 
-    // Reset state when drawer closes
+    // Reset state when drawer closes - delay to allow closing animation to complete
     if (!isOpen) {
-      resetState();
+      // Delay state reset to prevent flash during drawer closing animation
+      const timeoutId = setTimeout(() => {
+        resetState();
+      }, 300); // Standard drawer animation duration
+
+      return () => clearTimeout(timeoutId);
     }
   }, [isOpen, existingActivity, babyId, resetState]);
 

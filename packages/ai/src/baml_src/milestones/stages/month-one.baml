@@ -35,9 +35,11 @@ function MonthOneMilestone(input: MilestoneInput) -> MilestoneEnhancementOutput 
     3. bulletPoints (2-3, each max 12 words)
     4. followUpQuestion (max 15 words, use {{input.babyName}}'s name)
 
-    YES/NO REQUIREMENTS:
-    - Prefer isYesNoQuestion: true
-    - Set openChatOnYes/openChatOnNo: true
+    CRITICAL YES/NO QUESTION REQUIREMENTS:
+    * MANDATORY: isYesNoQuestion MUST ALWAYS be true for ALL milestones
+    * Milestones track binary achievement - always ask yes/no questions
+    * Open-ended questions are NOT ALLOWED for milestone cards
+    * MUST set openChatOnYes and/or openChatOnNo: true
 
     MONTH ONE FOCUS:
     - Social smile is THE milestone of this period

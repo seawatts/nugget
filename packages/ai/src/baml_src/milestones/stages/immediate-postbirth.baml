@@ -130,9 +130,11 @@ function ImmediatePostbirthMilestone(input: MilestoneInput) -> MilestoneEnhancem
 
     CRITICAL YES/NO QUESTION REQUIREMENTS:
 
-    * DEFAULT RULE: For milestones, PREFER isYesNoQuestion: true
+    * MANDATORY RULE: isYesNoQuestion MUST ALWAYS be true for ALL milestones
+    * Milestones track binary achievement - always ask yes/no questions
+    * Open-ended questions are NOT ALLOWED for milestone cards
 
-    * YES/NO QUESTIONS (isYesNoQuestion: true) - PREFERRED:
+    * YES/NO QUESTIONS (isYesNoQuestion: true) - REQUIRED:
       Examples for this stage:
       - "Have you seen {{input.babyName}} show the [reflex/behavior]?"
       - "Does {{input.babyName}} [specific observable action]?"
@@ -141,10 +143,7 @@ function ImmediatePostbirthMilestone(input: MilestoneInput) -> MilestoneEnhancem
     * When isYesNoQuestion: true, you MUST set:
       - openChatOnYes: true → For celebration/discussion (milestone observed)
       - openChatOnNo: true → For reassurance/guidance (not yet observed)
-
-    * OPEN-ENDED QUESTIONS (isYesNoQuestion: false) - Use ONLY for qualitative details:
-      - "What behaviors does {{input.babyName}} show during [activity]?"
-      - "How does {{input.babyName}} respond to [stimulus]?"
+      - Both can be true if discussion is valuable either way
 
     TONE:
     - Warm, supportive, non-judgmental

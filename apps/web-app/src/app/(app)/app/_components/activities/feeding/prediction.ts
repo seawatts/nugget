@@ -10,6 +10,7 @@ export interface FeedingPrediction {
   intervalHours: number;
   averageIntervalHours: number | null;
   lastFeedingTime: Date | null;
+  lastFeedingAmount: number | null; // in ml
   recentFeedingPattern: Array<{
     time: Date;
     intervalFromPrevious: number | null;
@@ -109,6 +110,7 @@ export function predictNextFeeding(
       confidenceLevel: 'low',
       intervalHours: ageBasedInterval,
       isOverdue: false,
+      lastFeedingAmount: null,
       lastFeedingTime: null,
       nextFeedingTime,
       overdueMinutes: null,
@@ -128,6 +130,7 @@ export function predictNextFeeding(
       confidenceLevel: 'low',
       intervalHours: ageBasedInterval,
       isOverdue: false,
+      lastFeedingAmount: null,
       lastFeedingTime: null,
       nextFeedingTime,
       overdueMinutes: null,
@@ -137,6 +140,7 @@ export function predictNextFeeding(
     };
   }
   const lastFeedingTime = new Date(lastFeeding.startTime);
+  const lastFeedingAmount = lastFeeding.amount || null;
 
   // Calculate intervals between consecutive feedings
   const intervals = calculateIntervals(feedingActivities);
@@ -213,6 +217,7 @@ export function predictNextFeeding(
     confidenceLevel,
     intervalHours: predictedInterval,
     isOverdue,
+    lastFeedingAmount,
     lastFeedingTime,
     nextFeedingTime,
     overdueMinutes,

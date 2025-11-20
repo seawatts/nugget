@@ -21,7 +21,11 @@ function ThirdWeekMilestone(input: MilestoneInput) -> MilestoneEnhancementOutput
     3. bulletPoints (2-3, max 12 words each)
     4. followUpQuestion (max 15 words, use {{input.babyName}}'s name)
 
-    YES/NO: Prefer isYesNoQuestion: true, set openChatOnYes/openChatOnNo appropriately
+    CRITICAL YES/NO QUESTION REQUIREMENTS:
+    * MANDATORY: isYesNoQuestion MUST ALWAYS be true for ALL milestones
+    * Milestones track binary achievement - always ask yes/no questions
+    * Open-ended questions are NOT ALLOWED for milestone cards
+    * MUST set openChatOnYes and/or openChatOnNo: true
 
     THIRD WEEK FOCUS: Early social smile emerging, improved visual tracking, recognizes familiar faces/voices, brief coos.
 

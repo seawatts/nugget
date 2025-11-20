@@ -17,6 +17,7 @@ interface PredictiveTimeDisplayProps {
   timeUntil: string;
   exactTime: string;
   lastActivityTime?: Date | null;
+  lastActivityAmount?: string | null; // formatted amount string (e.g., "4 oz", "120 ml")
   elapsedTime?: number;
   timeFormat: '12h' | '24h';
   activityLabel?: string; // e.g., "feeding", "sleeping"
@@ -30,6 +31,7 @@ export function PredictiveTimeDisplay({
   timeUntil,
   exactTime,
   lastActivityTime,
+  lastActivityAmount,
   elapsedTime = 0,
   timeFormat,
   activityLabel = 'active',
@@ -79,6 +81,7 @@ export function PredictiveTimeDisplay({
               addSuffix: true,
             })}{' '}
             • {formatTimeWithPreference(lastActivityTime, timeFormat)}
+            {lastActivityAmount && <span> • {lastActivityAmount}</span>}
           </div>
         )}
       </>
@@ -98,6 +101,7 @@ export function PredictiveTimeDisplay({
             addSuffix: true,
           })}{' '}
           • {formatTimeWithPreference(lastActivityTime, timeFormat)}
+          {lastActivityAmount && <span> • {lastActivityAmount}</span>}
         </div>
       )}
     </>

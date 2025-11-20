@@ -20,6 +20,7 @@ import {
   usePredictiveTimer,
   useSkipLogic,
 } from '../shared/components/predictive-cards';
+import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
 import { getAssignedMember, suggestFamilyMember } from './assignment';
 import { FeedingAssignmentSection } from './components/feeding-assignment-section';
 import { getFeedingGuidanceByAge } from './feeding-intervals';
@@ -42,6 +43,7 @@ export function PredictiveFeedingCard({
 
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
+  const userUnitPref = getVolumeUnit(userData?.measurementUnit || 'metric');
 
   // Use tRPC query for prediction data
   const {
@@ -142,6 +144,12 @@ export function PredictiveFeedingCard({
   });
   const exactTime = formatTimeWithPreference(displayNextTime, timeFormat);
 
+  // Format amount for display based on user preference
+  const formatAmount = (ml: number | null) => {
+    if (!ml) return null;
+    return formatVolumeDisplay(ml, userUnitPref, true);
+  };
+
   const handleCardClick = () => {
     if (onCardClick) {
       onCardClick();
@@ -182,6 +190,7 @@ export function PredictiveFeedingCard({
             exactTime={exactTime}
             inProgressActivity={inProgressActivity}
             isLoading={isLoading}
+            lastActivityAmount={formatAmount(prediction.lastFeedingAmount)}
             lastActivityTime={prediction.lastFeedingTime}
             overdueMinutes={prediction.overdueMinutes}
             timeFormat={timeFormat}

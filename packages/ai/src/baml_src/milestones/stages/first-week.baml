@@ -88,11 +88,14 @@ function FirstWeekMilestone(input: MilestoneInput) -> MilestoneEnhancementOutput
 
     CRITICAL YES/NO QUESTION REQUIREMENTS:
 
-    * DEFAULT: Prefer isYesNoQuestion: true for milestone tracking
+    * MANDATORY: isYesNoQuestion MUST ALWAYS be true for ALL milestones
+    * Milestones track binary achievement - always ask yes/no questions
+    * Open-ended questions are NOT ALLOWED for milestone cards
 
     * When isYesNoQuestion: true, MUST provide:
       - openChatOnYes: true (for celebration/exploration)
       - openChatOnNo: true (for reassurance/guidance)
+      - Both can be true if discussion is valuable either way
 
     FIRST WEEK SPECIFICS:
     - Acknowledge transition from hospital/birth center

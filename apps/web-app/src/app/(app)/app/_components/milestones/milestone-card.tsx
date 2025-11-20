@@ -10,6 +10,7 @@ import {
   BookOpen,
   Brain,
   Check,
+  CheckCircle2,
   Heart,
   MessageCircle,
   Sparkles,
@@ -120,6 +121,7 @@ export function MilestoneCard({
   const [prefillMessage, setPrefillMessage] = useState<string | undefined>();
   const [hasUserAnswered, setHasUserAnswered] = useState(false);
   const [userAnswer, setUserAnswer] = useState<'yes' | 'no' | null>(null);
+  const [pendingCompletion, setPendingCompletion] = useState(false);
   const { executeAsync: fetchRepliers } = useAction(getContextChatReplyAction);
   const { executeAsync: saveResponse } = useAction(
     saveMilestoneQuestionResponseAction,
@@ -170,16 +172,28 @@ export function MilestoneCard({
     loadRepliers();
   }, [loadRepliers]);
 
-  // Refetch repliers when chat dialog closes
+  // Refetch repliers and handle completion when chat dialog closes
   useEffect(() => {
     if (!isChatOpen) {
       // Add a small delay to ensure the message has been saved
       const timer = setTimeout(() => {
         loadRepliers();
+
+        // If user answered "yes" and we need to mark as complete, do it now
+        if (pendingCompletion && !isCompleted) {
+          onMarkComplete();
+          setPendingCompletion(false);
+        }
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isChatOpen, loadRepliers]);
+  }, [
+    isChatOpen,
+    loadRepliers,
+    pendingCompletion,
+    isCompleted,
+    onMarkComplete,
+  ]);
 
   // Handler for yes/no button clicks
   const handleYesNoClick = useCallback(
@@ -194,6 +208,11 @@ export function MilestoneCard({
       setUserAnswer(answer);
       setPrefillMessage(answer);
       setIsChatOpen(true);
+
+      // If answer is "yes", mark for completion after chat closes
+      if (answer === 'yes' && !isCompleted) {
+        setPendingCompletion(true);
+      }
 
       // Save the response asynchronously in the background
       saveResponse({
@@ -214,6 +233,7 @@ export function MilestoneCard({
       saveResponse,
       hasUserAnswered,
       userAnswer,
+      isCompleted,
     ],
   );
 
@@ -233,11 +253,22 @@ export function MilestoneCard({
   return (
     <FeatureCard
       className={
-        isCompleted ? 'relative border-green-500/30 bg-green-500/5' : ''
+        isCompleted
+          ? 'relative border-green-500 border-2 bg-green-500/10 shadow-lg shadow-green-500/20'
+          : ''
       }
       colorConfig={colorConfig}
       variant="custom"
     >
+      {/* Completion checkmark overlay */}
+      {isCompleted && (
+        <div className="absolute top-3 right-3 z-10">
+          <div className="rounded-full bg-green-600 p-1 shadow-md">
+            <CheckCircle2 className="size-5 text-white" />
+          </div>
+        </div>
+      )}
+
       {/* Header with icon and type */}
       <FeatureCard.Header
         className={`flex flex-col gap-3 ${config.bgColor} p-5`}
@@ -262,20 +293,6 @@ export function MilestoneCard({
             </div>
           </div>
         </div>
-        <Button
-          className={
-            isCompleted
-              ? 'bg-green-600 hover:bg-green-600 text-white font-semibold shadow-sm cursor-default h-8 w-full'
-              : 'bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md hover:shadow-lg transition-all h-8 w-full'
-          }
-          disabled={isCompleted}
-          onClick={onMarkComplete}
-          variant="default"
-        >
-          <span className="text-xs">
-            {isCompleted ? 'Completed' : 'Complete'}
-          </span>
-        </Button>
       </FeatureCard.Header>
 
       {/* Scrollable Content Area */}
