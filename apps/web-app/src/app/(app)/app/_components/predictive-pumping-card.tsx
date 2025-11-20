@@ -4,6 +4,7 @@ import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
+import { Skeleton } from '@nugget/ui/components/skeleton';
 import { toast } from '@nugget/ui/components/sonner';
 import { Icons } from '@nugget/ui/custom/icons';
 import {
@@ -16,43 +17,45 @@ import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { Droplets, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { InfoCard } from './info-card';
 import { LearningSection } from './learning-section';
-import {
-  getUpcomingPumpingAction,
-  skipPumpingAction,
-  type UpcomingPumpingData,
-} from './upcoming-pumping/actions';
+import { skipPumpingAction } from './upcoming-pumping/actions';
 import { getPumpingLearningContent } from './upcoming-pumping/learning-content';
+import { predictNextPumping } from './upcoming-pumping/prediction';
+import { getPumpingGuidanceByAge } from './upcoming-pumping/pumping-intervals';
 import { useActivityMutations } from './use-activity-mutations';
 import { formatVolumeDisplay, getVolumeUnit } from './volume-utils';
 
 interface PredictivePumpingCardProps {
-  refreshTrigger?: number;
   onCardClick?: () => void;
   onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
 }
 
 export function PredictivePumpingCard({
-  refreshTrigger = 0,
   onCardClick,
   onActivityLogged,
 }: PredictivePumpingCardProps) {
   const router = useRouter();
   const utils = api.useUtils();
-  const [data, setData] = useState<UpcomingPumpingData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showInfoDrawer, setShowInfoDrawer] = useState(false);
-  const [skipping, setSkipping] = useState(false);
 
   // Fetch user preferences for volume display and time format
-  const { data: user, isLoading: userLoading } = api.user.current.useQuery();
+  const { data: user } = api.user.current.useQuery();
   const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
   const timeFormat = user?.timeFormat || '12h';
+
+  // Use tRPC query for prediction data
+  const {
+    data: queryData,
+    isLoading,
+    isFetching,
+    error: queryError,
+  } = api.activities.getUpcomingPumping.useQuery();
+
+  const [showInfoDrawer, setShowInfoDrawer] = useState(false);
+  const [skipping, setSkipping] = useState(false);
 
   // Use activity mutations hook for creating pumping activities
   const { createActivity, isCreating } = useActivityMutations();
@@ -60,59 +63,22 @@ export function PredictivePumpingCard({
     (state) => state.addActivity,
   );
 
-  // Listen for activity list invalidations to auto-refresh predictions
-  const { data: baby } = api.babies.getMostRecent.useQuery();
-  const { dataUpdatedAt } = api.activities.list.useQuery(
-    { babyId: baby?.id ?? '', limit: 1 }, // Minimal query just to detect changes
-    { enabled: !!baby?.id },
-  );
-
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const result = await getUpcomingPumpingAction();
-
-      if (result?.data) {
-        setData(result.data);
-        setError(null);
-      } else if (result?.serverError) {
-        setError(result.serverError);
+  // Process prediction data from tRPC query
+  const data = queryData
+    ? {
+        babyAgeDays: queryData.babyAgeDays,
+        guidanceMessage:
+          queryData.babyAgeDays !== null
+            ? getPumpingGuidanceByAge(queryData.babyAgeDays)
+            : 'Pump regularly to establish and maintain milk supply.',
+        prediction: predictNextPumping(
+          queryData.recentActivities,
+          queryData.babyBirthDate,
+        ),
       }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to load upcoming pumping data',
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    : null;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTrigger and dataUpdatedAt are intentionally used to trigger reloads
-  useEffect(() => {
-    loadData();
-  }, [loadData, refreshTrigger, dataUpdatedAt]);
-
-  if (loading || userLoading) {
-    return (
-      <Card
-        className={cn(
-          'relative overflow-hidden border-0 p-6 animate-pulse bg-[oklch(0.65_0.18_280)] text-white col-span-2',
-        )}
-      >
-        <div className="flex items-center gap-4">
-          <div className="opacity-30">
-            <Icons.Spinner className="h-12 w-12 animate-spin" />
-          </div>
-          <div className="flex-1">
-            <div className="h-7 bg-white/20 rounded w-32 mb-2" />
-            <div className="h-4 bg-white/20 rounded w-24" />
-          </div>
-        </div>
-      </Card>
-    );
-  }
+  const error = queryError?.message || null;
 
   if (error) {
     return (
@@ -222,7 +188,7 @@ export function PredictivePumpingCard({
       onActivityLogged?.(activity);
 
       // Reload prediction data
-      await loadData();
+      await utils.activities.getUpcomingPumping.invalidate();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to log pumping');
     }
@@ -236,7 +202,7 @@ export function PredictivePumpingCard({
       toast.success('Pumping reminder skipped');
       // Invalidate activities list to refresh timeline
       await utils.activities.list.invalidate();
-      await loadData();
+      await utils.activities.getUpcomingPumping.invalidate();
     } catch (error) {
       console.error('Failed to skip pumping:', error);
       toast.error('Failed to skip pumping');
@@ -270,16 +236,30 @@ export function PredictivePumpingCard({
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-2xl font-bold">Pumping</h2>
-              <button
-                className="p-1.5 rounded-full hover:bg-white/10 transition-colors -mr-1.5"
-                onClick={handleInfoClick}
-                type="button"
-              >
-                <Info className="size-5 opacity-70" />
-              </button>
+              <div className="flex items-center gap-1">
+                {isFetching && !isLoading && (
+                  <Icons.Spinner
+                    className="animate-spin opacity-70"
+                    size="xs"
+                  />
+                )}
+                <button
+                  className="p-1.5 rounded-full hover:bg-white/10 transition-colors -mr-1.5"
+                  onClick={handleInfoClick}
+                  type="button"
+                >
+                  <Info className="size-5 opacity-70" />
+                </button>
+              </div>
             </div>
             <div className="space-y-1">
-              {effectiveIsOverdue ? (
+              {isLoading ? (
+                // Show skeleton only on time text during initial load
+                <>
+                  <Skeleton className="h-6 w-48 bg-white/20" />
+                  <Skeleton className="h-4 w-32 bg-white/20" />
+                </>
+              ) : effectiveIsOverdue ? (
                 // Show overdue warning
                 <>
                   <div className="flex items-baseline gap-2">

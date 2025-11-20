@@ -4,6 +4,7 @@ import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Card } from '@nugget/ui/card';
 import { Button } from '@nugget/ui/components/button';
+import { Skeleton } from '@nugget/ui/components/skeleton';
 import { toast } from '@nugget/ui/components/sonner';
 import { Icons } from '@nugget/ui/custom/icons';
 import {
@@ -15,35 +16,37 @@ import {
 import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { Baby, Info } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { LearningSection } from './learning-section';
-import {
-  getUpcomingDiaperAction,
-  skipDiaperAction,
-  type UpcomingDiaperData,
-} from './upcoming-diaper/actions';
+import { skipDiaperAction } from './upcoming-diaper/actions';
+import { getDiaperGuidanceByAge } from './upcoming-diaper/diaper-intervals';
 import { getDiaperLearningContent } from './upcoming-diaper/learning-content';
+import { predictNextDiaper } from './upcoming-diaper/prediction';
 import { useActivityMutations } from './use-activity-mutations';
 
 interface PredictiveDiaperCardProps {
-  refreshTrigger?: number;
   onCardClick?: () => void;
   onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
 }
 
 export function PredictiveDiaperCard({
-  refreshTrigger = 0,
   onCardClick,
   onActivityLogged,
 }: PredictiveDiaperCardProps) {
   const utils = api.useUtils();
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
-  const [data, setData] = useState<UpcomingDiaperData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Use tRPC query for prediction data
+  const {
+    data: queryData,
+    isLoading,
+    isFetching,
+    error: queryError,
+  } = api.activities.getUpcomingDiaper.useQuery();
+
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [skipping, setSkipping] = useState(false);
 
@@ -53,59 +56,23 @@ export function PredictiveDiaperCard({
     (state) => state.addActivity,
   );
 
-  // Listen for activity list invalidations to auto-refresh predictions
-  const { data: baby } = api.babies.getMostRecent.useQuery();
-  const { dataUpdatedAt } = api.activities.list.useQuery(
-    { babyId: baby?.id ?? '', limit: 1 }, // Minimal query just to detect changes
-    { enabled: !!baby?.id },
-  );
-
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const result = await getUpcomingDiaperAction();
-
-      if (result?.data) {
-        setData(result.data);
-        setError(null);
-      } else if (result?.serverError) {
-        setError(result.serverError);
+  // Process prediction data from tRPC query
+  const data = queryData
+    ? {
+        babyAgeDays: queryData.babyAgeDays,
+        guidanceMessage:
+          queryData.babyAgeDays !== null
+            ? getDiaperGuidanceByAge(queryData.babyAgeDays)
+            : 'Check diaper regularly and change when wet or soiled.',
+        prediction: predictNextDiaper(
+          queryData.recentActivities.filter((a) => a.type === 'diaper'),
+          queryData.babyBirthDate,
+          queryData.recentActivities,
+        ),
       }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to load upcoming diaper data',
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    : null;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTrigger and dataUpdatedAt are intentionally used to trigger reloads
-  useEffect(() => {
-    loadData();
-  }, [loadData, refreshTrigger, dataUpdatedAt]);
-
-  if (loading) {
-    return (
-      <Card
-        className={cn(
-          'relative overflow-hidden border-0 p-6 animate-pulse bg-[oklch(0.78_0.14_60)] text-[oklch(0.18_0.02_250)] col-span-2',
-        )}
-      >
-        <div className="flex items-center gap-4">
-          <div className="opacity-30">
-            <Icons.Spinner className="h-12 w-12 animate-spin" />
-          </div>
-          <div className="flex-1">
-            <div className="h-7 bg-current/20 rounded w-32 mb-2" />
-            <div className="h-4 bg-current/20 rounded w-24" />
-          </div>
-        </div>
-      </Card>
-    );
-  }
+  const error = queryError?.message || null;
 
   if (error) {
     return (
@@ -227,7 +194,7 @@ export function PredictiveDiaperCard({
       onActivityLogged?.(activity);
 
       // Reload prediction data (will automatically clear skip state)
-      await loadData();
+      await utils.activities.getUpcomingDiaper.invalidate();
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : 'Failed to log diaper change',
@@ -246,7 +213,7 @@ export function PredictiveDiaperCard({
         // Invalidate activities list to refresh timeline
         await utils.activities.list.invalidate();
         // Reload to get updated prediction with skip info
-        await loadData();
+        await utils.activities.getUpcomingDiaper.invalidate();
       } else if (result?.serverError) {
         toast.error(result.serverError);
       }
@@ -278,16 +245,30 @@ export function PredictiveDiaperCard({
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-2xl font-bold">Diaper</h2>
-              <button
-                className="p-1.5 rounded-full hover:bg-black/10 transition-colors -mr-1.5"
-                onClick={handleInfoClick}
-                type="button"
-              >
-                <Info className="size-5 opacity-70" />
-              </button>
+              <div className="flex items-center gap-1">
+                {isFetching && !isLoading && (
+                  <Icons.Spinner
+                    className="animate-spin opacity-70"
+                    size="xs"
+                  />
+                )}
+                <button
+                  className="p-1.5 rounded-full hover:bg-black/10 transition-colors -mr-1.5"
+                  onClick={handleInfoClick}
+                  type="button"
+                >
+                  <Info className="size-5 opacity-70" />
+                </button>
+              </div>
             </div>
             <div className="space-y-1">
-              {effectiveIsOverdue ? (
+              {isLoading ? (
+                // Show skeleton only on time text during initial load
+                <>
+                  <Skeleton className="h-6 w-48 bg-current/20" />
+                  <Skeleton className="h-4 w-32 bg-current/20" />
+                </>
+              ) : effectiveIsOverdue ? (
                 <>
                   <div className="flex items-baseline gap-2">
                     <span className="text-lg font-bold text-amber-400">

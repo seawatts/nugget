@@ -4,6 +4,7 @@ import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
+import { Skeleton } from '@nugget/ui/components/skeleton';
 import { toast } from '@nugget/ui/components/sonner';
 import { Icons } from '@nugget/ui/custom/icons';
 import {
@@ -20,35 +21,35 @@ import { formatTimeWithPreference } from '~/lib/format-time';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getInProgressSleepActivityAction } from './activity-cards.actions';
 import { LearningSection } from './learning-section';
-import {
-  getUpcomingSleepAction,
-  skipSleepAction,
-  type UpcomingSleepData,
-} from './upcoming-sleep/actions';
+import { skipSleepAction } from './upcoming-sleep/actions';
 import { getSleepLearningContent } from './upcoming-sleep/learning-content';
+import { predictNextSleep } from './upcoming-sleep/prediction';
+import { getSleepGuidanceByAge } from './upcoming-sleep/sleep-intervals';
 import { useActivityMutations } from './use-activity-mutations';
 
 interface PredictiveSleepCardProps {
-  refreshTrigger?: number;
   onCardClick?: () => void;
   onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
 }
 
 export function PredictiveSleepCard({
-  refreshTrigger = 0,
   onCardClick,
   onActivityLogged,
 }: PredictiveSleepCardProps) {
   const utils = api.useUtils();
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
-  const [data, setData] = useState<UpcomingSleepData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Use tRPC query for prediction data
+  const {
+    data: queryData,
+    isLoading,
+    isFetching,
+    error: queryError,
+  } = api.activities.getUpcomingSleep.useQuery();
+
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [skipping, setSkipping] = useState(false);
-  // Note: quickLogging kept for potential future use with quick-log functionality
-  const [quickLogging] = useState(false);
   const [inProgressActivity, setInProgressActivity] = useState<
     typeof Activities.$inferSelect | null
   >(null);
@@ -60,6 +61,23 @@ export function PredictiveSleepCard({
   const addOptimisticActivity = useOptimisticActivitiesStore(
     (state) => state.addActivity,
   );
+
+  // Process prediction data from tRPC query
+  const data = queryData
+    ? {
+        babyAgeDays: queryData.babyAgeDays,
+        guidanceMessage:
+          queryData.babyAgeDays !== null
+            ? getSleepGuidanceByAge(queryData.babyAgeDays)
+            : "Follow your pediatrician's sleep recommendations.",
+        prediction: predictNextSleep(
+          queryData.recentActivities,
+          queryData.babyBirthDate,
+        ),
+      }
+    : null;
+
+  const error = queryError?.message || null;
 
   const loadInProgressActivity = useCallback(async () => {
     try {
@@ -81,40 +99,10 @@ export function PredictiveSleepCard({
     }
   }, []);
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const result = await getUpcomingSleepAction();
-
-      if (result?.data) {
-        setData(result.data);
-        setError(null);
-      } else if (result?.serverError) {
-        setError(result.serverError);
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to load upcoming sleep data',
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Listen for activity list invalidations to auto-refresh predictions
-  const { data: baby } = api.babies.getMostRecent.useQuery();
-  const { dataUpdatedAt } = api.activities.list.useQuery(
-    { babyId: baby?.id ?? '', limit: 1 }, // Minimal query just to detect changes
-    { enabled: !!baby?.id },
-  );
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTrigger and dataUpdatedAt are intentionally used to trigger reloads
+  // Load in-progress activity on mount
   useEffect(() => {
-    loadData();
     loadInProgressActivity();
-  }, [loadData, loadInProgressActivity, refreshTrigger, dataUpdatedAt]);
+  }, [loadInProgressActivity]);
 
   // Timer effect - updates elapsed time every second when tracking
   useEffect(() => {
@@ -139,26 +127,6 @@ export function PredictiveSleepCard({
       }
     };
   }, [inProgressActivity]);
-
-  if (loading) {
-    return (
-      <Card
-        className={cn(
-          'relative overflow-hidden border-0 p-6 animate-pulse bg-[oklch(0.75_0.15_195)] text-[oklch(0.18_0.02_250)] col-span-2',
-        )}
-      >
-        <div className="flex items-center gap-4">
-          <div className="opacity-30">
-            <Icons.Spinner className="h-12 w-12 animate-spin" />
-          </div>
-          <div className="flex-1">
-            <div className="h-7 bg-current/20 rounded w-32 mb-2" />
-            <div className="h-4 bg-current/20 rounded w-24" />
-          </div>
-        </div>
-      </Card>
-    );
-  }
 
   if (error) {
     return (
@@ -273,7 +241,7 @@ export function PredictiveSleepCard({
       onActivityLogged?.(activity);
 
       // Reload prediction data and in-progress state
-      await loadData();
+      await utils.activities.getUpcomingSleep.invalidate();
       await loadInProgressActivity();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to log sleep');
@@ -288,7 +256,7 @@ export function PredictiveSleepCard({
       toast.success('Sleep reminder skipped');
       // Invalidate activities list to refresh timeline
       await utils.activities.list.invalidate();
-      await loadData();
+      await utils.activities.getUpcomingSleep.invalidate();
     } catch (error) {
       console.error('Failed to skip sleep:', error);
       toast.error('Failed to skip sleep');
@@ -324,16 +292,30 @@ export function PredictiveSleepCard({
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-2xl font-bold">Sleep</h2>
-              <button
-                className="p-1.5 rounded-full hover:bg-black/10 transition-colors -mr-1.5"
-                onClick={handleInfoClick}
-                type="button"
-              >
-                <Info className="size-5 opacity-70" />
-              </button>
+              <div className="flex items-center gap-1">
+                {isFetching && !isLoading && (
+                  <Icons.Spinner
+                    className="animate-spin opacity-70"
+                    size="xs"
+                  />
+                )}
+                <button
+                  className="p-1.5 rounded-full hover:bg-black/10 transition-colors -mr-1.5"
+                  onClick={handleInfoClick}
+                  type="button"
+                >
+                  <Info className="size-5 opacity-70" />
+                </button>
+              </div>
             </div>
             <div className="space-y-1">
-              {inProgressActivity ? (
+              {isLoading ? (
+                // Show skeleton only on time text during initial load
+                <>
+                  <Skeleton className="h-6 w-48 bg-current/20" />
+                  <Skeleton className="h-4 w-32 bg-current/20" />
+                </>
+              ) : inProgressActivity ? (
                 // Show active timer
                 <div className="flex items-baseline gap-2">
                   <span className="text-lg font-semibold">
@@ -430,7 +412,7 @@ export function PredictiveSleepCard({
             </Button>
             <Button
               className="flex-1 bg-muted hover:bg-muted/80 text-foreground"
-              disabled={quickLogging || skipping}
+              disabled={isCreating || skipping}
               onClick={handleSkip}
               size="sm"
               variant="ghost"

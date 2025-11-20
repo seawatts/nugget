@@ -5,6 +5,7 @@ import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
+import { Skeleton } from '@nugget/ui/components/skeleton';
 import { Icons } from '@nugget/ui/custom/icons';
 import {
   Drawer,
@@ -23,22 +24,24 @@ import { getInProgressFeedingActivityAction } from './activity-cards.actions';
 import { LearningSection } from './learning-section';
 import {
   claimFeedingAction,
-  getUpcomingFeedingAction,
   skipFeedingAction,
-  type UpcomingFeedingData,
   unclaimFeedingAction,
 } from './upcoming-feeding/actions';
+import {
+  getAssignedMember,
+  suggestFamilyMember,
+} from './upcoming-feeding/assignment';
+import { getFeedingGuidanceByAge } from './upcoming-feeding/feeding-intervals';
 import { getFeedingLearningContent } from './upcoming-feeding/learning-content';
+import { predictNextFeeding } from './upcoming-feeding/prediction';
 import { useActivityMutations } from './use-activity-mutations';
 
 interface PredictiveFeedingCardProps {
-  refreshTrigger?: number;
   onCardClick?: () => void;
   onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
 }
 
 export function PredictiveFeedingCard({
-  refreshTrigger = 0,
   onCardClick,
   onActivityLogged,
 }: PredictiveFeedingCardProps) {
@@ -46,9 +49,15 @@ export function PredictiveFeedingCard({
   const utils = api.useUtils();
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
-  const [data, setData] = useState<UpcomingFeedingData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Use tRPC query for prediction data
+  const {
+    data: queryData,
+    isLoading,
+    isFetching,
+    error: queryError,
+  } = api.activities.getUpcomingFeeding.useQuery();
+
   const [claiming, setClaiming] = useState(false);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [skipping, setSkipping] = useState(false);
@@ -64,12 +73,37 @@ export function PredictiveFeedingCard({
     (state) => state.addActivity,
   );
 
-  // Listen for activity list invalidations to auto-refresh predictions
-  const { data: baby } = api.babies.getMostRecent.useQuery();
-  const { dataUpdatedAt } = api.activities.list.useQuery(
-    { babyId: baby?.id ?? '', limit: 1 }, // Minimal query just to detect changes
-    { enabled: !!baby?.id },
-  );
+  // Process prediction data from tRPC query
+  const data = queryData
+    ? {
+        assignedMember: queryData.scheduledFeeding?.assignedUserId
+          ? getAssignedMember(
+              queryData.scheduledFeeding,
+              queryData.familyMembers,
+            )
+          : null,
+        babyAgeDays: queryData.babyAgeDays,
+        familyMemberCount: queryData.familyMemberCount,
+        guidanceMessage:
+          queryData.babyAgeDays !== null
+            ? getFeedingGuidanceByAge(queryData.babyAgeDays)
+            : "Follow your pediatrician's feeding recommendations.",
+        prediction: predictNextFeeding(
+          queryData.recentActivities,
+          queryData.babyBirthDate,
+          queryData.feedIntervalHours,
+        ),
+        scheduledFeeding: queryData.scheduledFeeding,
+        suggestedMember: queryData.scheduledFeeding?.assignedUserId
+          ? null
+          : suggestFamilyMember(
+              queryData.familyMembers,
+              queryData.recentActivities,
+            ).suggestedMember,
+      }
+    : null;
+
+  const error = queryError?.message || null;
 
   const loadInProgressActivity = useCallback(async () => {
     try {
@@ -91,33 +125,10 @@ export function PredictiveFeedingCard({
     }
   }, []);
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const result = await getUpcomingFeedingAction();
-
-      if (result?.data) {
-        setData(result.data);
-        setError(null);
-      } else if (result?.serverError) {
-        setError(result.serverError);
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to load upcoming feeding data',
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTrigger and dataUpdatedAt are intentionally used to trigger reloads
+  // Load in-progress activity on mount
   useEffect(() => {
-    loadData();
     loadInProgressActivity();
-  }, [loadData, loadInProgressActivity, refreshTrigger, dataUpdatedAt]);
+  }, [loadInProgressActivity]);
 
   // Timer effect - updates elapsed time every second when tracking
   useEffect(() => {
@@ -155,7 +166,7 @@ export function PredictiveFeedingCard({
 
       if (result?.data) {
         toast.success('Feeding claimed!');
-        await loadData(); // Reload to show updated state
+        await utils.activities.getUpcomingFeeding.invalidate();
       } else if (result?.serverError) {
         toast.error(result.serverError);
       }
@@ -180,7 +191,7 @@ export function PredictiveFeedingCard({
 
       if (result?.data) {
         toast.success('Feeding unclaimed');
-        await loadData();
+        await utils.activities.getUpcomingFeeding.invalidate();
       } else if (result?.serverError) {
         toast.error(result.serverError);
       }
@@ -192,26 +203,6 @@ export function PredictiveFeedingCard({
       setClaiming(false);
     }
   };
-
-  if (loading) {
-    return (
-      <Card
-        className={cn(
-          'relative overflow-hidden border-0 p-6 animate-pulse bg-[oklch(0.68_0.18_35)] text-white col-span-2',
-        )}
-      >
-        <div className="flex items-center gap-4">
-          <div className="opacity-30">
-            <Icons.Spinner className="h-12 w-12 animate-spin" />
-          </div>
-          <div className="flex-1">
-            <div className="h-7 bg-white/20 rounded w-32 mb-2" />
-            <div className="h-4 bg-white/20 rounded w-24" />
-          </div>
-        </div>
-      </Card>
-    );
-  }
 
   if (error) {
     return (
@@ -332,7 +323,7 @@ export function PredictiveFeedingCard({
       onActivityLogged?.(activity);
 
       // Reload prediction data and in-progress state
-      await loadData();
+      await utils.activities.getUpcomingFeeding.invalidate();
       await loadInProgressActivity();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to log feeding');
@@ -347,7 +338,7 @@ export function PredictiveFeedingCard({
       toast.success('Feeding reminder skipped');
       // Invalidate activities list to refresh timeline
       await utils.activities.list.invalidate();
-      await loadData();
+      await utils.activities.getUpcomingFeeding.invalidate();
     } catch (error) {
       console.error('Failed to skip feeding:', error);
       toast.error('Failed to skip feeding');
@@ -383,16 +374,30 @@ export function PredictiveFeedingCard({
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-2xl font-bold">Feeding</h2>
-              <button
-                className="p-1.5 rounded-full hover:bg-white/10 transition-colors -mr-1.5"
-                onClick={handleInfoClick}
-                type="button"
-              >
-                <Info className="size-5 opacity-70" />
-              </button>
+              <div className="flex items-center gap-1">
+                {isFetching && !isLoading && (
+                  <Icons.Spinner
+                    className="animate-spin opacity-70"
+                    size="xs"
+                  />
+                )}
+                <button
+                  className="p-1.5 rounded-full hover:bg-white/10 transition-colors -mr-1.5"
+                  onClick={handleInfoClick}
+                  type="button"
+                >
+                  <Info className="size-5 opacity-70" />
+                </button>
+              </div>
             </div>
             <div className="space-y-1">
-              {inProgressActivity ? (
+              {isLoading ? (
+                // Show skeleton only on time text during initial load
+                <>
+                  <Skeleton className="h-6 w-48 bg-white/20" />
+                  <Skeleton className="h-4 w-32 bg-white/20" />
+                </>
+              ) : inProgressActivity ? (
                 // Show active timer
                 <div className="flex items-baseline gap-2">
                   <span className="text-lg font-semibold">

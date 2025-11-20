@@ -243,6 +243,216 @@ export const activitiesRouter = createTRPCRouter({
         ),
       });
     }),
+
+  // Get upcoming diaper prediction
+  getUpcomingDiaper: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.auth.orgId) {
+      throw new Error('Family ID is required');
+    }
+
+    // Get the most recent baby
+    const baby = await ctx.db.query.Babies.findFirst({
+      orderBy: [desc(Babies.birthDate)],
+      where: eq(Babies.familyId, ctx.auth.orgId),
+    });
+
+    if (!baby) {
+      throw new Error('No baby found. Please complete onboarding first.');
+    }
+
+    // Calculate baby's age in days
+    let babyAgeDays: number | null = null;
+    if (baby.birthDate) {
+      const today = new Date();
+      const birth = new Date(baby.birthDate);
+      const diffTime = Math.abs(today.getTime() - birth.getTime());
+      babyAgeDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    // Fetch recent activities (last 72 hours) for prediction
+    const seventyTwoHoursAgo = new Date();
+    seventyTwoHoursAgo.setHours(seventyTwoHoursAgo.getHours() - 72);
+
+    const recentActivities = await ctx.db.query.Activities.findMany({
+      limit: 100,
+      orderBy: [desc(Activities.startTime)],
+      where: and(
+        eq(Activities.babyId, baby.id),
+        gte(Activities.startTime, seventyTwoHoursAgo),
+      ),
+    });
+
+    return {
+      babyAgeDays,
+      babyBirthDate: baby.birthDate,
+      recentActivities,
+    };
+  }),
+
+  // Get upcoming feeding prediction
+  getUpcomingFeeding: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.auth.orgId) {
+      throw new Error('Family ID is required');
+    }
+
+    // Get the most recent baby
+    const baby = await ctx.db.query.Babies.findFirst({
+      orderBy: [desc(Babies.birthDate)],
+      where: eq(Babies.familyId, ctx.auth.orgId),
+    });
+
+    if (!baby) {
+      throw new Error('No baby found. Please complete onboarding first.');
+    }
+
+    // Calculate baby's age in days
+    let babyAgeDays: number | null = null;
+    if (baby.birthDate) {
+      const today = new Date();
+      const birth = new Date(baby.birthDate);
+      const diffTime = Math.abs(today.getTime() - birth.getTime());
+      babyAgeDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    // Fetch recent activities (last 48 hours) for prediction
+    const fortyEightHoursAgo = new Date();
+    fortyEightHoursAgo.setHours(fortyEightHoursAgo.getHours() - 48);
+
+    const recentActivities = await ctx.db.query.Activities.findMany({
+      limit: 50,
+      orderBy: [desc(Activities.startTime)],
+      where: and(
+        eq(Activities.babyId, baby.id),
+        gte(Activities.startTime, fortyEightHoursAgo),
+      ),
+      with: {
+        user: true,
+      },
+    });
+
+    // Get family members for assignment suggestions
+    const familyMembers = await ctx.db.query.FamilyMembers.findMany({
+      where: eq(
+        // @ts-expect-error - FamilyMembers type issue
+        ctx.db.query.FamilyMembers.fields.familyId,
+        ctx.auth.orgId,
+      ),
+      with: {
+        user: true,
+      },
+    });
+
+    // Check for existing scheduled feeding
+    const scheduledFeeding = recentActivities.find(
+      (a) =>
+        a.isScheduled &&
+        (a.type === 'bottle' || a.type === 'nursing') &&
+        new Date(a.startTime) > new Date(),
+    );
+
+    // Return data - prediction logic will be handled on client side for now
+    return {
+      babyAgeDays,
+      babyBirthDate: baby.birthDate,
+      familyMemberCount: familyMembers.length,
+      familyMembers,
+      feedIntervalHours: baby.feedIntervalHours,
+      recentActivities,
+      scheduledFeeding: scheduledFeeding || null,
+    };
+  }),
+
+  // Get upcoming pumping prediction
+  getUpcomingPumping: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.auth.orgId) {
+      throw new Error('Family ID is required');
+    }
+
+    // Get the most recent baby
+    const baby = await ctx.db.query.Babies.findFirst({
+      orderBy: [desc(Babies.birthDate)],
+      where: eq(Babies.familyId, ctx.auth.orgId),
+    });
+
+    if (!baby) {
+      throw new Error('No baby found. Please complete onboarding first.');
+    }
+
+    // Calculate baby's age in days
+    let babyAgeDays: number | null = null;
+    if (baby.birthDate) {
+      const today = new Date();
+      const birth = new Date(baby.birthDate);
+      const diffTime = Math.abs(today.getTime() - birth.getTime());
+      babyAgeDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    // Fetch recent pumping activities (last 48 hours)
+    const fortyEightHoursAgo = new Date();
+    fortyEightHoursAgo.setHours(fortyEightHoursAgo.getHours() - 48);
+
+    const recentActivities = await ctx.db.query.Activities.findMany({
+      limit: 50,
+      orderBy: [desc(Activities.startTime)],
+      where: and(
+        eq(Activities.babyId, baby.id),
+        eq(Activities.type, 'pumping'),
+        gte(Activities.startTime, fortyEightHoursAgo),
+      ),
+    });
+
+    return {
+      babyAgeDays,
+      babyBirthDate: baby.birthDate,
+      recentActivities,
+    };
+  }),
+
+  // Get upcoming sleep prediction
+  getUpcomingSleep: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.auth.orgId) {
+      throw new Error('Family ID is required');
+    }
+
+    // Get the most recent baby
+    const baby = await ctx.db.query.Babies.findFirst({
+      orderBy: [desc(Babies.birthDate)],
+      where: eq(Babies.familyId, ctx.auth.orgId),
+    });
+
+    if (!baby) {
+      throw new Error('No baby found. Please complete onboarding first.');
+    }
+
+    // Calculate baby's age in days
+    let babyAgeDays: number | null = null;
+    if (baby.birthDate) {
+      const today = new Date();
+      const birth = new Date(baby.birthDate);
+      const diffTime = Math.abs(today.getTime() - birth.getTime());
+      babyAgeDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    // Fetch recent sleep activities (last 72 hours)
+    const seventyTwoHoursAgo = new Date();
+    seventyTwoHoursAgo.setHours(seventyTwoHoursAgo.getHours() - 72);
+
+    const recentActivities = await ctx.db.query.Activities.findMany({
+      limit: 50,
+      orderBy: [desc(Activities.startTime)],
+      where: and(
+        eq(Activities.babyId, baby.id),
+        eq(Activities.type, 'sleep'),
+        gte(Activities.startTime, seventyTwoHoursAgo),
+      ),
+    });
+
+    return {
+      babyAgeDays,
+      babyBirthDate: baby.birthDate,
+      recentActivities,
+    };
+  }),
   // List activities for a baby with optional filtering
   list: protectedProcedure
     .input(
