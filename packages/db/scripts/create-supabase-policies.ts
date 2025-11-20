@@ -139,6 +139,10 @@ const policyConfigs: Record<string, PolicyConfig> = {
     policies: [createUserOwnershipPolicy('ALL', 'userId')],
     tableName: 'babies',
   },
+  celebrationMemories: {
+    policies: [createUserOwnershipPolicy('ALL', 'userId')],
+    tableName: 'celebrationMemories',
+  },
   chatMessages: {
     policies: [
       {
@@ -204,6 +208,13 @@ const policyConfigs: Record<string, PolicyConfig> = {
   medicalRecords: {
     policies: [createUserOwnershipPolicy('ALL', 'userId')],
     tableName: 'medicalRecords',
+  },
+  milestoneQuestionResponses: {
+    policies: [
+      createUserOwnershipPolicy('ALL', 'userId'),
+      createFamilyOwnershipPolicy('ALL', 'familyId'),
+    ],
+    tableName: 'milestoneQuestionResponses',
   },
   milestones: {
     policies: [createUserOwnershipPolicy('ALL', 'userId')],
