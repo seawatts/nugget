@@ -1,4 +1,4 @@
-import { getApi, HydrationBoundary } from '@nugget/api/rsc';
+import { api, HydrationBoundary } from '@nugget/api/rsc';
 import { redirect } from 'next/navigation';
 import { DashboardContainer } from '~/app/(app)/app/_components/dashboard-container';
 import { ParentDashboard } from '~/app/(app)/app/_components/parent/parent-dashboard';
@@ -25,26 +25,22 @@ export default async function UserPage({ params }: PageProps) {
 
   // Render appropriate dashboard based on entity type
   if (entity.type === 'baby') {
-    // Prefetch all queries on server in parallel for baby dashboard
-    const api = await getApi();
+    // Prefetch all queries on server for baby dashboard
+    // Using tRPC RSC pattern with Clerk auth properly wired through createTRPCContext
+    const trpc = await api();
 
-    await Promise.all([
-      // Baby data - used by multiple components (lightweight version without nested relations)
-      api.babies.getByIdLight.prefetch({ id: userId }),
-      // User preferences - used for measurement units and time format
-      api.user.current.prefetch(),
-      // Activities - used by TodaySummaryCard and ActivityTimeline
-      api.activities.list.prefetch({
-        babyId: userId,
-        isScheduled: false,
-        limit: 100,
-      }),
-      // Milestones - used by TodaySummaryCard and MilestonesCarousel
-      api.milestones.list.prefetch({
-        babyId: userId,
-        limit: 100,
-      }),
-    ]);
+    // Prefetch in parallel - void keyword prevents awaiting
+    void trpc.babies.getByIdLight.prefetch({ id: userId });
+    void trpc.user.current.prefetch();
+    void trpc.activities.list.prefetch({
+      babyId: userId,
+      isScheduled: false,
+      limit: 100,
+    });
+    void trpc.milestones.list.prefetch({
+      babyId: userId,
+      limit: 100,
+    });
 
     return (
       <HydrationBoundary>

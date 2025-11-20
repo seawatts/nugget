@@ -76,18 +76,18 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           {isDevelopment && <ReactScan />}
           <NuqsAdapter>
-            <TRPCReactProvider>
-              <Suspense>
-                <ClerkProvider>
+            <ClerkProvider>
+              <TRPCReactProvider>
+                <Suspense>
                   <AnalyticsProviders identifyUser>
                     <StripeProvider>
                       {props.children}
                       <Toaster />
                     </StripeProvider>
                   </AnalyticsProviders>
-                </ClerkProvider>
-              </Suspense>
-            </TRPCReactProvider>
+                </Suspense>
+              </TRPCReactProvider>
+            </ClerkProvider>
           </NuqsAdapter>
         </ThemeProvider>
       </body>

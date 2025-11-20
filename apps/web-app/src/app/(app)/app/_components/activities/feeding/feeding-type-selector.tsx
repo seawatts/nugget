@@ -93,6 +93,9 @@ export function FeedingTypeSelector({
   useEffect(() => {
     if (existingActivityType) {
       setSelectedType(existingActivityType);
+    } else {
+      // Reset selection when existingActivityType becomes null
+      setSelectedType(null);
     }
   }, [existingActivityType]);
 

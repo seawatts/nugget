@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuth } from '@clerk/nextjs';
 import type { QueryClient } from '@tanstack/react-query';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createTRPCReact } from '@trpc/react-query';
@@ -30,6 +31,7 @@ export function TRPCReactProvider(
     children: React.ReactNode;
   } & ClientConfig,
 ) {
+  const { isLoaded } = useAuth();
   const queryClient = getQueryClient();
 
   const [trpcClient] = useState(() =>
@@ -44,7 +46,8 @@ export function TRPCReactProvider(
   return (
     <QueryClientProvider client={queryClient}>
       <api.Provider client={trpcClient} queryClient={queryClient}>
-        {props.children}
+        {/* Wait for Clerk to load before rendering children to ensure auth is ready */}
+        {isLoaded ? props.children : null}
       </api.Provider>
     </QueryClientProvider>
   );

@@ -18,6 +18,7 @@ interface CreateActivityInput {
   feedingSource?: typeof Activities.$inferSelect.feedingSource;
   notes?: string;
   startTime?: Date;
+  endTime?: Date;
   details?: ActivityDetails;
 }
 
@@ -103,6 +104,7 @@ export function useActivityMutations() {
         babyId: baby.id,
         details: input.details || null,
         duration: input.duration,
+        endTime: input.endTime,
         feedingSource: input.feedingSource,
         notes: input.notes,
         startTime: input.startTime || new Date(),

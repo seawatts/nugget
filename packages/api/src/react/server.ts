@@ -1,5 +1,6 @@
+import 'server-only';
+
 import { createServerSideHelpers } from '@trpc/react-query/server';
-import { headers } from 'next/headers';
 import { cache } from 'react';
 import superjson from 'superjson';
 import { createTRPCContext } from '../context';
@@ -7,37 +8,55 @@ import { appRouter } from '../root';
 import { createQueryClient } from './query-client';
 
 /**
- * This wraps the `createTRPCContext` helper and provides the required context for the tRPC API when
- * handling a tRPC call from a React Server Component.
+ * Get tRPC context with Clerk auth for RSC
+ *
+ * CRITICAL: This must be wrapped in `cache()` so it's called per-request, not at module scope.
+ * Clerk's auth() relies on Next.js's implicit request context (cookies, headers).
+ * If called at module scope, auth() would run outside any request and userId would be null.
  */
-const createContext = cache(async () => {
-  const heads = new Headers(await headers());
-  heads.set('x-trpc-source', 'rsc');
+const getContext = cache(createTRPCContext);
 
-  return createTRPCContext();
-});
-
+/**
+ * Stable per-request QueryClient
+ */
 export const getQueryClient = cache(createQueryClient);
 
 /**
- * Create tRPC helpers for React Server Components
- * Uses createServerSideHelpers which integrates with React Query for prefetching.
+ * Get tRPC server-side helpers for React Server Components
  *
- * Import from '@nugget/api/rsc' for React Server Components.
+ * This is cached per-request to ensure Clerk auth context is properly wired.
+ * Each request gets its own instance with the correct auth() context.
  *
- * Only supports queries with .fetch():
+ * @example Server Component (prefetch)
+ * ```tsx
+ * import { api, HydrationBoundary } from '@nugget/api/rsc';
  *
- * @example
- * ```ts
- * import { getApi } from '@nugget/api/rsc';
+ * export default async function Page() {
+ *   const helpers = await api();
+ *   void helpers.babies.list.prefetch();
  *
- * const api = await getApi();
- * const data = await api.activities.list.fetch({ ... });  // Queries only
+ *   return (
+ *     <HydrationBoundary>
+ *       <ClientComponent />
+ *     </HydrationBoundary>
+ *   );
+ * }
+ * ```
+ *
+ * @example Client Component (suspense)
+ * ```tsx
+ * 'use client';
+ * import { api } from '@nugget/api/react';
+ *
+ * export function ClientComponent() {
+ *   const [data] = api.babies.list.useSuspenseQuery();
+ *   return <div>{data.length} babies</div>;
+ * }
  * ```
  */
-export const getApi = cache(async () =>
+export const api = cache(async () =>
   createServerSideHelpers({
-    ctx: await createContext(),
+    ctx: await getContext(),
     queryClient: getQueryClient(),
     router: appRouter,
     transformer: superjson,

@@ -29,6 +29,16 @@ export const createDefaultLinks = ({
       (op.direction === 'down' && op.result instanceof Error),
   }),
   httpBatchStreamLink({
+    /**
+     * Enable credentials to send cookies (Clerk session) with requests
+     * This is critical for Clerk authentication to work with tRPC
+     */
+    fetch(url, options) {
+      return fetch(url, {
+        ...options,
+        credentials: 'include',
+      });
+    },
     headers() {
       const headers = new Headers();
       headers.set('x-trpc-source', sourceHeader ?? 'vanilla');
