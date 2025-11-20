@@ -8,23 +8,38 @@ import {
   ImageCropEditor,
 } from '@nugget/ui/custom/image-crop-editor';
 import { NuggetAvatar } from '@nugget/ui/custom/nugget-avatar';
-import { Camera, Loader2 } from 'lucide-react';
+import { Camera, Check, Loader2, Trash2 } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { RemovePhotoDialog } from './remove-photo-dialog';
 
 interface ProfilePictureUploadProps {
   babyId: string;
   babyName: string;
   currentPhotoUrl?: string | null;
+  currentBackgroundColor?: string | null;
 }
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
 
+// Predefined background colors for avatar
+const AVATAR_COLORS = [
+  { bg: '#FBBF24', name: 'Amber', text: '#78350F' },
+  { bg: '#FB7185', name: 'Rose', text: '#881337' },
+  { bg: '#38BDF8', name: 'Sky', text: '#0C4A6E' },
+  { bg: '#34D399', name: 'Emerald', text: '#064E3B' },
+  { bg: '#A78BFA', name: 'Violet', text: '#4C1D95' },
+  { bg: '#FB923C', name: 'Orange', text: '#7C2D12' },
+  { bg: '#F472B6', name: 'Pink', text: '#831843' },
+  { bg: '#22D3EE', name: 'Cyan', text: '#164E63' },
+];
+
 export function ProfilePictureUpload({
   babyId,
   babyName,
   currentPhotoUrl,
+  currentBackgroundColor,
 }: ProfilePictureUploadProps) {
   const utils = api.useUtils();
   const supabase = useClient(); // This already handles Clerk authentication
@@ -33,7 +48,18 @@ export function ProfilePictureUpload({
   const [isUploading, setIsUploading] = useState(false);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [showCropEditor, setShowCropEditor] = useState(false);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Determine if we're showing the photo or a color
+  const isShowingPhoto = !currentBackgroundColor && currentPhotoUrl;
+  const selectedColor = currentBackgroundColor
+    ? AVATAR_COLORS.find(
+        (c) =>
+          c.bg === currentBackgroundColor || c.text === currentBackgroundColor,
+      )
+    : null;
 
   const handleFileSelect = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -210,6 +236,79 @@ export function ProfilePictureUpload({
     fileInputRef.current?.click();
   }, []);
 
+  const handleColorSelect = useCallback(
+    async (color: { bg: string; text: string }) => {
+      try {
+        setIsUploading(true);
+        await updateBaby.mutateAsync({
+          avatarBackgroundColor: color.bg,
+          id: babyId,
+        });
+
+        await utils.babies.getById.invalidate({ id: babyId });
+        await utils.babies.list.invalidate();
+
+        toast.success('Avatar color updated!');
+      } catch (error) {
+        console.error('Error updating avatar color:', error);
+        toast.error('Failed to update color');
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [babyId, updateBaby, utils],
+  );
+
+  const handlePhotoSelect = useCallback(async () => {
+    if (!currentPhotoUrl) {
+      // No photo to show, let them upload one
+      handleUploadClick();
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      await updateBaby.mutateAsync({
+        avatarBackgroundColor: null,
+        id: babyId,
+      });
+
+      await utils.babies.getById.invalidate({ id: babyId });
+      await utils.babies.list.invalidate();
+
+      toast.success('Now showing profile picture!');
+    } catch (error) {
+      console.error('Error showing photo:', error);
+      toast.error('Failed to update avatar');
+    } finally {
+      setIsUploading(false);
+    }
+  }, [babyId, currentPhotoUrl, handleUploadClick, updateBaby, utils]);
+
+  const handleRemovePhoto = useCallback(async () => {
+    try {
+      setIsRemoving(true);
+      await updateBaby.mutateAsync({
+        avatarBackgroundColor: AVATAR_COLORS[0].bg, // Default to first color
+        id: babyId,
+        photoUrl: null,
+      });
+
+      await utils.babies.getById.invalidate({ id: babyId });
+      await utils.babies.list.invalidate();
+
+      toast.success('Profile picture removed!', {
+        description: 'You can restore it by selecting the photo option',
+      });
+      setShowRemoveDialog(false);
+    } catch (error) {
+      console.error('Error removing photo:', error);
+      toast.error('Failed to remove photo');
+    } finally {
+      setIsRemoving(false);
+    }
+  }, [babyId, updateBaby, utils]);
+
   return (
     <div className="flex flex-col items-center gap-4">
       {/* Avatar Display */}
@@ -217,9 +316,11 @@ export function ProfilePictureUpload({
         <div className="relative flex items-center justify-center size-32 rounded-full bg-linear-to-br from-primary to-primary/80 p-[3px] shadow-xl shadow-primary/30">
           <div className="size-full rounded-full bg-card flex items-center justify-center p-1">
             <NuggetAvatar
-              image={currentPhotoUrl || undefined}
+              backgroundColor={selectedColor?.bg}
+              image={isShowingPhoto ? currentPhotoUrl || undefined : undefined}
               name={babyName}
               size="xl"
+              textColor={selectedColor?.text}
             />
           </div>
         </div>
@@ -241,6 +342,75 @@ export function ProfilePictureUpload({
         </Button>
       </div>
 
+      {/* Color Selection Row */}
+      <div className="flex flex-col items-center gap-2 w-full">
+        <p className="text-xs text-muted-foreground">Avatar Style</p>
+        <div className="flex items-center gap-2 flex-wrap justify-center">
+          {/* Photo Option */}
+          <button
+            className="relative size-12 rounded-full border-2 transition-all hover:scale-110 disabled:opacity-50 disabled:hover:scale-100"
+            disabled={isUploading}
+            onClick={handlePhotoSelect}
+            style={{
+              borderColor: isShowingPhoto ? '#FBBF24' : '#E5E7EB',
+            }}
+            title="Show photo"
+            type="button"
+          >
+            <div className="size-full rounded-full overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+              {currentPhotoUrl ? (
+                <img
+                  alt="Baby"
+                  className="size-full object-cover"
+                  src={currentPhotoUrl}
+                />
+              ) : (
+                <Camera className="size-5 text-gray-500" />
+              )}
+            </div>
+            {isShowingPhoto && (
+              <div className="absolute -top-1 -right-1 size-5 rounded-full bg-amber-400 flex items-center justify-center">
+                <Check className="size-3 text-amber-900" />
+              </div>
+            )}
+          </button>
+
+          {/* Color Options */}
+          {AVATAR_COLORS.map((color) => {
+            const isSelected =
+              !isShowingPhoto && selectedColor?.bg === color.bg;
+            return (
+              <button
+                className="relative size-12 rounded-full border-2 transition-all hover:scale-110 disabled:opacity-50 disabled:hover:scale-100"
+                disabled={isUploading}
+                key={color.name}
+                onClick={() => handleColorSelect(color)}
+                style={{
+                  backgroundColor: color.bg,
+                  borderColor: isSelected ? '#FBBF24' : 'transparent',
+                }}
+                title={color.name}
+                type="button"
+              >
+                <div className="size-full rounded-full flex items-center justify-center">
+                  <span
+                    className="text-lg font-bold"
+                    style={{ color: color.text }}
+                  >
+                    {babyName.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                {isSelected && (
+                  <div className="absolute -top-1 -right-1 size-5 rounded-full bg-amber-400 flex items-center justify-center">
+                    <Check className="size-3 text-amber-900" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Hidden File Input */}
       <input
         accept="image/png,image/jpeg,image/jpg,image/webp"
@@ -250,26 +420,41 @@ export function ProfilePictureUpload({
         type="file"
       />
 
-      {/* Upload Button (alternative to camera icon) */}
-      <Button
-        disabled={isUploading}
-        onClick={handleUploadClick}
-        size="sm"
-        type="button"
-        variant="outline"
-      >
-        {isUploading ? (
-          <>
-            <Loader2 className="size-4 mr-2 animate-spin" />
-            Uploading...
-          </>
-        ) : (
-          <>
-            <Camera className="size-4 mr-2" />
-            Change Photo
-          </>
+      {/* Action Buttons */}
+      <div className="flex flex-col gap-2 w-full max-w-xs">
+        <Button
+          disabled={isUploading}
+          onClick={handleUploadClick}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          {isUploading ? (
+            <>
+              <Loader2 className="size-4 mr-2 animate-spin" />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <Camera className="size-4 mr-2" />
+              Change Photo
+            </>
+          )}
+        </Button>
+
+        {currentPhotoUrl && (
+          <Button
+            disabled={isUploading || isRemoving}
+            onClick={() => setShowRemoveDialog(true)}
+            size="sm"
+            type="button"
+            variant="destructive"
+          >
+            <Trash2 className="size-4 mr-2" />
+            Remove Photo
+          </Button>
         )}
-      </Button>
+      </div>
 
       {/* Crop Editor Dialog/Drawer */}
       {imageDataUrl && (
@@ -280,6 +465,15 @@ export function ProfilePictureUpload({
           open={showCropEditor}
         />
       )}
+
+      {/* Remove Photo Confirmation Dialog */}
+      <RemovePhotoDialog
+        babyName={babyName}
+        isOpen={showRemoveDialog}
+        isPending={isRemoving}
+        onClose={() => setShowRemoveDialog(false)}
+        onConfirm={handleRemovePhoto}
+      />
     </div>
   );
 }

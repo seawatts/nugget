@@ -573,6 +573,7 @@ export type SleepDetails = z.infer<typeof sleepDetailsSchema>;
 // ============================================================================
 
 export const Babies = pgTable('babies', {
+  avatarBackgroundColor: text('avatarBackgroundColor'), // Background color when photo is hidden
   birthDate: timestamp('birthDate', { mode: 'date' }),
   birthWeightOz: integer('birthWeightOz'), // Birth weight in ounces
   createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),

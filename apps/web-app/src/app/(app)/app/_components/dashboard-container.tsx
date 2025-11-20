@@ -23,6 +23,7 @@ export function DashboardContainer() {
       {/* Today's Summary */}
       <div className="mb-6">
         <TodaySummaryCard
+          babyAvatarBackgroundColor={baby?.avatarBackgroundColor}
           babyBirthDate={baby?.birthDate}
           babyName={baby?.firstName}
           babyPhotoUrl={baby?.photoUrl}

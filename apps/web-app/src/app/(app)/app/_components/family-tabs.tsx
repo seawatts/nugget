@@ -79,7 +79,12 @@ export function FamilyTabs() {
               <div className="flex items-center justify-center">
                 {tab.type === 'baby' ? (
                   <NuggetAvatar
-                    image={tab.avatarUrl || undefined}
+                    backgroundColor={tab.avatarBackgroundColor || undefined}
+                    image={
+                      !tab.avatarBackgroundColor && tab.avatarUrl
+                        ? tab.avatarUrl
+                        : undefined
+                    }
                     name={displayName}
                     size="sm"
                   />

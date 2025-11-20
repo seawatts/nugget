@@ -11,6 +11,7 @@ export interface EntityInfo {
   id: string;
   firstName: string;
   avatarUrl: string | null;
+  avatarBackgroundColor?: string | null;
 }
 
 /**
@@ -27,6 +28,7 @@ export const getEntityInfoAction = action
         const baby = await api.babies.getById({ id: userId });
         if (baby) {
           return {
+            avatarBackgroundColor: baby.avatarBackgroundColor,
             avatarUrl: baby.photoUrl,
             firstName: baby.firstName,
             id: baby.id,

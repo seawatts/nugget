@@ -381,6 +381,7 @@ export function BottomNav() {
   const ageInDays = baby?.birthDate ? calculateAgeInDays(baby.birthDate) : null;
   const ageDisplay = ageInDays !== null ? `${ageInDays} days old` : undefined;
   const babyPhotoUrl = baby?.photoUrl || null;
+  const babyAvatarBackgroundColor = baby?.avatarBackgroundColor || null;
 
   // Calculate animation values based on scroll position (0-150px range for gradual transitions)
   const animations = useMemo(() => {
@@ -722,7 +723,12 @@ export function BottomNav() {
                 <div className="relative flex items-center justify-center size-16 rounded-full bg-linear-to-br from-primary to-primary/80 p-[3px] shadow-2xl shadow-primary/50 transition-all group-hover:scale-105 group-hover:shadow-primary/70 cursor-pointer">
                   <div className="size-full rounded-full bg-card flex items-center justify-center p-1">
                     <NuggetAvatar
-                      image={babyPhotoUrl || undefined}
+                      backgroundColor={babyAvatarBackgroundColor || undefined}
+                      image={
+                        !babyAvatarBackgroundColor && babyPhotoUrl
+                          ? babyPhotoUrl
+                          : undefined
+                      }
                       name={babyName}
                       size="lg"
                     />

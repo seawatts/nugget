@@ -39,30 +39,31 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
       )
     : 0;
 
-  // Load milestones content
-  useEffect(() => {
-    async function loadMilestones() {
-      try {
-        setIsLoading(true);
-        console.log('[MilestonesCarousel] Loading content for baby:', babyId);
+  // Load milestones content - extracted to useCallback so it can be reused
+  const loadMilestones = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      console.log('[MilestonesCarousel] Loading content for baby:', babyId);
 
-        const data = await getMilestonesCarouselContent(babyId);
+      const data = await getMilestonesCarouselContent(babyId);
 
-        console.log(
-          '[MilestonesCarousel] Loaded milestones:',
-          data.milestones.length,
-        );
+      console.log(
+        '[MilestonesCarousel] Loaded milestones:',
+        data.milestones.length,
+      );
 
-        setMilestones(data.milestones);
-      } catch (error) {
-        console.error('[MilestonesCarousel] Failed to load content:', error);
-      } finally {
-        setIsLoading(false);
-      }
+      setMilestones(data.milestones);
+    } catch (error) {
+      console.error('[MilestonesCarousel] Failed to load content:', error);
+    } finally {
+      setIsLoading(false);
     }
-
-    loadMilestones();
   }, [babyId]);
+
+  // Load milestones on mount
+  useEffect(() => {
+    loadMilestones();
+  }, [loadMilestones]);
 
   // Handler to mark milestone as complete
   const handleMarkComplete = useCallback(
@@ -83,11 +84,14 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
           '[MilestonesCarousel] Milestone marked complete:',
           milestone.title,
         );
+
+        // Reload milestones to update the UI with the new completion status
+        await loadMilestones();
       } catch (error) {
         console.error('[MilestonesCarousel] Failed to mark complete:', error);
       }
     },
-    [baby?.id, markComplete],
+    [baby?.id, markComplete, loadMilestones],
   );
 
   // Show loading state

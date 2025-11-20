@@ -293,6 +293,7 @@ export function BabyTab() {
                 middleName: baby.middleName,
               }) || 'Baby'
             }
+            currentBackgroundColor={baby.avatarBackgroundColor}
             currentPhotoUrl={baby.photoUrl}
           />
         )}

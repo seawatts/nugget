@@ -82,6 +82,7 @@ interface TodaySummaryCardProps {
   babyBirthDate?: Date | null;
   babyName?: string;
   babyPhotoUrl?: string | null;
+  babyAvatarBackgroundColor?: string | null;
   measurementUnit?: 'metric' | 'imperial';
 }
 
@@ -178,6 +179,7 @@ export function TodaySummaryCard({
   babyBirthDate,
   babyName,
   babyPhotoUrl,
+  babyAvatarBackgroundColor,
   measurementUnit = 'metric',
 }: TodaySummaryCardProps) {
   // Determine volume unit based on measurement preference
@@ -363,7 +365,12 @@ export function TodaySummaryCard({
           <div className="relative flex items-center justify-center size-9 rounded-full bg-linear-to-br from-primary to-primary/80 p-[2px] shadow-md shadow-primary/20">
             <div className="size-full rounded-full bg-card flex items-center justify-center p-0.5">
               <NuggetAvatar
-                image={babyPhotoUrl || undefined}
+                backgroundColor={babyAvatarBackgroundColor || undefined}
+                image={
+                  !babyAvatarBackgroundColor && babyPhotoUrl
+                    ? babyPhotoUrl
+                    : undefined
+                }
                 name={babyName}
                 size="sm"
               />

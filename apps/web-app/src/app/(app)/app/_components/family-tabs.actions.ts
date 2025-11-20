@@ -11,6 +11,7 @@ export interface FamilyTabMember {
   userId: string;
   firstName: string;
   avatarUrl: string | null;
+  avatarBackgroundColor?: string | null;
   type: 'baby' | 'user';
   isCurrentUser?: boolean;
   role?: 'primary' | 'partner' | 'caregiver' | null;
@@ -39,6 +40,7 @@ export const getFamilyTabsDataAction = action.action(async () => {
   // Add babies first
   for (const baby of babies) {
     tabs.push({
+      avatarBackgroundColor: baby.avatarBackgroundColor,
       avatarUrl: baby.photoUrl,
       birthDate: baby.birthDate,
       dueDate: baby.dueDate,
