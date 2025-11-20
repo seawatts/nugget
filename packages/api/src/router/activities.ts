@@ -2,6 +2,7 @@ import {
   Activities,
   ActivityTypeType,
   Babies,
+  FamilyMembers,
   FeedingSourceType,
   insertActivitySchema,
   updateActivitySchema,
@@ -332,11 +333,7 @@ export const activitiesRouter = createTRPCRouter({
 
     // Get family members for assignment suggestions
     const familyMembers = await ctx.db.query.FamilyMembers.findMany({
-      where: eq(
-        // @ts-expect-error - FamilyMembers type issue
-        ctx.db.query.FamilyMembers.fields.familyId,
-        ctx.auth.orgId,
-      ),
+      where: eq(FamilyMembers.familyId, ctx.auth.orgId),
       with: {
         user: true,
       },

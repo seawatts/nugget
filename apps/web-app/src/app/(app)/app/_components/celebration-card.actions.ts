@@ -163,8 +163,7 @@ export async function getCelebrationContent(
     };
 
     // Create celebrations program
-    // @ts-expect-error - createCelebrationsProgram expects a BamlAsyncClient but we don't need it for rule evaluation
-    const program = createCelebrationsProgram(undefined);
+    const program = createCelebrationsProgram();
     const builtProgram: Rule[] = program.build();
 
     // Find matching celebration rule for today

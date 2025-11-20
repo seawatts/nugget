@@ -1,4 +1,4 @@
-// @ts-expect-error - nativewind/preset doesn't have types
+// Note: nativewind/preset doesn't have type definitions
 import nativewindPreset from 'nativewind/preset';
 import type { Config } from 'tailwindcss';
 

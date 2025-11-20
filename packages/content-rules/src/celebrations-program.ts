@@ -5,7 +5,7 @@ import type { BamlAsyncClient } from '@nugget/ai';
 import { Program, postpartum, Scope, Screen, Slot, scope } from './dynamic';
 
 // Factory function to create the celebrations program
-export function createCelebrationsProgram(_b: BamlAsyncClient) {
+export function createCelebrationsProgram(_b?: BamlAsyncClient) {
   const P = new Program();
 
   /* ========== Weekly Celebrations (Weeks 1-12) ========== */

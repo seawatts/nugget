@@ -46,7 +46,7 @@ export const saveMilestoneQuestionResponseAction = action
         chatId: parsedInput.chatId || null,
         contextId: parsedInput.contextId,
         contextType: parsedInput.contextType,
-        familyId: baby.familyId,
+        familyId: baby.familyId || authResult.orgId || '',
         question: parsedInput.question,
         userId: authResult.userId,
       })
