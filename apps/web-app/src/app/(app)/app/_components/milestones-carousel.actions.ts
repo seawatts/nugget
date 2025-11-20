@@ -108,7 +108,7 @@ export async function getMilestonesCarouselContent(
     >({
       babyId: baby.id,
       cacheKey,
-      familyId: baby.familyId,
+      familyId: baby.familyId || authResult.orgId || '',
       generate: async () => {
         console.log('[Milestones] Generating AI content...');
 

@@ -239,7 +239,7 @@ export function PumpingActivityDrawer({
             Time & Date
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-0">
               <label
                 className="text-xs text-muted-foreground"
                 htmlFor="pumping-start-time"
@@ -247,7 +247,7 @@ export function PumpingActivityDrawer({
                 Start Time
               </label>
               <input
-                className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
+                className="w-full min-w-0 px-3 py-2 rounded-md border border-border bg-background text-foreground"
                 id="pumping-start-time"
                 onChange={(e) => {
                   const [hours, minutes] = e.target.value
@@ -263,7 +263,7 @@ export function PumpingActivityDrawer({
                 value={startTime.toTimeString().slice(0, 5)}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-0">
               <label
                 className="text-xs text-muted-foreground"
                 htmlFor="pumping-end-time"
@@ -271,7 +271,7 @@ export function PumpingActivityDrawer({
                 End Time
               </label>
               <input
-                className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
+                className="w-full min-w-0 px-3 py-2 rounded-md border border-border bg-background text-foreground"
                 id="pumping-end-time"
                 onChange={(e) => {
                   const [hours, minutes] = e.target.value

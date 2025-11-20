@@ -408,7 +408,7 @@ export function FeedingActivityDrawer({
                 Time & Date
               </h3>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-0">
                   <label
                     className="text-xs text-muted-foreground"
                     htmlFor="feeding-start-time"
@@ -416,7 +416,7 @@ export function FeedingActivityDrawer({
                     Start Time
                   </label>
                   <input
-                    className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
+                    className="w-full min-w-0 px-3 py-2 rounded-md border border-border bg-background text-foreground"
                     id="feeding-start-time"
                     onChange={(e) => {
                       const [hours, minutes] = e.target.value
@@ -432,7 +432,7 @@ export function FeedingActivityDrawer({
                     value={startTime.toTimeString().slice(0, 5)}
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-0">
                   <label
                     className="text-xs text-muted-foreground"
                     htmlFor="feeding-end-time"
@@ -440,7 +440,7 @@ export function FeedingActivityDrawer({
                     End Time
                   </label>
                   <input
-                    className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
+                    className="w-full min-w-0 px-3 py-2 rounded-md border border-border bg-background text-foreground"
                     id="feeding-end-time"
                     onChange={(e) => {
                       const [hours, minutes] = e.target.value

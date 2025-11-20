@@ -60,7 +60,7 @@ export async function getLearningCarouselContent(
     const tips = await withCache<LearningTip[]>({
       babyId: baby.id,
       cacheKey,
-      familyId: baby.familyId,
+      familyId: baby.familyId || authResult.orgId || '',
       generate: async () => {
         console.log('[Learning] Generating AI content...');
 
