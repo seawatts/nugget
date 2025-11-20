@@ -2,14 +2,14 @@
 
 import { api } from '@nugget/api/react';
 import { Button } from '@nugget/ui/button';
-import { Input } from '@nugget/ui/input';
-import { Droplet, Edit2, Pause, Play, Timer } from 'lucide-react';
+import { Droplet, Minus, Pause, Play, Plus, Timer } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { calculateBabyAgeDays } from '../shared/baby-age-utils';
-import { NotesField } from '../shared/components/notes-field';
+import { AmountAdjuster } from '../shared/components/amount-adjuster';
+// import { NotesField } from '../shared/components/notes-field';
 import { QuickSelectButtons } from '../shared/components/quick-select-buttons';
 import { formatTime } from '../shared/time-formatting-utils';
-import { mlToOz, ozToMl } from '../shared/volume-utils';
+import { getVolumeStep, mlToOz, ozToMl } from '../shared/volume-utils';
 import { calculateNursingVolumes } from './nursing-volume-calculator';
 
 export interface NursingFormData {
@@ -40,9 +40,9 @@ export function NursingDrawerContent({
   const [leftDuration, setLeftDuration] = useState(0); // in seconds
   const [rightDuration, setRightDuration] = useState(0); // in seconds
   const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [notes, setNotes] = useState('');
+  const [notes] = useState('');
   const [amountMl, setAmountMl] = useState<number | null>(null);
-  const [isEditingAmount, setIsEditingAmount] = useState(false);
+  const [isManuallyAdjusted, setIsManuallyAdjusted] = useState(false);
   const [hasStartedDbTracking, setHasStartedDbTracking] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -85,7 +85,8 @@ export function NursingDrawerContent({
       (leftDuration + rightDuration) / 60,
     );
 
-    if (totalDurationMinutes > 0 && baby?.birthDate && !isEditingAmount) {
+    // Only auto-calculate if user hasn't manually adjusted the amount
+    if (totalDurationMinutes > 0 && baby?.birthDate && !isManuallyAdjusted) {
       const ageDays = calculateBabyAgeDays(baby.birthDate);
       if (ageDays !== null) {
         const { totalMl } = calculateNursingVolumes(
@@ -94,10 +95,10 @@ export function NursingDrawerContent({
         );
         setAmountMl(totalMl);
       }
-    } else if (totalDurationMinutes === 0 && !isEditingAmount) {
+    } else if (totalDurationMinutes === 0 && !isManuallyAdjusted) {
       setAmountMl(null);
     }
-  }, [leftDuration, rightDuration, baby?.birthDate, isEditingAmount]);
+  }, [leftDuration, rightDuration, baby?.birthDate, isManuallyAdjusted]);
 
   // Call onDataChange whenever form data changes
   useEffect(() => {
@@ -143,8 +144,17 @@ export function NursingDrawerContent({
     setRightDuration(0);
     setIsTimerRunning(false);
     setAmountMl(null);
-    setIsEditingAmount(false);
+    setIsManuallyAdjusted(false);
     setHasStartedDbTracking(false);
+  };
+
+  // Manual duration adjustment handlers
+  const adjustLeftDuration = (change: number) => {
+    setLeftDuration((prev) => Math.max(0, prev + change * 60)); // change is in minutes
+  };
+
+  const adjustRightDuration = (change: number) => {
+    setRightDuration((prev) => Math.max(0, prev + change * 60)); // change is in minutes
   };
 
   // Sync with external duration if there's an active activity
@@ -161,24 +171,27 @@ export function NursingDrawerContent({
     }
   }, [activeActivityId, externalDuration]);
 
-  // Format amount for display based on user preference
-  const formatAmount = (ml: number) => {
-    if (userUnitPref === 'OZ') {
-      return `${mlToOz(ml)}oz`;
-    }
-    return `${Math.round(ml)}ml`;
+  // Handle amount change from AmountAdjuster
+  const handleAmountChange = (value: number) => {
+    // Mark as manually adjusted to stop auto-calculation
+    setIsManuallyAdjusted(true);
+    // Convert to ml if user is in OZ mode
+    const mlValue = userUnitPref === 'OZ' ? ozToMl(value) : value;
+    setAmountMl(mlValue);
   };
 
-  // Handle manual amount change
-  const handleAmountChange = (value: string) => {
-    setIsEditingAmount(true);
-    const numValue = Number.parseFloat(value);
-    if (!Number.isNaN(numValue) && numValue >= 0) {
-      // Convert to ml if user is in OZ mode
-      const mlValue = userUnitPref === 'OZ' ? ozToMl(numValue) : numValue;
-      setAmountMl(mlValue);
-    }
-  };
+  // Get step size and min value based on user preference
+  const step = getVolumeStep(userUnitPref);
+  const minAmount = userUnitPref === 'OZ' ? 0.5 : 30;
+  const unit = userUnitPref === 'OZ' ? 'oz' : 'ml';
+
+  // Get display value in user's preferred unit
+  const displayAmount =
+    amountMl !== null
+      ? userUnitPref === 'OZ'
+        ? mlToOz(amountMl)
+        : Math.round(amountMl)
+      : minAmount;
 
   return (
     <div className="space-y-6">
@@ -192,35 +205,100 @@ export function NursingDrawerContent({
       />
 
       {/* Side Selection */}
-      <div className="grid grid-cols-2 gap-4">
-        <button
-          aria-pressed={activeSide === 'left'}
-          className={`p-8 rounded-2xl border-2 transition-all ${
-            activeSide === 'left'
-              ? 'border-activity-feeding bg-activity-feeding/10'
-              : 'border-border bg-card'
-          }`}
-          onClick={() => handleSideSelect('left')}
-          type="button"
-        >
-          <Droplet className="h-12 w-12 mx-auto mb-3 text-activity-feeding" />
-          <p className="font-semibold text-lg">Left</p>
-          <p className="text-2xl font-bold mt-2">{formatTime(leftDuration)}</p>
-        </button>
-        <button
-          aria-pressed={activeSide === 'right'}
-          className={`p-8 rounded-2xl border-2 transition-all ${
-            activeSide === 'right'
-              ? 'border-activity-feeding bg-activity-feeding/10'
-              : 'border-border bg-card'
-          }`}
-          onClick={() => handleSideSelect('right')}
-          type="button"
-        >
-          <Droplet className="h-12 w-12 mx-auto mb-3 text-activity-feeding" />
-          <p className="font-semibold text-lg">Right</p>
-          <p className="text-2xl font-bold mt-2">{formatTime(rightDuration)}</p>
-        </button>
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            aria-pressed={activeSide === 'left'}
+            className={`p-8 rounded-2xl border-2 transition-all ${
+              activeSide === 'left'
+                ? 'border-activity-feeding bg-activity-feeding/10'
+                : 'border-border bg-card'
+            }`}
+            onClick={() => handleSideSelect('left')}
+            type="button"
+          >
+            <Droplet className="h-12 w-12 mx-auto mb-3 text-activity-feeding" />
+            <p className="font-semibold text-lg">Left</p>
+            <p className="text-2xl font-bold mt-2">
+              {formatTime(leftDuration)}
+            </p>
+          </button>
+          <button
+            aria-pressed={activeSide === 'right'}
+            className={`p-8 rounded-2xl border-2 transition-all ${
+              activeSide === 'right'
+                ? 'border-activity-feeding bg-activity-feeding/10'
+                : 'border-border bg-card'
+            }`}
+            onClick={() => handleSideSelect('right')}
+            type="button"
+          >
+            <Droplet className="h-12 w-12 mx-auto mb-3 text-activity-feeding" />
+            <p className="font-semibold text-lg">Right</p>
+            <p className="text-2xl font-bold mt-2">
+              {formatTime(rightDuration)}
+            </p>
+          </button>
+        </div>
+
+        {/* Manual Duration Adjustment */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Left Side Adjustment */}
+          <div className="bg-card rounded-xl p-3">
+            <p className="text-xs text-muted-foreground mb-2 text-center">
+              Adjust Left
+            </p>
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                className="h-8 w-8 rounded-full bg-transparent"
+                onClick={() => adjustLeftDuration(-1)}
+                size="icon"
+                variant="outline"
+              >
+                <Minus className="h-3 w-3" />
+              </Button>
+              <span className="text-sm font-medium min-w-[60px] text-center">
+                {Math.floor(leftDuration / 60)}m
+              </span>
+              <Button
+                className="h-8 w-8 rounded-full bg-transparent"
+                onClick={() => adjustLeftDuration(1)}
+                size="icon"
+                variant="outline"
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Right Side Adjustment */}
+          <div className="bg-card rounded-xl p-3">
+            <p className="text-xs text-muted-foreground mb-2 text-center">
+              Adjust Right
+            </p>
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                className="h-8 w-8 rounded-full bg-transparent"
+                onClick={() => adjustRightDuration(-1)}
+                size="icon"
+                variant="outline"
+              >
+                <Minus className="h-3 w-3" />
+              </Button>
+              <span className="text-sm font-medium min-w-[60px] text-center">
+                {Math.floor(rightDuration / 60)}m
+              </span>
+              <Button
+                className="h-8 w-8 rounded-full bg-transparent"
+                onClick={() => adjustRightDuration(1)}
+                size="icon"
+                variant="outline"
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Timer Controls */}
@@ -261,49 +339,25 @@ export function NursingDrawerContent({
         </div>
       )}
 
-      {/* Estimated Amount Display */}
-      {amountMl !== null && (leftDuration > 0 || rightDuration > 0) && (
-        <div className="bg-card rounded-2xl p-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">Estimated Amount</p>
-            <button
-              className="p-1 rounded hover:bg-muted transition-colors"
-              onClick={() => setIsEditingAmount(!isEditingAmount)}
-              type="button"
-            >
-              <Edit2 className="h-4 w-4 text-muted-foreground" />
-            </button>
-          </div>
-          {isEditingAmount ? (
-            <div className="flex items-center gap-2">
-              <Input
-                className="h-10"
-                onChange={(e) => handleAmountChange(e.target.value)}
-                placeholder={`Enter ${userUnitPref === 'OZ' ? 'oz' : 'ml'}`}
-                type="number"
-                value={
-                  userUnitPref === 'OZ'
-                    ? mlToOz(amountMl)
-                    : Math.round(amountMl)
-                }
-              />
-              <Button
-                className="h-10"
-                onClick={() => setIsEditingAmount(false)}
-                size="sm"
-                variant="outline"
-              >
-                Done
-              </Button>
-            </div>
-          ) : (
-            <p className="text-2xl font-semibold">{formatAmount(amountMl)}</p>
-          )}
+      {/* Estimated Amount - Using AmountAdjuster */}
+      {(leftDuration > 0 || rightDuration > 0) && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">
+            Estimated Amount
+          </p>
+          <AmountAdjuster
+            min={minAmount}
+            onChange={handleAmountChange}
+            size="md"
+            step={step}
+            unit={unit}
+            value={displayAmount}
+          />
         </div>
       )}
 
       {/* Notes - Using shared component */}
-      <NotesField onChange={setNotes} value={notes} />
+      {/* <NotesField onChange={setNotes} value={notes} /> */}
     </div>
   );
 }

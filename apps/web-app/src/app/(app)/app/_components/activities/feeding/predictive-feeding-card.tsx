@@ -6,6 +6,7 @@ import type { Activities } from '@nugget/db/schema';
 import { Card } from '@nugget/ui/card';
 import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { getActivityTheme } from '../shared/activity-theme-config';
@@ -36,6 +37,9 @@ export function PredictiveFeedingCard({
   onActivityLogged,
 }: PredictiveFeedingCardProps) {
   const { user } = useUser();
+  const params = useParams<{ userId: string }>();
+  const babyId = params?.userId;
+
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
 
@@ -45,7 +49,10 @@ export function PredictiveFeedingCard({
     isLoading,
     isFetching,
     error: queryError,
-  } = api.activities.getUpcomingFeeding.useQuery();
+  } = api.activities.getUpcomingFeeding.useQuery(
+    { babyId: babyId ?? '' },
+    { enabled: Boolean(babyId) },
+  );
 
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
 
@@ -169,6 +176,7 @@ export function PredictiveFeedingCard({
           title="Feeding"
         >
           <PredictiveTimeDisplay
+            activityLabel="feeding"
             effectiveIsOverdue={effectiveIsOverdue}
             elapsedTime={elapsedTime}
             exactTime={exactTime}

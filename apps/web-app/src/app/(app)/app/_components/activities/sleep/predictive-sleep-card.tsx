@@ -15,16 +15,14 @@ import {
 import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { Info, Moon } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { LearningSection } from '../../learning/learning-section';
-import { getInProgressSleepActivityAction } from '../activity-cards.actions';
 import {
   PredictiveCardSkeleton,
   PredictiveOverdueActions,
 } from '../shared/components/predictive-cards';
-import { useActivityMutations } from '../use-activity-mutations';
 import { skipSleepAction } from './actions';
 import { getSleepLearningContent } from './learning-content';
 import { predictNextSleep } from './prediction';
@@ -37,8 +35,11 @@ interface PredictiveSleepCardProps {
 
 export function PredictiveSleepCard({
   onCardClick,
-  onActivityLogged,
+  onActivityLogged: _onActivityLogged,
 }: PredictiveSleepCardProps) {
+  const params = useParams<{ userId: string }>();
+  const babyId = params?.userId;
+
   const utils = api.useUtils();
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
@@ -49,21 +50,25 @@ export function PredictiveSleepCard({
     isLoading,
     isFetching,
     error: queryError,
-  } = api.activities.getUpcomingSleep.useQuery();
+  } = api.activities.getUpcomingSleep.useQuery(
+    { babyId: babyId ?? '' },
+    { enabled: Boolean(babyId) },
+  );
 
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [skipping, setSkipping] = useState(false);
-  const [inProgressActivity, setInProgressActivity] = useState<
-    typeof Activities.$inferSelect | null
-  >(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Use activity mutations hook for creating sleep activities
-  const { createActivity } = useActivityMutations();
-  const addOptimisticActivity = useOptimisticActivitiesStore(
-    (state) => state.addActivity,
-  );
+  // Query for in-progress sleep activity
+  const { data: inProgressActivity } =
+    api.activities.getInProgressActivity.useQuery(
+      {
+        activityType: 'sleep',
+        babyId: babyId ?? '',
+      },
+      { enabled: Boolean(babyId), refetchInterval: 5000 },
+    );
 
   // Process prediction data from tRPC query
   const data = queryData
@@ -82,34 +87,15 @@ export function PredictiveSleepCard({
 
   const error = queryError?.message || null;
 
-  const loadInProgressActivity = useCallback(async () => {
-    try {
-      const result = await getInProgressSleepActivityAction({});
-      if (result?.data?.activity) {
-        setInProgressActivity(result.data.activity);
-        // Calculate initial elapsed time
-        const elapsed = Math.floor(
-          (Date.now() - new Date(result.data.activity.startTime).getTime()) /
-            1000,
-        );
-        setElapsedTime(elapsed);
-      } else {
-        setInProgressActivity(null);
-        setElapsedTime(0);
-      }
-    } catch (err) {
-      console.error('Failed to load in-progress sleep:', err);
-    }
-  }, []);
-
-  // Load in-progress activity on mount
-  useEffect(() => {
-    loadInProgressActivity();
-  }, [loadInProgressActivity]);
-
   // Timer effect - updates elapsed time every second when tracking
   useEffect(() => {
     if (inProgressActivity) {
+      // Calculate initial elapsed time
+      const elapsed = Math.floor(
+        (Date.now() - new Date(inProgressActivity.startTime).getTime()) / 1000,
+      );
+      setElapsedTime(elapsed);
+
       timerRef.current = setInterval(() => {
         const elapsed = Math.floor(
           (Date.now() - new Date(inProgressActivity.startTime).getTime()) /
@@ -118,6 +104,7 @@ export function PredictiveSleepCard({
         setElapsedTime(elapsed);
       }, 1000);
     } else {
+      setElapsedTime(0);
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
@@ -269,18 +256,23 @@ export function PredictiveSleepCard({
                 </>
               ) : inProgressActivity ? (
                 // Show active timer
-                <div className="flex items-baseline gap-2">
-                  <span className="text-lg font-semibold">
-                    Sleeping since{' '}
+                <>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-lg font-bold">
+                      Currently sleeping
+                    </span>
+                    <span className="text-base font-mono opacity-90">
+                      {formatElapsedTime(elapsedTime)}
+                    </span>
+                  </div>
+                  <div className="text-sm opacity-60">
+                    Started{' '}
                     {formatTimeWithPreference(
                       new Date(inProgressActivity.startTime),
                       timeFormat,
                     )}
-                  </span>
-                  <span className="text-sm opacity-70 font-mono">
-                    {formatElapsedTime(elapsedTime)}
-                  </span>
-                </div>
+                  </div>
+                </>
               ) : effectiveIsOverdue ? (
                 // Show overdue warning
                 <>

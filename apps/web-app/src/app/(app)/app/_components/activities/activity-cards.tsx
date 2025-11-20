@@ -14,6 +14,7 @@ import {
   Timer,
   Tablet as Toilet,
 } from 'lucide-react';
+import { useParams } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { createActivityAction } from './activity-cards.actions';
@@ -109,6 +110,9 @@ interface ActivityCardsProps {
 
 export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
   const { user } = useUser();
+  const params = useParams<{ userId: string }>();
+  const babyId = params?.userId;
+
   const [openDrawer, setOpenDrawer] = useState<string | null>(null);
   const [editingActivity, setEditingActivity] = useState<
     typeof Activities.$inferSelect | null
@@ -319,6 +323,7 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
         {activities.map((activity) => (
           <ActivityDrawer
             activity={activity}
+            babyId={babyId}
             existingActivity={
               openDrawer === activity.id ? editingActivity : null
             }
@@ -360,6 +365,7 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
       {activities.map((activity) => (
         <ActivityDrawer
           activity={activity}
+          babyId={babyId}
           existingActivity={openDrawer === activity.id ? editingActivity : null}
           isOpen={openDrawer === activity.id}
           key={activity.id}

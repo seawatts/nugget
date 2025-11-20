@@ -2,7 +2,6 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
-import { Textarea } from '@nugget/ui/textarea';
 import {
   Baby,
   BedDouble,
@@ -26,8 +25,6 @@ interface SleepDrawerContentProps {
   setDuration: (duration: number) => void;
   sleepType: 'nap' | 'night';
   setSleepType: (type: 'nap' | 'night') => void;
-  notes: string;
-  setNotes: (notes: string) => void;
   activeActivityId?: string | null;
   onTimerStart?: () => Promise<void>;
   isTimerStopped?: boolean;
@@ -85,8 +82,6 @@ export function SleepDrawerContent({
   setDuration,
   sleepType,
   setSleepType,
-  notes,
-  setNotes,
   activeActivityId,
   onTimerStart,
   isTimerStopped = false,
@@ -470,7 +465,7 @@ export function SleepDrawerContent({
       )}
 
       {/* Notes - Hide when timer is active */}
-      {showDetailFields && (
+      {/* {showDetailFields && (
         <div className="space-y-3">
           <p className="text-sm font-medium text-muted-foreground">Notes</p>
           <Textarea
@@ -480,7 +475,7 @@ export function SleepDrawerContent({
             value={notes}
           />
         </div>
-      )}
+      )} */}
     </div>
   );
 }

@@ -54,7 +54,7 @@ export function DiaperDrawerContent({
     | null
   >(null);
   const [hasRash, setHasRash] = useState(false);
-  const [notes, setNotes] = useState('');
+  const [notes] = useState('');
 
   // Call onDataChange whenever form data changes
   useEffect(() => {
@@ -280,7 +280,7 @@ export function DiaperDrawerContent({
       </div>
 
       {/* Notes */}
-      <div className="space-y-3">
+      {/* <div className="space-y-3">
         <p className="text-sm font-medium text-muted-foreground">
           Notes (optional)
         </p>
@@ -290,7 +290,7 @@ export function DiaperDrawerContent({
           placeholder="Add any notes about this diaper change..."
           value={notes}
         />
-      </div>
+      </div> */}
     </div>
   );
 }

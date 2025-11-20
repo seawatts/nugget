@@ -179,11 +179,14 @@ export const createActivityWithDetailsAction = action
 
 /**
  * Get in-progress sleep activity (one with startTime but no endTime)
+ * Optimized: Uses server-side filtering instead of fetching all activities
  */
 export const getInProgressSleepActivityAction = action
-  .schema(z.object({}))
+  .schema(z.object({ babyId: z.string() }))
   .action(
-    async (): Promise<{ activity: typeof Activities.$inferSelect | null }> => {
+    async ({
+      parsedInput,
+    }): Promise<{ activity: typeof Activities.$inferSelect | null }> => {
       // Verify authentication
       const authResult = await auth();
       if (!authResult.userId) {
@@ -193,38 +196,26 @@ export const getInProgressSleepActivityAction = action
       // Create tRPC API helper
       const api = await getApi();
 
-      // Get the most recent baby
-      const baby = await api.babies.getMostRecent();
-
-      if (!baby) {
-        throw new Error('No baby found. Please complete onboarding first.');
-      }
-
-      // Find in-progress sleep activity (has startTime but no endTime)
-      const activities = await api.activities.list({
-        babyId: baby.id,
-        limit: 50,
+      // Use optimized server-side query
+      const activity = await api.activities.getInProgressActivity({
+        activityType: 'sleep',
+        babyId: parsedInput.babyId,
       });
 
-      // Find the most recent sleep activity without an endTime
-      // Note: We only check for endTime, not duration, because duration could be 0
-      // (e.g., if sleep is less than a minute) and still be complete
-      const inProgressSleep = activities.find(
-        (activity) =>
-          activity.type === 'sleep' && activity.startTime && !activity.endTime,
-      );
-
-      return { activity: inProgressSleep || null };
+      return { activity };
     },
   );
 
 /**
  * Get in-progress feeding activity (one with startTime but no endTime)
+ * Optimized: Uses server-side filtering instead of fetching all activities
  */
 export const getInProgressFeedingActivityAction = action
-  .schema(z.object({}))
+  .schema(z.object({ babyId: z.string() }))
   .action(
-    async (): Promise<{ activity: typeof Activities.$inferSelect | null }> => {
+    async ({
+      parsedInput,
+    }): Promise<{ activity: typeof Activities.$inferSelect | null }> => {
       // Verify authentication
       const authResult = await auth();
       if (!authResult.userId) {
@@ -234,28 +225,12 @@ export const getInProgressFeedingActivityAction = action
       // Create tRPC API helper
       const api = await getApi();
 
-      // Get the most recent baby
-      const baby = await api.babies.getMostRecent();
-
-      if (!baby) {
-        throw new Error('No baby found. Please complete onboarding first.');
-      }
-
-      // Find in-progress feeding activity (has startTime but no endTime)
-      const activities = await api.activities.list({
-        babyId: baby.id,
-        limit: 50,
+      // Use optimized server-side query
+      const activity = await api.activities.getInProgressActivity({
+        activityType: 'feeding',
+        babyId: parsedInput.babyId,
       });
 
-      // Find the most recent feeding activity without an endTime
-      // Check for bottle or nursing types as both are feeding activities
-      const inProgressFeeding = activities.find(
-        (activity) =>
-          (activity.type === 'bottle' || activity.type === 'nursing') &&
-          activity.startTime &&
-          !activity.endTime,
-      );
-
-      return { activity: inProgressFeeding || null };
+      return { activity };
     },
   );

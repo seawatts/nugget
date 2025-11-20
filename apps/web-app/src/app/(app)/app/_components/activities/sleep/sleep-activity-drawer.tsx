@@ -27,6 +27,7 @@ interface SleepActivityDrawerProps {
   existingActivity?: typeof Activities.$inferSelect | null;
   isOpen: boolean;
   onClose: () => void;
+  babyId?: string;
 }
 
 /**
@@ -37,6 +38,7 @@ export function SleepActivityDrawer({
   existingActivity,
   isOpen,
   onClose,
+  babyId,
 }: SleepActivityDrawerProps) {
   const { userId } = useAuth();
   const utils = api.useUtils();
@@ -188,11 +190,11 @@ export function SleepActivityDrawer({
 
   // Load in-progress sleep activity when drawer opens
   useEffect(() => {
-    if (isOpen && !existingActivity) {
+    if (isOpen && !existingActivity && babyId) {
       setIsLoadingInProgress(true);
       void (async () => {
         try {
-          const result = await getInProgressSleepActivityAction({});
+          const result = await getInProgressSleepActivityAction({ babyId });
           if (result?.data?.activity) {
             const inProgressActivity = result.data.activity;
             setActiveActivityId(inProgressActivity.id);
@@ -238,7 +240,7 @@ export function SleepActivityDrawer({
       setIsCoSleeping(false);
       setCoSleepingWith([]);
     }
-  }, [isOpen, existingActivity]);
+  }, [isOpen, existingActivity, babyId]);
 
   const handleTimerStart = async () => {
     try {
@@ -424,62 +426,64 @@ export function SleepActivityDrawer({
           </div>
         ) : (
           <>
-            {/* Time & Date Section */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Time & Date
-              </h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2 min-w-0">
-                  <label
-                    className="text-xs text-muted-foreground"
-                    htmlFor="sleep-start-time"
-                  >
-                    Start Time
-                  </label>
-                  <input
-                    className="w-full min-w-0 px-3 py-2 rounded-md border border-border bg-background text-foreground"
-                    id="sleep-start-time"
-                    onChange={(e) => {
-                      const [hours, minutes] = e.target.value
-                        .split(':')
-                        .map(Number);
-                      if (hours !== undefined && minutes !== undefined) {
-                        const newStartTime = new Date(startTime);
-                        newStartTime.setHours(hours, minutes);
-                        setStartTime(newStartTime);
-                      }
-                    }}
-                    type="time"
-                    value={startTime.toTimeString().slice(0, 5)}
-                  />
-                </div>
-                <div className="space-y-2 min-w-0">
-                  <label
-                    className="text-xs text-muted-foreground"
-                    htmlFor="sleep-end-time"
-                  >
-                    End Time
-                  </label>
-                  <input
-                    className="w-full min-w-0 px-3 py-2 rounded-md border border-border bg-background text-foreground"
-                    id="sleep-end-time"
-                    onChange={(e) => {
-                      const [hours, minutes] = e.target.value
-                        .split(':')
-                        .map(Number);
-                      if (hours !== undefined && minutes !== undefined) {
-                        const newEndTime = new Date(endTime);
-                        newEndTime.setHours(hours, minutes);
-                        setEndTime(newEndTime);
-                      }
-                    }}
-                    type="time"
-                    value={endTime.toTimeString().slice(0, 5)}
-                  />
+            {/* Time & Date Section - Hide when timer is running */}
+            {(!activeActivityId || isTimerStopped) && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Time & Date
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2 min-w-0">
+                    <label
+                      className="text-xs text-muted-foreground"
+                      htmlFor="sleep-start-time"
+                    >
+                      Start Time
+                    </label>
+                    <input
+                      className="w-full min-w-0 px-3 py-2 rounded-md border border-border bg-background text-foreground"
+                      id="sleep-start-time"
+                      onChange={(e) => {
+                        const [hours, minutes] = e.target.value
+                          .split(':')
+                          .map(Number);
+                        if (hours !== undefined && minutes !== undefined) {
+                          const newStartTime = new Date(startTime);
+                          newStartTime.setHours(hours, minutes);
+                          setStartTime(newStartTime);
+                        }
+                      }}
+                      type="time"
+                      value={startTime.toTimeString().slice(0, 5)}
+                    />
+                  </div>
+                  <div className="space-y-2 min-w-0">
+                    <label
+                      className="text-xs text-muted-foreground"
+                      htmlFor="sleep-end-time"
+                    >
+                      End Time
+                    </label>
+                    <input
+                      className="w-full min-w-0 px-3 py-2 rounded-md border border-border bg-background text-foreground"
+                      id="sleep-end-time"
+                      onChange={(e) => {
+                        const [hours, minutes] = e.target.value
+                          .split(':')
+                          .map(Number);
+                        if (hours !== undefined && minutes !== undefined) {
+                          const newEndTime = new Date(endTime);
+                          newEndTime.setHours(hours, minutes);
+                          setEndTime(newEndTime);
+                        }
+                      }}
+                      type="time"
+                      value={endTime.toTimeString().slice(0, 5)}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <SleepDrawerContent
               activeActivityId={activeActivityId}

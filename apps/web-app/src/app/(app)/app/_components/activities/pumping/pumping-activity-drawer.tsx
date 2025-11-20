@@ -14,6 +14,7 @@ interface PumpingActivityDrawerProps {
   existingActivity?: typeof Activities.$inferSelect | null;
   isOpen: boolean;
   onClose: () => void;
+  babyId?: string;
 }
 
 /**
@@ -24,6 +25,7 @@ export function PumpingActivityDrawer({
   existingActivity,
   isOpen,
   onClose,
+  babyId: _babyId,
 }: PumpingActivityDrawerProps) {
   const { createActivity, updateActivity, isCreating, isUpdating } =
     useActivityMutations();
@@ -38,7 +40,6 @@ export function PumpingActivityDrawer({
 
   // Pumping-specific state
   const [startTime, setStartTime] = useState(new Date());
-  const [endTime, setEndTime] = useState(new Date());
   const [leftAmount, setLeftAmount] = useState(userUnitPref === 'OZ' ? 2 : 60);
   const [rightAmount, setRightAmount] = useState(
     userUnitPref === 'OZ' ? 2 : 60,
@@ -56,21 +57,11 @@ export function PumpingActivityDrawer({
   useEffect(() => {
     if (existingActivity?.startTime) {
       setStartTime(new Date(existingActivity.startTime));
-      // Calculate end time from start time and duration
       if (existingActivity.duration) {
-        const calculatedEndTime = new Date(existingActivity.startTime);
-        calculatedEndTime.setMinutes(
-          calculatedEndTime.getMinutes() + existingActivity.duration,
-        );
-        setEndTime(calculatedEndTime);
         setSelectedDuration(existingActivity.duration);
-      } else {
-        setEndTime(new Date(existingActivity.startTime));
       }
     } else {
-      const now = new Date();
-      setStartTime(now);
-      setEndTime(now);
+      setStartTime(new Date());
     }
 
     // Initialize pumping-specific fields from existing activity
@@ -108,9 +99,7 @@ export function PumpingActivityDrawer({
 
     // Reset fields when drawer is opened for new activity
     if (!existingActivity) {
-      const now = new Date();
-      setStartTime(now);
-      setEndTime(now);
+      setStartTime(new Date());
       setLeftAmount(userUnitPref === 'OZ' ? 2 : 60);
       setRightAmount(userUnitPref === 'OZ' ? 2 : 60);
       setSelectedDuration(null);
@@ -132,10 +121,13 @@ export function PumpingActivityDrawer({
 
   const handleSave = async () => {
     try {
-      // Calculate duration from time difference (in minutes)
-      const durationMinutes = Math.floor(
-        (endTime.getTime() - startTime.getTime()) / 1000 / 60,
-      );
+      // Use selected duration (in minutes)
+      const durationMinutes = selectedDuration;
+
+      // Calculate end time from start time and duration
+      const endTime = durationMinutes
+        ? new Date(startTime.getTime() + durationMinutes * 60 * 1000)
+        : startTime;
 
       // Close drawer immediately for better UX
       onClose();
@@ -165,7 +157,7 @@ export function PumpingActivityDrawer({
           babyId: 'temp',
           createdAt: startTime,
           details: pumpingDetails,
-          duration: durationMinutes > 0 ? durationMinutes : null,
+          duration: durationMinutes,
           endTime,
           familyId: 'temp',
           familyMemberId: null,
@@ -188,7 +180,7 @@ export function PumpingActivityDrawer({
         await updateActivity({
           amount: totalAmountMl,
           details: pumpingDetails,
-          duration: durationMinutes > 0 ? durationMinutes : undefined,
+          duration: durationMinutes ?? undefined,
           endTime,
           feedingSource: 'pumped',
           id: existingActivity.id,
@@ -201,7 +193,7 @@ export function PumpingActivityDrawer({
           activityType: 'pumping',
           amount: totalAmountMl,
           details: pumpingDetails,
-          duration: durationMinutes > 0 ? durationMinutes : undefined,
+          duration: durationMinutes ?? undefined,
           feedingSource: 'pumped',
           notes: notes || undefined,
           startTime,
@@ -238,63 +230,6 @@ export function PumpingActivityDrawer({
 
       {/* Content - Scrollable */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        {/* Time & Date Section */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            Time & Date
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2 min-w-0">
-              <label
-                className="text-xs text-muted-foreground"
-                htmlFor="pumping-start-time"
-              >
-                Start Time
-              </label>
-              <input
-                className="w-full min-w-0 px-3 py-2 rounded-md border border-border bg-background text-foreground"
-                id="pumping-start-time"
-                onChange={(e) => {
-                  const [hours, minutes] = e.target.value
-                    .split(':')
-                    .map(Number);
-                  if (hours !== undefined && minutes !== undefined) {
-                    const newStartTime = new Date(startTime);
-                    newStartTime.setHours(hours, minutes);
-                    setStartTime(newStartTime);
-                  }
-                }}
-                type="time"
-                value={startTime.toTimeString().slice(0, 5)}
-              />
-            </div>
-            <div className="space-y-2 min-w-0">
-              <label
-                className="text-xs text-muted-foreground"
-                htmlFor="pumping-end-time"
-              >
-                End Time
-              </label>
-              <input
-                className="w-full min-w-0 px-3 py-2 rounded-md border border-border bg-background text-foreground"
-                id="pumping-end-time"
-                onChange={(e) => {
-                  const [hours, minutes] = e.target.value
-                    .split(':')
-                    .map(Number);
-                  if (hours !== undefined && minutes !== undefined) {
-                    const newEndTime = new Date(endTime);
-                    newEndTime.setHours(hours, minutes);
-                    setEndTime(newEndTime);
-                  }
-                }}
-                type="time"
-                value={endTime.toTimeString().slice(0, 5)}
-              />
-            </div>
-          </div>
-        </div>
-
         <PumpingDrawerContent
           leftAmount={leftAmount}
           notes={notes}
@@ -307,6 +242,29 @@ export function PumpingActivityDrawer({
           setSelectedDuration={setSelectedDuration}
           setSelectedMethod={setSelectedMethod}
         />
+
+        {/* Time & Date Section */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Start Time
+          </h3>
+          <div className="space-y-2 min-w-0">
+            <input
+              className="w-full min-w-0 px-3 py-2 rounded-md border border-border bg-background text-foreground"
+              id="pumping-start-time"
+              onChange={(e) => {
+                const [hours, minutes] = e.target.value.split(':').map(Number);
+                if (hours !== undefined && minutes !== undefined) {
+                  const newStartTime = new Date(startTime);
+                  newStartTime.setHours(hours, minutes);
+                  setStartTime(newStartTime);
+                }
+              }}
+              type="time"
+              value={startTime.toTimeString().slice(0, 5)}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Footer with Actions */}

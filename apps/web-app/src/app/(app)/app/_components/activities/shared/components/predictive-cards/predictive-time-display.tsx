@@ -19,6 +19,7 @@ interface PredictiveTimeDisplayProps {
   lastActivityTime?: Date | null;
   elapsedTime?: number;
   timeFormat: '12h' | '24h';
+  activityLabel?: string; // e.g., "feeding", "sleeping"
 }
 
 export function PredictiveTimeDisplay({
@@ -31,6 +32,7 @@ export function PredictiveTimeDisplay({
   lastActivityTime,
   elapsedTime = 0,
   timeFormat,
+  activityLabel = 'active',
 }: PredictiveTimeDisplayProps) {
   if (isLoading) {
     return (
@@ -44,18 +46,21 @@ export function PredictiveTimeDisplay({
   // In-progress state
   if (inProgressActivity) {
     return (
-      <div className="flex items-baseline gap-2">
-        <span className="text-lg font-semibold">
-          Since{' '}
+      <>
+        <div className="flex items-baseline gap-2">
+          <span className="text-lg font-bold">Currently {activityLabel}</span>
+          <span className="text-base font-mono opacity-90">
+            {formatElapsedTime(elapsedTime)}
+          </span>
+        </div>
+        <div className="text-sm opacity-60">
+          Started{' '}
           {formatTimeWithPreference(
             new Date(inProgressActivity.startTime),
             timeFormat,
           )}
-        </span>
-        <span className="text-sm opacity-70 font-mono">
-          {formatElapsedTime(elapsedTime)}
-        </span>
-      </div>
+        </div>
+      </>
     );
   }
 

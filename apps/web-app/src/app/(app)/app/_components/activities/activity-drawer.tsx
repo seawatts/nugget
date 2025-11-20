@@ -33,6 +33,7 @@ interface ActivityDrawerProps {
   existingActivity?: typeof Activities.$inferSelect | null;
   isOpen: boolean;
   onClose: () => void;
+  babyId?: string;
 }
 
 /**
@@ -44,6 +45,7 @@ export function ActivityDrawer({
   existingActivity,
   isOpen,
   onClose,
+  babyId,
 }: ActivityDrawerProps) {
   const isDesktop = useIsDesktop();
   const Icon = activity.icon;
@@ -57,6 +59,7 @@ export function ActivityDrawer({
         // Sleep has its own header, so return the full component
         return (
           <SleepActivityDrawer
+            babyId={babyId}
             existingActivity={existingActivity}
             isOpen={isOpen}
             onClose={onClose}
@@ -69,6 +72,7 @@ export function ActivityDrawer({
         // Feeding has its own header, so return the full component
         return (
           <FeedingActivityDrawer
+            babyId={babyId}
             existingActivity={existingActivity}
             isOpen={isOpen}
             onClose={onClose}
@@ -78,6 +82,7 @@ export function ActivityDrawer({
         // Pumping has its own header, so return the full component
         return (
           <PumpingActivityDrawer
+            babyId={babyId}
             existingActivity={existingActivity}
             isOpen={isOpen}
             onClose={onClose}
@@ -87,6 +92,7 @@ export function ActivityDrawer({
         // Diaper has its own header, so return the full component
         return (
           <DiaperActivityDrawer
+            babyId={babyId}
             existingActivity={existingActivity}
             isOpen={isOpen}
             onClose={onClose}

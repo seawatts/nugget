@@ -16,10 +16,9 @@ import {
 import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { Droplets, Info } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { LearningSection } from '../../learning/learning-section';
 import { InfoCard } from '../../shared/info-card';
 import {
@@ -27,7 +26,6 @@ import {
   PredictiveOverdueActions,
 } from '../shared/components/predictive-cards';
 import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
-import { useActivityMutations } from '../use-activity-mutations';
 import { skipPumpingAction } from './actions';
 import { getPumpingLearningContent } from './learning-content';
 import { predictNextPumping } from './prediction';
@@ -40,8 +38,11 @@ interface PredictivePumpingCardProps {
 
 export function PredictivePumpingCard({
   onCardClick,
-  onActivityLogged,
+  onActivityLogged: _onActivityLogged,
 }: PredictivePumpingCardProps) {
+  const params = useParams<{ userId: string }>();
+  const babyId = params?.userId;
+
   const router = useRouter();
   const utils = api.useUtils();
 
@@ -56,16 +57,13 @@ export function PredictivePumpingCard({
     isLoading,
     isFetching,
     error: queryError,
-  } = api.activities.getUpcomingPumping.useQuery();
+  } = api.activities.getUpcomingPumping.useQuery(
+    { babyId: babyId ?? '' },
+    { enabled: Boolean(babyId) },
+  );
 
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [skipping, setSkipping] = useState(false);
-
-  // Use activity mutations hook for creating pumping activities
-  const { createActivity } = useActivityMutations();
-  const addOptimisticActivity = useOptimisticActivitiesStore(
-    (state) => state.addActivity,
-  );
 
   // Process prediction data from tRPC query
   const data = queryData

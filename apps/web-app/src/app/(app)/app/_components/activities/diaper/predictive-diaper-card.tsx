@@ -15,15 +15,14 @@ import {
 import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { Baby, Info } from 'lucide-react';
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { LearningSection } from '../../learning/learning-section';
 import {
   PredictiveCardSkeleton,
   PredictiveOverdueActions,
 } from '../shared/components/predictive-cards';
-import { useActivityMutations } from '../use-activity-mutations';
 import { skipDiaperAction } from './actions';
 import { getDiaperGuidanceByAge } from './diaper-intervals';
 import { getDiaperLearningContent } from './learning-content';
@@ -36,8 +35,11 @@ interface PredictiveDiaperCardProps {
 
 export function PredictiveDiaperCard({
   onCardClick,
-  onActivityLogged,
+  onActivityLogged: _onActivityLogged,
 }: PredictiveDiaperCardProps) {
+  const params = useParams<{ userId: string }>();
+  const babyId = params?.userId;
+
   const utils = api.useUtils();
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
@@ -48,16 +50,13 @@ export function PredictiveDiaperCard({
     isLoading,
     isFetching,
     error: queryError,
-  } = api.activities.getUpcomingDiaper.useQuery();
+  } = api.activities.getUpcomingDiaper.useQuery(
+    { babyId: babyId ?? '' },
+    { enabled: Boolean(babyId) },
+  );
 
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [skipping, setSkipping] = useState(false);
-
-  // Use activity mutations hook for creating diaper activities
-  const { createActivity } = useActivityMutations();
-  const addOptimisticActivity = useOptimisticActivitiesStore(
-    (state) => state.addActivity,
-  );
 
   // Process prediction data from tRPC query
   const data = queryData
@@ -138,9 +137,9 @@ export function PredictiveDiaperCard({
   // Format diaper type
   const formatDiaperType = (type: string | null) => {
     if (!type) return '';
-    if (type === 'both') return 'Wet & Dirty';
-    if (type === 'wet') return 'Wet';
-    if (type === 'dirty') return 'Dirty';
+    if (type === 'both') return 'Both';
+    if (type === 'wet') return 'Pee';
+    if (type === 'dirty') return 'Poop';
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
 

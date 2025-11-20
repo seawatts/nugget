@@ -8,11 +8,13 @@ import type { FeedingFormData } from '../feeding-type-selector';
 interface UseFeedingDrawerStateProps {
   isOpen: boolean;
   existingActivity?: typeof Activities.$inferSelect | null;
+  babyId?: string;
 }
 
 export function useFeedingDrawerState({
   isOpen,
   existingActivity,
+  babyId,
 }: UseFeedingDrawerStateProps) {
   // Time state
   const [startTime, setStartTime] = useState(new Date());
@@ -83,11 +85,13 @@ export function useFeedingDrawerState({
 
   // Load in-progress activity when drawer opens
   useEffect(() => {
-    if (isOpen && !existingActivity) {
+    if (isOpen && !existingActivity && babyId) {
       setIsLoadingInProgress(true);
       void (async () => {
         try {
-          const result = await getInProgressFeedingActivityAction({});
+          const result = await getInProgressFeedingActivityAction({
+            babyId,
+          });
           if (result?.data?.activity) {
             const inProgressActivity = result.data.activity;
             setActiveActivityId(inProgressActivity.id);
@@ -133,7 +137,7 @@ export function useFeedingDrawerState({
     if (!isOpen) {
       resetState();
     }
-  }, [isOpen, existingActivity, resetState]);
+  }, [isOpen, existingActivity, babyId, resetState]);
 
   // Handle stopping the timer
   const handleStop = useCallback(() => {

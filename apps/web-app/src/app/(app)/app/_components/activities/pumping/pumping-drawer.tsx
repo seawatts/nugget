@@ -80,7 +80,6 @@ export function PumpingDrawerContent({
     controlledSelectedMethod !== undefined
       ? controlledSelectedMethod
       : internalSelectedMethod;
-  const notes = controlledNotes !== undefined ? controlledNotes : internalNotes;
 
   // Check if we're in controlled mode
   const isControlled = setControlledLeftAmount !== undefined;
@@ -91,7 +90,6 @@ export function PumpingDrawerContent({
     setControlledSelectedDuration || setInternalSelectedDuration;
   const setSelectedMethod =
     setControlledSelectedMethod || setInternalSelectedMethod;
-  const setNotes = setControlledNotes || setInternalNotes;
 
   // Calculate baby age
   const babyAgeDays = baby?.birthDate
@@ -323,7 +321,7 @@ export function PumpingDrawerContent({
       </div>
 
       {/* Notes */}
-      <div className="space-y-3">
+      {/* <div className="space-y-3">
         <p className="text-sm font-medium text-muted-foreground">
           Notes (optional)
         </p>
@@ -333,7 +331,7 @@ export function PumpingDrawerContent({
           placeholder="Add any notes about this pumping session..."
           value={notes}
         />
-      </div>
+      </div> */}
     </div>
   );
 }

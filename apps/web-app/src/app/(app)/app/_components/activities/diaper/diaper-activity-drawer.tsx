@@ -14,6 +14,7 @@ interface DiaperActivityDrawerProps {
   existingActivity?: typeof Activities.$inferSelect | null;
   isOpen: boolean;
   onClose: () => void;
+  babyId?: string;
 }
 
 /**
@@ -24,6 +25,7 @@ export function DiaperActivityDrawer({
   existingActivity,
   isOpen,
   onClose,
+  babyId: _babyId,
 }: DiaperActivityDrawerProps) {
   const { createActivity, updateActivity, isCreating, isUpdating } =
     useActivityMutations();
@@ -64,17 +66,21 @@ export function DiaperActivityDrawer({
         }));
       }
       // Parse diaper details from details field
-      if (
-        existingActivity.details &&
-        existingActivity.details.type === 'diaper'
-      ) {
+      if (existingActivity.details) {
+        const details = existingActivity.details as {
+          type?: 'wet' | 'dirty' | 'both';
+          size?: 'little' | 'medium' | 'large';
+          color?: string;
+          consistency?: string;
+        };
         setFormData({
-          color: existingActivity.details.color || null,
-          consistency: existingActivity.details.consistency || null,
+          color: (details.color as DiaperFormData['color']) || null,
+          consistency:
+            (details.consistency as DiaperFormData['consistency']) || null,
           hasRash: false,
           notes: existingActivity.notes || '',
-          size: existingActivity.details.size || null,
-          type: null, // TODO: Map from activity type
+          size: (details.size as DiaperFormData['size']) || null,
+          type: details.type || null,
         });
       }
     }
@@ -125,7 +131,7 @@ export function DiaperActivityDrawer({
         color: formData.color ?? undefined,
         consistency: formData.consistency ?? undefined,
         size: formData.size ?? undefined,
-        type: 'diaper' as const,
+        type: formData.type,
       };
 
       // Only add optimistic activity for new activities (not updates)
@@ -140,7 +146,7 @@ export function DiaperActivityDrawer({
             color: formData.color,
             consistency: formData.consistency,
             size: formData.size,
-            type: formData.type,
+            type: formData.type, // wet, dirty, or both
           },
           duration: null,
           endTime: null,
@@ -152,7 +158,7 @@ export function DiaperActivityDrawer({
           notes: formData.notes || null,
           startTime,
           subjectType: 'baby' as const,
-          type: 'diaper' as const,
+          type: 'diaper' as const, // activity type
           updatedAt: startTime,
           userId: 'temp',
         } as typeof Activities.$inferSelect;
@@ -211,6 +217,8 @@ export function DiaperActivityDrawer({
 
       {/* Content - Scrollable */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <DiaperDrawerContent onDataChange={setFormData} />
+
         {/* Time & Date Section */}
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted-foreground">
@@ -239,8 +247,6 @@ export function DiaperActivityDrawer({
             />
           </div>
         </div>
-
-        <DiaperDrawerContent onDataChange={setFormData} />
       </div>
 
       {/* Footer with Actions */}

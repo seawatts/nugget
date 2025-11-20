@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import {
   AlertDialog,
@@ -19,12 +20,12 @@ import { useActivityMutations } from '../use-activity-mutations';
 import { FeedingTypeSelector } from './feeding-type-selector';
 import { useFeedingDrawerState } from './hooks/use-feeding-drawer-state';
 import { useFeedingSave } from './hooks/use-feeding-save';
-import { useFeedingTimer } from './hooks/use-feeding-timer';
 
 interface FeedingActivityDrawerProps {
   existingActivity?: typeof Activities.$inferSelect | null;
   isOpen: boolean;
   onClose: () => void;
+  babyId?: string;
 }
 
 /**
@@ -38,8 +39,22 @@ export function FeedingActivityDrawer({
   existingActivity,
   isOpen,
   onClose,
+  babyId,
 }: FeedingActivityDrawerProps) {
   const { deleteActivity, isCreating, isUpdating } = useActivityMutations();
+
+  // Fetch baby data to get age information (prefetched on server)
+  const [baby] = api.babies.getByIdLight.useSuspenseQuery({
+    id: babyId ?? '',
+  });
+
+  // Calculate baby age in days
+  const babyAgeDays = baby?.birthDate
+    ? Math.floor(
+        (Date.now() - new Date(baby.birthDate).getTime()) /
+          (1000 * 60 * 60 * 24),
+      )
+    : null;
 
   // Consolidated state management
   const {
@@ -54,23 +69,12 @@ export function FeedingActivityDrawer({
     isEditing,
     isTimerActive,
     setStartTime,
-    setEndTime,
     setFormData,
-    setActiveActivityId,
-    setIsTimerStopped,
     setDuration,
     setShowCancelConfirmation,
     clearTimerState,
     handleStop,
-  } = useFeedingDrawerState({ existingActivity, isOpen });
-
-  // Timer management
-  const { startTimer } = useFeedingTimer({
-    setActiveActivityId,
-    setDuration,
-    setIsTimerStopped,
-    setStartTime,
-  });
+  } = useFeedingDrawerState({ babyId, existingActivity, isOpen });
 
   // Save management
   const { saveActivity } = useFeedingSave({
@@ -114,8 +118,8 @@ export function FeedingActivityDrawer({
   };
 
   const handleTimerStart = async () => {
-    if (!formData) return;
-    await startTimer(formData);
+    // Timer start logic is handled by the feeding type selector components (bottle/nursing)
+    // They manage their own timers and call the activity mutations directly
   };
 
   return (
@@ -133,6 +137,7 @@ export function FeedingActivityDrawer({
           <>
             <FeedingTypeSelector
               activeActivityId={activeActivityId}
+              babyAgeDays={babyAgeDays}
               duration={duration}
               existingActivityType={
                 existingActivity || activeActivityId
@@ -153,19 +158,14 @@ export function FeedingActivityDrawer({
                 <h3 className="text-sm font-medium text-muted-foreground">
                   Time & Date
                 </h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   <TimeInput
                     id="feeding-start-time"
                     label="Start Time"
                     onChange={setStartTime}
                     value={startTime}
                   />
-                  <TimeInput
-                    id="feeding-end-time"
-                    label="End Time"
-                    onChange={setEndTime}
-                    value={endTime}
-                  />
+                  {/* End time is auto-calculated for nursing based on durations */}
                 </div>
               </div>
             )}
@@ -173,37 +173,39 @@ export function FeedingActivityDrawer({
         )}
       </div>
 
-      {/* Footer with Actions */}
-      <div className="p-6 pt-4 border-t border-border">
-        <div className="flex gap-3">
-          <Button
-            className="flex-1 h-12 text-base bg-transparent"
-            disabled={isLoadingInProgress}
-            onClick={handleCancelClick}
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button
-            className={cn(
-              'flex-1 h-12 text-base font-semibold',
-              isTimerActive
-                ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
-                : 'bg-activity-feeding text-activity-feeding-foreground',
-            )}
-            disabled={isPending || isLoadingInProgress || !formData}
-            onClick={isTimerActive ? handleStop : handleSave}
-          >
-            {isTimerActive
-              ? 'Stop'
-              : isPending
-                ? 'Saving...'
-                : isEditing
-                  ? 'Update'
-                  : 'Save'}
-          </Button>
+      {/* Footer with Actions - Only show after feeding type is selected */}
+      {formData && (
+        <div className="p-6 pt-4 border-t border-border">
+          <div className="flex gap-3">
+            <Button
+              className="flex-1 h-12 text-base bg-transparent"
+              disabled={isLoadingInProgress}
+              onClick={handleCancelClick}
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button
+              className={cn(
+                'flex-1 h-12 text-base font-semibold',
+                isTimerActive
+                  ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
+                  : 'bg-activity-feeding text-activity-feeding-foreground',
+              )}
+              disabled={isPending || isLoadingInProgress || !formData}
+              onClick={isTimerActive ? handleStop : handleSave}
+            >
+              {isTimerActive
+                ? 'Stop'
+                : isPending
+                  ? 'Saving...'
+                  : isEditing
+                    ? 'Update'
+                    : 'Save'}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Cancel Confirmation Dialog */}
       <AlertDialog
