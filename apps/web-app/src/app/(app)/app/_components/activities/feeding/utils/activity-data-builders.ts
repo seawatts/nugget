@@ -6,8 +6,23 @@ interface NursingDetails {
   type: 'nursing';
 }
 
+interface SolidsItem {
+  foodName: string;
+  reaction:
+    | 'none'
+    | 'liked'
+    | 'disliked'
+    | 'allergic'
+    | 'rash'
+    | 'vomiting'
+    | 'other';
+  allergenInfo?: string;
+  notes?: string;
+  portion?: string;
+}
+
 interface SolidsDetails {
-  items: unknown[];
+  items: SolidsItem[];
   type: 'solids';
 }
 
