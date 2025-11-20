@@ -202,15 +202,17 @@ export function PredictiveSleepCard({
   });
   const exactTime = formatTimeWithPreference(displayNextTime, timeFormat);
 
-  // Format recovery time if overdue
-  const recoveryTimeUntil = prediction.suggestedRecoveryTime
-    ? formatDistanceToNow(prediction.suggestedRecoveryTime, {
-        addSuffix: true,
-      })
-    : null;
-  const recoveryExactTime = prediction.suggestedRecoveryTime
-    ? formatTimeWithPreference(prediction.suggestedRecoveryTime, timeFormat)
-    : null;
+  // Format overdue time
+  const formatOverdueTime = (minutes: number) => {
+    if (minutes >= 60) {
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return mins > 0
+        ? `${hours}h ${mins}m`
+        : `${hours} hour${hours !== 1 ? 's' : ''}`;
+    }
+    return `${minutes} min`;
+  };
 
   const handleCardClick = () => {
     if (onCardClick) {
@@ -350,15 +352,27 @@ export function PredictiveSleepCard({
                 <>
                   <div className="flex items-baseline gap-2">
                     <span className="text-lg font-bold text-amber-400">
-                      {prediction.overdueMinutes} min overdue
+                      {formatOverdueTime(prediction.overdueMinutes ?? 0)}{' '}
+                      overdue ({exactTime})
                     </span>
                   </div>
-                  <div className="text-sm opacity-70">
-                    Was expected at {exactTime}
-                  </div>
-                  {recoveryTimeUntil && recoveryExactTime && (
-                    <div className="text-sm font-medium pt-1">
-                      Suggested: {recoveryTimeUntil} • {recoveryExactTime}
+                  {prediction.lastSleepTime && (
+                    <div className="text-sm opacity-60">
+                      {formatDistanceToNow(prediction.lastSleepTime, {
+                        addSuffix: true,
+                      })}{' '}
+                      •{' '}
+                      {formatTimeWithPreference(
+                        prediction.lastSleepTime,
+                        timeFormat,
+                      )}
+                      {prediction.lastSleepDuration && (
+                        <span>
+                          {' '}
+                          • {Math.floor(prediction.lastSleepDuration / 60)}h{' '}
+                          {prediction.lastSleepDuration % 60}m
+                        </span>
+                      )}
                     </div>
                   )}
                 </>
