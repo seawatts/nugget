@@ -149,6 +149,7 @@ export function DoctorVisitActivityDrawer({
         headCircumferenceCm: formData.headCircumferenceCm || undefined,
         lengthCm: formData.lengthCm || undefined,
         location: formData.location || undefined,
+        type: 'doctor_visit' as const,
         vaccinations:
           formData.vaccinations.length > 0 ? formData.vaccinations : undefined,
         visitType: formData.visitType,
@@ -159,7 +160,7 @@ export function DoctorVisitActivityDrawer({
       if (!existingActivity) {
         // Create optimistic activity for immediate UI feedback
         const optimisticActivity = {
-          amount: null,
+          amountMl: null,
           assignedUserId: null,
           babyId: 'temp',
           createdAt: startTime,

@@ -168,19 +168,18 @@ function SummaryCard({
   );
 }
 
-interface DoctorVisitSummaryData {
-  totalVisits: number;
-  visitsByType: Record<string, number>;
-  averageVisitDuration: number;
-}
-
 interface AIInsightsProps {
   babyId: string;
   dateRange: { startDate: Date; endDate: Date };
-  summaryData: DoctorVisitSummaryData;
+  summaryData: {
+    babyInfo: { name: string; ageDays: number };
+    diaper: { averagePerDay: number };
+    feeding: { averagePerDay: number };
+    sleep: { averageHoursPerDay: number };
+  };
 }
 
-function AIInsights(_props: AIInsightsProps) {
+function AIInsights({ summaryData }: AIInsightsProps) {
   // TODO: Implement AI insights generation
   // For now, show a placeholder
   return (

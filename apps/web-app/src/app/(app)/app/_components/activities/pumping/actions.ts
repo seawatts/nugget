@@ -160,7 +160,7 @@ export const skipPumpingAction = action.action(
     });
 
     // Revalidate pages
-    revalidatePath('/app');
+    revalidateAppPaths();
 
     return { activity };
   },

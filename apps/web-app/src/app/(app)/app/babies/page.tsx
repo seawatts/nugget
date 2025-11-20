@@ -99,7 +99,9 @@ export default async function BabiesPage() {
                   <div className="space-y-1">
                     <H2 className="text-lg">{baby.firstName}</H2>
                     <P className="text-sm text-muted-foreground">
-                      {getBabyAge(new Date(baby.birthDate))}
+                      {baby.birthDate
+                        ? getBabyAge(new Date(baby.birthDate))
+                        : 'Age unknown'}
                     </P>
                   </div>
                   <Button className="w-full" variant="outline">

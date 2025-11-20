@@ -25,7 +25,7 @@ interface FeedingActivity {
   id: string;
   startTime: Date;
   type: string;
-  amount: number | null;
+  amountMl: number | null;
 }
 
 /**
@@ -144,7 +144,7 @@ export function predictNextFeeding(
     };
   }
   const lastFeedingTime = new Date(lastFeeding.startTime);
-  const lastFeedingAmount = lastFeeding.amount || null;
+  const lastFeedingAmount = lastFeeding.amountMl || null;
 
   // Calculate intervals between consecutive feedings
   const intervals = calculateIntervals(feedingActivities);

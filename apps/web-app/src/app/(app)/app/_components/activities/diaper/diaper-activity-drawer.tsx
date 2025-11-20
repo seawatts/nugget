@@ -156,7 +156,7 @@ export function DiaperActivityDrawer({
       if (!existingActivity) {
         // Create optimistic activity for immediate UI feedback
         const optimisticActivity = {
-          amount: null,
+          amountMl: null,
           assignedUserId: null,
           babyId: 'temp',
           createdAt: startTime,

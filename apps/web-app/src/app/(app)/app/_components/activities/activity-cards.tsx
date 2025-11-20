@@ -237,7 +237,7 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
     const optimisticData = getDefaultActivityData(activityId, birthDate);
     const optimisticActivity = {
       ...optimisticData,
-      amount: null,
+      amountMl: null,
       babyId: 'temp',
       createdAt: new Date(),
       details: null,

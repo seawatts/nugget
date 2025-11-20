@@ -21,6 +21,7 @@ const ACTIVITY_BG_CLASSES: Record<ActivityType, string> = {
   bath: 'bg-activity-bath',
   bottle: 'bg-activity-feeding',
   diaper: 'bg-activity-diaper',
+  doctor_visit: 'bg-activity-doctor-visit',
   feeding: 'bg-activity-feeding',
   growth: 'bg-activity-growth',
   medicine: 'bg-activity-medicine',

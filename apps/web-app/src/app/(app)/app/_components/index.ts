@@ -36,7 +36,6 @@ export { QuickChatFab } from './chat/quick-chat-fab';
 // ============================================================================
 // Root Level Components
 // ============================================================================
-export { DashboardContainer } from './dashboard-container';
 export { FamilyTabs } from './family-tabs';
 export { Header } from './header';
 // ============================================================================

@@ -57,7 +57,8 @@ export function getDefaultActivityData(
     | 'temperature'
     | 'tummy_time'
     | 'growth'
-    | 'potty',
+    | 'potty'
+    | 'doctor_visit',
   _birthDate: Date | null,
 ) {
   const now = new Date();
@@ -123,6 +124,11 @@ export function getDefaultActivityData(
         startTime: now,
         type: 'bath' as const,
       };
+    case 'doctor_visit':
+      return {
+        startTime: now,
+        type: 'doctor_visit' as const,
+      };
     case 'feeding':
     case 'wet':
     case 'dirty':
@@ -146,6 +152,7 @@ export function formatActivityForToast(
     | 'wet'
     | 'dirty'
     | 'both'
+    | 'doctor_visit'
     | 'solids'
     | 'bath'
     | 'medicine'
@@ -180,6 +187,8 @@ export function formatActivityForToast(
       return 'Growth measurement logged';
     case 'bath':
       return 'Bath logged';
+    case 'doctor_visit':
+      return 'Doctor visit logged';
     default:
       return 'Activity logged';
   }

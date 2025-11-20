@@ -185,7 +185,7 @@ export const skipSleepAction = action.action(
     });
 
     // Revalidate pages
-    revalidatePath('/app');
+    revalidateAppPaths();
 
     return { activity };
   },
@@ -238,7 +238,7 @@ export const autoStopInProgressSleepAction = action.action(
     });
 
     // Revalidate pages
-    revalidatePath('/app');
+    revalidateAppPaths();
 
     return { activity: stoppedActivity };
   },

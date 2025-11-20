@@ -158,7 +158,7 @@ export function PumpingActivityDrawer({
       if (!existingActivity) {
         // Create optimistic activity for immediate UI feedback
         const optimisticActivity = {
-          amount: totalAmountMl,
+          amountMl: totalAmountMl,
           assignedUserId: null,
           babyId: 'temp',
           createdAt: startTime,

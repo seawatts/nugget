@@ -28,6 +28,7 @@ const createActivityInputSchema = z.object({
     'tummy_time',
     'growth',
     'potty',
+    'doctor_visit',
   ]),
 });
 

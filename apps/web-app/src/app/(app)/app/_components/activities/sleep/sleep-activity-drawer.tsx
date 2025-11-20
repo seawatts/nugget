@@ -330,7 +330,7 @@ export function SleepActivityDrawer({
       // For new activities (not updates), add optimistic activity immediately
       if (!activeActivityId && !existingActivity) {
         const optimisticActivity = {
-          amount: null,
+          amountMl: null,
           assignedUserId: null,
           babyId: 'temp',
           createdAt: new Date(),

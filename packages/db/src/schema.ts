@@ -540,6 +540,17 @@ export const sleepDetailsSchema = z.object({
     .optional(),
 });
 
+// Doctor visit details
+export const doctorVisitDetailsSchema = z.object({
+  doctorName: z.string().optional(),
+  headCircumferenceCm: z.string().optional(),
+  lengthCm: z.string().optional(),
+  location: z.string().optional(),
+  vaccinations: z.array(z.string()).optional(),
+  visitType: z.enum(['well-baby', 'sick', 'follow-up', 'other']),
+  weightKg: z.string().optional(),
+});
+
 // Discriminated union for all activity details
 export const activityDetailsSchema = z
   .discriminatedUnion('type', [
@@ -556,6 +567,10 @@ export const activityDetailsSchema = z
       ...temperatureDetailsSchema.shape,
     }),
     z.object({ type: z.literal('sleep'), ...sleepDetailsSchema.shape }),
+    z.object({
+      type: z.literal('doctor_visit'),
+      ...doctorVisitDetailsSchema.shape,
+    }),
   ])
   .nullable();
 
@@ -569,6 +584,7 @@ export type PumpingDetails = z.infer<typeof pumpingDetailsSchema>;
 export type SolidFoodDetails = z.infer<typeof solidFoodDetailsSchema>;
 export type TemperatureDetails = z.infer<typeof temperatureDetailsSchema>;
 export type SleepDetails = z.infer<typeof sleepDetailsSchema>;
+export type DoctorVisitDetails = z.infer<typeof doctorVisitDetailsSchema>;
 
 // ============================================================================
 // Tables - Baby Tracking

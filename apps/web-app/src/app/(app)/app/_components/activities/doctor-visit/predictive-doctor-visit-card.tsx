@@ -14,7 +14,6 @@ import { format } from 'date-fns';
 import { CalendarCheck, Info, Stethoscope } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
-import { formatTimeWithPreference } from '~/lib/format-time';
 import { InfoCard } from '../../shared/info-card';
 import { PredictiveCardSkeleton } from '../shared/components/predictive-cards';
 import { getDoctorVisitLearningContent } from './learning-content';
@@ -37,7 +36,6 @@ export function PredictiveDoctorVisitCard({
   const babyId = params?.babyId;
 
   const { data: userData } = api.user.current.useQuery();
-  const timeFormat = userData?.timeFormat || '12h';
 
   // Use tRPC query for prediction data
   const {
@@ -87,12 +85,7 @@ export function PredictiveDoctorVisitCard({
 
   // Show loading skeleton
   if (isLoading && !data) {
-    return (
-      <PredictiveCardSkeleton
-        activityType="doctor_visit"
-        title="Doctor Visit"
-      />
-    );
+    return <PredictiveCardSkeleton activityType="doctor_visit" />;
   }
 
   // Show error state
@@ -185,12 +178,7 @@ export function PredictiveDoctorVisitCard({
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <CalendarCheck className="size-4" />
               <span>
-                Last visit:{' '}
-                {formatTimeWithPreference(
-                  prediction.lastVisitDate,
-                  timeFormat,
-                  'MMM d',
-                )}
+                Last visit: {format(prediction.lastVisitDate, 'MMM d')}
               </span>
             </div>
           )}

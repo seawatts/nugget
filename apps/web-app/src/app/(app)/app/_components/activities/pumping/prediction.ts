@@ -15,7 +15,7 @@ export interface PumpingPrediction {
   lastPumpingAmount: number | null; // in ml
   recentPumpingPattern: Array<{
     time: Date;
-    amount: number | null;
+    amountMl: number | null;
     intervalFromPrevious: number | null;
   }>;
   isOverdue: boolean;
@@ -28,7 +28,7 @@ interface PumpingActivity {
   id: string;
   startTime: Date;
   type: string;
-  amount: number | null;
+  amountMl: number | null;
 }
 
 /**
@@ -145,7 +145,7 @@ export function predictNextPumping(
   }
 
   const lastPumpingTime = new Date(lastPumping.startTime);
-  const lastPumpingAmount = lastPumping.amount || null;
+  const lastPumpingAmount = lastPumping.amountMl || null;
 
   // Calculate intervals between consecutive pumping sessions
   const intervals = calculateIntervals(pumpingActivities);
@@ -195,7 +195,7 @@ export function predictNextPumping(
 
   // Build recent pattern for display
   const recentPattern = pumpingActivities.slice(0, 5).map((pumping, idx) => ({
-    amount: pumping.amount || null,
+    amountMl: pumping.amountMl || null,
     intervalFromPrevious: intervals[idx] ?? null,
     time: new Date(pumping.startTime),
   }));

@@ -395,9 +395,9 @@ export function PredictivePumpingCard({
                           {formatTimeWithPreference(pumping.time, timeFormat)}
                         </span>
                         <div className="flex gap-2 items-center">
-                          {pumping.amount !== null && (
+                          {pumping.amountMl !== null && (
                             <span className="text-foreground/70 font-medium">
-                              {formatAmount(pumping.amount)}
+                              {formatAmount(pumping.amountMl)}
                             </span>
                           )}
                           {pumping.intervalFromPrevious !== null && (

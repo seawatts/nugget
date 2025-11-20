@@ -168,6 +168,6 @@ export const quickLogParentSleepAction = action
       })
       .returning();
 
-    revalidatePath('/app');
+    revalidateAppPaths();
     return activity;
   });

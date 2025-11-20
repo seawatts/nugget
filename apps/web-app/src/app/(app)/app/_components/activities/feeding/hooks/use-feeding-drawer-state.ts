@@ -108,7 +108,7 @@ export function useFeedingDrawerState({
             // Set form data type based on activity type
             if (inProgressActivity.type === 'bottle') {
               setFormData({
-                amountMl: inProgressActivity.amount || undefined,
+                amountMl: inProgressActivity.amountMl || undefined,
                 bottleType:
                   inProgressActivity.feedingSource === 'formula'
                     ? 'formula'

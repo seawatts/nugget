@@ -58,7 +58,7 @@ function buildOptimisticActivity(
   }
 
   return {
-    amount: formData.amountMl ?? null,
+    amountMl: formData.amountMl ?? null,
     assignedUserId: null,
     babyId: 'temp',
     createdAt: new Date(),

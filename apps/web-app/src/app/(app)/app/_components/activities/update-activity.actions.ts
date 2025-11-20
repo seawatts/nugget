@@ -10,7 +10,7 @@ import { revalidateAppPaths } from '~/app/(app)/app/_utils/revalidation';
 const action = createSafeActionClient();
 
 const updateActivityInputSchema = z.object({
-  amount: z.number().optional(),
+  amountMl: z.number().optional(),
   details: z.any().optional(),
   duration: z.number().optional(),
   endTime: z.date().optional(),
