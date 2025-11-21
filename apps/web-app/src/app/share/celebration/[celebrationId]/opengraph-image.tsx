@@ -1,5 +1,10 @@
+import { db } from '@nugget/db/client';
+import { Babies, CelebrationMemories } from '@nugget/db/schema';
+import { differenceInDays } from 'date-fns';
+import { eq } from 'drizzle-orm';
 import { ImageResponse } from 'next/og';
-import { getPublicCelebrationData } from '~/app/(app)/app/_components/celebrations/celebration-card.actions';
+
+import { CELEBRATION_MILESTONES } from '~/app/(app)/app/_components/celebrations/celebration-milestones';
 
 export const runtime = 'edge';
 export const alt = 'Celebration';
@@ -15,9 +20,15 @@ export default async function Image({
   params: Promise<{ celebrationId: string }>;
 }) {
   const { celebrationId } = await params;
-  const celebration = await getPublicCelebrationData(celebrationId);
 
-  if (!celebration) {
+  // Fetch celebration memory directly from database (Edge-compatible)
+  const [memory] = await db
+    .select()
+    .from(CelebrationMemories)
+    .where(eq(CelebrationMemories.id, celebrationId))
+    .limit(1);
+
+  if (!memory) {
     // Return a default "not found" image
     return new ImageResponse(
       <div
@@ -45,6 +56,56 @@ export default async function Image({
       },
     );
   }
+
+  // Fetch baby data directly from database
+  const [babyData] = await db
+    .select()
+    .from(Babies)
+    .where(eq(Babies.id, memory.babyId))
+    .limit(1);
+
+  if (!babyData || !babyData.birthDate) {
+    // Return a default "not found" image
+    return new ImageResponse(
+      <div
+        style={{
+          alignItems: 'center',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          display: 'flex',
+          fontSize: 60,
+          height: '100%',
+          justifyContent: 'center',
+          width: '100%',
+        }}
+      >
+        <div
+          style={{
+            color: 'white',
+            fontWeight: 'bold',
+          }}
+        >
+          Celebration Not Found
+        </div>
+      </div>,
+      {
+        ...size,
+      },
+    );
+  }
+
+  // Calculate age and find milestone
+  const ageInDays = differenceInDays(new Date(), new Date(babyData.birthDate));
+  const milestone = CELEBRATION_MILESTONES.find(
+    (m) => m.type === memory.celebrationType,
+  );
+
+  // Build celebration data
+  const celebration = {
+    ageLabel: milestone?.ageLabel || `${ageInDays} days old`,
+    babyName: babyData.firstName || 'Baby',
+    photoUrls: (memory.photoUrls as string[]) || [],
+    title: milestone?.title || '🎉 Celebration!',
+  };
 
   const hasPhoto = celebration.photoUrls && celebration.photoUrls.length > 0;
   const photoUrl = hasPhoto ? celebration.photoUrls[0] : null;

@@ -161,7 +161,9 @@ const configWithPlugins = withPlugins.reduce(
 
 /** @type {import('next').NextConfig} */
 const finalConfig =
-  process.env.POSTHOG_PERSONAL_API_KEY && process.env.POSTHOG_ENV_ID
+  process.env.POSTHOG_PERSONAL_API_KEY &&
+  process.env.POSTHOG_ENV_ID &&
+  process.env.CI
     ? withPostHogConfig(configWithPlugins, {
         envId: process.env.POSTHOG_ENV_ID, // Environment ID
         host: process.env.NEXT_PUBLIC_POSTHOG_HOST, // (optional), defaults to https://us.posthog.com
