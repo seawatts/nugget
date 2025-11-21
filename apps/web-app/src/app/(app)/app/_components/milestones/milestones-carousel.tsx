@@ -278,7 +278,6 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
                   contextId={currentCard.contextId}
                   followUpQuestion={currentCard.followUpQuestion}
                   milestoneTitle={currentCard.milestoneTitle}
-                  milestoneType={currentCard.milestoneType}
                   onDismiss={() => handleChatDismiss(currentCard.id)}
                 />
               ) : (
