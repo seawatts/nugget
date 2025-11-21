@@ -214,29 +214,31 @@ export function SleepDrawerContent({
         </div>
       )}
 
-      {/* Timer Display */}
-      <div className="bg-card rounded-2xl p-8 text-center">
-        <div className="text-6xl font-bold text-foreground mb-2">
-          {Math.floor(duration / 3600)
-            .toString()
-            .padStart(2, '0')}
-          :
-          {Math.floor((duration % 3600) / 60)
-            .toString()
-            .padStart(2, '0')}
-          :{(duration % 60).toString().padStart(2, '0')}
+      {/* Timer Display - Only show when actively tracking or creating new activity */}
+      {(!isTimerStopped || isTracking) && (
+        <div className="bg-card rounded-2xl p-8 text-center">
+          <div className="text-6xl font-bold text-foreground mb-2">
+            {Math.floor(duration / 3600)
+              .toString()
+              .padStart(2, '0')}
+            :
+            {Math.floor((duration % 3600) / 60)
+              .toString()
+              .padStart(2, '0')}
+            :{(duration % 60).toString().padStart(2, '0')}
+          </div>
+          <p className="text-muted-foreground">Duration</p>
+          {isTracking && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Started{' '}
+              {formatTimeWithPreference(startTime, user?.timeFormat ?? '12h')}
+            </p>
+          )}
         </div>
-        <p className="text-muted-foreground">Duration</p>
-        {isTracking && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Started{' '}
-            {formatTimeWithPreference(startTime, user?.timeFormat ?? '12h')}
-          </p>
-        )}
-      </div>
+      )}
 
-      {/* Start/Stop Button - Only show when not in active mode (button moved to footer) */}
-      {!activeActivityId && (
+      {/* Start/Stop Button - Only show when creating new sleep (not editing from timeline) */}
+      {!activeActivityId && !isTimerStopped && (
         <Button
           className={`w-full h-16 text-lg font-semibold ${
             isTracking

@@ -79,6 +79,194 @@ interface CelebrationCarouselData {
     gender: string | null;
   } | null;
   aiContext?: CelebrationEnhancementContext & { celebrationMemoryId: string };
+  nextCelebration?: {
+    day: number;
+    title: string;
+    shouldShow: boolean;
+  };
+}
+
+/**
+ * All celebration milestones with their metadata
+ */
+const CELEBRATION_MILESTONES = [
+  {
+    ageLabel: '1 Week Old!',
+    day: 7,
+    title: '🎉 Happy 1 Week Birthday!',
+    type: 'week_1',
+  },
+  {
+    ageLabel: '2 Weeks Old!',
+    day: 14,
+    title: '🎉 Happy 2 Week Birthday!',
+    type: 'week_2',
+  },
+  {
+    ageLabel: '3 Weeks Old!',
+    day: 21,
+    title: '🎉 Happy 3 Week Birthday!',
+    type: 'week_3',
+  },
+  {
+    ageLabel: '4 Weeks Old!',
+    day: 28,
+    title: '🎉 Happy 4 Week Birthday!',
+    type: 'week_4',
+  },
+  {
+    ageLabel: '1 Month Old!',
+    day: 30,
+    title: '🎂 Happy 1 Month Birthday!',
+    type: 'month_1',
+  },
+  {
+    ageLabel: '5 Weeks Old!',
+    day: 35,
+    title: '🎉 Happy 5 Week Birthday!',
+    type: 'week_5',
+  },
+  {
+    ageLabel: '6 Weeks Old!',
+    day: 42,
+    title: '🎉 Happy 6 Week Birthday!',
+    type: 'week_6',
+  },
+  {
+    ageLabel: '7 Weeks Old!',
+    day: 49,
+    title: '🎉 Happy 7 Week Birthday!',
+    type: 'week_7',
+  },
+  {
+    ageLabel: '8 Weeks Old!',
+    day: 56,
+    title: '🎉 Happy 8 Week Birthday!',
+    type: 'week_8',
+  },
+  {
+    ageLabel: '2 Months Old!',
+    day: 60,
+    title: '🎂 Happy 2 Month Birthday!',
+    type: 'month_2',
+  },
+  {
+    ageLabel: '9 Weeks Old!',
+    day: 63,
+    title: '🎉 Happy 9 Week Birthday!',
+    type: 'week_9',
+  },
+  {
+    ageLabel: '10 Weeks Old!',
+    day: 70,
+    title: '🎉 Happy 10 Week Birthday!',
+    type: 'week_10',
+  },
+  {
+    ageLabel: '11 Weeks Old!',
+    day: 77,
+    title: '🎉 Happy 11 Week Birthday!',
+    type: 'week_11',
+  },
+  {
+    ageLabel: '12 Weeks Old!',
+    day: 84,
+    title: '🎉 Happy 12 Week Birthday!',
+    type: 'week_12',
+  },
+  {
+    ageLabel: '3 Months Old!',
+    day: 90,
+    title: '🎂 Happy 3 Month Birthday!',
+    type: 'month_3',
+  },
+  {
+    ageLabel: '4 Months Old!',
+    day: 120,
+    title: '🎂 Happy 4 Month Birthday!',
+    type: 'month_4',
+  },
+  {
+    ageLabel: '5 Months Old!',
+    day: 150,
+    title: '🎂 Happy 5 Month Birthday!',
+    type: 'month_5',
+  },
+  {
+    ageLabel: '6 Months Old!',
+    day: 180,
+    title: '🎂 Happy 6 Month Birthday!',
+    type: 'month_6',
+  },
+  {
+    ageLabel: '7 Months Old!',
+    day: 210,
+    title: '🎂 Happy 7 Month Birthday!',
+    type: 'month_7',
+  },
+  {
+    ageLabel: '8 Months Old!',
+    day: 240,
+    title: '🎂 Happy 8 Month Birthday!',
+    type: 'month_8',
+  },
+  {
+    ageLabel: '9 Months Old!',
+    day: 270,
+    title: '🎂 Happy 9 Month Birthday!',
+    type: 'month_9',
+  },
+  {
+    ageLabel: '10 Months Old!',
+    day: 300,
+    title: '🎂 Happy 10 Month Birthday!',
+    type: 'month_10',
+  },
+  {
+    ageLabel: '11 Months Old!',
+    day: 330,
+    title: '🎂 Happy 11 Month Birthday!',
+    type: 'month_11',
+  },
+  {
+    ageLabel: '1 Year Old!',
+    day: 365,
+    title: '🎂🎉 Happy 1st Birthday!',
+    type: 'year_1',
+  },
+  {
+    ageLabel: '2 Years Old!',
+    day: 730,
+    title: '🎂🎉 Happy 2nd Birthday!',
+    type: 'year_2',
+  },
+].sort((a, b) => a.day - b.day);
+
+/**
+ * Find the next upcoming celebration milestone
+ */
+function findNextCelebration(currentAgeInDays: number) {
+  return CELEBRATION_MILESTONES.find(
+    (milestone) => milestone.day > currentAgeInDays,
+  );
+}
+
+/**
+ * Determine if we should show the "coming soon" card based on age and proximity
+ */
+function shouldShowComingSoon(
+  currentAgeInDays: number,
+  nextCelebrationDay: number,
+): boolean {
+  const daysUntil = nextCelebrationDay - currentAgeInDays;
+
+  // For weekly celebrations (days 0-84): show if within 3 days
+  if (currentAgeInDays < 85) {
+    return daysUntil <= 3 && daysUntil > 0;
+  }
+
+  // For monthly celebrations (day 85+): show if within 10 days
+  return daysUntil <= 10 && daysUntil > 0;
 }
 
 /**
@@ -187,6 +375,25 @@ export async function getCelebrationContent(
     });
 
     if (matchingRules.length === 0) {
+      // No celebration today - check for upcoming celebration
+      const nextCelebration = findNextCelebration(ageInDays);
+
+      if (nextCelebration) {
+        const shouldShow = shouldShowComingSoon(ageInDays, nextCelebration.day);
+
+        return {
+          ageInDays,
+          baby,
+          babyName,
+          celebration: null,
+          nextCelebration: {
+            day: nextCelebration.day,
+            shouldShow,
+            title: nextCelebration.title,
+          },
+        };
+      }
+
       return {
         ageInDays,
         baby,
@@ -593,6 +800,77 @@ export const addCelebrationPhotoAction = action
       success: true,
     };
   });
+
+/**
+ * Get public celebration data (no auth required)
+ * Used for shareable celebration pages
+ */
+export async function getPublicCelebrationData(celebrationId: string) {
+  try {
+    // Fetch celebration memory
+    const [memory] = await db
+      .select()
+      .from(CelebrationMemories)
+      .where(eq(CelebrationMemories.id, celebrationId))
+      .limit(1);
+
+    if (!memory) {
+      return null;
+    }
+
+    // Get baby info using the API (bypasses RLS by using service role)
+    const api = await getApi();
+    const babyData = await api.babies.getById({ id: memory.babyId });
+
+    if (!babyData || !babyData.birthDate) {
+      return null;
+    }
+
+    const ageInDays = differenceInDays(
+      new Date(),
+      new Date(babyData.birthDate),
+    );
+
+    // Find the matching milestone for this celebration type
+    const milestone = CELEBRATION_MILESTONES.find(
+      (m) => m.type === memory.celebrationType,
+    );
+
+    // Calculate statistics if available
+    const stats = await calculateBabyStatistics(
+      memory.babyId,
+      babyData.birthDate,
+    );
+
+    return {
+      ageInDays,
+      ageLabel: milestone?.ageLabel || `${ageInDays} days old`,
+      aiQuestions: memory.aiQuestions as {
+        milestone: { question: string; systemPrompt: string };
+        memory: { question: string; systemPrompt: string };
+        guidance: { question: string; systemPrompt: string };
+      } | null,
+      aiSummary: memory.aiSummary,
+      babyName: babyData.firstName || 'Baby',
+      celebrationDate: memory.celebrationDate,
+      celebrationId: memory.id,
+      celebrationType: memory.celebrationType,
+      note: memory.note,
+      photoUrls: (memory.photoUrls as string[]) || [],
+      statistics: {
+        ageInDays,
+        ageLabel: milestone?.ageLabel || `${ageInDays} days old`,
+        diaperCount: stats.diaperCount,
+        feedingCount: stats.feedingCount,
+        sleepHours: stats.sleepHours,
+      },
+      title: milestone?.title || '🎉 Celebration!',
+    };
+  } catch (error) {
+    console.error('Error fetching public celebration data:', error);
+    return null;
+  }
+}
 
 /**
  * Share celebration with family members

@@ -24,9 +24,11 @@ import {
 } from '@nugget/ui/drawer';
 import { useMediaQuery } from '@nugget/ui/hooks/use-media-query';
 import { Label } from '@nugget/ui/label';
-import { Check, Copy } from 'lucide-react';
+import { Check, Share2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { siteConfig } from '~/app/(marketing)/_lib/config';
 import { shareCelebrationAction } from './celebration-card.actions';
 
 interface CelebrationShareDialogProps {
@@ -36,6 +38,7 @@ interface CelebrationShareDialogProps {
   babyName: string;
   celebrationType: string;
   celebrationTitle: string;
+  celebrationMemoryId: string;
 }
 
 export function CelebrationShareDialog({
@@ -45,9 +48,11 @@ export function CelebrationShareDialog({
   babyName,
   celebrationType,
   celebrationTitle,
+  celebrationMemoryId,
 }: CelebrationShareDialogProps) {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const isDesktop = useMediaQuery({ query: '(min-width: 768px)' });
 
   // Get family members
@@ -70,11 +75,44 @@ export function CelebrationShareDialog({
     });
   };
 
-  const handleCopyLink = () => {
-    const shareText = `${celebrationTitle}\n\n${babyName} just reached an amazing milestone! 🎉`;
-    navigator.clipboard.writeText(shareText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleShareCelebration = async () => {
+    const shareUrl = `${siteConfig.url}/share/celebration/${celebrationMemoryId}`;
+    const shareData = {
+      text: `${babyName} just reached an amazing milestone! 🎉`,
+      title: celebrationTitle,
+      url: shareUrl,
+    };
+
+    setIsSharing(true);
+
+    try {
+      // Check if Web Share API is available
+      if (navigator.share) {
+        await navigator.share(shareData);
+        toast.success('Celebration shared successfully!');
+      } else {
+        // Fallback to copying the link
+        await navigator.clipboard.writeText(shareUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        toast.success('Link copied to clipboard');
+      }
+    } catch (err) {
+      // User cancelled share or error occurred
+      if (err instanceof Error && err.name !== 'AbortError') {
+        // Not a user cancellation, try copying as fallback
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+          toast.success('Link copied to clipboard');
+        } catch {
+          toast.error('Failed to share celebration');
+        }
+      }
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   const toggleUser = (userId: string) => {
@@ -87,24 +125,30 @@ export function CelebrationShareDialog({
 
   const content = (
     <div className="gap-4 grid py-4">
-      {/* Copy Link Section */}
+      {/* Share Link Section */}
       <div className="gap-2 grid">
-        <Label>Share Link</Label>
+        <Label>Share Celebration</Label>
         <div className="flex items-center gap-2">
           <Button
             className="flex-1 justify-start"
-            onClick={handleCopyLink}
+            disabled={isSharing}
+            onClick={handleShareCelebration}
             variant="outline"
           >
             {copied ? (
               <>
                 <Check className="size-4 text-green-600" />
-                Copied!
+                Link Copied!
+              </>
+            ) : isSharing ? (
+              <>
+                <Icons.Spinner className="animate-spin" size="sm" />
+                Sharing...
               </>
             ) : (
               <>
-                <Copy className="size-4" />
-                Copy celebration message
+                <Share2 className="size-4" />
+                Share celebration
               </>
             )}
           </Button>

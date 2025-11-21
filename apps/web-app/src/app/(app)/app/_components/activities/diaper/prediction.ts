@@ -22,6 +22,8 @@ export interface DiaperPrediction {
   overdueMinutes: number | null;
   suggestedRecoveryTime: Date | null;
   recentSkipTime: Date | null; // Time of most recent skip activity
+  // Quick log smart defaults
+  suggestedType: 'wet' | 'dirty' | 'both' | null; // predicted type based on recent pattern
 }
 
 interface DiaperActivity {
@@ -77,6 +79,44 @@ function getDiaperType(details: Record<string, unknown> | null): string | null {
   }
   if (details.dirty) {
     return 'dirty';
+  }
+
+  return null;
+}
+
+/**
+ * Predict suggested diaper type based on recent pattern
+ */
+function predictDiaperType(
+  diapers: DiaperActivity[],
+): 'wet' | 'dirty' | 'both' | null {
+  if (diapers.length === 0) return null;
+
+  // Analyze last 5 diaper changes
+  const recentTypes = diapers.slice(0, 5).map((d) => getDiaperType(d.details));
+  const validTypes = recentTypes.filter((t): t is string => t !== null);
+
+  if (validTypes.length === 0) return null;
+
+  // Count occurrences
+  const typeCounts: Record<string, number> = {};
+  for (const type of validTypes) {
+    typeCounts[type] = (typeCounts[type] || 0) + 1;
+  }
+
+  // Find most common type
+  let maxCount = 0;
+  let mostCommon: string | null = null;
+  for (const [type, count] of Object.entries(typeCounts)) {
+    if (count > maxCount) {
+      maxCount = count;
+      mostCommon = type;
+    }
+  }
+
+  // Return most common type if it's a valid diaper type
+  if (mostCommon === 'wet' || mostCommon === 'dirty' || mostCommon === 'both') {
+    return mostCommon;
   }
 
   return null;
@@ -240,6 +280,7 @@ export function predictNextDiaper(
       recentDiaperPattern: [],
       recentSkipTime: null,
       suggestedRecoveryTime: null,
+      suggestedType: null,
     };
   }
 
@@ -260,6 +301,7 @@ export function predictNextDiaper(
       recentDiaperPattern: [],
       recentSkipTime: null,
       suggestedRecoveryTime: null,
+      suggestedType: null,
     };
   }
 
@@ -427,6 +469,7 @@ export function predictNextDiaper(
     recentDiaperPattern: recentPattern,
     recentSkipTime,
     suggestedRecoveryTime,
+    suggestedType: predictDiaperType(diaperActivities),
   };
 }
 

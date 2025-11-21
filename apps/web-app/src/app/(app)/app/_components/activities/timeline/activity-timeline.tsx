@@ -1,8 +1,11 @@
 'use client';
 
 import { api } from '@nugget/api/react';
-import type { Activities, Chats } from '@nugget/db/schema';
+import type { Activities, Chats, Milestones } from '@nugget/db/schema';
 import { Icons } from '@nugget/ui/custom/icons';
+import { Dialog, DialogContent, DialogTitle } from '@nugget/ui/dialog';
+import { Drawer, DrawerContent, DrawerTitle } from '@nugget/ui/drawer';
+import { useIsDesktop } from '@nugget/ui/hooks/use-media-query';
 import {
   differenceInMinutes,
   format,
@@ -34,13 +37,17 @@ import { useMemo, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { ChatDialog } from '../../chat/chat-dialog';
-import { ActivityDrawer } from '../activity-drawer';
+import { MilestoneViewDrawer } from '../../milestones/milestone-view-drawer';
+import { TimelineDiaperDrawer } from '../diaper/timeline-diaper-drawer';
+import { TimelineFeedingDrawer } from '../feeding/timeline-feeding-drawer';
+import { TimelinePumpingDrawer } from '../pumping/timeline-pumping-drawer';
 import { getDisplayNotes } from '../shared/activity-utils';
 import {
   formatLengthDisplay,
   formatWeightDisplay,
 } from '../shared/measurement-utils';
 import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
+import { TimelineSleepDrawer } from '../sleep/timeline-sleep-drawer';
 import type { TimelineItem } from './activity-timeline.actions';
 import { ActivityTimelineFilters } from './activity-timeline-filters';
 
@@ -259,11 +266,53 @@ function formatTimeGap(minutes: number): string {
   return `${hours}h ${remainingMinutes}m`;
 }
 
+// Helper component to wrap timeline drawers with responsive Dialog/Drawer
+function TimelineDrawerWrapper({
+  children,
+  isOpen,
+  onClose,
+  title,
+}: {
+  children: React.ReactNode;
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+}) {
+  const isDesktop = useIsDesktop();
+
+  if (isDesktop) {
+    return (
+      <Dialog onOpenChange={onClose} open={isOpen}>
+        <DialogContent
+          className="sm:max-w-2xl max-h-[95vh] p-0 gap-0 overflow-hidden flex flex-col"
+          showCloseButton={false}
+        >
+          <DialogTitle className="sr-only">{title}</DialogTitle>
+          {children}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <Drawer onOpenChange={(open) => !open && onClose()} open={isOpen}>
+      <DrawerContent className="max-h-[95vh] bg-background border-none p-0">
+        <DrawerTitle className="sr-only">{title}</DrawerTitle>
+        {children}
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
 export function ActivityTimeline() {
   const [openDrawer, setOpenDrawer] = useState<string | null>(null);
   const [editingActivity, setEditingActivity] = useState<
     typeof Activities.$inferSelect | null
   >(null);
+  const [selectedMilestone, setSelectedMilestone] = useState<
+    typeof Milestones.$inferSelect | null
+  >(null);
+  const [milestoneDrawerOpen, setMilestoneDrawerOpen] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [selectedActivityTypes, setSelectedActivityTypes] = useState<string[]>(
     [],
@@ -467,13 +516,21 @@ export function ActivityTimeline() {
         chatId: item.data.chat.id,
       });
       setChatDialogOpen(true);
+    } else if (item.type === 'milestone') {
+      // Open milestone drawer
+      setSelectedMilestone(item.data);
+      setMilestoneDrawerOpen(true);
     }
-    // For milestones, we can add handlers later
   };
 
   const handleDrawerClose = () => {
     setOpenDrawer(null);
     setEditingActivity(null);
+  };
+
+  const handleMilestoneDrawerClose = () => {
+    setMilestoneDrawerOpen(false);
+    setSelectedMilestone(null);
   };
 
   const handleFilterChange = (userIds: string[], activityTypes: string[]) => {
@@ -690,10 +747,7 @@ export function ActivityTimeline() {
                           ? 'opacity-100 animate-pulse cursor-not-allowed'
                           : 'opacity-60 hover:opacity-90 cursor-pointer'
                       } transition-all duration-200 hover:scale-[1.01] hover:shadow-sm w-full text-left`}
-                      disabled={
-                        isOptimistic ||
-                        (item.type !== 'activity' && item.type !== 'chat')
-                      }
+                      disabled={isOptimistic}
                       onClick={() => !isOptimistic && handleItemClick(item)}
                       type="button"
                     >
@@ -752,18 +806,74 @@ export function ActivityTimeline() {
         ),
       )}
 
-      {/* Activity Drawers */}
-      {activities.map((activityType) => (
-        <ActivityDrawer
-          activity={activityType}
-          existingActivity={
-            openDrawer === activityType.id ? editingActivity : null
-          }
-          isOpen={openDrawer === activityType.id}
-          key={activityType.id}
+      {/* Timeline Activity Drawers - For editing activities from timeline */}
+      {/* Feeding Drawer */}
+      {editingActivity &&
+        (openDrawer === 'feeding' ||
+          openDrawer === 'nursing' ||
+          openDrawer === 'bottle' ||
+          openDrawer === 'solids') && (
+          <TimelineDrawerWrapper
+            isOpen={true}
+            onClose={handleDrawerClose}
+            title="Edit Feeding"
+          >
+            <TimelineFeedingDrawer
+              babyId={baby?.id}
+              existingActivity={editingActivity}
+              isOpen={true}
+              onClose={handleDrawerClose}
+            />
+          </TimelineDrawerWrapper>
+        )}
+
+      {/* Sleep Drawer */}
+      {editingActivity && openDrawer === 'sleep' && (
+        <TimelineDrawerWrapper
+          isOpen={true}
           onClose={handleDrawerClose}
-        />
-      ))}
+          title="Edit Sleep"
+        >
+          <TimelineSleepDrawer
+            babyId={baby?.id}
+            existingActivity={editingActivity}
+            isOpen={true}
+            onClose={handleDrawerClose}
+          />
+        </TimelineDrawerWrapper>
+      )}
+
+      {/* Diaper Drawer */}
+      {editingActivity && openDrawer === 'diaper' && (
+        <TimelineDrawerWrapper
+          isOpen={true}
+          onClose={handleDrawerClose}
+          title="Edit Diaper"
+        >
+          <TimelineDiaperDrawer
+            babyId={baby?.id}
+            existingActivity={editingActivity}
+            isOpen={true}
+            onClose={handleDrawerClose}
+          />
+        </TimelineDrawerWrapper>
+      )}
+
+      {/* Pumping Drawer */}
+      {editingActivity && openDrawer === 'pumping' && (
+        <TimelineDrawerWrapper
+          isOpen={true}
+          onClose={handleDrawerClose}
+          title="Edit Pumping"
+        >
+          <TimelinePumpingDrawer
+            babyId={baby?.id}
+            existingActivity={editingActivity}
+            isOpen={true}
+            onClose={handleDrawerClose}
+          />
+        </TimelineDrawerWrapper>
+      )}
 
       {/* Chat Dialog */}
       {selectedChatData && (
@@ -774,6 +884,13 @@ export function ActivityTimeline() {
           open={chatDialogOpen}
         />
       )}
+
+      {/* Milestone Drawer */}
+      <MilestoneViewDrawer
+        isOpen={milestoneDrawerOpen}
+        milestone={selectedMilestone}
+        onClose={handleMilestoneDrawerClose}
+      />
     </div>
   );
 }

@@ -1,17 +1,19 @@
 'use client';
 
 import { api } from '@nugget/api/react';
+import { Badge } from '@nugget/ui/badge';
 import { Button } from '@nugget/ui/button';
 import { Input } from '@nugget/ui/input';
 import { Label } from '@nugget/ui/label';
 import { Textarea } from '@nugget/ui/textarea';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   getLengthUnitLabel,
   getWeightUnitLabel,
   inchesToCm,
   lbsToKg,
 } from '../shared/measurement-utils';
+import { categorizeVaccines, getVaccineDisplayInfo } from './vaccine-utils';
 
 export interface DoctorVisitFormData {
   doctorName: string;
@@ -27,25 +29,15 @@ export interface DoctorVisitFormData {
 interface DoctorVisitDrawerContentProps {
   onDataChange?: (data: DoctorVisitFormData) => void;
   initialData?: Partial<DoctorVisitFormData>;
+  babyAgeDays?: number | null;
+  vaccinationHistory?: string[];
 }
-
-// Common first-year vaccinations
-const COMMON_VACCINATIONS = [
-  'Hepatitis B',
-  'DTaP',
-  'IPV',
-  'Hib',
-  'PCV13',
-  'Rotavirus',
-  'MMR',
-  'Varicella',
-  'Hepatitis A',
-  'Influenza',
-];
 
 export function DoctorVisitDrawerContent({
   onDataChange,
   initialData,
+  babyAgeDays,
+  vaccinationHistory = [],
 }: DoctorVisitDrawerContentProps) {
   // Get user preferences
   const { data: userData } = api.user.current.useQuery();
@@ -65,6 +57,19 @@ export function DoctorVisitDrawerContent({
     initialData?.vaccinations || [],
   );
   const [notes, setNotes] = useState(initialData?.notes || '');
+  const [customVaccine, setCustomVaccine] = useState('');
+
+  // Categorize vaccines based on baby's age and history
+  const vaccineCategories = useMemo(() => {
+    return categorizeVaccines(babyAgeDays ?? null, vaccinationHistory);
+  }, [babyAgeDays, vaccinationHistory]);
+
+  // Get list of vaccines to display (age-appropriate + any custom ones user has added)
+  const displayVaccines = useMemo(() => {
+    const recommendedSet = new Set(vaccineCategories.recommended);
+    const customVaccines = vaccinations.filter((v) => !recommendedSet.has(v));
+    return [...vaccineCategories.recommended, ...customVaccines];
+  }, [vaccineCategories.recommended, vaccinations]);
 
   // Convert input to metric for storage
   const getWeightKg = useCallback((): string => {
@@ -128,6 +133,23 @@ export function DoctorVisitDrawerContent({
         ? prev.filter((v) => v !== vaccination)
         : [...prev, vaccination],
     );
+  };
+
+  const addCustomVaccine = () => {
+    const trimmed = customVaccine.trim();
+    if (trimmed && !vaccinations.includes(trimmed)) {
+      setVaccinations((prev) => [...prev, trimmed]);
+      setCustomVaccine('');
+    }
+  };
+
+  const handleCustomVaccineKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addCustomVaccine();
+    }
   };
 
   return (
@@ -243,29 +265,73 @@ export function DoctorVisitDrawerContent({
         <p className="text-sm font-medium text-muted-foreground">
           Vaccinations Given (optional)
         </p>
-        <div className="grid grid-cols-2 gap-2">
-          {COMMON_VACCINATIONS.map((vaccination) => {
-            const isSelected = vaccinations.includes(vaccination);
-            return (
-              <Button
-                className={`h-10 text-sm ${
-                  isSelected
-                    ? 'bg-activity-doctor-visit text-activity-doctor-visit-foreground hover:bg-activity-doctor-visit/90'
-                    : 'bg-transparent'
-                }`}
-                key={vaccination}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  toggleVaccination(vaccination);
-                }}
-                type="button"
-                variant={isSelected ? 'default' : 'outline'}
-              >
-                {vaccination}
-              </Button>
-            );
-          })}
+        {displayVaccines.length > 0 ? (
+          <div className="grid grid-cols-2 gap-2">
+            {displayVaccines.map((vaccination) => {
+              const isSelected = vaccinations.includes(vaccination);
+              const alreadyGiven =
+                vaccineCategories.alreadyGiven.includes(vaccination);
+              const displayInfo = getVaccineDisplayInfo(
+                vaccination,
+                isSelected,
+                alreadyGiven,
+              );
+
+              return (
+                <div className="relative" key={vaccination}>
+                  <Button
+                    className={`h-auto min-h-10 text-sm w-full ${
+                      isSelected
+                        ? 'bg-activity-doctor-visit text-activity-doctor-visit-foreground hover:bg-activity-doctor-visit/90'
+                        : 'bg-transparent'
+                    } ${displayInfo.className}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleVaccination(vaccination);
+                    }}
+                    type="button"
+                    variant={isSelected ? 'default' : 'outline'}
+                  >
+                    <div className="flex flex-col items-center gap-1 py-1">
+                      <span>{displayInfo.label}</span>
+                      {displayInfo.showBadge && !isSelected && (
+                        <Badge
+                          className="text-xs px-1.5 py-0"
+                          variant="secondary"
+                        >
+                          {displayInfo.badgeText}
+                        </Badge>
+                      )}
+                    </div>
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">
+            No age-appropriate vaccines found. Add custom vaccines below.
+          </p>
+        )}
+
+        {/* Add custom vaccine input */}
+        <div className="flex gap-2 mt-3">
+          <Input
+            onChange={(e) => setCustomVaccine(e.target.value)}
+            onKeyDown={handleCustomVaccineKeyDown}
+            placeholder="Add other vaccine..."
+            type="text"
+            value={customVaccine}
+          />
+          <Button
+            disabled={!customVaccine.trim()}
+            onClick={addCustomVaccine}
+            type="button"
+            variant="outline"
+          >
+            Add
+          </Button>
         </div>
       </div>
 

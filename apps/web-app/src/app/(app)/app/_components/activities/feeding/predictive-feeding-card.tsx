@@ -105,12 +105,26 @@ export function PredictiveFeedingCard({
   });
 
   // Use feeding-specific actions hook
-  const { handleSkip, handleClaim, handleUnclaim, claiming, isSkipping } =
-    useFeedingActions({
-      onActivityLogged,
-      predictedTime: data?.prediction.nextFeedingTime,
-      scheduledFeedingId: data?.scheduledFeeding?.id,
-    });
+  const {
+    handleSkip,
+    handleClaim,
+    handleUnclaim,
+    handleQuickLog,
+    claiming,
+    isSkipping,
+    isCreating,
+  } = useFeedingActions({
+    onActivityLogged,
+    predictedTime: data?.prediction.nextFeedingTime,
+    quickLogEnabled: userData?.quickLogEnabled ?? true,
+    scheduledFeedingId: data?.scheduledFeeding?.id,
+    suggestedAmount: data?.prediction.suggestedAmount,
+    suggestedDuration: data?.prediction.suggestedDuration,
+    suggestedType: data?.prediction.suggestedType,
+    useLastAmount: userData?.quickLogFeedingUseLastAmount ?? true,
+    useLastType: userData?.quickLogFeedingUseLastType ?? true,
+    useTypicalDuration: userData?.quickLogFeedingUseTypicalDuration ?? true,
+  });
 
   if (error) {
     return <PredictiveCardError error={error} />;
@@ -134,6 +148,20 @@ export function PredictiveFeedingCard({
   // Get learning content for the baby's age
   const learningContent =
     babyAgeDays !== null ? getFeedingLearningContent(babyAgeDays) : null;
+
+  // Build quick log settings for info drawer
+  const quickLogSettings = {
+    activeSettings: [
+      ...((userData?.quickLogFeedingUseLastAmount ?? true)
+        ? ['Last amount']
+        : []),
+      ...((userData?.quickLogFeedingUseTypicalDuration ?? true)
+        ? ['Typical duration']
+        : []),
+      ...((userData?.quickLogFeedingUseLastType ?? true) ? ['Last type'] : []),
+    ],
+    enabled: userData?.quickLogEnabled ?? true,
+  };
 
   // Only show assignment section if there are multiple family members
   const showAssignment = familyMemberCount > 1;
@@ -179,8 +207,11 @@ export function PredictiveFeedingCard({
       >
         <PredictiveCardHeader
           icon={FeedingIcon}
+          isCreatingQuickLog={isCreating}
           isFetching={isFetching && !isLoading}
           onInfoClick={handleInfoClick}
+          onQuickLog={handleQuickLog}
+          quickLogEnabled={userData?.quickLogEnabled ?? true}
           title="Feeding"
         >
           <PredictiveTimeDisplay
@@ -229,6 +260,7 @@ export function PredictiveFeedingCard({
         learningContent={learningContent}
         onOpenChange={setShowInfoDrawer}
         open={showInfoDrawer}
+        quickLogSettings={quickLogSettings}
         recentPattern={prediction.recentFeedingPattern}
         timeFormat={timeFormat}
         title="Feeding Details"

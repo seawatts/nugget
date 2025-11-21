@@ -8,6 +8,7 @@ import {
   getCelebrationAIContent,
   getCelebrationContent,
 } from './celebration-card.actions';
+import { CelebrationCardComingSoon } from './celebration-card-coming-soon';
 
 interface CelebrationsCarouselProps {
   babyId: string;
@@ -20,6 +21,12 @@ export function CelebrationsCarousel({ babyId }: CelebrationsCarouselProps) {
   const [babyName, setBabyName] = useState<string>('Baby');
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [hasCelebration, setHasCelebration] = useState<boolean | null>(null);
+  const [nextCelebration, setNextCelebration] = useState<{
+    day: number;
+    title: string;
+    shouldShow: boolean;
+  } | null>(null);
+  const [currentAgeInDays, setCurrentAgeInDays] = useState<number>(0);
 
   useEffect(() => {
     async function loadCelebration() {
@@ -27,16 +34,23 @@ export function CelebrationsCarousel({ babyId }: CelebrationsCarouselProps) {
         // First, get the celebration with static content
         const data = await getCelebrationContent(babyId);
 
+        // Store age and baby name
+        setCurrentAgeInDays(data.ageInDays);
+        setBabyName(data.babyName);
+
         // Check if there's a celebration today
         if (!data.celebration) {
           setHasCelebration(false);
+          // Check for upcoming celebration
+          if (data.nextCelebration) {
+            setNextCelebration(data.nextCelebration);
+          }
           return;
         }
 
         // We have a celebration! Show it
         setHasCelebration(true);
         setCelebration(data.celebration);
-        setBabyName(data.babyName);
 
         // Then fetch AI content in the background if needed
         if (data.aiContext) {
@@ -63,8 +77,25 @@ export function CelebrationsCarousel({ babyId }: CelebrationsCarouselProps) {
     loadCelebration();
   }, [babyId]);
 
-  // Don't render anything if we haven't checked yet or no celebration today
-  if (hasCelebration === null || hasCelebration === false) {
+  // Don't render anything if we haven't checked yet
+  if (hasCelebration === null) {
+    return null;
+  }
+
+  // If no celebration today, check for coming soon card
+  if (hasCelebration === false) {
+    if (nextCelebration?.shouldShow) {
+      return (
+        <div className="mb-6">
+          <CelebrationCardComingSoon
+            babyName={babyName}
+            currentAgeInDays={currentAgeInDays}
+            nextCelebrationDay={nextCelebration.day}
+            nextCelebrationTitle={nextCelebration.title}
+          />
+        </div>
+      );
+    }
     return null;
   }
 

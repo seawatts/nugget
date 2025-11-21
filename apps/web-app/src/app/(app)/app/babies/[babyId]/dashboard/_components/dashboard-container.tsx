@@ -26,6 +26,17 @@ export function DashboardContainer() {
   const [baby] = api.babies.getByIdLight.useSuspenseQuery({ id: babyId });
   const [user] = api.user.current.useSuspenseQuery();
 
+  // Check if any activity cards are enabled
+  const hasAnyActivityCards =
+    baby.showFeedingCard ||
+    baby.showSleepCard ||
+    baby.showDiaperCard ||
+    baby.showPumpingCard ||
+    baby.showDoctorVisitCard;
+
+  // Check if everything is hidden
+  const allHidden = !hasAnyActivityCards && !baby.showActivityTimeline;
+
   return (
     <main className="px-4 pt-4 pb-8 min-h-screen">
       {/* Celebration Card - Shows on milestone days */}
@@ -46,12 +57,33 @@ export function DashboardContainer() {
         </Suspense>
       </div>
 
+      {/* Show message if all activity cards and timeline are hidden */}
+      {allHidden && (
+        <div className="bg-card border border-border rounded-2xl p-6 mb-6">
+          <h3 className="text-lg font-semibold mb-2">
+            Dashboard Customization
+          </h3>
+          <p className="text-muted-foreground mb-4">
+            All activity cards and timeline are currently hidden. You can
+            customize what appears on this dashboard in Settings.
+          </p>
+          <a
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4"
+            href="/app/settings/dashboard"
+          >
+            Go to Dashboard Settings
+          </a>
+        </div>
+      )}
+
       {/* Predictive Action Cards (includes Feeding, Sleep, Diaper predictions) + Quick Actions */}
-      <div className="mb-6">
-        <Suspense fallback={<ActivityCardsSkeleton />}>
-          <ActivityCards />
-        </Suspense>
-      </div>
+      {hasAnyActivityCards && (
+        <div className="mb-6">
+          <Suspense fallback={<ActivityCardsSkeleton />}>
+            <ActivityCards />
+          </Suspense>
+        </div>
+      )}
 
       {/* Learning Carousel - Educational content based on baby's age */}
       <Suspense fallback={<LearningCarouselSkeleton />}>
@@ -64,9 +96,11 @@ export function DashboardContainer() {
       </Suspense>
 
       {/* Timeline */}
-      <Suspense fallback={<ActivityTimelineSkeleton />}>
-        <ActivityTimeline />
-      </Suspense>
+      {baby.showActivityTimeline && (
+        <Suspense fallback={<ActivityTimelineSkeleton />}>
+          <ActivityTimeline />
+        </Suspense>
+      )}
     </main>
   );
 }

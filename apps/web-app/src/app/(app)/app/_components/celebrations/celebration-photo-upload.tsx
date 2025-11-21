@@ -163,7 +163,6 @@ export function CelebrationPhotoUpload({
         <Label>Add New Photo</Label>
         <input
           accept="image/*"
-          capture="environment"
           className="hidden"
           id="photo-upload"
           onChange={handleFileSelect}

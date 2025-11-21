@@ -72,7 +72,7 @@ export function IosInstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-20 left-0 right-0 z-50 px-4 pb-4">
+    <div className="fixed bottom-10 left-0 right-0 z-50 px-4 pb-4">
       <div className="rounded-lg border bg-card p-4 shadow-lg">
         <div className="flex items-start gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10">

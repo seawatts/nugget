@@ -2,9 +2,7 @@
 
 import type { Activities, ActivityDetails } from '@nugget/db/schema';
 import { useCallback } from 'react';
-import { toast } from 'sonner';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
-import { autoStopInProgressSleepAction } from '../../sleep/actions';
 import { useActivityMutations } from '../../use-activity-mutations';
 import type { FeedingFormData } from '../feeding-type-selector';
 
@@ -200,19 +198,6 @@ export function useFeedingSave({
       }
 
       try {
-        // Auto-stop any in-progress sleep before saving bottle feeding
-        // (Nursing already handles this in the drawer's handleSideSelect)
-        if (formData.type === 'bottle') {
-          try {
-            const result = await autoStopInProgressSleepAction();
-            if (result?.data?.activity) {
-              toast.info('Sleep tracking stopped automatically');
-            }
-          } catch (error) {
-            console.error('Failed to auto-stop sleep:', error);
-          }
-        }
-
         // Calculate end time and duration based on feeding type
         let actualEndTime: Date;
         let durationMinutes: number;

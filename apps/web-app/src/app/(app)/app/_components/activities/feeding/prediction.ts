@@ -19,6 +19,10 @@ export interface FeedingPrediction {
   overdueMinutes: number | null;
   suggestedRecoveryTime: Date | null;
   recentSkipTime: Date | null;
+  // Quick log smart defaults
+  suggestedAmount: number | null; // in ml, from last feeding
+  suggestedDuration: number | null; // in minutes, age-based typical duration
+  suggestedType: 'bottle' | 'nursing' | null; // last feeding type
 }
 
 interface FeedingActivity {
@@ -52,6 +56,19 @@ function calculateIntervals(feedings: FeedingActivity[]): Array<number | null> {
   }
 
   return intervals;
+}
+
+/**
+ * Calculate typical feeding duration based on baby's age (in minutes)
+ */
+function getTypicalFeedingDuration(ageDays: number | null): number {
+  if (ageDays === null) return 20; // Default 20 minutes
+
+  if (ageDays <= 7) return 30; // Week 1: 30 minutes
+  if (ageDays <= 30) return 25; // Weeks 2-4: 25 minutes
+  if (ageDays <= 90) return 20; // Months 2-3: 20 minutes
+  if (ageDays <= 180) return 15; // Months 4-6: 15 minutes
+  return 15; // 6+ months: 15 minutes
 }
 
 /**
@@ -120,7 +137,10 @@ export function predictNextFeeding(
       overdueMinutes: null,
       recentFeedingPattern: [],
       recentSkipTime,
+      suggestedAmount: null,
+      suggestedDuration: getTypicalFeedingDuration(ageDays),
       suggestedRecoveryTime: null,
+      suggestedType: null,
     };
   }
 
@@ -140,11 +160,18 @@ export function predictNextFeeding(
       overdueMinutes: null,
       recentFeedingPattern: [],
       recentSkipTime,
+      suggestedAmount: null,
+      suggestedDuration: getTypicalFeedingDuration(ageDays),
       suggestedRecoveryTime: null,
+      suggestedType: null,
     };
   }
   const lastFeedingTime = new Date(lastFeeding.startTime);
   const lastFeedingAmount = lastFeeding.amountMl || null;
+  const lastFeedingType =
+    lastFeeding.type === 'bottle' || lastFeeding.type === 'nursing'
+      ? lastFeeding.type
+      : null;
 
   // Calculate intervals between consecutive feedings
   const intervals = calculateIntervals(feedingActivities);
@@ -227,7 +254,10 @@ export function predictNextFeeding(
     overdueMinutes,
     recentFeedingPattern: recentPattern,
     recentSkipTime,
+    suggestedAmount: lastFeedingAmount,
+    suggestedDuration: getTypicalFeedingDuration(ageDays),
     suggestedRecoveryTime,
+    suggestedType: lastFeedingType,
   };
 }
 

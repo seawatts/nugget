@@ -21,12 +21,14 @@ interface BottleDrawerContentProps {
   unitPref?: 'ML' | 'OZ';
   onDataChange?: (data: BottleFormData) => void;
   babyAgeDays?: number | null;
+  initialData?: Partial<BottleFormData>;
 }
 
 export function BottleDrawerContent({
   unitPref = 'OZ',
   onDataChange,
   babyAgeDays = null,
+  initialData,
 }: BottleDrawerContentProps) {
   // Get age-appropriate quick select values
   const quickSelectValues = getQuickSelectVolumesByAge(babyAgeDays, unitPref);
@@ -34,11 +36,22 @@ export function BottleDrawerContent({
   // Set default amount to first quick select value for the baby's age
   const defaultAmount = quickSelectValues[0] || (unitPref === 'OZ' ? 4 : 120);
 
-  const [amount, setAmount] = React.useState(defaultAmount);
+  // Initialize amount from initialData if provided
+  const getInitialAmount = () => {
+    if (initialData?.amountMl) {
+      // Convert from ml to user's preferred unit
+      return unitPref === 'OZ'
+        ? Math.round((initialData.amountMl / 29.5735) * 2) / 2
+        : initialData.amountMl;
+    }
+    return defaultAmount;
+  };
+
+  const [amount, setAmount] = React.useState(getInitialAmount());
   const [bottleType, setBottleType] = React.useState<
     'breast_milk' | 'formula' | null
-  >(null);
-  const [notes] = React.useState('');
+  >(initialData?.bottleType ?? null);
+  const [notes] = React.useState(initialData?.notes ?? '');
   // const [notes, setNotes] = React.useState('');
 
   // Call onDataChange whenever form data changes

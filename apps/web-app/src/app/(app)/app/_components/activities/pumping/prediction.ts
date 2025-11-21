@@ -22,6 +22,9 @@ export interface PumpingPrediction {
   overdueMinutes: number | null;
   suggestedRecoveryTime: Date | null;
   recentSkipTime: Date | null;
+  // Quick log smart defaults
+  suggestedVolume: number | null; // in ml, from last session
+  suggestedDuration: number | null; // in minutes, age-based typical duration
 }
 
 interface PumpingActivity {
@@ -55,6 +58,18 @@ function calculateIntervals(pumpings: PumpingActivity[]): Array<number | null> {
   }
 
   return intervals;
+}
+
+/**
+ * Calculate typical pumping duration based on baby's age (in minutes)
+ */
+function getTypicalPumpingDuration(ageDays: number | null): number {
+  if (ageDays === null) return 20; // Default 20 minutes
+
+  if (ageDays <= 30) return 15; // First month: 15 minutes
+  if (ageDays <= 90) return 20; // Months 2-3: 20 minutes
+  if (ageDays <= 180) return 15; // Months 4-6: 15 minutes
+  return 15; // 6+ months: 15 minutes
 }
 
 /**
@@ -120,7 +135,9 @@ export function predictNextPumping(
       overdueMinutes: null,
       recentPumpingPattern: [],
       recentSkipTime,
+      suggestedDuration: getTypicalPumpingDuration(ageDays),
       suggestedRecoveryTime: null,
+      suggestedVolume: null,
     };
   }
 
@@ -140,7 +157,9 @@ export function predictNextPumping(
       overdueMinutes: null,
       recentPumpingPattern: [],
       recentSkipTime,
+      suggestedDuration: getTypicalPumpingDuration(ageDays),
       suggestedRecoveryTime: null,
+      suggestedVolume: null,
     };
   }
 
@@ -229,7 +248,9 @@ export function predictNextPumping(
     overdueMinutes,
     recentPumpingPattern: recentPattern,
     recentSkipTime,
+    suggestedDuration: getTypicalPumpingDuration(ageDays),
     suggestedRecoveryTime,
+    suggestedVolume: lastPumpingAmount,
   };
 }
 

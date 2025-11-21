@@ -9,6 +9,8 @@ import { calculateBabyAgeDays } from '../shared/baby-age-utils';
 import { AmountAdjuster } from '../shared/components/amount-adjuster';
 // import { NotesField } from '../shared/components/notes-field';
 import { QuickSelectButtons } from '../shared/components/quick-select-buttons';
+import { StopSleepConfirmationDialog } from '../shared/components/stop-sleep-confirmation-dialog';
+import { useInProgressSleep } from '../shared/hooks/use-in-progress-sleep';
 import { formatTime } from '../shared/time-formatting-utils';
 import { getVolumeStep, mlToOz, ozToMl } from '../shared/volume-utils';
 import { autoStopInProgressSleepAction } from '../sleep/actions';
@@ -30,6 +32,7 @@ interface NursingDrawerContentProps {
   setDuration?: (duration: number) => void;
   startTime?: Date;
   setStartTime?: (date: Date) => void;
+  initialData?: Partial<NursingFormData>;
 }
 
 export function NursingDrawerContent({
@@ -37,15 +40,26 @@ export function NursingDrawerContent({
   activeActivityId,
   onTimerStart,
   duration: externalDuration,
+  initialData,
 }: NursingDrawerContentProps) {
   const [activeSide, setActiveSide] = useState<'left' | 'right' | null>(null);
-  const [leftDuration, setLeftDuration] = useState(0); // in seconds
-  const [rightDuration, setRightDuration] = useState(0); // in seconds
+  const [leftDuration, setLeftDuration] = useState(
+    initialData?.leftDuration ? initialData.leftDuration * 60 : 0,
+  ); // in seconds
+  const [rightDuration, setRightDuration] = useState(
+    initialData?.rightDuration ? initialData.rightDuration * 60 : 0,
+  ); // in seconds
   const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [notes] = useState('');
-  const [amountMl, setAmountMl] = useState<number | null>(null);
-  const [isManuallyAdjusted, setIsManuallyAdjusted] = useState(false);
+  const [notes] = useState(initialData?.notes ?? '');
+  const [amountMl, setAmountMl] = useState<number | null>(
+    initialData?.amountMl ?? null,
+  );
+  const [isManuallyAdjusted, setIsManuallyAdjusted] = useState(
+    !!initialData?.amountMl,
+  );
   const [hasStartedDbTracking, setHasStartedDbTracking] = useState(false);
+  const [showSleepConfirmation, setShowSleepConfirmation] = useState(false);
+  const [pendingSide, setPendingSide] = useState<'left' | 'right' | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch baby data to get birth date for age calculation
@@ -56,6 +70,12 @@ export function NursingDrawerContent({
   const { data: user } = api.user.current.useQuery();
   const measurementUnit = user?.measurementUnit || 'metric';
   const userUnitPref = measurementUnit === 'imperial' ? 'OZ' : 'ML';
+
+  // Check for in-progress sleep
+  const { inProgressSleep, sleepDuration } = useInProgressSleep({
+    babyId: baby?.id,
+    enabled: !hasStartedDbTracking,
+  });
 
   // Timer effect - runs when isTimerRunning is true
   useEffect(() => {
@@ -123,20 +143,64 @@ export function NursingDrawerContent({
 
       // Start database tracking on first side selection
       if (!hasStartedDbTracking && onTimerStart) {
-        // Auto-stop any in-progress sleep before starting nursing
-        try {
-          const result = await autoStopInProgressSleepAction();
-          if (result?.data?.activity) {
-            toast.info('Sleep tracking stopped automatically');
-          }
-        } catch (error) {
-          console.error('Failed to auto-stop sleep:', error);
+        // Check if there's an in-progress sleep before starting
+        if (inProgressSleep) {
+          // Store which side was selected and show confirmation
+          setPendingSide(side);
+          setShowSleepConfirmation(true);
+          setIsTimerRunning(false); // Pause timer until user confirms
+          setActiveSide(null); // Reset active side until confirmed
+          return;
         }
 
+        // No in-progress sleep, proceed normally
         await onTimerStart();
         setHasStartedDbTracking(true);
       }
     }
+  };
+
+  const handleStopSleepAndStart = async () => {
+    try {
+      // Stop the in-progress sleep
+      const result = await autoStopInProgressSleepAction();
+      if (result?.data?.activity) {
+        toast.info('Sleep tracking stopped');
+      }
+    } catch (error) {
+      console.error('Failed to stop sleep:', error);
+      toast.error('Failed to stop sleep tracking');
+    }
+
+    // Close confirmation dialog
+    setShowSleepConfirmation(false);
+
+    // Proceed with starting nursing timer
+    if (pendingSide && onTimerStart) {
+      setActiveSide(pendingSide);
+      setIsTimerRunning(true);
+      await onTimerStart();
+      setHasStartedDbTracking(true);
+    }
+
+    // Clear pending side
+    setPendingSide(null);
+  };
+
+  const handleKeepSleepingAndStart = async () => {
+    // Close confirmation dialog
+    setShowSleepConfirmation(false);
+
+    // Proceed with starting nursing timer without stopping sleep
+    if (pendingSide && onTimerStart) {
+      setActiveSide(pendingSide);
+      setIsTimerRunning(true);
+      await onTimerStart();
+      setHasStartedDbTracking(true);
+    }
+
+    // Clear pending side
+    setPendingSide(null);
   };
 
   const handleQuickAdd = (minutes: number) => {
@@ -370,6 +434,15 @@ export function NursingDrawerContent({
 
       {/* Notes - Using shared component */}
       {/* <NotesField onChange={setNotes} value={notes} /> */}
+
+      {/* Sleep Stop Confirmation Dialog */}
+      <StopSleepConfirmationDialog
+        onKeepSleeping={handleKeepSleepingAndStart}
+        onOpenChange={setShowSleepConfirmation}
+        onStopSleep={handleStopSleepAndStart}
+        open={showSleepConfirmation}
+        sleepDuration={sleepDuration}
+      />
     </div>
   );
 }

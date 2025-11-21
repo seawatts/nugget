@@ -18,24 +18,52 @@ interface UseFeedingActionsOptions {
   onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
   predictedTime?: Date;
   scheduledFeedingId?: string | null;
+  // Smart defaults from prediction
+  suggestedAmount?: number | null;
+  suggestedDuration?: number | null;
+  suggestedType?: 'bottle' | 'nursing' | null;
+  // User preferences
+  quickLogEnabled?: boolean;
+  useLastAmount?: boolean;
+  useTypicalDuration?: boolean;
+  useLastType?: boolean;
 }
 
 export function useFeedingActions({
   onActivityLogged,
   predictedTime,
   scheduledFeedingId,
+  suggestedAmount,
+  suggestedDuration,
+  suggestedType,
+  quickLogEnabled: _quickLogEnabled = true,
+  useLastAmount = true,
+  useTypicalDuration = true,
+  useLastType = true,
 }: UseFeedingActionsOptions) {
   const utils = api.useUtils();
   const [claiming, setClaiming] = useState(false);
+
+  // Build smart defaults based on user preferences
+  const defaultQuickLogData: Record<string, unknown> = {};
+
+  if (useLastAmount && suggestedAmount) {
+    defaultQuickLogData.amountMl = suggestedAmount;
+  }
+
+  if (useTypicalDuration && suggestedDuration) {
+    defaultQuickLogData.duration = suggestedDuration;
+  }
+
+  if (useLastType && suggestedType) {
+    defaultQuickLogData.type = suggestedType;
+  }
 
   // Use shared actions hook with feeding defaults
   const { handleQuickLog, handleSkip, isCreating, isSkipping } =
     usePredictiveActions({
       activityType: 'feeding',
-      defaultQuickLogData: {
-        amountMl: 120, // Default feeding amount in ml
-        feedingSource: 'formula' as const,
-      },
+      defaultQuickLogData,
       onActivityLogged,
       skipAction: skipFeedingAction,
     });

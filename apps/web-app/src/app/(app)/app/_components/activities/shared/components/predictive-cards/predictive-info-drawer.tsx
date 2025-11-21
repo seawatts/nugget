@@ -11,10 +11,16 @@ import type { ReactNode } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { LearningSection } from '../../../../learning/learning-section';
 import { getActivityTheme } from '../../activity-theme-config';
+import { QuickLogInfoSection } from '../quick-log-info-section';
 
 interface LearningContent {
   message: string;
   tips: string[];
+}
+
+interface QuickLogSettings {
+  enabled: boolean;
+  activeSettings: string[];
 }
 
 interface PredictiveInfoDrawerProps {
@@ -32,6 +38,7 @@ interface PredictiveInfoDrawerProps {
     time: Date;
     [key: string]: unknown;
   }) => ReactNode;
+  quickLogSettings?: QuickLogSettings;
 }
 
 // Map activity types to their color classes for Tailwind
@@ -77,6 +84,7 @@ export function PredictiveInfoDrawer({
   timeFormat,
   icon,
   formatPatternItem,
+  quickLogSettings,
 }: PredictiveInfoDrawerProps) {
   const theme = getActivityTheme(activityType);
   const Icon = icon || theme.icon;
@@ -99,6 +107,18 @@ export function PredictiveInfoDrawer({
               educationalContent={learningContent.message}
               icon={Icon}
               tips={learningContent.tips}
+            />
+          )}
+
+          {/* Quick Log Info Section */}
+          {quickLogSettings && (
+            <QuickLogInfoSection
+              activityType={activityType}
+              bgColor={colorClasses.bgColor}
+              borderColor={colorClasses.borderColor}
+              color={colorClasses.color}
+              enabledSettings={quickLogSettings.activeSettings}
+              isQuickLogEnabled={quickLogSettings.enabled}
             />
           )}
 

@@ -179,4 +179,37 @@ export const babiesRouter = createTRPCRouter({
 
       return updatedBaby;
     }),
+
+  // Update dashboard preferences for a baby
+  updateDashboardPreferences: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        showActivityTimeline: z.boolean().optional(),
+        showDiaperCard: z.boolean().optional(),
+        showDoctorVisitCard: z.boolean().optional(),
+        showFeedingCard: z.boolean().optional(),
+        showPumpingCard: z.boolean().optional(),
+        showSleepCard: z.boolean().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.auth.orgId) {
+        throw new Error('Family ID is required');
+      }
+
+      const { id, ...preferences } = input;
+
+      const [updatedBaby] = await ctx.db
+        .update(Babies)
+        .set(preferences)
+        .where(and(eq(Babies.id, id), eq(Babies.familyId, ctx.auth.orgId)))
+        .returning();
+
+      if (!updatedBaby) {
+        throw new Error('Baby not found or update failed');
+      }
+
+      return updatedBaby;
+    }),
 });

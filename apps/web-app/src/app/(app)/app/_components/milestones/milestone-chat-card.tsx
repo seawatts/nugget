@@ -54,8 +54,8 @@ export function MilestoneChatCard({
           </div>
         </FeatureCard.Header>
 
-        {/* Chat Content */}
-        <div className="h-[400px]">
+        {/* Chat Content - Mark as non-swipeable to allow vertical scrolling */}
+        <div className="h-[400px]" data-swipeable-ignore>
           <QuickChatDialogContent
             autoSendPrefill={true}
             babyId={babyId}

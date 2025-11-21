@@ -66,7 +66,7 @@ export function SwipeableMilestoneCard({
   const iconScale = Math.min(Math.abs(offsetX) / 100, 1);
 
   return (
-    <div className={cn('relative', className)} style={{ touchAction: 'none' }}>
+    <div className={cn('relative', className)} style={{ touchAction: 'pan-y' }}>
       {/* Swipe overlays */}
       {isDragging && showRightOverlay && (
         <div

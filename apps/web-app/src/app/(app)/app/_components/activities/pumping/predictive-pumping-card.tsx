@@ -5,7 +5,6 @@ import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
 import { Skeleton } from '@nugget/ui/components/skeleton';
-import { toast } from '@nugget/ui/components/sonner';
 import { Icons } from '@nugget/ui/custom/icons';
 import {
   Drawer,
@@ -15,7 +14,7 @@ import {
 } from '@nugget/ui/drawer';
 import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { Droplets, Info } from 'lucide-react';
+import { Droplets, Info, Zap } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
@@ -24,7 +23,9 @@ import { InfoCard } from '../../shared/info-card';
 import {
   PredictiveCardSkeleton,
   PredictiveOverdueActions,
+  usePredictiveActions,
 } from '../shared/components/predictive-cards';
+import { QuickLogInfoSection } from '../shared/components/quick-log-info-section';
 import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
 import { skipPumpingAction } from './actions';
 import { getPumpingLearningContent } from './learning-content';
@@ -44,7 +45,6 @@ export function PredictivePumpingCard({
   const babyId = params?.babyId;
 
   const router = useRouter();
-  const utils = api.useUtils();
 
   // Fetch user preferences for volume display and time format
   const { data: user } = api.user.current.useQuery();
@@ -63,7 +63,6 @@ export function PredictivePumpingCard({
   );
 
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
-  const [skipping, setSkipping] = useState(false);
 
   // Process prediction data from tRPC query
   const data = queryData
@@ -81,6 +80,30 @@ export function PredictivePumpingCard({
     : null;
 
   const error = queryError?.message || null;
+
+  // Build smart defaults for quick log
+  const defaultQuickLogData: Record<string, unknown> = {};
+  if (
+    (user?.quickLogPumpingUseLastVolume ?? true) &&
+    data?.prediction.suggestedVolume
+  ) {
+    defaultQuickLogData.amountMl = data.prediction.suggestedVolume;
+  }
+  if (
+    (user?.quickLogPumpingUseTypicalDuration ?? true) &&
+    data?.prediction.suggestedDuration
+  ) {
+    defaultQuickLogData.duration = data.prediction.suggestedDuration;
+  }
+
+  // Use shared actions hook with pumping defaults
+  const { handleQuickLog, handleSkip, isCreating, isSkipping } =
+    usePredictiveActions({
+      activityType: 'pumping',
+      defaultQuickLogData,
+      onActivityLogged: _onActivityLogged,
+      skipAction: skipPumpingAction,
+    });
 
   if (error) {
     return (
@@ -122,6 +145,17 @@ export function PredictivePumpingCard({
   const learningContent =
     babyAgeDays !== null ? getPumpingLearningContent(babyAgeDays) : null;
 
+  // Build quick log settings for info drawer
+  const quickLogSettings = {
+    activeSettings: [
+      ...((user?.quickLogPumpingUseLastVolume ?? true) ? ['Last volume'] : []),
+      ...((user?.quickLogPumpingUseTypicalDuration ?? true)
+        ? ['Typical duration']
+        : []),
+    ],
+    enabled: user?.quickLogEnabled ?? true,
+  };
+
   // Format countdown
   const timeUntil = formatDistanceToNow(displayNextTime, {
     addSuffix: true,
@@ -149,23 +183,6 @@ export function PredictivePumpingCard({
   const handleInfoClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowInfoDrawer(true);
-  };
-
-  const handleSkip = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSkipping(true);
-    try {
-      await skipPumpingAction();
-      toast.success('Pumping reminder skipped');
-      // Invalidate activities list to refresh timeline
-      await utils.activities.list.invalidate();
-      await utils.activities.getUpcomingPumping.invalidate();
-    } catch (error) {
-      console.error('Failed to skip pumping:', error);
-      toast.error('Failed to skip pumping');
-    } finally {
-      setSkipping(false);
-    }
   };
 
   // Format amount for display based on user preference
@@ -199,6 +216,21 @@ export function PredictivePumpingCard({
                     className="animate-spin opacity-70"
                     size="xs"
                   />
+                )}
+                {(user?.quickLogEnabled ?? true) && (
+                  <button
+                    className="p-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isCreating}
+                    onClick={handleQuickLog}
+                    title="Quick log with smart defaults"
+                    type="button"
+                  >
+                    {isCreating ? (
+                      <Icons.Spinner className="animate-spin opacity-70 size-5" />
+                    ) : (
+                      <Zap className="size-5 opacity-70" />
+                    )}
+                  </button>
                 )}
                 <button
                   className="p-1.5 rounded-full hover:bg-white/10 transition-colors -mr-1.5"
@@ -279,7 +311,7 @@ export function PredictivePumpingCard({
         {effectiveIsOverdue && (
           <div className="mt-4">
             <PredictiveOverdueActions
-              isSkipping={skipping}
+              isSkipping={isSkipping}
               onLog={handleCardClick}
               onSkip={handleSkip}
             />
@@ -306,6 +338,16 @@ export function PredictivePumpingCard({
                 tips={learningContent.tips}
               />
             )}
+
+            {/* Quick Log Info Section */}
+            <QuickLogInfoSection
+              activityType="pumping"
+              bgColor="bg-activity-pumping/5"
+              borderColor="border-activity-pumping/20"
+              color="bg-activity-pumping/10 text-activity-pumping"
+              enabledSettings={quickLogSettings.activeSettings}
+              isQuickLogEnabled={quickLogSettings.enabled}
+            />
 
             {/* Volume Calculation Explanation */}
             {babyAgeDays !== null && (

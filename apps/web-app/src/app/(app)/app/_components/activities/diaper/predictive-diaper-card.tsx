@@ -4,24 +4,18 @@ import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Card } from '@nugget/ui/card';
 import { Skeleton } from '@nugget/ui/components/skeleton';
-import { toast } from '@nugget/ui/components/sonner';
 import { Icons } from '@nugget/ui/custom/icons';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from '@nugget/ui/drawer';
 import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { Baby, Info } from 'lucide-react';
+import { Baby, Info, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
-import { LearningSection } from '../../learning/learning-section';
 import {
   PredictiveCardSkeleton,
+  PredictiveInfoDrawer,
   PredictiveOverdueActions,
+  usePredictiveActions,
 } from '../shared/components/predictive-cards';
 import { skipDiaperAction } from './actions';
 import { getDiaperGuidanceByAge } from './diaper-intervals';
@@ -40,7 +34,6 @@ export function PredictiveDiaperCard({
   const params = useParams<{ babyId?: string }>();
   const babyId = params?.babyId;
 
-  const utils = api.useUtils();
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
 
@@ -56,7 +49,6 @@ export function PredictiveDiaperCard({
   );
 
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
-  const [skipping, setSkipping] = useState(false);
 
   // Process prediction data from tRPC query
   const data = queryData
@@ -75,6 +67,24 @@ export function PredictiveDiaperCard({
     : null;
 
   const error = queryError?.message || null;
+
+  // Build smart defaults for quick log
+  const defaultQuickLogData: Record<string, unknown> = {};
+  if (
+    (userData?.quickLogDiaperUsePredictedType ?? true) &&
+    data?.prediction.suggestedType
+  ) {
+    defaultQuickLogData.details = { type: data.prediction.suggestedType };
+  }
+
+  // Use shared actions hook with diaper defaults
+  const { handleQuickLog, handleSkip, isCreating, isSkipping } =
+    usePredictiveActions({
+      activityType: 'diaper',
+      defaultQuickLogData,
+      onActivityLogged: _onActivityLogged,
+      skipAction: skipDiaperAction,
+    });
 
   if (error) {
     return (
@@ -116,6 +126,16 @@ export function PredictiveDiaperCard({
   const learningContent =
     babyAgeDays !== null ? getDiaperLearningContent(babyAgeDays) : null;
 
+  // Build quick log settings for info drawer
+  const quickLogSettings = {
+    activeSettings: [
+      ...((userData?.quickLogDiaperUsePredictedType ?? true)
+        ? ['Predicted type']
+        : []),
+    ],
+    enabled: userData?.quickLogEnabled ?? true,
+  };
+
   // Format countdown
   const timeUntil = formatDistanceToNow(displayNextTime, {
     addSuffix: true,
@@ -154,30 +174,6 @@ export function PredictiveDiaperCard({
     setShowInfoDrawer(true);
   };
 
-  const handleSkip = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSkipping(true);
-    try {
-      const result = await skipDiaperAction();
-
-      if (result?.data) {
-        toast.success('Diaper reminder skipped');
-        // Invalidate activities list to refresh timeline
-        await utils.activities.list.invalidate();
-        // Reload to get updated prediction with skip info
-        await utils.activities.getUpcomingDiaper.invalidate();
-      } else if (result?.serverError) {
-        toast.error(result.serverError);
-      }
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : 'Failed to skip diaper reminder',
-      );
-    } finally {
-      setSkipping(false);
-    }
-  };
-
   return (
     <>
       <Card
@@ -203,6 +199,21 @@ export function PredictiveDiaperCard({
                     className="animate-spin opacity-70"
                     size="xs"
                   />
+                )}
+                {(userData?.quickLogEnabled ?? true) && (
+                  <button
+                    className="p-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isCreating}
+                    onClick={handleQuickLog}
+                    title="Quick log with smart defaults"
+                    type="button"
+                  >
+                    {isCreating ? (
+                      <Icons.Spinner className="animate-spin opacity-70 size-5" />
+                    ) : (
+                      <Zap className="size-5 opacity-70" />
+                    )}
+                  </button>
                 )}
                 <button
                   className="p-1.5 rounded-full hover:bg-black/10 transition-colors -mr-1.5"
@@ -280,7 +291,7 @@ export function PredictiveDiaperCard({
         {/* Overdue Actions */}
         {effectiveIsOverdue && (
           <PredictiveOverdueActions
-            isSkipping={skipping}
+            isSkipping={isSkipping}
             onLog={handleCardClick}
             onSkip={handleSkip}
           />
@@ -288,70 +299,41 @@ export function PredictiveDiaperCard({
       </Card>
 
       {/* Info Drawer */}
-      <Drawer onOpenChange={setShowInfoDrawer} open={showInfoDrawer}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader>
-            <DrawerTitle>Diaper Details</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-6 space-y-4 overflow-y-auto">
-            {/* Learning Section */}
-            {learningContent && (
-              <LearningSection
-                babyAgeDays={babyAgeDays}
-                bgColor="bg-activity-diaper/5"
-                borderColor="border-activity-diaper/20"
-                color="bg-activity-diaper/10 text-activity-diaper"
-                educationalContent={learningContent.message}
-                icon={Baby}
-                tips={learningContent.tips}
-              />
-            )}
-
-            {/* Recent Pattern */}
-            {prediction.recentDiaperPattern.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-2">
-                  Recent Changes
-                </p>
-                <div className="space-y-2">
-                  {prediction.recentDiaperPattern.slice(0, 5).map((diaper) => (
-                    <div
-                      className="flex items-center justify-between text-sm bg-muted/20 rounded px-3 py-2"
-                      key={diaper.time.toISOString()}
-                    >
-                      <span className="text-muted-foreground">
-                        {formatTimeWithPreference(diaper.time, timeFormat)}
-                      </span>
-                      <div className="flex gap-2 items-center">
-                        {diaper.type && (
-                          <span className="text-foreground/70 font-medium">
-                            {formatDiaperType(diaper.type)}
-                          </span>
-                        )}
-                        {diaper.intervalFromPrevious !== null && (
-                          <span className="text-muted-foreground/60">
-                            ({diaper.intervalFromPrevious.toFixed(1)}h apart)
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+      <PredictiveInfoDrawer
+        activityType="diaper"
+        averageInterval={prediction.averageIntervalHours}
+        babyAgeDays={babyAgeDays}
+        formatPatternItem={(item): React.ReactNode => {
+          return (
+            <>
+              <span className="text-muted-foreground">
+                {formatTimeWithPreference(item.time, timeFormat)}
+              </span>
+              <div className="flex gap-2 items-center">
+                {'type' in item && item.type ? (
+                  <span className="text-foreground/70 font-medium">
+                    {formatDiaperType(item.type as string)}
+                  </span>
+                ) : null}
+                {'intervalFromPrevious' in item &&
+                item.intervalFromPrevious !== null ? (
+                  <span className="text-muted-foreground/60">
+                    ({(item.intervalFromPrevious as number).toFixed(1)}h apart)
+                  </span>
+                ) : null}
               </div>
-            )}
-
-            {/* Average Interval */}
-            {prediction.averageIntervalHours !== null && (
-              <div className="flex items-center justify-between text-sm bg-muted/20 rounded px-3 py-2">
-                <span className="text-muted-foreground">Average interval</span>
-                <span className="text-foreground font-medium">
-                  {prediction.averageIntervalHours.toFixed(1)} hours
-                </span>
-              </div>
-            )}
-          </div>
-        </DrawerContent>
-      </Drawer>
+            </>
+          );
+        }}
+        icon={Baby}
+        learningContent={learningContent}
+        onOpenChange={setShowInfoDrawer}
+        open={showInfoDrawer}
+        quickLogSettings={quickLogSettings}
+        recentPattern={prediction.recentDiaperPattern}
+        timeFormat={timeFormat}
+        title="Diaper Details"
+      />
     </>
   );
 }

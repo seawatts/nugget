@@ -7,7 +7,9 @@ import { Baby, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import { StopSleepConfirmationDialog } from '../shared/components/stop-sleep-confirmation-dialog';
 import { TimeInput } from '../shared/components/time-input';
+import { useInProgressSleep } from '../shared/hooks/use-in-progress-sleep';
 import { autoStopInProgressSleepAction } from '../sleep/actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { DiaperFormData } from './diaper-drawer';
@@ -28,7 +30,7 @@ export function DiaperActivityDrawer({
   existingActivity,
   isOpen,
   onClose,
-  babyId: _babyId,
+  babyId,
 }: DiaperActivityDrawerProps) {
   const { createActivity, updateActivity, isCreating, isUpdating } =
     useActivityMutations();
@@ -46,6 +48,15 @@ export function DiaperActivityDrawer({
     size: null,
     type: null,
   });
+
+  // Check for in-progress sleep
+  const { inProgressSleep, sleepDuration } = useInProgressSleep({
+    babyId,
+    enabled: isOpen,
+  });
+
+  // State for sleep stop confirmation
+  const [showSleepConfirmation, setShowSleepConfirmation] = useState(false);
 
   const isPending = isCreating || isUpdating;
   const isEditing = Boolean(existingActivity);
@@ -124,23 +135,57 @@ export function DiaperActivityDrawer({
     }
   }, [isOpen]);
 
+  const handleStopSleepAndSave = async () => {
+    try {
+      // Stop the in-progress sleep
+      const result = await autoStopInProgressSleepAction();
+      if (result?.data?.activity) {
+        toast.info('Sleep tracking stopped');
+      }
+    } catch (error) {
+      console.error('Failed to stop sleep:', error);
+      toast.error('Failed to stop sleep tracking');
+    }
+
+    // Close confirmation dialog
+    setShowSleepConfirmation(false);
+
+    // Proceed with save
+    await saveDiaperActivity();
+  };
+
+  const handleKeepSleepingAndSave = async () => {
+    // Close confirmation dialog
+    setShowSleepConfirmation(false);
+
+    // Proceed with save without stopping sleep
+    await saveDiaperActivity();
+  };
+
   const handleSave = async () => {
     if (!formData.type) {
       console.error('No diaper type selected');
       return;
     }
 
-    try {
-      // Auto-stop any in-progress sleep before saving diaper change
-      try {
-        const result = await autoStopInProgressSleepAction();
-        if (result?.data?.activity) {
-          toast.info('Sleep tracking stopped automatically');
-        }
-      } catch (error) {
-        console.error('Failed to auto-stop sleep:', error);
-      }
+    // Check if there's an in-progress sleep
+    if (inProgressSleep) {
+      // Show confirmation dialog
+      setShowSleepConfirmation(true);
+      return;
+    }
 
+    // Proceed with save
+    await saveDiaperActivity();
+  };
+
+  const saveDiaperActivity = async () => {
+    if (!formData.type) {
+      console.error('No diaper type selected');
+      return;
+    }
+
+    try {
       // Close drawer immediately for better UX
       onClose();
 
@@ -273,6 +318,15 @@ export function DiaperActivityDrawer({
           </Button>
         </div>
       </div>
+
+      {/* Sleep Stop Confirmation Dialog */}
+      <StopSleepConfirmationDialog
+        onKeepSleeping={handleKeepSleepingAndSave}
+        onOpenChange={setShowSleepConfirmation}
+        onStopSleep={handleStopSleepAndSave}
+        open={showSleepConfirmation}
+        sleepDuration={sleepDuration}
+      />
     </>
   );
 }

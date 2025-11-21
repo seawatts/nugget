@@ -270,6 +270,35 @@ export const Users = pgTable('users', {
     .default('imperial')
     .notNull(),
   online: boolean('online').default(false).notNull(),
+  quickLogDiaperUsePredictedType: boolean('quickLogDiaperUsePredictedType')
+    .default(true)
+    .notNull(),
+  // Quick log preferences
+  quickLogEnabled: boolean('quickLogEnabled').default(true).notNull(),
+  quickLogFeedingUseLastAmount: boolean('quickLogFeedingUseLastAmount')
+    .default(true)
+    .notNull(),
+  quickLogFeedingUseLastType: boolean('quickLogFeedingUseLastType')
+    .default(true)
+    .notNull(),
+  quickLogFeedingUseTypicalDuration: boolean(
+    'quickLogFeedingUseTypicalDuration',
+  )
+    .default(true)
+    .notNull(),
+  quickLogPumpingUseLastVolume: boolean('quickLogPumpingUseLastVolume')
+    .default(true)
+    .notNull(),
+  quickLogPumpingUseTypicalDuration: boolean(
+    'quickLogPumpingUseTypicalDuration',
+  )
+    .default(true)
+    .notNull(),
+  quickLogSleepUseSuggestedDuration: boolean(
+    'quickLogSleepUseSuggestedDuration',
+  )
+    .default(true)
+    .notNull(),
   temperatureUnit: temperatureUnitEnum('temperatureUnit')
     .default('fahrenheit')
     .notNull(),
@@ -623,6 +652,15 @@ export const Babies = pgTable(
     mlPerPump: integer('mlPerPump').default(24), // ML per pump session
     photoUrl: text('photoUrl'),
     pumpsPerDay: integer('pumpsPerDay').default(6), // Number of pumps per day
+    showActivityTimeline: boolean('showActivityTimeline')
+      .default(true)
+      .notNull(),
+    showDiaperCard: boolean('showDiaperCard').default(true).notNull(),
+    showDoctorVisitCard: boolean('showDoctorVisitCard').default(true).notNull(),
+    // Dashboard visibility preferences
+    showFeedingCard: boolean('showFeedingCard').default(true).notNull(),
+    showPumpingCard: boolean('showPumpingCard').default(true).notNull(),
+    showSleepCard: boolean('showSleepCard').default(true).notNull(),
     ttcMethod: ttcMethodEnum('ttcMethod'),
     updatedAt: timestamp('updatedAt', { mode: 'date' })
       .notNull()

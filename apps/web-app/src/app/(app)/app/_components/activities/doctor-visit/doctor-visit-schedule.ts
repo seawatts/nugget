@@ -137,7 +137,7 @@ export function getNextScheduledVisit(
 
   // Find the next visit that:
   // 1. Is due (dueDate is in the past or within next 14 days)
-  // 2. Hasn't been completed (no visit within ±7 days of due date)
+  // 2. Hasn't been completed (no visit within ±30 days of due date)
   for (const visit of allVisits) {
     const { dueDate } = visit;
     const daysUntil = Math.floor(
@@ -145,12 +145,14 @@ export function getNextScheduledVisit(
     );
 
     // Check if this visit has been completed
-    // A visit is considered completed if there's a visit within ±7 days of the due date
+    // A visit is considered completed if there's a visit within ±30 days of the due date
+    // We use a 30-day window (vs 7-day grace period for overdue) because checkups
+    // are often delayed but should still count toward the visit when logged
     const isCompleted = completedVisitDates.some((completedDate) => {
       const daysDiff = Math.abs(
         (completedDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24),
       );
-      return daysDiff <= 7;
+      return daysDiff <= 30;
     });
 
     // If not completed and either past due or due within next 14 days, return it
@@ -193,13 +195,14 @@ export function getVisitScheduleContext(
   const nextVisit = getNextScheduledVisit(birthDate, completedVisitDates);
 
   // Count completed visits
+  // Use same 30-day matching window as getNextScheduledVisit for consistency
   const totalCompleted = allVisits.filter((visit) => {
     return completedVisitDates.some((completedDate) => {
       const daysDiff = Math.abs(
         (completedDate.getTime() - visit.dueDate.getTime()) /
           (1000 * 60 * 60 * 24),
       );
-      return daysDiff <= 7;
+      return daysDiff <= 30;
     });
   }).length;
 

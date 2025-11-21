@@ -146,6 +146,7 @@ export function ActivityDrawer({
         <Dialog onOpenChange={onClose} open={isOpen}>
           <DialogContent
             className="sm:max-w-2xl max-h-[95vh] p-0 gap-0 overflow-hidden flex flex-col"
+            onPointerDownOutside={(e) => e.preventDefault()}
             showCloseButton={false}
           >
             <DialogTitle className="sr-only">{activity.label}</DialogTitle>
@@ -156,8 +157,15 @@ export function ActivityDrawer({
     }
 
     return (
-      <Drawer onOpenChange={(open) => !open && onClose()} open={isOpen}>
-        <DrawerContent className="max-h-[95vh] bg-background border-none p-0">
+      <Drawer
+        dismissible={false}
+        onOpenChange={(open) => !open && onClose()}
+        open={isOpen}
+      >
+        <DrawerContent
+          className="max-h-[95vh] bg-background border-none p-0"
+          onPointerDownOutside={(e) => e.preventDefault()}
+        >
           <DrawerTitle className="sr-only">{activity.label}</DrawerTitle>
           {renderContent()}
         </DrawerContent>
@@ -231,7 +239,10 @@ export function ActivityDrawer({
   if (isDesktop) {
     return (
       <Dialog onOpenChange={onClose} open={isOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[95vh] p-0 gap-0 overflow-hidden flex flex-col">
+        <DialogContent
+          className="sm:max-w-2xl max-h-[95vh] p-0 gap-0 overflow-hidden flex flex-col"
+          onPointerDownOutside={(e) => e.preventDefault()}
+        >
           <DialogTitle className="sr-only">{activity.label}</DialogTitle>
           {contentWithHeader}
         </DialogContent>
@@ -240,8 +251,15 @@ export function ActivityDrawer({
   }
 
   return (
-    <Drawer onOpenChange={(open) => !open && onClose()} open={isOpen}>
-      <DrawerContent className="max-h-[95vh] bg-background border-none p-0">
+    <Drawer
+      dismissible={false}
+      onOpenChange={(open) => !open && onClose()}
+      open={isOpen}
+    >
+      <DrawerContent
+        className="max-h-[95vh] bg-background border-none p-0"
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DrawerTitle className="sr-only">{activity.label}</DrawerTitle>
         {contentWithHeader}
       </DrawerContent>

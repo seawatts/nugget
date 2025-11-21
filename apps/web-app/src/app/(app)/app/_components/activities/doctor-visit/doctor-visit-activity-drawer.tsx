@@ -1,16 +1,18 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { DatePicker } from '@nugget/ui/custom/date-picker';
 import { Label } from '@nugget/ui/label';
 import { cn } from '@nugget/ui/lib/utils';
 import { Stethoscope, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { DoctorVisitFormData } from './doctor-visit-drawer';
 import { DoctorVisitDrawerContent } from './doctor-visit-drawer';
+import { extractVaccinesFromHistory } from './vaccine-utils';
 
 interface DoctorVisitActivityDrawerProps {
   existingActivity?: typeof Activities.$inferSelect | null;
@@ -27,13 +29,50 @@ export function DoctorVisitActivityDrawer({
   existingActivity,
   isOpen,
   onClose,
-  babyId: _babyId,
+  babyId,
 }: DoctorVisitActivityDrawerProps) {
   const { createActivity, updateActivity, isCreating, isUpdating } =
     useActivityMutations();
   const addOptimisticActivity = useOptimisticActivitiesStore(
     (state) => state.addActivity,
   );
+
+  // Query baby information to get birth date
+  const { data: baby } = api.babies.getByIdLight.useQuery(
+    { id: babyId ?? '' },
+    { enabled: Boolean(babyId) && isOpen },
+  );
+
+  // Query doctor visit activities to get vaccination history
+  const { data: doctorVisitActivities = [] } = api.activities.list.useQuery(
+    {
+      activityTypes: ['doctor_visit'],
+      babyId: babyId ?? '',
+      limit: 100,
+    },
+    { enabled: Boolean(babyId) && isOpen },
+  );
+
+  // Extract vaccination history from activities
+  const vaccinationHistory = useMemo(() => {
+    return extractVaccinesFromHistory(
+      [], // No medical records for now
+      doctorVisitActivities.map((activity) => ({
+        details: activity.details as {
+          vaccinations?: string[];
+        } | null,
+      })),
+    );
+  }, [doctorVisitActivities]);
+
+  // Calculate baby age in days
+  const babyAgeDays = useMemo(() => {
+    if (!baby?.birthDate) return null;
+    const now = new Date();
+    const birthDate = new Date(baby.birthDate);
+    const diffTime = now.getTime() - birthDate.getTime();
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  }, [baby?.birthDate]);
 
   // Doctor visit-specific state
   const [startTime, setStartTime] = useState(new Date());
@@ -234,7 +273,11 @@ export function DoctorVisitActivityDrawer({
 
       {/* Content - Scrollable */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        <DoctorVisitDrawerContent onDataChange={setFormData} />
+        <DoctorVisitDrawerContent
+          babyAgeDays={babyAgeDays}
+          onDataChange={setFormData}
+          vaccinationHistory={vaccinationHistory}
+        />
 
         {/* Date Section */}
         <div className="space-y-3 min-w-0">

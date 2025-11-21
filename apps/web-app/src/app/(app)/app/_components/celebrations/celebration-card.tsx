@@ -346,6 +346,7 @@ export function CelebrationCard({
       <CelebrationShareDialog
         babyId={babyId}
         babyName={babyName}
+        celebrationMemoryId={celebration.id}
         celebrationTitle={celebration.title}
         celebrationType={celebration.celebrationType}
         onOpenChange={setShareDialogOpen}

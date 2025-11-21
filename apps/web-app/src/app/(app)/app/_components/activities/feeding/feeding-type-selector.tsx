@@ -41,6 +41,7 @@ interface FeedingTypeSelectorProps {
   startTime?: Date;
   setStartTime?: (date: Date) => void;
   babyAgeDays?: number | null;
+  initialData?: Partial<FeedingFormData>;
 }
 
 const feedingTypes = [
@@ -82,6 +83,7 @@ export function FeedingTypeSelector({
   startTime,
   setStartTime,
   babyAgeDays = null,
+  initialData,
 }: FeedingTypeSelectorProps) {
   const [selectedType, setSelectedType] = useState<FeedingType>(null);
   const [bottleData, setBottleData] = useState<BottleFormData | null>(null);
@@ -158,6 +160,15 @@ export function FeedingTypeSelector({
         {selectedType === 'bottle' && (
           <BottleDrawerContent
             babyAgeDays={babyAgeDays}
+            initialData={
+              initialData?.type === 'bottle'
+                ? {
+                    amountMl: initialData.amountMl,
+                    bottleType: initialData.bottleType,
+                    notes: initialData.notes,
+                  }
+                : undefined
+            }
             onDataChange={setBottleData}
             unitPref={userUnitPref}
           />
@@ -166,6 +177,16 @@ export function FeedingTypeSelector({
           <NursingDrawerContent
             activeActivityId={activeActivityId}
             duration={duration}
+            initialData={
+              initialData?.type === 'nursing'
+                ? {
+                    amountMl: initialData.amountMl,
+                    leftDuration: initialData.leftDuration,
+                    notes: initialData.notes,
+                    rightDuration: initialData.rightDuration,
+                  }
+                : undefined
+            }
             isTimerStopped={isTimerStopped}
             onDataChange={setNursingData}
             onTimerStart={onTimerStart}

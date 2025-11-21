@@ -91,7 +91,7 @@ export default function manifest(): MetadataRoute.Manifest {
         url: '/app/insights',
       },
     ],
-    start_url: '/',
+    start_url: '/app',
     theme_color: '#000000',
   };
 }

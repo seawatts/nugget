@@ -14,8 +14,13 @@ import {
 } from '@nugget/ui/alert-dialog';
 import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { ActivityDrawerHeader } from '../shared/components/activity-drawer-header';
+import { StopSleepConfirmationDialog } from '../shared/components/stop-sleep-confirmation-dialog';
 import { TimeInput } from '../shared/components/time-input';
+import { useInProgressSleep } from '../shared/hooks/use-in-progress-sleep';
+import { autoStopInProgressSleepAction } from '../sleep/actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import { FeedingTypeSelector } from './feeding-type-selector';
 import { useFeedingDrawerState } from './hooks/use-feeding-drawer-state';
@@ -83,7 +88,31 @@ export function FeedingActivityDrawer({
     existingActivity,
   });
 
+  // Check for in-progress sleep
+  const { inProgressSleep, sleepDuration } = useInProgressSleep({
+    babyId,
+    enabled: isOpen && formData?.type === 'bottle',
+  });
+
+  // State for sleep stop confirmation
+  const [showSleepConfirmation, setShowSleepConfirmation] = useState(false);
+  const [pendingSave, setPendingSave] = useState<{
+    formData: NonNullable<typeof formData>;
+    startTime: Date;
+    endTime: Date;
+  } | null>(null);
+
+  // Local saving state to prevent multiple rapid clicks
+  const [isSaving, setIsSaving] = useState(false);
+
   const isPending = isCreating || isUpdating;
+
+  // Reset saving state when drawer closes
+  useEffect(() => {
+    if (!isOpen) {
+      setIsSaving(false);
+    }
+  }, [isOpen]);
 
   // Simplified event handlers
   const handleCancelClick = () => {
@@ -112,9 +141,90 @@ export function FeedingActivityDrawer({
     onClose();
   };
 
-  const handleSave = () => {
-    if (!formData) return;
-    saveActivity(formData, startTime, endTime, onClose);
+  const handleSave = async () => {
+    if (!formData || isSaving) return;
+
+    // For bottle feeding, check if there's an in-progress sleep
+    if (formData.type === 'bottle' && inProgressSleep) {
+      // Store the save parameters and show confirmation
+      setPendingSave({ endTime, formData, startTime });
+      setShowSleepConfirmation(true);
+      return;
+    }
+
+    // Set saving state immediately to prevent duplicate clicks
+    setIsSaving(true);
+
+    try {
+      // Otherwise proceed with save
+      await saveActivity(formData, startTime, endTime, onClose);
+    } finally {
+      // Reset saving state even if save fails
+      setIsSaving(false);
+    }
+  };
+
+  const handleStopSleepAndSave = async () => {
+    if (!pendingSave || isSaving) return;
+
+    // Set saving state immediately to prevent duplicate clicks
+    setIsSaving(true);
+
+    try {
+      // Stop the in-progress sleep
+      const result = await autoStopInProgressSleepAction();
+      if (result?.data?.activity) {
+        toast.info('Sleep tracking stopped');
+      }
+    } catch (error) {
+      console.error('Failed to stop sleep:', error);
+      toast.error('Failed to stop sleep tracking');
+    }
+
+    // Close confirmation dialog
+    setShowSleepConfirmation(false);
+
+    try {
+      // Proceed with save
+      await saveActivity(
+        pendingSave.formData,
+        pendingSave.startTime,
+        pendingSave.endTime,
+        onClose,
+      );
+    } finally {
+      // Reset saving state even if save fails
+      setIsSaving(false);
+    }
+
+    // Clear pending save
+    setPendingSave(null);
+  };
+
+  const handleKeepSleepingAndSave = async () => {
+    if (!pendingSave || isSaving) return;
+
+    // Set saving state immediately to prevent duplicate clicks
+    setIsSaving(true);
+
+    // Close confirmation dialog
+    setShowSleepConfirmation(false);
+
+    try {
+      // Proceed with save without stopping sleep
+      await saveActivity(
+        pendingSave.formData,
+        pendingSave.startTime,
+        pendingSave.endTime,
+        onClose,
+      );
+    } finally {
+      // Reset saving state even if save fails
+      setIsSaving(false);
+    }
+
+    // Clear pending save
+    setPendingSave(null);
   };
 
   const handleTimerStart = async () => {
@@ -192,12 +302,14 @@ export function FeedingActivityDrawer({
                   ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
                   : 'bg-activity-feeding text-activity-feeding-foreground',
               )}
-              disabled={isPending || isLoadingInProgress || !formData}
+              disabled={
+                isPending || isLoadingInProgress || !formData || isSaving
+              }
               onClick={isTimerActive ? handleStop : handleSave}
             >
               {isTimerActive
                 ? 'Stop'
-                : isPending
+                : isPending || isSaving
                   ? 'Saving...'
                   : isEditing
                     ? 'Update'
@@ -233,6 +345,15 @@ export function FeedingActivityDrawer({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Sleep Stop Confirmation Dialog */}
+      <StopSleepConfirmationDialog
+        onKeepSleeping={handleKeepSleepingAndSave}
+        onOpenChange={setShowSleepConfirmation}
+        onStopSleep={handleStopSleepAndSave}
+        open={showSleepConfirmation}
+        sleepDuration={sleepDuration}
+      />
     </>
   );
 }

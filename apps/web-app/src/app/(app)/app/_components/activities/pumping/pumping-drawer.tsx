@@ -118,8 +118,9 @@ export function PumpingDrawerContent({
   ]);
 
   // Auto-calculate volumes when duration is selected
+  // Skip auto-calculation when in controlled mode (editing existing activity)
   useEffect(() => {
-    if (selectedDuration !== null && babyAgeDays !== null) {
+    if (!isControlled && selectedDuration !== null && babyAgeDays !== null) {
       const volumes = calculatePumpingVolumes(
         babyAgeDays,
         selectedDuration,
@@ -136,6 +137,7 @@ export function PumpingDrawerContent({
       }
     }
   }, [
+    isControlled,
     selectedDuration,
     babyAgeDays,
     baby?.mlPerPump,

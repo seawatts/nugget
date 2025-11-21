@@ -1,6 +1,7 @@
 'use client';
 
 import { useUser } from '@clerk/nextjs';
+import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { toast } from '@nugget/ui/sonner';
 import {
@@ -130,6 +131,12 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
   const [babyAgeDays, setBabyAgeDays] = useState<number | null>(null);
   const [loadingActivity, setLoadingActivity] = useState<string | null>(null);
   const [_isPending, startTransition] = useTransition();
+
+  // Fetch baby preferences
+  const { data: baby } = api.babies.getByIdLight.useQuery(
+    { id: babyId ?? '' },
+    { enabled: !!babyId },
+  );
 
   // Use Zustand store for optimistic updates
   const addOptimisticActivity = useOptimisticActivitiesStore(
@@ -351,29 +358,41 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
     <>
       {/* All Action Cards Section - Predictive + Quick Actions */}
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <PredictiveFeedingCard
-          onActivityLogged={handleActivityLogged}
-          onCardClick={() => {
-            // Open unified feeding drawer for selection
-            setOpenDrawer('feeding');
-          }}
-        />
-        <PredictiveSleepCard
-          onActivityLogged={handleActivityLogged}
-          onCardClick={() => setOpenDrawer('sleep')}
-        />
-        <PredictiveDiaperCard
-          onActivityLogged={handleActivityLogged}
-          onCardClick={() => setOpenDrawer('diaper')}
-        />
-        <PredictivePumpingCard
-          onActivityLogged={handleActivityLogged}
-          onCardClick={() => setOpenDrawer('pumping')}
-        />
-        <PredictiveDoctorVisitCard
-          onActivityLogged={handleActivityLogged}
-          onCardClick={() => setOpenDrawer('doctor_visit')}
-        />
+        {baby?.showFeedingCard !== false && (
+          <PredictiveFeedingCard
+            onActivityLogged={handleActivityLogged}
+            onCardClick={() => {
+              // Open unified feeding drawer for selection
+              setOpenDrawer('feeding');
+            }}
+          />
+        )}
+        {baby?.showSleepCard !== false && (
+          <PredictiveSleepCard
+            onActivityLogged={handleActivityLogged}
+            onCardClick={() => setOpenDrawer('sleep')}
+          />
+        )}
+        {baby?.showDiaperCard !== false && (
+          <PredictiveDiaperCard
+            onActivityLogged={handleActivityLogged}
+            onCardClick={() => setOpenDrawer('diaper')}
+          />
+        )}
+        {baby?.showPumpingCard !== false && (
+          <PredictivePumpingCard
+            onActivityLogged={handleActivityLogged}
+            onCardClick={() => setOpenDrawer('pumping')}
+          />
+        )}
+        {baby?.showDoctorVisitCard !== false &&
+          babyAgeDays !== null &&
+          babyAgeDays >= 0 && (
+            <PredictiveDoctorVisitCard
+              onActivityLogged={handleActivityLogged}
+              onCardClick={() => setOpenDrawer('doctor_visit')}
+            />
+          )}
       </div>
 
       {/* Activity Drawers */}

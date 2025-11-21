@@ -31,10 +31,12 @@ export interface DiaperFormData {
 
 interface DiaperDrawerContentProps {
   onDataChange?: (data: DiaperFormData) => void;
+  initialData?: Partial<DiaperFormData>;
 }
 
 export function DiaperDrawerContent({
   onDataChange,
+  initialData,
 }: DiaperDrawerContentProps) {
   const [selectedType, setSelectedType] = useState<
     'wet' | 'dirty' | 'both' | null
@@ -55,6 +57,18 @@ export function DiaperDrawerContent({
   >(null);
   const [hasRash, setHasRash] = useState(false);
   const [notes] = useState('');
+
+  // Update state when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.type !== undefined) setSelectedType(initialData.type);
+      if (initialData.size !== undefined) setSize(initialData.size);
+      if (initialData.color !== undefined) setColor(initialData.color);
+      if (initialData.consistency !== undefined)
+        setConsistency(initialData.consistency);
+      if (initialData.hasRash !== undefined) setHasRash(initialData.hasRash);
+    }
+  }, [initialData]);
 
   // Call onDataChange whenever form data changes
   useEffect(() => {

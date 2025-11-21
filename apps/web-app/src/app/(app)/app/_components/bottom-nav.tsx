@@ -630,15 +630,43 @@ export function BottomNav() {
               <div className="flex flex-col-reverse items-center gap-3">
                 {[...familyMembers]
                   .sort((a, b) => {
-                    // Sort order (reversed due to flex-col-reverse): other family members, then logged in user, then babies
-                    // This results in visual order from bottom to top: babies, logged in user, other family members
-                    if (a.type === 'baby' && b.type !== 'baby') return 1;
-                    if (a.type !== 'baby' && b.type === 'baby') return -1;
+                    // Sort order for flex-col-reverse (array index 0 = bottom display):
+                    // Index 0: babies, Index 1: logged in user, Index 2+: family members (by role & name)
+                    // This results in visual order from bottom to top: baby, logged in user, family members
+
+                    // Babies go first (lowest index = bottom display)
+                    if (a.type === 'baby' && b.type !== 'baby') return -1;
+                    if (a.type !== 'baby' && b.type === 'baby') return 1;
                     if (a.type === 'baby' && b.type === 'baby') return 0;
 
-                    // Both are users
-                    if (a.isCurrentUser && !b.isCurrentUser) return 1;
-                    if (!a.isCurrentUser && b.isCurrentUser) return -1;
+                    // Both are users - sort logged in user before other family members (lower index)
+                    if (a.isCurrentUser && !b.isCurrentUser) return -1;
+                    if (!a.isCurrentUser && b.isCurrentUser) return 1;
+
+                    // Both are other family members - sort by role, then by name
+                    if (!a.isCurrentUser && !b.isCurrentUser) {
+                      // Define role priority (primary > partner > caregiver > null)
+                      const roleOrder: Record<string, number> = {
+                        caregiver: 3,
+                        partner: 2,
+                        primary: 1,
+                      };
+
+                      const aRolePriority = a.role
+                        ? roleOrder[a.role] || 999
+                        : 999;
+                      const bRolePriority = b.role
+                        ? roleOrder[b.role] || 999
+                        : 999;
+
+                      if (aRolePriority !== bRolePriority) {
+                        return aRolePriority - bRolePriority;
+                      }
+
+                      // Same role, sort by first name
+                      return a.firstName.localeCompare(b.firstName);
+                    }
+
                     return 0;
                   })
                   .map((member) => {

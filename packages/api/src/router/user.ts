@@ -82,6 +82,15 @@ export const userRouter = {
         measurementUnit: z
           .enum([MeasurementUnitType.imperial, MeasurementUnitType.metric])
           .optional(),
+        quickLogDiaperUsePredictedType: z.boolean().optional(),
+        // Quick log preferences
+        quickLogEnabled: z.boolean().optional(),
+        quickLogFeedingUseLastAmount: z.boolean().optional(),
+        quickLogFeedingUseLastType: z.boolean().optional(),
+        quickLogFeedingUseTypicalDuration: z.boolean().optional(),
+        quickLogPumpingUseLastVolume: z.boolean().optional(),
+        quickLogPumpingUseTypicalDuration: z.boolean().optional(),
+        quickLogSleepUseSuggestedDuration: z.boolean().optional(),
         temperatureUnit: z
           .enum([TemperatureUnitType.fahrenheit, TemperatureUnitType.celsius])
           .optional(),

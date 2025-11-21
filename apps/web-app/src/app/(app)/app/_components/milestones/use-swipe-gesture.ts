@@ -20,6 +20,34 @@ interface SwipeState {
   rotation: number;
 }
 
+// Helper to check if an element or its parents are scrollable
+function isInsideScrollableContainer(element: HTMLElement | null): boolean {
+  if (!element) return false;
+
+  let current = element;
+  while (current && current !== document.body) {
+    const style = window.getComputedStyle(current);
+    const overflowY = style.overflowY;
+
+    // Check if element is scrollable and has scrollable content
+    if (
+      (overflowY === 'auto' || overflowY === 'scroll') &&
+      current.scrollHeight > current.clientHeight
+    ) {
+      return true;
+    }
+
+    // Also check for data-swipeable-ignore attribute
+    if (current.hasAttribute('data-swipeable-ignore')) {
+      return true;
+    }
+
+    current = current.parentElement as HTMLElement;
+  }
+
+  return false;
+}
+
 export function useSwipeGesture({
   onSwipeLeft,
   onSwipeRight,
@@ -42,15 +70,21 @@ export function useSwipeGesture({
   const currentX = useRef(0);
   const currentY = useRef(0);
   const isSwiping = useRef(false);
+  const swipeIntent = useRef<'horizontal' | 'vertical' | null>(null);
+  const isInScrollableArea = useRef(false);
 
   // Common start handler for both touch and mouse
   const handleStart = useCallback(
-    (clientX: number, clientY: number) => {
+    (clientX: number, clientY: number, target: HTMLElement) => {
       startX.current = clientX;
       startY.current = clientY;
       currentX.current = clientX;
       currentY.current = clientY;
       isSwiping.current = true;
+      swipeIntent.current = null; // Reset intent on new gesture
+
+      // Check if the touch started in a scrollable area
+      isInScrollableArea.current = isInsideScrollableContainer(target);
 
       setSwipeState((prev) => ({
         ...prev,
@@ -63,41 +97,63 @@ export function useSwipeGesture({
   );
 
   // Common move handler for both touch and mouse
-  const handleMove = useCallback((clientX: number, clientY: number) => {
-    if (!isSwiping.current) return;
+  const handleMove = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!isSwiping.current) return;
 
-    currentX.current = clientX;
-    currentY.current = clientY;
+      currentX.current = clientX;
+      currentY.current = clientY;
 
-    const deltaX = currentX.current - startX.current;
-    const deltaY = currentY.current - startY.current;
+      const deltaX = currentX.current - startX.current;
+      const deltaY = currentY.current - startY.current;
 
-    // Calculate rotation based on horizontal movement (max 15 degrees)
-    const rotation = (deltaX / window.innerWidth) * 15;
+      // Determine swipe intent on first meaningful movement (threshold of 10px)
+      if (
+        swipeIntent.current === null &&
+        (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)
+      ) {
+        swipeIntent.current =
+          Math.abs(deltaX) > Math.abs(deltaY) ? 'horizontal' : 'vertical';
+      }
 
-    // Determine direction based on larger delta
-    let direction: 'left' | 'right' | 'up' | 'down' | null = null;
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
-      direction = deltaX > 0 ? 'right' : 'left';
-    } else {
-      direction = deltaY > 0 ? 'down' : 'up';
-    }
+      // If we're in a scrollable area and the intent is vertical, don't capture the gesture
+      if (isInScrollableArea.current && swipeIntent.current === 'vertical') {
+        return;
+      }
 
-    setSwipeState({
-      direction,
-      isDragging: true,
-      offsetX: deltaX,
-      offsetY: deltaY,
-      rotation,
-    });
-  }, []);
+      // If intent is vertical and we don't have horizontal callbacks, don't capture
+      if (swipeIntent.current === 'vertical' && !onSwipeUp && !onSwipeDown) {
+        return;
+      }
+
+      // Calculate rotation based on horizontal movement (max 15 degrees)
+      const rotation = (deltaX / window.innerWidth) * 15;
+
+      // Determine direction based on larger delta
+      let direction: 'left' | 'right' | 'up' | 'down' | null = null;
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        direction = deltaX > 0 ? 'right' : 'left';
+      } else {
+        direction = deltaY > 0 ? 'down' : 'up';
+      }
+
+      setSwipeState({
+        direction,
+        isDragging: true,
+        offsetX: deltaX,
+        offsetY: deltaY,
+        rotation,
+      });
+    },
+    [onSwipeUp, onSwipeDown],
+  );
 
   // Touch event handlers
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
       const touch = e.touches[0];
       if (!touch) return;
-      handleStart(touch.clientX, touch.clientY);
+      handleStart(touch.clientX, touch.clientY, e.target as HTMLElement);
     },
     [handleStart],
   );
@@ -116,7 +172,7 @@ export function useSwipeGesture({
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       console.log('[SwipeGesture] Mouse down at:', e.clientX, e.clientY);
-      handleStart(e.clientX, e.clientY);
+      handleStart(e.clientX, e.clientY, e.target as HTMLElement);
     },
     [handleStart],
   );
@@ -146,7 +202,27 @@ export function useSwipeGesture({
       deltaY,
       'threshold:',
       threshold,
+      'intent:',
+      swipeIntent.current,
+      'inScrollable:',
+      isInScrollableArea.current,
     );
+
+    // If we were in a scrollable area with vertical intent, don't trigger any action
+    if (isInScrollableArea.current && swipeIntent.current === 'vertical') {
+      isSwiping.current = false;
+      swipeIntent.current = null;
+      isInScrollableArea.current = false;
+      setSwipeState({
+        direction: null,
+        isDragging: false,
+        offsetX: 0,
+        offsetY: 0,
+        rotation: 0,
+      });
+      onSwipeEnd?.();
+      return;
+    }
 
     // Determine if threshold was met
     let actionTriggered = false;
@@ -198,6 +274,8 @@ export function useSwipeGesture({
     }
 
     isSwiping.current = false;
+    swipeIntent.current = null;
+    isInScrollableArea.current = false;
 
     // If action was not triggered, reset to spring back
     if (!actionTriggered) {

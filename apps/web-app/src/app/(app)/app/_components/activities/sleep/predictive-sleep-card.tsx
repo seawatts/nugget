@@ -4,24 +4,18 @@ import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Card } from '@nugget/ui/card';
 import { Skeleton } from '@nugget/ui/components/skeleton';
-import { toast } from '@nugget/ui/components/sonner';
 import { Icons } from '@nugget/ui/custom/icons';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from '@nugget/ui/drawer';
 import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { Info, Moon } from 'lucide-react';
+import { Info, Moon, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
-import { LearningSection } from '../../learning/learning-section';
 import {
   PredictiveCardSkeleton,
+  PredictiveInfoDrawer,
   PredictiveOverdueActions,
+  usePredictiveActions,
 } from '../shared/components/predictive-cards';
 import { skipSleepAction } from './actions';
 import { getSleepLearningContent } from './learning-content';
@@ -40,7 +34,6 @@ export function PredictiveSleepCard({
   const params = useParams<{ babyId?: string }>();
   const babyId = params?.babyId;
 
-  const utils = api.useUtils();
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
 
@@ -56,7 +49,6 @@ export function PredictiveSleepCard({
   );
 
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
-  const [skipping, setSkipping] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -86,6 +78,30 @@ export function PredictiveSleepCard({
     : null;
 
   const error = queryError?.message || null;
+
+  // Build smart defaults for quick log
+  const defaultQuickLogData: Record<string, unknown> = {};
+  if (
+    (userData?.quickLogSleepUseSuggestedDuration ?? true) &&
+    data?.prediction.suggestedDuration
+  ) {
+    defaultQuickLogData.duration = data.prediction.suggestedDuration;
+    // Calculate end time based on suggested duration
+    const endTime = new Date();
+    endTime.setMinutes(
+      endTime.getMinutes() + data.prediction.suggestedDuration,
+    );
+    defaultQuickLogData.endTime = endTime;
+  }
+
+  // Use shared actions hook with sleep defaults
+  const { handleQuickLog, handleSkip, isCreating, isSkipping } =
+    usePredictiveActions({
+      activityType: 'sleep',
+      defaultQuickLogData,
+      onActivityLogged: _onActivityLogged,
+      skipAction: skipSleepAction,
+    });
 
   // Timer effect - updates elapsed time every second when tracking
   useEffect(() => {
@@ -158,6 +174,16 @@ export function PredictiveSleepCard({
   const learningContent =
     babyAgeDays !== null ? getSleepLearningContent(babyAgeDays) : null;
 
+  // Build quick log settings for info drawer
+  const quickLogSettings = {
+    activeSettings: [
+      ...((userData?.quickLogSleepUseSuggestedDuration ?? true)
+        ? ['Suggested duration']
+        : []),
+    ],
+    enabled: userData?.quickLogEnabled ?? true,
+  };
+
   // Format countdown
   const timeUntil = formatDistanceToNow(displayNextTime, {
     addSuffix: true,
@@ -185,23 +211,6 @@ export function PredictiveSleepCard({
   const handleInfoClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowInfoDrawer(true);
-  };
-
-  const handleSkip = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSkipping(true);
-    try {
-      await skipSleepAction();
-      toast.success('Sleep reminder skipped');
-      // Invalidate activities list to refresh timeline
-      await utils.activities.list.invalidate();
-      await utils.activities.getUpcomingSleep.invalidate();
-    } catch (error) {
-      console.error('Failed to skip sleep:', error);
-      toast.error('Failed to skip sleep');
-    } finally {
-      setSkipping(false);
-    }
   };
 
   // Format elapsed time for display
@@ -237,6 +246,21 @@ export function PredictiveSleepCard({
                     className="animate-spin opacity-70"
                     size="xs"
                   />
+                )}
+                {(userData?.quickLogEnabled ?? true) && (
+                  <button
+                    className="p-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isCreating}
+                    onClick={handleQuickLog}
+                    title="Quick log with smart defaults"
+                    type="button"
+                  >
+                    {isCreating ? (
+                      <Icons.Spinner className="animate-spin opacity-70 size-5" />
+                    ) : (
+                      <Zap className="size-5 opacity-70" />
+                    )}
+                  </button>
                 )}
                 <button
                   className="p-1.5 rounded-full hover:bg-black/10 transition-colors -mr-1.5"
@@ -337,7 +361,7 @@ export function PredictiveSleepCard({
         {/* Overdue Actions */}
         {effectiveIsOverdue && !inProgressActivity && (
           <PredictiveOverdueActions
-            isSkipping={skipping}
+            isSkipping={isSkipping}
             onLog={handleCardClick}
             onSkip={handleSkip}
           />
@@ -345,71 +369,40 @@ export function PredictiveSleepCard({
       </Card>
 
       {/* Info Drawer */}
-      <Drawer onOpenChange={setShowInfoDrawer} open={showInfoDrawer}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader>
-            <DrawerTitle>Sleep Details</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-6 space-y-4 overflow-y-auto">
-            {/* Learning Section */}
-            {learningContent && (
-              <LearningSection
-                babyAgeDays={babyAgeDays}
-                bgColor="bg-activity-sleep/5"
-                borderColor="border-activity-sleep/20"
-                color="bg-activity-sleep/10 text-activity-sleep"
-                educationalContent={learningContent.message}
-                icon={Moon}
-                tips={learningContent.tips}
-              />
-            )}
-
-            {/* Recent Pattern */}
-            {prediction.recentSleepPattern.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-2">
-                  Recent Sleep Sessions
-                </p>
-                <div className="space-y-2">
-                  {prediction.recentSleepPattern.slice(0, 5).map((sleep) => (
-                    <div
-                      className="flex items-center justify-between text-sm bg-muted/20 rounded px-3 py-2"
-                      key={sleep.time.toISOString()}
-                    >
-                      <span className="text-muted-foreground">
-                        {formatTimeWithPreference(sleep.time, timeFormat)}
-                      </span>
-                      <div className="flex gap-2 items-center">
-                        {sleep.duration !== null && (
-                          <span className="text-foreground/70 font-medium">
-                            {Math.floor(sleep.duration / 60)}h{' '}
-                            {sleep.duration % 60}m
-                          </span>
-                        )}
-                        {sleep.intervalFromPrevious !== null && (
-                          <span className="text-muted-foreground/60">
-                            ({sleep.intervalFromPrevious.toFixed(1)}h apart)
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Average Interval */}
-            {prediction.averageIntervalHours !== null && (
-              <div className="flex items-center justify-between text-sm bg-muted/20 rounded px-3 py-2">
-                <span className="text-muted-foreground">Average interval</span>
-                <span className="text-foreground font-medium">
-                  {prediction.averageIntervalHours.toFixed(1)} hours
+      <PredictiveInfoDrawer
+        activityType="sleep"
+        averageInterval={prediction.averageIntervalHours}
+        babyAgeDays={babyAgeDays}
+        formatPatternItem={(item): React.ReactNode => (
+          <>
+            <span className="text-muted-foreground">
+              {formatTimeWithPreference(item.time, timeFormat)}
+            </span>
+            <div className="flex gap-2 items-center">
+              {'duration' in item && item.duration !== null && (
+                <span className="text-foreground/70 font-medium">
+                  {Math.floor((item.duration as number) / 60)}h{' '}
+                  {(item.duration as number) % 60}m
                 </span>
-              </div>
-            )}
-          </div>
-        </DrawerContent>
-      </Drawer>
+              )}
+              {'intervalFromPrevious' in item &&
+                item.intervalFromPrevious !== null && (
+                  <span className="text-muted-foreground/60">
+                    ({(item.intervalFromPrevious as number).toFixed(1)}h apart)
+                  </span>
+                )}
+            </div>
+          </>
+        )}
+        icon={Moon}
+        learningContent={learningContent}
+        onOpenChange={setShowInfoDrawer}
+        open={showInfoDrawer}
+        quickLogSettings={quickLogSettings}
+        recentPattern={prediction.recentSleepPattern}
+        timeFormat={timeFormat}
+        title="Sleep Details"
+      />
     </>
   );
 }

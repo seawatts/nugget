@@ -58,6 +58,11 @@ export function InstallPrompt() {
     if (!deferredPrompt) return;
 
     try {
+      // Capture current URL before install for deep linking on first launch
+      const currentUrl = window.location.href;
+      localStorage.setItem('nugget-pwa-install-url', currentUrl);
+      localStorage.setItem('nugget-pwa-first-launch', 'true');
+
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
 
@@ -84,7 +89,7 @@ export function InstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-24 left-4 right-4 z-50 mx-auto max-w-md animate-in slide-in-from-bottom-5">
+    <div className="fixed bottom-12 left-4 right-4 z-50 mx-auto max-w-md animate-in slide-in-from-bottom-5">
       <div className="rounded-lg border bg-card p-4 shadow-lg">
         <div className="flex items-start gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
