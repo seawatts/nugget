@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@clerk/backend": "2.23.0",
+    "@clerk/backend": "2.23.1",
     "@nugget/db": "workspace:*",
     "@nugget/id": "workspace:*",
     "@t3-oss/env-nextjs": "catalog:",
