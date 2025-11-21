@@ -7,11 +7,10 @@ import { H2, P, Text } from '@nugget/ui/custom/typography';
 import { Confetti, type ConfettiRef } from '@nugget/ui/magicui/confetti';
 import { Particles } from '@nugget/ui/magicui/particles';
 import { ShineBorder } from '@nugget/ui/magicui/shine-border';
-import { Camera, Heart, MessageCircle, Share2, Sparkles } from 'lucide-react';
+import { Camera, MessageCircle, Share2, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { QuickChatDialog } from '../chat/quick-chat-dialog';
 import type { CelebrationCardData } from './celebration-card.actions';
-import { CelebrationMemoryDialog } from './celebration-memory-dialog';
 import { CelebrationPhotoUpload } from './celebration-photo-upload';
 import { CelebrationShareDialog } from './celebration-share-dialog';
 
@@ -28,7 +27,6 @@ export function CelebrationCard({
   babyName,
   isLoadingAI = false,
 }: CelebrationCardProps) {
-  const [memoryDialogOpen, setMemoryDialogOpen] = useState(false);
   const [photoUploadOpen, setPhotoUploadOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
@@ -85,9 +83,6 @@ export function CelebrationCard({
 
   const handleActionClick = (actionType: string) => {
     switch (actionType) {
-      case 'save_memory':
-        setMemoryDialogOpen(true);
-        break;
       case 'take_photo':
         setPhotoUploadOpen(true);
         break;
@@ -223,21 +218,6 @@ export function CelebrationCard({
             </div>
           </div>
 
-          {/* Memory/Note Section if exists */}
-          {celebration.memory?.note && (
-            <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
-              <div className="flex items-start gap-2">
-                <Heart className="size-5 text-primary shrink-0 mt-0.5" />
-                <div className="gap-1 grid flex-1">
-                  <Text className="font-medium" size="sm" variant="muted">
-                    Your Memory
-                  </Text>
-                  <P size="sm">{celebration.memory.note}</P>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Photos if exist */}
           {celebration.memory?.photoUrls &&
             celebration.memory.photoUrls.length > 0 && (
@@ -267,8 +247,8 @@ export function CelebrationCard({
               >
                 Chat with AI
               </Text>
-              <div className="grid grid-cols-3 gap-2">
-                {[1, 2, 3].map((i) => (
+              <div className="grid grid-cols-2 gap-2">
+                {[1, 2].map((i) => (
                   <div
                     className="gap-2 flex-col h-auto py-3 flex items-center justify-center border border-border/50 rounded-md bg-background/50"
                     key={i}
@@ -292,7 +272,7 @@ export function CelebrationCard({
                 >
                   Chat with AI
                 </Text>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <Button
                     className="gap-2 flex-col h-auto py-3"
                     onClick={() => handleChatOpen('milestone')}
@@ -301,15 +281,6 @@ export function CelebrationCard({
                   >
                     <MessageCircle className="size-4" />
                     <span className="text-xs">Track Development</span>
-                  </Button>
-                  <Button
-                    className="gap-2 flex-col h-auto py-3"
-                    onClick={() => handleChatOpen('memory')}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Heart className="size-4" />
-                    <span className="text-xs">Share Memory</span>
                   </Button>
                   <Button
                     className="gap-2 flex-col h-auto py-3"
@@ -326,21 +297,24 @@ export function CelebrationCard({
           )}
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-3 gap-3">
-            {celebration.actions.map((action) => (
-              <Button
-                className="gap-2 flex-col h-auto py-3"
-                key={action.type}
-                onClick={() => handleActionClick(action.type)}
-                size="sm"
-                variant="outline"
-              >
-                {action.type === 'save_memory' && <Heart className="size-4" />}
-                {action.type === 'take_photo' && <Camera className="size-4" />}
-                {action.type === 'share' && <Share2 className="size-4" />}
-                <span className="text-xs">{action.label}</span>
-              </Button>
-            ))}
+          <div className="grid grid-cols-2 gap-3">
+            {celebration.actions
+              .filter((action) => action.type !== 'save_memory')
+              .map((action) => (
+                <Button
+                  className="gap-2 flex-col h-auto py-3"
+                  key={action.type}
+                  onClick={() => handleActionClick(action.type)}
+                  size="sm"
+                  variant="outline"
+                >
+                  {action.type === 'take_photo' && (
+                    <Camera className="size-4" />
+                  )}
+                  {action.type === 'share' && <Share2 className="size-4" />}
+                  <span className="text-xs">{action.label}</span>
+                </Button>
+              ))}
           </div>
 
           {/* Shared status */}
@@ -360,15 +334,6 @@ export function CelebrationCard({
       </Card>
 
       {/* Dialogs */}
-      <CelebrationMemoryDialog
-        babyId={babyId}
-        babyName={babyName}
-        celebrationType={celebration.celebrationType}
-        existingNote={celebration.memory?.note || ''}
-        onOpenChange={setMemoryDialogOpen}
-        open={memoryDialogOpen}
-      />
-
       <CelebrationPhotoUpload
         babyId={babyId}
         babyName={babyName}

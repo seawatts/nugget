@@ -3,6 +3,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
 import { P } from '@nugget/ui/custom/typography';
+import { useMediaQuery } from '@nugget/ui/hooks/use-media-query';
 import { cn } from '@nugget/ui/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -39,6 +40,8 @@ interface MilestoneCardProps {
   isYesNoQuestion?: boolean;
   openChatOnYes?: boolean;
   openChatOnNo?: boolean;
+  // Swipe mode - disables buttons for swipe UI on mobile
+  swipeMode?: boolean;
 }
 
 interface ChatReplier {
@@ -113,7 +116,9 @@ export function MilestoneCard({
   summary,
   babyId,
   isYesNoQuestion,
+  swipeMode = false,
 }: MilestoneCardProps) {
+  const isMobile = useMediaQuery({ query: '(max-width: 768px)' });
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [repliers, setRepliers] = useState<ChatReplier[]>([]);
   const [yesRepliers, setYesRepliers] = useState<ChatReplier[]>([]);
@@ -349,9 +354,10 @@ export function MilestoneCard({
           </div>
         )}
 
-        {/* Yes/No Buttons or Answer Button */}
+        {/* Yes/No Buttons or Answer Button - Hidden in swipe mode on mobile */}
         {babyId &&
           followUpQuestion &&
+          !(swipeMode && isMobile) &&
           (isYesNoQuestion ? (
             <div className="flex flex-col gap-2 w-full">
               <div className="flex gap-2 w-full">
@@ -494,10 +500,19 @@ export function MilestoneCard({
               )}
             </Button>
           ))}
+
+        {/* Swipe instruction for mobile in swipe mode */}
+        {swipeMode && isMobile && babyId && followUpQuestion && (
+          <div className="w-full text-center">
+            <p className="text-xs text-muted-foreground">
+              👈 Swipe left for No • Swipe right for Yes 👉
+            </p>
+          </div>
+        )}
       </FeatureCard.Footer>
 
-      {/* Chat Dialog */}
-      {babyId && followUpQuestion && (
+      {/* Chat Dialog - only show on desktop or when not in swipe mode */}
+      {babyId && followUpQuestion && !(swipeMode && isMobile) && (
         <QuickChatDialog
           autoSendPrefill={!!prefillMessage}
           babyId={babyId}

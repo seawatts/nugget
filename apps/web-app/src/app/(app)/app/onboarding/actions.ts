@@ -347,6 +347,16 @@ export const completeOnboardingAction = action
         );
       }
 
+      // 4. Update user's last selected baby and family
+      await tx
+        .update(Users)
+        .set({
+          lastSelectedBabyId: baby.id,
+          lastSelectedFamilyId: family.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(Users.id, userId));
+
       // Revalidate paths
       revalidateAppPaths();
       revalidatePath('/app/onboarding');
@@ -503,6 +513,22 @@ export const completeOnboardingForExistingFamilyAction = action
         })
         .where(eq(FamilyMembers.id, familyMember.id))
         .returning();
+
+      // 4. Set last selected baby and family (use first baby in family if exists)
+      const firstBaby = await tx.query.Babies.findFirst({
+        where: eq(Babies.familyId, family.id),
+      });
+
+      if (firstBaby) {
+        await tx
+          .update(Users)
+          .set({
+            lastSelectedBabyId: firstBaby.id,
+            lastSelectedFamilyId: family.id,
+            updatedAt: new Date(),
+          })
+          .where(eq(Users.id, userId));
+      }
 
       // Revalidate paths
       revalidateAppPaths();

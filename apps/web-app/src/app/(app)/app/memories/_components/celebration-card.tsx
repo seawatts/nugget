@@ -3,11 +3,10 @@
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
 import { Icons } from '@nugget/ui/custom/icons';
-import { H2, P, Text } from '@nugget/ui/custom/typography';
-import { Camera, Heart, Share2 } from 'lucide-react';
+import { H2, Text } from '@nugget/ui/custom/typography';
+import { Camera, Share2 } from 'lucide-react';
 import { useState } from 'react';
 import type { CelebrationCardData } from './celebration-card.actions';
-import { CelebrationMemoryDialog } from './celebration-memory-dialog';
 import { CelebrationPhotoUpload } from './celebration-photo-upload';
 import { CelebrationShareDialog } from './celebration-share-dialog';
 
@@ -22,15 +21,11 @@ export function CelebrationCard({
   babyId,
   babyName,
 }: CelebrationCardProps) {
-  const [memoryDialogOpen, setMemoryDialogOpen] = useState(false);
   const [photoUploadOpen, setPhotoUploadOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   const handleActionClick = (actionType: string) => {
     switch (actionType) {
-      case 'save_memory':
-        setMemoryDialogOpen(true);
-        break;
       case 'take_photo':
         setPhotoUploadOpen(true);
         break;
@@ -94,21 +89,6 @@ export function CelebrationCard({
             </div>
           </div>
 
-          {/* Memory/Note Section if exists */}
-          {celebration.memory?.note && (
-            <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
-              <div className="flex items-start gap-2">
-                <Heart className="size-5 text-primary shrink-0 mt-0.5" />
-                <div className="gap-1 grid flex-1">
-                  <Text className="font-medium" size="sm" variant="muted">
-                    Your Memory
-                  </Text>
-                  <P size="sm">{celebration.memory.note}</P>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Photos if exist */}
           {celebration.memory?.photoUrls &&
             celebration.memory.photoUrls.length > 0 && (
@@ -129,21 +109,24 @@ export function CelebrationCard({
             )}
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-3 gap-3">
-            {celebration.actions.map((action) => (
-              <Button
-                className="gap-2 flex-col h-auto py-3"
-                key={action.type}
-                onClick={() => handleActionClick(action.type)}
-                size="sm"
-                variant="outline"
-              >
-                {action.type === 'save_memory' && <Heart className="size-4" />}
-                {action.type === 'take_photo' && <Camera className="size-4" />}
-                {action.type === 'share' && <Share2 className="size-4" />}
-                <span className="text-xs">{action.label}</span>
-              </Button>
-            ))}
+          <div className="grid grid-cols-2 gap-3">
+            {celebration.actions
+              .filter((action) => action.type !== 'save_memory')
+              .map((action) => (
+                <Button
+                  className="gap-2 flex-col h-auto py-3"
+                  key={action.type}
+                  onClick={() => handleActionClick(action.type)}
+                  size="sm"
+                  variant="outline"
+                >
+                  {action.type === 'take_photo' && (
+                    <Camera className="size-4" />
+                  )}
+                  {action.type === 'share' && <Share2 className="size-4" />}
+                  <span className="text-xs">{action.label}</span>
+                </Button>
+              ))}
           </div>
 
           {/* Shared status */}
@@ -163,15 +146,6 @@ export function CelebrationCard({
       </Card>
 
       {/* Dialogs */}
-      <CelebrationMemoryDialog
-        babyId={babyId}
-        babyName={babyName}
-        celebrationType={celebration.celebrationType}
-        existingNote={celebration.memory?.note || ''}
-        onOpenChange={setMemoryDialogOpen}
-        open={memoryDialogOpen}
-      />
-
       <CelebrationPhotoUpload
         babyId={babyId}
         babyName={babyName}
