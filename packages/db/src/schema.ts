@@ -261,16 +261,9 @@ export const Users = pgTable('users', {
   }),
   lastName: text('lastName'),
   // Last selected context for quick navigation
-  lastSelectedBabyId: varchar('lastSelectedBabyId', { length: 128 }).references(
-    () => Babies.id,
-    {
-      onDelete: 'set null',
-    },
-  ),
+  lastSelectedBabyId: varchar('lastSelectedBabyId', { length: 128 }),
   lastSelectedFamilyId: varchar('lastSelectedFamilyId', {
     length: 128,
-  }).references(() => Families.id, {
-    onDelete: 'set null',
   }),
   // User preferences
   measurementUnit: measurementUnitEnum('measurementUnit')
