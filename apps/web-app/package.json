@@ -59,6 +59,7 @@
     "@types/serviceworker": "0.0.167",
     "@types/web-push": "3.6.4",
     "next-sitemap": "4.2.3",
+    "sharp": "^0.33.5",
     "typescript": "catalog:"
   },
   "name": "@nugget/web-app",
@@ -67,6 +68,7 @@
     "build": "NEXT_PUBLIC_APP_TYPE=nextjs next build",
     "clean": "git clean -xdf .turbo node_modules dist .next",
     "dev": "next dev --turbo",
+    "generate:icons": "bun run scripts/generate-icons.ts",
     "postbuild": "next-sitemap --config next-sitemap.config.cjs",
     "start": "next start",
     "test": "bun test",

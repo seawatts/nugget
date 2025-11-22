@@ -5,6 +5,8 @@ import { eq } from 'drizzle-orm';
 import { ImageResponse } from 'next/og';
 
 import { CELEBRATION_MILESTONES } from '~/app/(app)/app/_components/celebrations/celebration-milestones';
+import { NuggetOgBackground } from '~/components/og/nugget-og-background';
+import { NUGGET_COLORS, OG_SIZE } from '~/lib/og-utils';
 
 export const runtime = 'edge';
 export const alt = 'Celebration';
@@ -29,23 +31,30 @@ export default async function Image({
     .limit(1);
 
   if (!memory) {
-    // Return a default "not found" image
+    // Return a default "not found" image with nugget styling
     return new ImageResponse(
       <div
         style={{
-          alignItems: 'center',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           display: 'flex',
-          fontSize: 60,
           height: '100%',
-          justifyContent: 'center',
+          position: 'relative',
           width: '100%',
         }}
       >
+        <NuggetOgBackground height={OG_SIZE.height} width={OG_SIZE.width} />
         <div
           style={{
-            color: 'white',
+            alignItems: 'center',
+            color: NUGGET_COLORS.BROWN,
+            display: 'flex',
+            fontSize: 60,
             fontWeight: 'bold',
+            height: '100%',
+            justifyContent: 'center',
+            left: 0,
+            position: 'absolute',
+            top: 0,
+            width: '100%',
           }}
         >
           Celebration Not Found
@@ -65,23 +74,30 @@ export default async function Image({
     .limit(1);
 
   if (!babyData || !babyData.birthDate) {
-    // Return a default "not found" image
+    // Return a default "not found" image with nugget styling
     return new ImageResponse(
       <div
         style={{
-          alignItems: 'center',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           display: 'flex',
-          fontSize: 60,
           height: '100%',
-          justifyContent: 'center',
+          position: 'relative',
           width: '100%',
         }}
       >
+        <NuggetOgBackground height={OG_SIZE.height} width={OG_SIZE.width} />
         <div
           style={{
-            color: 'white',
+            alignItems: 'center',
+            color: NUGGET_COLORS.BROWN,
+            display: 'flex',
+            fontSize: 60,
             fontWeight: 'bold',
+            height: '100%',
+            justifyContent: 'center',
+            left: 0,
+            position: 'absolute',
+            top: 0,
+            width: '100%',
           }}
         >
           Celebration Not Found
@@ -113,147 +129,163 @@ export default async function Image({
   return new ImageResponse(
     <div
       style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         display: 'flex',
-        flexDirection: 'column',
         height: '100%',
-        padding: '60px',
         position: 'relative',
         width: '100%',
       }}
     >
-      {/* Decorative confetti circles */}
-      <div
-        style={{
-          background: 'rgba(255, 255, 255, 0.2)',
-          borderRadius: '50%',
-          height: '80px',
-          left: '80px',
-          position: 'absolute',
-          top: '80px',
-          width: '80px',
-        }}
-      />
-      <div
-        style={{
-          background: 'rgba(255, 255, 255, 0.15)',
-          borderRadius: '50%',
-          height: '120px',
-          position: 'absolute',
-          right: '100px',
-          top: '100px',
-          width: '120px',
-        }}
-      />
-      <div
-        style={{
-          background: 'rgba(255, 255, 255, 0.1)',
-          borderRadius: '50%',
-          bottom: '120px',
-          height: '100px',
-          left: '140px',
-          position: 'absolute',
-          width: '100px',
-        }}
-      />
-      <div
-        style={{
-          background: 'rgba(255, 255, 255, 0.18)',
-          borderRadius: '50%',
-          bottom: '100px',
-          height: '60px',
-          position: 'absolute',
-          right: '120px',
-          width: '60px',
-        }}
-      />
+      {/* Nugget-themed background */}
+      <NuggetOgBackground height={OG_SIZE.height} width={OG_SIZE.width} />
 
-      {/* Main content */}
+      {/* Content overlay */}
       <div
         style={{
-          alignItems: 'center',
           display: 'flex',
-          flex: 1,
           flexDirection: 'column',
-          gap: '40px',
-          justifyContent: 'center',
+          height: '100%',
+          left: 0,
+          padding: '60px',
+          position: 'absolute',
+          top: 0,
+          width: '100%',
         }}
       >
-        {/* Photo if available */}
-        {photoUrl && (
-          <div
-            style={{
-              border: '8px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '50%',
-              height: '220px',
-              overflow: 'hidden',
-              width: '220px',
-            }}
-          >
-            <img
-              alt="Baby"
-              src={photoUrl}
+        {/* Decorative confetti circles with amber tones */}
+        <div
+          style={{
+            background: 'rgba(255, 255, 255, 0.3)',
+            borderRadius: '50%',
+            height: '80px',
+            left: '80px',
+            position: 'absolute',
+            top: '80px',
+            width: '80px',
+          }}
+        />
+        <div
+          style={{
+            background: 'rgba(255, 255, 255, 0.2)',
+            borderRadius: '50%',
+            height: '120px',
+            position: 'absolute',
+            right: '100px',
+            top: '100px',
+            width: '120px',
+          }}
+        />
+        <div
+          style={{
+            background: 'rgba(255, 255, 255, 0.15)',
+            borderRadius: '50%',
+            bottom: '180px',
+            height: '100px',
+            left: '140px',
+            position: 'absolute',
+            width: '100px',
+          }}
+        />
+        <div
+          style={{
+            background: 'rgba(255, 255, 255, 0.25)',
+            borderRadius: '50%',
+            bottom: '180px',
+            height: '60px',
+            position: 'absolute',
+            right: '120px',
+            width: '60px',
+          }}
+        />
+
+        {/* Main content */}
+        <div
+          style={{
+            alignItems: 'center',
+            display: 'flex',
+            flex: 1,
+            flexDirection: 'column',
+            gap: '40px',
+            justifyContent: 'center',
+          }}
+        >
+          {/* Photo if available */}
+          {photoUrl && (
+            <div
               style={{
-                height: '100%',
-                objectFit: 'cover',
-                width: '100%',
+                border: `8px solid ${NUGGET_COLORS.SHELL_LIGHT}`,
+                borderRadius: '50%',
+                height: '220px',
+                overflow: 'hidden',
+                width: '220px',
               }}
-            />
-          </div>
-        )}
+            >
+              <img
+                alt="Baby"
+                src={photoUrl}
+                style={{
+                  height: '100%',
+                  objectFit: 'cover',
+                  width: '100%',
+                }}
+              />
+            </div>
+          )}
 
-        {/* Celebration Title */}
-        <div
-          style={{
-            color: 'white',
-            display: 'flex',
-            flexDirection: 'column',
-            fontSize: hasPhoto ? '64px' : '80px',
-            fontWeight: 'bold',
-            lineHeight: 1.2,
-            textAlign: 'center',
-          }}
-        >
-          {celebration.title}
-        </div>
-
-        {/* Baby Name and Age */}
-        <div
-          style={{
-            color: 'rgba(255, 255, 255, 0.9)',
-            display: 'flex',
-            flexDirection: 'column',
-            fontSize: '32px',
-            fontWeight: '600',
-            textAlign: 'center',
-          }}
-        >
-          <div>{celebration.babyName}</div>
+          {/* Celebration Title */}
           <div
             style={{
-              color: 'rgba(255, 255, 255, 0.7)',
-              fontSize: '28px',
-              marginTop: '8px',
+              color: NUGGET_COLORS.BROWN,
+              display: 'flex',
+              flexDirection: 'column',
+              fontSize: hasPhoto ? '64px' : '80px',
+              fontWeight: 'bold',
+              lineHeight: 1.2,
+              textAlign: 'center',
             }}
           >
-            {celebration.ageLabel}
+            {celebration.title}
+          </div>
+
+          {/* Baby Name and Age */}
+          <div
+            style={{
+              color: NUGGET_COLORS.BROWN,
+              display: 'flex',
+              flexDirection: 'column',
+              fontSize: '32px',
+              fontWeight: '600',
+              opacity: 0.9,
+              textAlign: 'center',
+            }}
+          >
+            <div>{celebration.babyName}</div>
+            <div
+              style={{
+                fontSize: '28px',
+                marginTop: '8px',
+                opacity: 0.8,
+              }}
+            >
+              {celebration.ageLabel}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Footer branding */}
-      <div
-        style={{
-          alignItems: 'center',
-          color: 'rgba(255, 255, 255, 0.8)',
-          display: 'flex',
-          fontSize: '24px',
-          fontWeight: '600',
-          justifyContent: 'center',
-          marginTop: '40px',
-        }}
-      >
-        Nugget - Track Every Precious Moment
+        {/* Footer branding */}
+        <div
+          style={{
+            alignItems: 'center',
+            color: NUGGET_COLORS.BROWN,
+            display: 'flex',
+            fontSize: '24px',
+            fontWeight: '600',
+            justifyContent: 'center',
+            marginTop: '40px',
+            opacity: 0.8,
+          }}
+        >
+          Nugget - Track Every Precious Moment
+        </div>
       </div>
     </div>,
     {

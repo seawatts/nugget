@@ -56,7 +56,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { color: 'white', media: '(prefers-color-scheme: light)' },
+    { color: '#FBBF24', media: '(prefers-color-scheme: light)' }, // Nugget amber
     { color: 'black', media: '(prefers-color-scheme: dark)' },
   ],
 };

@@ -249,6 +249,16 @@ export const QuestionAnswerType = z.enum(questionAnswerEnum.enumValues).enum;
 // ============================================================================
 
 export const Users = pgTable('users', {
+  alarmDiaperEnabled: boolean('alarmDiaperEnabled').default(false).notNull(),
+  alarmDiaperThreshold: integer('alarmDiaperThreshold'),
+  // Alarm preferences for overdue activities
+  alarmFeedingEnabled: boolean('alarmFeedingEnabled').default(false).notNull(),
+  // Custom thresholds (in minutes, null uses default from overdue-thresholds.ts)
+  alarmFeedingThreshold: integer('alarmFeedingThreshold'),
+  alarmPumpingEnabled: boolean('alarmPumpingEnabled').default(false).notNull(),
+  alarmPumpingThreshold: integer('alarmPumpingThreshold'),
+  alarmSleepEnabled: boolean('alarmSleepEnabled').default(false).notNull(),
+  alarmSleepThreshold: integer('alarmSleepThreshold'),
   avatarUrl: text('avatarUrl'),
   clerkId: text('clerkId').unique().notNull(),
   createdAt: timestamp('createdAt').defaultNow().notNull(),

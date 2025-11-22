@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    background_color: '#000000',
+    background_color: '#FBBF24', // Nugget amber color
     categories: ['health', 'lifestyle', 'productivity'],
     description:
       "Your complete parenting journey companion - from trying to conceive to tracking your baby's milestones. Track your cycle, follow your pregnancy week by week, and monitor your baby's feeding, sleep, and milestones.",
@@ -50,6 +50,8 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     name: 'Nugget - Your Parenting Journey Companion',
     orientation: 'portrait',
+    // @ts-expect-error - permissions not in MetadataRoute.Manifest type yet
+    permissions: ['notifications'],
     scope: '/',
     screenshots: [],
     short_name: 'Nugget',
@@ -92,6 +94,6 @@ export default function manifest(): MetadataRoute.Manifest {
       },
     ],
     start_url: '/app',
-    theme_color: '#000000',
+    theme_color: '#FBBF24', // Nugget amber color
   };
 }

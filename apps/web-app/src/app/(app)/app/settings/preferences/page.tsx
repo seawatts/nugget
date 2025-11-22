@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@nugget/ui/select';
 import { SettingToggle } from '@nugget/ui/setting-toggle';
+import { differenceInDays } from 'date-fns';
 import {
   Baby,
   Clock,
@@ -31,6 +32,7 @@ import { predictNextDiaper } from '../../_components/activities/diaper/predictio
 import { predictNextFeeding } from '../../_components/activities/feeding/prediction';
 import { predictNextPumping } from '../../_components/activities/pumping/prediction';
 import { predictNextSleep } from '../../_components/activities/sleep/prediction';
+import { AlarmSettings } from './_components/alarm-settings';
 import { QuickLogInfoDrawer } from './_components/quick-log-info-drawer';
 
 type QuickLogInfoType =
@@ -1314,6 +1316,29 @@ export default function PreferencesSettingsPage() {
           </div>
         )}
       </div>
+
+      {/* Alarm Settings */}
+      {user && (
+        <div className="bg-card border border-border rounded-2xl p-6">
+          <AlarmSettings
+            babyAgeDays={
+              babies?.[0]?.birthDate
+                ? differenceInDays(new Date(), babies[0].birthDate)
+                : null
+            }
+            initialSettings={{
+              alarmDiaperEnabled: user.alarmDiaperEnabled ?? false,
+              alarmDiaperThreshold: user.alarmDiaperThreshold ?? null,
+              alarmFeedingEnabled: user.alarmFeedingEnabled ?? false,
+              alarmFeedingThreshold: user.alarmFeedingThreshold ?? null,
+              alarmPumpingEnabled: user.alarmPumpingEnabled ?? false,
+              alarmPumpingThreshold: user.alarmPumpingThreshold ?? null,
+              alarmSleepEnabled: user.alarmSleepEnabled ?? false,
+              alarmSleepThreshold: user.alarmSleepThreshold ?? null,
+            }}
+          />
+        </div>
+      )}
 
       {/* Info Drawer */}
       {openInfoDialog && (
