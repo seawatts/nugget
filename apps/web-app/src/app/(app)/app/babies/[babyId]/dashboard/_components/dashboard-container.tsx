@@ -38,7 +38,7 @@ export function DashboardContainer() {
   const allHidden = !hasAnyActivityCards && !baby.showActivityTimeline;
 
   return (
-    <main className="px-4 pt-4 pb-8 min-h-screen">
+    <main className="px-4 pt-4 pb-8 min-h-screen overflow-x-hidden">
       {/* Celebration Card - Shows on milestone days */}
       <Suspense fallback={<CelebrationsSkeleton />}>
         <CelebrationsCarousel babyId={babyId} />

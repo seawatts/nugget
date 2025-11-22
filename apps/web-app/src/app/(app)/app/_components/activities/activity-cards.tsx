@@ -357,7 +357,7 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
   return (
     <>
       {/* All Action Cards Section - Predictive + Quick Actions */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-2 gap-3 mb-6 min-w-0">
         {baby?.showFeedingCard !== false && (
           <PredictiveFeedingCard
             onActivityLogged={handleActivityLogged}

@@ -13,8 +13,10 @@ import {
 import { SettingToggle } from '@nugget/ui/setting-toggle';
 import {
   Baby,
+  Clock,
   Droplets,
   Info,
+  LayoutDashboard,
   Moon,
   Shield,
   Sun,
@@ -44,6 +46,8 @@ type QuickLogInfoType =
   | 'pumping'
   | 'pumpingVolume'
   | 'pumpingDuration'
+  | 'predictiveTimes'
+  | 'activityGoals'
   | null;
 
 const quickLogInfoContent: Record<
@@ -58,6 +62,21 @@ const quickLogInfoContent: Record<
     title: string;
   }
 > = {
+  activityGoals: {
+    bgColor: 'bg-primary/5',
+    borderColor: 'border-primary/20',
+    color: 'bg-primary/10 text-primary',
+    educationalContent:
+      "Activity goal displays show daily progress trackers on prediction cards, like '4/7 feedings today' or '6/8 diaper changes'. These help you track whether you're meeting age-appropriate daily targets. When disabled, cards show a cleaner, simpler view focused just on the most recent activity.",
+    icon: Clock,
+    tips: [
+      'Hides daily progress indicators like "4/7 feedings"',
+      'Shows cleaner, more minimal card design',
+      'All tracking data is still recorded',
+      'Useful if you prefer less visual information',
+    ],
+    title: 'Show Activity Goals',
+  },
   diaper: {
     bgColor: 'bg-activity-diaper/5',
     borderColor: 'border-activity-diaper/20',
@@ -156,6 +175,21 @@ const quickLogInfoContent: Record<
     ],
     title: 'Auto-fill feeding method',
   },
+  predictiveTimes: {
+    bgColor: 'bg-primary/5',
+    borderColor: 'border-primary/20',
+    color: 'bg-primary/10 text-primary',
+    educationalContent:
+      "Predictive times show when your baby's next activity is expected based on recent patterns and age-appropriate intervals. When enabled, cards display 'Next in 2h 30m • 3:45 PM' and highlight overdue activities. When disabled, cards only show the last activity time, giving you a cleaner view without predictions or overdue warnings.",
+    icon: Clock,
+    tips: [
+      'Hides prediction times and overdue warnings',
+      'Still shows last activity information',
+      'Quick log buttons remain available',
+      'Useful if you prefer tracking without time pressure',
+    ],
+    title: 'Show Predictive Times',
+  },
   pumping: {
     bgColor: 'bg-activity-pumping/5',
     borderColor: 'border-activity-pumping/20',
@@ -244,7 +278,17 @@ export default function PreferencesSettingsPage() {
   const updatePreferences = api.user.updatePreferences.useMutation();
   const updateHomeScreenPreference =
     api.user.updateHomeScreenPreference.useMutation();
+  const updateDashboardPreferences =
+    api.babies.updateDashboardPreferences.useMutation();
   const utils = api.useUtils();
+
+  // Dashboard preferences state
+  const [selectedBabyId, setSelectedBabyId] = useState<string | null>(null);
+  const { data: selectedBaby, isLoading: selectedBabyLoading } =
+    api.babies.getByIdLight.useQuery(
+      { id: selectedBabyId ?? '' },
+      { enabled: !!selectedBabyId },
+    );
 
   // Get the current baby (first baby or from home screen preference)
   const currentBabyId = babies?.[0]?.id;
@@ -335,6 +379,8 @@ export default function PreferencesSettingsPage() {
     quickLogPumpingUseLastVolume: true,
     quickLogPumpingUseTypicalDuration: true,
     quickLogSleepUseSuggestedDuration: true,
+    showActivityGoals: true,
+    showPredictiveTimes: true,
     temperatureUnit: 'fahrenheit' as 'fahrenheit' | 'celsius',
     timeFormat: '12h' as '12h' | '24h',
   });
@@ -346,6 +392,36 @@ export default function PreferencesSettingsPage() {
     id: '',
     type: 'baby',
   });
+
+  const [dashboardPreferences, setDashboardPreferences] = useState({
+    showActivityTimeline: true,
+    showDiaperCard: true,
+    showDoctorVisitCard: true,
+    showFeedingCard: true,
+    showPumpingCard: true,
+    showSleepCard: true,
+  });
+
+  // Set first baby as default when babies load
+  useEffect(() => {
+    if (babies && babies.length > 0 && !selectedBabyId) {
+      setSelectedBabyId(babies[0]?.id ?? null);
+    }
+  }, [babies, selectedBabyId]);
+
+  // Load dashboard preferences from baby data
+  useEffect(() => {
+    if (selectedBaby) {
+      setDashboardPreferences({
+        showActivityTimeline: selectedBaby.showActivityTimeline ?? true,
+        showDiaperCard: selectedBaby.showDiaperCard ?? true,
+        showDoctorVisitCard: selectedBaby.showDoctorVisitCard ?? true,
+        showFeedingCard: selectedBaby.showFeedingCard ?? true,
+        showPumpingCard: selectedBaby.showPumpingCard ?? true,
+        showSleepCard: selectedBaby.showSleepCard ?? true,
+      });
+    }
+  }, [selectedBaby]);
 
   // Load preferences from user data
   useEffect(() => {
@@ -364,6 +440,8 @@ export default function PreferencesSettingsPage() {
           user.quickLogPumpingUseTypicalDuration ?? true,
         quickLogSleepUseSuggestedDuration:
           user.quickLogSleepUseSuggestedDuration ?? true,
+        showActivityGoals: user.showActivityGoals ?? true,
+        showPredictiveTimes: user.showPredictiveTimes ?? true,
         temperatureUnit: user.temperatureUnit || 'fahrenheit',
         timeFormat: user.timeFormat || '12h',
       });
@@ -400,7 +478,9 @@ export default function PreferencesSettingsPage() {
       | 'quickLogSleepUseSuggestedDuration'
       | 'quickLogDiaperUsePredictedType'
       | 'quickLogPumpingUseLastVolume'
-      | 'quickLogPumpingUseTypicalDuration',
+      | 'quickLogPumpingUseTypicalDuration'
+      | 'showActivityGoals'
+      | 'showPredictiveTimes',
     value: string | boolean,
   ) => {
     // Optimistic update
@@ -429,6 +509,8 @@ export default function PreferencesSettingsPage() {
             user.quickLogPumpingUseTypicalDuration ?? true,
           quickLogSleepUseSuggestedDuration:
             user.quickLogSleepUseSuggestedDuration ?? true,
+          showActivityGoals: user.showActivityGoals ?? true,
+          showPredictiveTimes: user.showPredictiveTimes ?? true,
           temperatureUnit: user.temperatureUnit || 'fahrenheit',
           timeFormat: user.timeFormat || '12h',
         });
@@ -475,6 +557,53 @@ export default function PreferencesSettingsPage() {
       setHomeScreenPreference(previousPreference);
       toast.error('Failed to save home screen preference');
       console.error('Failed to save home screen preference:', error);
+    }
+  };
+
+  // Save dashboard preference to database
+  const handleDashboardPreferenceChange = async (
+    key:
+      | 'showFeedingCard'
+      | 'showSleepCard'
+      | 'showDiaperCard'
+      | 'showPumpingCard'
+      | 'showDoctorVisitCard'
+      | 'showActivityTimeline',
+    value: boolean,
+  ) => {
+    if (!selectedBabyId) {
+      toast.error('No baby selected');
+      return;
+    }
+
+    // Optimistic update
+    setDashboardPreferences((prev) => ({ ...prev, [key]: value }));
+
+    try {
+      await updateDashboardPreferences.mutateAsync({
+        id: selectedBabyId,
+        [key]: value,
+      });
+
+      // Invalidate queries to refetch updated data
+      await utils.babies.getByIdLight.invalidate({ id: selectedBabyId });
+      await utils.babies.list.invalidate();
+
+      toast.success('Dashboard preferences saved');
+    } catch (error) {
+      // Revert on error
+      if (selectedBaby) {
+        setDashboardPreferences({
+          showActivityTimeline: selectedBaby.showActivityTimeline ?? true,
+          showDiaperCard: selectedBaby.showDiaperCard ?? true,
+          showDoctorVisitCard: selectedBaby.showDoctorVisitCard ?? true,
+          showFeedingCard: selectedBaby.showFeedingCard ?? true,
+          showPumpingCard: selectedBaby.showPumpingCard ?? true,
+          showSleepCard: selectedBaby.showSleepCard ?? true,
+        });
+      }
+      toast.error('Failed to save dashboard preferences');
+      console.error('Failed to save dashboard preferences:', error);
     }
   };
 
@@ -750,6 +879,52 @@ export default function PreferencesSettingsPage() {
           }
         />
 
+        {/* Predictive Times Toggle */}
+        <SettingToggle
+          checked={preferences.showPredictiveTimes}
+          description="Show predicted times and overdue warnings on activity cards"
+          label="Show predictive times"
+          labelAction={
+            <Button
+              className="size-4 p-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenInfoDialog('predictiveTimes');
+              }}
+              type="button"
+              variant="ghost"
+            >
+              <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+            </Button>
+          }
+          onCheckedChange={(checked) =>
+            handlePreferenceChange('showPredictiveTimes', checked)
+          }
+        />
+
+        {/* Activity Goals Toggle */}
+        <SettingToggle
+          checked={preferences.showActivityGoals}
+          description="Show daily progress indicators like '4/7 feedings today'"
+          label="Show activity goals"
+          labelAction={
+            <Button
+              className="size-4 p-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenInfoDialog('activityGoals');
+              }}
+              type="button"
+              variant="ghost"
+            >
+              <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+            </Button>
+          }
+          onCheckedChange={(checked) =>
+            handlePreferenceChange('showActivityGoals', checked)
+          }
+        />
+
         {/* Feeding Settings */}
         <div className="space-y-2 pt-2">
           <div className="flex items-center gap-2 font-medium">
@@ -994,6 +1169,150 @@ export default function PreferencesSettingsPage() {
             />
           </div>
         </div>
+      </div>
+
+      {/* Dashboard Customization */}
+      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <LayoutDashboard className="h-5 w-5" />
+            Dashboard Customization
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Customize which cards appear on the home screen for each baby
+          </p>
+        </div>
+
+        {/* Baby Selector */}
+        {babies && babies.length > 0 ? (
+          <>
+            <div className="space-y-2">
+              <Label>Select Baby</Label>
+              <Select
+                onValueChange={setSelectedBabyId}
+                value={selectedBabyId || ''}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a baby" />
+                </SelectTrigger>
+                <SelectContent>
+                  {babies.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.firstName} {b.lastName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedBabyLoading ? (
+              <div className="text-sm text-muted-foreground">
+                Loading preferences...
+              </div>
+            ) : (
+              <>
+                {/* Activity Cards Section */}
+                <div className="space-y-3 pt-2">
+                  <div>
+                    <h3 className="text-base font-semibold">Activity Cards</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Choose which activity cards to show on the home screen
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <SettingToggle
+                      checked={dashboardPreferences.showFeedingCard}
+                      description="Display feeding predictions and quick log"
+                      label="Show Feeding"
+                      onCheckedChange={(checked) =>
+                        handleDashboardPreferenceChange(
+                          'showFeedingCard',
+                          checked,
+                        )
+                      }
+                    />
+
+                    <SettingToggle
+                      checked={dashboardPreferences.showSleepCard}
+                      description="Display sleep predictions and quick log"
+                      label="Show Sleep"
+                      onCheckedChange={(checked) =>
+                        handleDashboardPreferenceChange(
+                          'showSleepCard',
+                          checked,
+                        )
+                      }
+                    />
+
+                    <SettingToggle
+                      checked={dashboardPreferences.showDiaperCard}
+                      description="Display diaper predictions and quick log"
+                      label="Show Diaper"
+                      onCheckedChange={(checked) =>
+                        handleDashboardPreferenceChange(
+                          'showDiaperCard',
+                          checked,
+                        )
+                      }
+                    />
+
+                    <SettingToggle
+                      checked={dashboardPreferences.showPumpingCard}
+                      description="Display pumping predictions and quick log"
+                      label="Show Pumping"
+                      onCheckedChange={(checked) =>
+                        handleDashboardPreferenceChange(
+                          'showPumpingCard',
+                          checked,
+                        )
+                      }
+                    />
+
+                    <SettingToggle
+                      checked={dashboardPreferences.showDoctorVisitCard}
+                      description="Display doctor visit reminders and quick log"
+                      label="Show Doctor Visit"
+                      onCheckedChange={(checked) =>
+                        handleDashboardPreferenceChange(
+                          'showDoctorVisitCard',
+                          checked,
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* Timeline Section */}
+                <div className="space-y-3 pt-2">
+                  <div>
+                    <h3 className="text-base font-semibold">Timeline</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Control activity timeline visibility
+                    </p>
+                  </div>
+
+                  <SettingToggle
+                    checked={dashboardPreferences.showActivityTimeline}
+                    description="Display the full activity history timeline"
+                    label="Show Activity Timeline"
+                    onCheckedChange={(checked) =>
+                      handleDashboardPreferenceChange(
+                        'showActivityTimeline',
+                        checked,
+                      )
+                    }
+                  />
+                </div>
+              </>
+            )}
+          </>
+        ) : (
+          <div className="text-sm text-muted-foreground">
+            No babies found. Add a baby first to customize dashboard
+            preferences.
+          </div>
+        )}
       </div>
 
       {/* Info Drawer */}

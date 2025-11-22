@@ -179,7 +179,10 @@ export function PredictiveSleepCard({
     ? Date.now() - new Date(prediction.recentSkipTime).getTime() <
       prediction.intervalHours * 60 * 60 * 1000
     : false;
-  const effectiveIsOverdue = prediction.isOverdue && !isRecentlySkipped;
+  const effectiveIsOverdue =
+    prediction.isOverdue &&
+    !isRecentlySkipped &&
+    (userData?.showPredictiveTimes ?? true);
 
   // Calculate display time - if recently skipped, show next predicted time from skip moment
   const displayNextTime =
@@ -344,15 +347,18 @@ export function PredictiveSleepCard({
                     </div>
                   )}
                   {/* Bottom: Next prediction with overdue indicator */}
-                  <div className="text-sm opacity-60">
-                    Next {exactTime}
-                    {prediction.overdueMinutes && (
-                      <span className="text-amber-400 font-medium">
-                        {' '}
-                        • {formatOverdueTime(prediction.overdueMinutes)} overdue
-                      </span>
-                    )}
-                  </div>
+                  {(userData?.showPredictiveTimes ?? true) && (
+                    <div className="text-sm opacity-60">
+                      Next {exactTime}
+                      {prediction.overdueMinutes && (
+                        <span className="text-amber-400 font-medium">
+                          {' '}
+                          • {formatOverdueTime(prediction.overdueMinutes)}{' '}
+                          overdue
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </>
               ) : (
                 // Show prediction
@@ -381,9 +387,11 @@ export function PredictiveSleepCard({
                     </div>
                   )}
                   {/* Bottom: Next prediction */}
-                  <div className="text-sm opacity-60">
-                    Next {timeUntil} • {exactTime}
-                  </div>
+                  {(userData?.showPredictiveTimes ?? true) && (
+                    <div className="text-sm opacity-60">
+                      Next {timeUntil} • {exactTime}
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -400,7 +408,7 @@ export function PredictiveSleepCard({
         )}
 
         {/* Goal Tracking Display - Shows sleep progress for today */}
-        {!effectiveIsOverdue && (
+        {!effectiveIsOverdue && (userData?.showActivityGoals ?? true) && (
           <SleepGoalDisplay
             avgNapDuration={todaysStats.avgNapDuration}
             longestNapMinutes={todaysStats.longestNapMinutes}

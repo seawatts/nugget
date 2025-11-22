@@ -1,6 +1,5 @@
 'use client';
 
-import { useUser } from '@clerk/nextjs';
 import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Card } from '@nugget/ui/card';
@@ -42,7 +41,6 @@ export function PredictiveFeedingCard({
   onCardClick,
   onActivityLogged,
 }: PredictiveFeedingCardProps) {
-  const { user } = useUser();
   const params = useParams<{ babyId?: string }>();
   const babyId = params?.babyId;
 
@@ -110,13 +108,18 @@ export function PredictiveFeedingCard({
   const { elapsedTime } = usePredictiveTimer(inProgressActivity);
 
   // Use shared skip logic hook (must be called before early returns)
-  const { effectiveIsOverdue, displayNextTime } = useSkipLogic({
-    intervalHours: data?.prediction.intervalHours ?? 3,
-    isOverdue: data?.prediction.isOverdue ?? false,
-    nextTime: data?.prediction.nextFeedingTime ?? new Date(),
-    overdueMinutes: data?.prediction.overdueMinutes ?? null,
-    recentSkipTime: data?.prediction.recentSkipTime ?? null,
-  });
+  const { effectiveIsOverdue: skipLogicOverdue, displayNextTime } =
+    useSkipLogic({
+      intervalHours: data?.prediction.intervalHours ?? 3,
+      isOverdue: data?.prediction.isOverdue ?? false,
+      nextTime: data?.prediction.nextFeedingTime ?? new Date(),
+      overdueMinutes: data?.prediction.overdueMinutes ?? null,
+      recentSkipTime: data?.prediction.recentSkipTime ?? null,
+    });
+
+  // Override effectiveIsOverdue based on showPredictiveTimes preference
+  const effectiveIsOverdue =
+    skipLogicOverdue && (userData?.showPredictiveTimes ?? true);
 
   // Use feeding-specific actions hook
   const { handleSkip, handleQuickLog, isSkipping, isCreating } =
@@ -165,8 +168,17 @@ export function PredictiveFeedingCard({
 
   // Calculate today's feeding statistics for goal display
   const todaysStats = calculateTodaysFeedingStats(todaysActivitiesData ?? []);
-  const dailyFeedingGoal = getDailyFeedingGoal(babyAgeDays ?? 0);
-  const dailyAmountGoal = getDailyAmountGoal(babyAgeDays ?? 0, userUnitPref);
+  // Use predicted interval from the algorithm for more accurate daily goals
+  // This adapts to actual patterns like cluster feeding
+  const dailyFeedingGoal = getDailyFeedingGoal(
+    babyAgeDays ?? 0,
+    prediction.intervalHours,
+  );
+  const dailyAmountGoal = getDailyAmountGoal(
+    babyAgeDays ?? 0,
+    userUnitPref,
+    prediction.intervalHours,
+  );
 
   // Format countdown
   const timeUntil = formatDistanceToNow(displayNextTime, {
@@ -227,6 +239,7 @@ export function PredictiveFeedingCard({
             lastActivityTime={prediction.lastFeedingTime}
             overdueMinutes={prediction.overdueMinutes}
             predictedAmount={formatAmount(prediction.suggestedAmount)}
+            showPredictiveTimes={userData?.showPredictiveTimes ?? true}
             timeFormat={timeFormat}
             timeUntil={timeUntil}
           />
@@ -255,17 +268,19 @@ export function PredictiveFeedingCard({
         )} */}
 
         {/* Goal Tracking Display - Shows feeding progress for today */}
-        {!effectiveIsOverdue && !inProgressActivity && (
-          <FeedingGoalDisplay
-            avgIntervalHours={todaysStats.avgIntervalHours}
-            currentAmount={todaysStats.totalMl}
-            currentCount={todaysStats.count}
-            feedingThemeColor={feedingTheme.color}
-            goalAmount={dailyAmountGoal}
-            goalCount={dailyFeedingGoal}
-            unit={userUnitPref}
-          />
-        )}
+        {!effectiveIsOverdue &&
+          !inProgressActivity &&
+          (userData?.showActivityGoals ?? true) && (
+            <FeedingGoalDisplay
+              avgAmountMl={todaysStats.avgAmountMl}
+              currentAmount={todaysStats.totalMl}
+              currentCount={todaysStats.count}
+              feedingThemeColor={feedingTheme.color}
+              goalAmount={dailyAmountGoal}
+              goalCount={dailyFeedingGoal}
+              unit={userUnitPref}
+            />
+          )}
       </Card>
 
       {/* Info Drawer */}

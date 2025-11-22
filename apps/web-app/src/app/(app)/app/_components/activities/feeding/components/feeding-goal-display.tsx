@@ -5,7 +5,7 @@ interface FeedingGoalDisplayProps {
   goalCount: number;
   currentAmount: number; // in ml
   goalAmount: number; // in user's preferred unit value
-  avgIntervalHours: number | null;
+  avgAmountMl: number | null;
   unit: 'ML' | 'OZ';
   feedingThemeColor: string;
 }
@@ -15,7 +15,7 @@ export function FeedingGoalDisplay({
   goalCount,
   currentAmount,
   goalAmount,
-  avgIntervalHours,
+  avgAmountMl,
   unit,
   feedingThemeColor: _feedingThemeColor,
 }: FeedingGoalDisplayProps) {
@@ -25,9 +25,11 @@ export function FeedingGoalDisplay({
       ? Math.round((currentAmount / 29.5735) * 10) / 10 // Round to 1 decimal
       : Math.round(currentAmount);
 
-  // Format average interval
-  const avgIntervalDisplay = avgIntervalHours
-    ? `${Math.round(avgIntervalHours * 10) / 10}h` // Round to 1 decimal
+  // Format average amount
+  const avgAmountDisplay = avgAmountMl
+    ? unit === 'OZ'
+      ? `${Math.round((avgAmountMl / 29.5735) * 10) / 10}${unit.toLowerCase()}` // Round to 1 decimal
+      : `${Math.round(avgAmountMl)}${unit.toLowerCase()}`
     : '--';
 
   return (
@@ -50,10 +52,10 @@ export function FeedingGoalDisplay({
           </span>
         </div>
 
-        {/* Average Interval */}
+        {/* Average Amount */}
         <div className="flex flex-col">
           <span className="text-xs opacity-60">Avg</span>
-          <span className="text-sm font-medium">{avgIntervalDisplay}</span>
+          <span className="text-sm font-medium">{avgAmountDisplay}</span>
         </div>
       </div>
     </div>

@@ -54,12 +54,14 @@ export function TimeInput({
       <label className="text-xs text-muted-foreground" htmlFor={id}>
         {label}
       </label>
-      <div className="grid grid-cols-[1fr_1fr] gap-3 min-w-0 max-w-full">
-        <DatePicker
-          date={value}
-          disabled={disabled}
-          setDate={handleDateChange}
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr] gap-3 min-w-0 max-w-full overflow-hidden">
+        <div className="min-w-0">
+          <DatePicker
+            date={value}
+            disabled={disabled}
+            setDate={handleDateChange}
+          />
+        </div>
         <input
           className="w-full max-w-full min-w-0 px-3 py-2 rounded-md border border-border bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed box-border"
           disabled={disabled}

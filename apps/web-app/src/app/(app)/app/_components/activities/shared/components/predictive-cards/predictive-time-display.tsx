@@ -22,6 +22,7 @@ interface PredictiveTimeDisplayProps {
   elapsedTime?: number;
   timeFormat: '12h' | '24h';
   activityLabel?: string; // e.g., "feeding", "sleeping"
+  showPredictiveTimes?: boolean;
 }
 
 export function PredictiveTimeDisplay({
@@ -37,6 +38,7 @@ export function PredictiveTimeDisplay({
   elapsedTime = 0,
   timeFormat,
   activityLabel = 'active',
+  showPredictiveTimes = true,
 }: PredictiveTimeDisplayProps) {
   if (isLoading) {
     return (
@@ -51,13 +53,15 @@ export function PredictiveTimeDisplay({
   if (inProgressActivity) {
     return (
       <>
-        <div className="flex items-baseline gap-2">
-          <span className="text-lg font-bold">Currently {activityLabel}</span>
-          <span className="text-base font-mono opacity-90">
+        <div className="flex items-baseline gap-2 min-w-0">
+          <span className="text-lg font-bold truncate">
+            Currently {activityLabel}
+          </span>
+          <span className="text-base font-mono opacity-90 shrink-0">
             {formatElapsedTime(elapsedTime)}
           </span>
         </div>
-        <div className="text-sm opacity-60">
+        <div className="text-sm opacity-60 truncate">
           Started{' '}
           {formatTimeWithPreference(
             new Date(inProgressActivity.startTime),
@@ -74,29 +78,31 @@ export function PredictiveTimeDisplay({
       <>
         {/* Top: Last activity (no label) */}
         {lastActivityTime && (
-          <div className="flex items-baseline gap-2">
-            <span className="text-lg font-semibold">
+          <div className="flex items-baseline gap-2 min-w-0">
+            <span className="text-lg font-semibold shrink-0">
               {formatDistanceToNow(lastActivityTime, {
                 addSuffix: true,
               })}
             </span>
-            <span className="text-sm opacity-70">
+            <span className="text-sm opacity-70 truncate min-w-0">
               {formatTimeWithPreference(lastActivityTime, timeFormat)}
               {lastActivityAmount && <span> • {lastActivityAmount}</span>}
             </span>
           </div>
         )}
         {/* Bottom: Next prediction with overdue indicator */}
-        <div className="text-sm opacity-60">
-          Next {exactTime}
-          {overdueMinutes && (
-            <span className="text-amber-400 font-medium">
-              {' '}
-              • {formatOverdueTime(overdueMinutes)} overdue
-            </span>
-          )}
-          {predictedAmount && <span> • {predictedAmount}</span>}
-        </div>
+        {showPredictiveTimes && (
+          <div className="text-sm opacity-60 break-words">
+            Next {exactTime}
+            {overdueMinutes && (
+              <span className="text-amber-400 font-medium">
+                {' '}
+                • {formatOverdueTime(overdueMinutes)} overdue
+              </span>
+            )}
+            {predictedAmount && <span> • {predictedAmount}</span>}
+          </div>
+        )}
       </>
     );
   }
@@ -106,23 +112,25 @@ export function PredictiveTimeDisplay({
     <>
       {/* Top: Last activity (no label) */}
       {lastActivityTime && (
-        <div className="flex items-baseline gap-2">
-          <span className="text-lg font-semibold">
+        <div className="flex items-baseline gap-2 min-w-0">
+          <span className="text-lg font-semibold shrink-0">
             {formatDistanceToNow(lastActivityTime, {
               addSuffix: true,
             })}
           </span>
-          <span className="text-sm opacity-70">
+          <span className="text-sm opacity-70 truncate min-w-0">
             {formatTimeWithPreference(lastActivityTime, timeFormat)}
             {lastActivityAmount && <span> • {lastActivityAmount}</span>}
           </span>
         </div>
       )}
       {/* Bottom: Next prediction */}
-      <div className="text-sm opacity-60">
-        Next {timeUntil} • {exactTime}
-        {predictedAmount && <span> • {predictedAmount}</span>}
-      </div>
+      {showPredictiveTimes && (
+        <div className="text-sm opacity-60 break-words">
+          Next {timeUntil} • {exactTime}
+          {predictedAmount && <span> • {predictedAmount}</span>}
+        </div>
+      )}
     </>
   );
 }

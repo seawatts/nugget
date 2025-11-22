@@ -128,6 +128,8 @@ export const userRouter = {
         quickLogPumpingUseLastVolume: z.boolean().optional(),
         quickLogPumpingUseTypicalDuration: z.boolean().optional(),
         quickLogSleepUseSuggestedDuration: z.boolean().optional(),
+        showActivityGoals: z.boolean().optional(),
+        showPredictiveTimes: z.boolean().optional(),
         temperatureUnit: z
           .enum([TemperatureUnitType.fahrenheit, TemperatureUnitType.celsius])
           .optional(),

@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "showActivityGoals" boolean DEFAULT true NOT NULL;

@@ -133,7 +133,10 @@ export function PredictiveDiaperCard({
     ? Date.now() - new Date(prediction.recentSkipTime).getTime() <
       prediction.intervalHours * 60 * 60 * 1000
     : false;
-  const effectiveIsOverdue = prediction.isOverdue && !isRecentlySkipped;
+  const effectiveIsOverdue =
+    prediction.isOverdue &&
+    !isRecentlySkipped &&
+    (userData?.showPredictiveTimes ?? true);
 
   // Calculate display time - if recently skipped, show next predicted time from skip moment
   const displayNextTime =
@@ -208,11 +211,11 @@ export function PredictiveDiaperCard({
         )}
         onClick={handleCardClick}
       >
-        <div className="flex items-center gap-4">
-          <div className="opacity-30">
+        <div className="flex items-center gap-4 min-w-0 overflow-hidden">
+          <div className="opacity-30 shrink-0">
             <Baby className="h-12 w-12" strokeWidth={1.5} />
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-2xl font-bold">Diaper</h2>
               <div className="flex items-center gap-1">
@@ -257,13 +260,13 @@ export function PredictiveDiaperCard({
                 <>
                   {/* Top: Last activity (no label) */}
                   {prediction.lastDiaperTime && (
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-lg font-semibold">
+                    <div className="flex items-baseline gap-2 min-w-0">
+                      <span className="text-lg font-semibold shrink-0">
                         {formatDistanceToNow(prediction.lastDiaperTime, {
                           addSuffix: true,
                         })}
                       </span>
-                      <span className="text-sm opacity-70">
+                      <span className="text-sm opacity-70 truncate min-w-0">
                         {formatTimeWithPreference(
                           prediction.lastDiaperTime,
                           timeFormat,
@@ -278,27 +281,30 @@ export function PredictiveDiaperCard({
                     </div>
                   )}
                   {/* Bottom: Next prediction with overdue indicator */}
-                  <div className="text-sm opacity-60">
-                    Next {exactTime}
-                    {prediction.overdueMinutes && (
-                      <span className="text-amber-400 font-medium">
-                        {' '}
-                        • {formatOverdueTime(prediction.overdueMinutes)} overdue
-                      </span>
-                    )}
-                  </div>
+                  {(userData?.showPredictiveTimes ?? true) && (
+                    <div className="text-sm opacity-60 break-words">
+                      Next {exactTime}
+                      {prediction.overdueMinutes && (
+                        <span className="text-amber-400 font-medium">
+                          {' '}
+                          • {formatOverdueTime(prediction.overdueMinutes)}{' '}
+                          overdue
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
                   {/* Top: Last activity (no label) */}
                   {prediction.lastDiaperTime && (
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-lg font-semibold">
+                    <div className="flex items-baseline gap-2 min-w-0">
+                      <span className="text-lg font-semibold shrink-0">
                         {formatDistanceToNow(prediction.lastDiaperTime, {
                           addSuffix: true,
                         })}
                       </span>
-                      <span className="text-sm opacity-70">
+                      <span className="text-sm opacity-70 truncate min-w-0">
                         {formatTimeWithPreference(
                           prediction.lastDiaperTime,
                           timeFormat,
@@ -313,9 +319,11 @@ export function PredictiveDiaperCard({
                     </div>
                   )}
                   {/* Bottom: Next prediction */}
-                  <div className="text-sm opacity-60">
-                    Next {timeUntil} • {exactTime}
-                  </div>
+                  {(userData?.showPredictiveTimes ?? true) && (
+                    <div className="text-sm opacity-60 break-words">
+                      Next {timeUntil} • {exactTime}
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -332,7 +340,7 @@ export function PredictiveDiaperCard({
         )}
 
         {/* Goal Tracking Display - Shows diaper change progress for today */}
-        {!effectiveIsOverdue && (
+        {!effectiveIsOverdue && (userData?.showActivityGoals ?? true) && (
           <DiaperGoalDisplay
             avgIntervalHours={todaysStats.avgIntervalHours}
             currentCount={todaysStats.count}

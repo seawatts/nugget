@@ -11,7 +11,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     <ScrollProvider>
       <PWAFirstLaunchHandler />
       <div className="flex min-h-screen flex-col bg-background">
-        <div className="mx-auto w-full max-w-3xl">
+        <div className="mx-auto w-full max-w-3xl overflow-x-hidden">
           <main className="flex-1 pb-24">{children}</main>
           <BottomNav />
         </div>

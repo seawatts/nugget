@@ -210,6 +210,20 @@
       "tag": "0031_fix_activities_amount_ml_type",
       "version": "7",
       "when": 1732238241000
+    },
+    {
+      "breakpoints": true,
+      "idx": 32,
+      "tag": "0032_luxuriant_doorman",
+      "version": "7",
+      "when": 1763774678769
+    },
+    {
+      "breakpoints": true,
+      "idx": 33,
+      "tag": "0033_loving_lightspeed",
+      "version": "7",
+      "when": 1763775078361
     }
   ],
   "version": "7"

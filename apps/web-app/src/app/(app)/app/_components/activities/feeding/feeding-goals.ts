@@ -1,22 +1,38 @@
 import type { Activities } from '@nugget/db/schema';
-import { differenceInHours, startOfDay } from 'date-fns';
+import { startOfDay } from 'date-fns';
 import { getFeedingIntervalByAge } from './feeding-intervals';
 
 /**
- * Calculate recommended daily feeding count based on baby's age
- * Uses 24 hours divided by age-appropriate interval
+ * Calculate recommended daily feeding count based on baby's age and actual patterns
+ * Uses 24 hours divided by predicted interval (if available) or age-appropriate interval
+ * @param ageDays - Baby's age in days
+ * @param predictedIntervalHours - Optional predicted interval from the prediction algorithm
+ * @returns Estimated number of feedings per day
  */
-export function getDailyFeedingGoal(ageDays: number): number {
-  const intervalHours = getFeedingIntervalByAge(ageDays);
+export function getDailyFeedingGoal(
+  ageDays: number,
+  predictedIntervalHours?: number | null,
+): number {
+  // Use predicted interval if available (based on actual patterns), otherwise fall back to age-based
+  const intervalHours =
+    predictedIntervalHours ?? getFeedingIntervalByAge(ageDays);
   return Math.round(24 / intervalHours);
 }
 
 /**
- * Calculate recommended daily total volume based on baby's age
+ * Calculate recommended daily total volume based on baby's age and actual patterns
  * Returns amount in the specified unit (ML or OZ)
+ * @param ageDays - Baby's age in days
+ * @param unit - Unit preference (ML or OZ)
+ * @param predictedIntervalHours - Optional predicted interval from the prediction algorithm
+ * @returns Estimated total daily amount in the specified unit
  */
-export function getDailyAmountGoal(ageDays: number, unit: 'ML' | 'OZ'): number {
-  const feedingCount = getDailyFeedingGoal(ageDays);
+export function getDailyAmountGoal(
+  ageDays: number,
+  unit: 'ML' | 'OZ',
+  predictedIntervalHours?: number | null,
+): number {
+  const feedingCount = getDailyFeedingGoal(ageDays, predictedIntervalHours);
   let amountPerFeeding: number;
 
   // Define typical amounts per feeding by age
@@ -51,7 +67,7 @@ export function calculateTodaysFeedingStats(
 ): {
   count: number;
   totalMl: number;
-  avgIntervalHours: number | null;
+  avgAmountMl: number | null;
 } {
   const today = startOfDay(new Date());
 
@@ -74,40 +90,18 @@ export function calculateTodaysFeedingStats(
     return sum;
   }, 0);
 
-  // Calculate average interval between feedings
-  let avgIntervalHours: number | null = null;
-  if (todaysFeedings.length > 1) {
-    // Sort by start time
-    const sorted = [...todaysFeedings].sort(
-      (a, b) =>
-        new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
-    );
+  // Calculate average amount per feeding
+  let avgAmountMl: number | null = null;
+  const feedingsWithAmount = todaysFeedings.filter(
+    (activity) => activity.type === 'bottle' && activity.amountMl,
+  );
 
-    // Calculate intervals between consecutive feedings
-    const intervals: number[] = [];
-    for (let i = 1; i < sorted.length; i++) {
-      const current = sorted[i];
-      const previous = sorted[i - 1];
-      if (current && previous) {
-        const hours = differenceInHours(
-          new Date(current.startTime),
-          new Date(previous.startTime),
-        );
-        if (hours > 0) {
-          intervals.push(hours);
-        }
-      }
-    }
-
-    // Calculate average interval
-    if (intervals.length > 0) {
-      const sum = intervals.reduce((a, b) => a + b, 0);
-      avgIntervalHours = sum / intervals.length;
-    }
+  if (feedingsWithAmount.length > 0) {
+    avgAmountMl = totalMl / feedingsWithAmount.length;
   }
 
   return {
-    avgIntervalHours,
+    avgAmountMl,
     count,
     totalMl,
   };

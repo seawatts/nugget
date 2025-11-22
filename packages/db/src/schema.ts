@@ -304,6 +304,8 @@ export const Users = pgTable('users', {
   )
     .default(true)
     .notNull(),
+  showActivityGoals: boolean('showActivityGoals').default(true).notNull(),
+  showPredictiveTimes: boolean('showPredictiveTimes').default(true).notNull(),
   temperatureUnit: temperatureUnitEnum('temperatureUnit')
     .default('fahrenheit')
     .notNull(),

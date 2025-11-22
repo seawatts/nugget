@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@nugget/ui/button';
-import { LayoutDashboard, Shield, User, UserCircle, Users } from 'lucide-react';
+import { Shield, User, UserCircle, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -10,11 +10,6 @@ const tabs = [
   { href: '/app/settings/family', icon: Users, label: 'Family' },
   { href: '/app/settings/account', icon: UserCircle, label: 'Account' },
   { href: '/app/settings/preferences', icon: Shield, label: 'Preferences' },
-  {
-    href: '/app/settings/dashboard',
-    icon: LayoutDashboard,
-    label: 'Dashboard',
-  },
 ];
 
 export default function SettingsLayout({
