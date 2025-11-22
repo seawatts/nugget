@@ -249,7 +249,7 @@ export function calculateFeedingTrendData(
 
   for (const activity of recentFeedings) {
     const date = new Date(activity.startTime);
-    const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+    const dateKey = date.toISOString().split('T')[0] as string; // YYYY-MM-DD
 
     if (!statsByDate.has(dateKey)) {
       statsByDate.set(dateKey, { count: 0, totalMl: 0 });
@@ -269,7 +269,7 @@ export function calculateFeedingTrendData(
   const result: Array<{ date: string; count: number; totalMl: number }> = [];
   for (let i = 6; i >= 0; i -= 1) {
     const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-    const dateKey = date.toISOString().split('T')[0];
+    const dateKey = date.toISOString().split('T')[0] as string;
     const stats = statsByDate.get(dateKey) || { count: 0, totalMl: 0 };
     result.push({
       count: stats.count,

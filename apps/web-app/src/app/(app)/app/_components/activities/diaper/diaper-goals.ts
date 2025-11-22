@@ -239,7 +239,7 @@ export function calculateDiaperTrendData(
 
   for (const activity of recentDiapers) {
     const date = new Date(activity.startTime);
-    const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+    const dateKey = date.toISOString().split('T')[0] as string; // YYYY-MM-DD
 
     if (!statsByDate.has(dateKey)) {
       statsByDate.set(dateKey, { both: 0, dirty: 0, wet: 0 });
@@ -269,7 +269,7 @@ export function calculateDiaperTrendData(
   }> = [];
   for (let i = 6; i >= 0; i -= 1) {
     const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-    const dateKey = date.toISOString().split('T')[0];
+    const dateKey = date.toISOString().split('T')[0] as string;
     const stats = statsByDate.get(dateKey) || { both: 0, dirty: 0, wet: 0 };
     result.push({
       both: stats.both,
