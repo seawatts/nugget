@@ -75,7 +75,7 @@ export default async function Image({
 
   // Determine if we should show a photo or just the initial
   const hasPhoto = baby.photoUrl && !baby.avatarBackgroundColor;
-  const avatarUrl = hasPhoto ? baby.photoUrl : undefined;
+  const avatarUrl = hasPhoto ? (baby.photoUrl ?? undefined) : undefined;
   const avatarLetter = !hasPhoto ? babyName.charAt(0).toUpperCase() : undefined;
 
   return new ImageResponse(

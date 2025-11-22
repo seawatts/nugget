@@ -19,7 +19,7 @@ const NUGGET_COLORS = {
   SHELL_MID: '#F2EBE0',
 } as const;
 
-const OUTPUT_DIR = join(import.meta.dir, '../public');
+const OUTPUT_DIR = join(import.meta.dirname ?? __dirname, '../public');
 
 interface IconSize {
   size: number;
