@@ -251,56 +251,74 @@ export function PredictivePumpingCard({
               ) : effectiveIsOverdue ? (
                 // Show overdue warning
                 <>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-bold text-amber-400">
-                      {formatOverdueTime(prediction.overdueMinutes ?? 0)}{' '}
-                      overdue ({exactTime})
-                    </span>
-                  </div>
+                  {/* Top: Last activity (no label) */}
                   {prediction.lastPumpingTime && (
-                    <div className="text-sm opacity-60">
-                      {formatDistanceToNow(prediction.lastPumpingTime, {
-                        addSuffix: true,
-                      })}{' '}
-                      •{' '}
-                      {formatTimeWithPreference(
-                        prediction.lastPumpingTime,
-                        timeFormat,
-                      )}
-                      {prediction.lastPumpingAmount && (
-                        <span>
-                          {' '}
-                          • {formatAmount(prediction.lastPumpingAmount)}
-                        </span>
-                      )}
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-lg font-semibold">
+                        {formatDistanceToNow(prediction.lastPumpingTime, {
+                          addSuffix: true,
+                        })}
+                      </span>
+                      <span className="text-sm opacity-70">
+                        {formatTimeWithPreference(
+                          prediction.lastPumpingTime,
+                          timeFormat,
+                        )}
+                        {prediction.lastPumpingAmount && (
+                          <span>
+                            {' '}
+                            • {formatAmount(prediction.lastPumpingAmount)}
+                          </span>
+                        )}
+                      </span>
                     </div>
                   )}
+                  {/* Bottom: Next prediction with overdue indicator */}
+                  <div className="text-sm opacity-60">
+                    Next {exactTime}
+                    {prediction.overdueMinutes && (
+                      <span className="text-amber-400 font-medium">
+                        {' '}
+                        • {formatOverdueTime(prediction.overdueMinutes)} overdue
+                      </span>
+                    )}
+                    {prediction.suggestedVolume && (
+                      <span> • {formatAmount(prediction.suggestedVolume)}</span>
+                    )}
+                  </div>
                 </>
               ) : (
                 // Show prediction
                 <>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-semibold">{timeUntil}</span>
-                    <span className="text-sm opacity-70">{exactTime}</span>
-                  </div>
+                  {/* Top: Last activity (no label) */}
                   {prediction.lastPumpingTime && (
-                    <div className="text-sm opacity-60">
-                      {formatDistanceToNow(prediction.lastPumpingTime, {
-                        addSuffix: true,
-                      })}{' '}
-                      •{' '}
-                      {formatTimeWithPreference(
-                        prediction.lastPumpingTime,
-                        timeFormat,
-                      )}
-                      {prediction.lastPumpingAmount && (
-                        <span>
-                          {' '}
-                          • {formatAmount(prediction.lastPumpingAmount)}
-                        </span>
-                      )}
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-lg font-semibold">
+                        {formatDistanceToNow(prediction.lastPumpingTime, {
+                          addSuffix: true,
+                        })}
+                      </span>
+                      <span className="text-sm opacity-70">
+                        {formatTimeWithPreference(
+                          prediction.lastPumpingTime,
+                          timeFormat,
+                        )}
+                        {prediction.lastPumpingAmount && (
+                          <span>
+                            {' '}
+                            • {formatAmount(prediction.lastPumpingAmount)}
+                          </span>
+                        )}
+                      </span>
                     </div>
                   )}
+                  {/* Bottom: Next prediction */}
+                  <div className="text-sm opacity-60">
+                    Next {timeUntil} • {exactTime}
+                    {prediction.suggestedVolume && (
+                      <span> • {formatAmount(prediction.suggestedVolume)}</span>
+                    )}
+                  </div>
                 </>
               )}
             </div>
@@ -321,7 +339,7 @@ export function PredictivePumpingCard({
 
       {/* Info Drawer */}
       <Drawer onOpenChange={setShowInfoDrawer} open={showInfoDrawer}>
-        <DrawerContent className="max-h-[90vh]">
+        <DrawerContent className="max-h-[90vh] overflow-x-hidden">
           <DrawerHeader>
             <DrawerTitle>Pumping Details</DrawerTitle>
           </DrawerHeader>
@@ -344,6 +362,7 @@ export function PredictivePumpingCard({
               activityType="pumping"
               bgColor="bg-activity-pumping/5"
               borderColor="border-activity-pumping/20"
+              calculationDetails={prediction.calculationDetails}
               color="bg-activity-pumping/10 text-activity-pumping"
               enabledSettings={quickLogSettings.activeSettings}
               isQuickLogEnabled={quickLogSettings.enabled}

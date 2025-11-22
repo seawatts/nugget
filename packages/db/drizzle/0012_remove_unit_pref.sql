@@ -5,3 +5,5 @@ ALTER TABLE "users" DROP COLUMN IF EXISTS "unitPref";--> statement-breakpoint
 DROP TYPE IF EXISTS "public"."unitPref";
 
 
+
+

@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@nugget/ui/select';
-import { Switch } from '@nugget/ui/switch';
+import { SettingToggle } from '@nugget/ui/setting-toggle';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -180,80 +180,50 @@ export default function DashboardSettingsPage() {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between py-2">
-                <div>
-                  <Label>Show Feeding</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Display feeding predictions and quick log
-                  </p>
-                </div>
-                <Switch
-                  checked={preferences.showFeedingCard}
-                  onCheckedChange={(checked) =>
-                    handlePreferenceChange('showFeedingCard', checked)
-                  }
-                />
-              </div>
+              <SettingToggle
+                checked={preferences.showFeedingCard}
+                description="Display feeding predictions and quick log"
+                label="Show Feeding"
+                onCheckedChange={(checked) =>
+                  handlePreferenceChange('showFeedingCard', checked)
+                }
+              />
 
-              <div className="flex items-center justify-between py-2">
-                <div>
-                  <Label>Show Sleep</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Display sleep predictions and quick log
-                  </p>
-                </div>
-                <Switch
-                  checked={preferences.showSleepCard}
-                  onCheckedChange={(checked) =>
-                    handlePreferenceChange('showSleepCard', checked)
-                  }
-                />
-              </div>
+              <SettingToggle
+                checked={preferences.showSleepCard}
+                description="Display sleep predictions and quick log"
+                label="Show Sleep"
+                onCheckedChange={(checked) =>
+                  handlePreferenceChange('showSleepCard', checked)
+                }
+              />
 
-              <div className="flex items-center justify-between py-2">
-                <div>
-                  <Label>Show Diaper</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Display diaper predictions and quick log
-                  </p>
-                </div>
-                <Switch
-                  checked={preferences.showDiaperCard}
-                  onCheckedChange={(checked) =>
-                    handlePreferenceChange('showDiaperCard', checked)
-                  }
-                />
-              </div>
+              <SettingToggle
+                checked={preferences.showDiaperCard}
+                description="Display diaper predictions and quick log"
+                label="Show Diaper"
+                onCheckedChange={(checked) =>
+                  handlePreferenceChange('showDiaperCard', checked)
+                }
+              />
 
-              <div className="flex items-center justify-between py-2">
-                <div>
-                  <Label>Show Pumping</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Display pumping predictions and quick log
-                  </p>
-                </div>
-                <Switch
-                  checked={preferences.showPumpingCard}
-                  onCheckedChange={(checked) =>
-                    handlePreferenceChange('showPumpingCard', checked)
-                  }
-                />
-              </div>
+              <SettingToggle
+                checked={preferences.showPumpingCard}
+                description="Display pumping predictions and quick log"
+                label="Show Pumping"
+                onCheckedChange={(checked) =>
+                  handlePreferenceChange('showPumpingCard', checked)
+                }
+              />
 
-              <div className="flex items-center justify-between py-2">
-                <div>
-                  <Label>Show Doctor Visit</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Display doctor visit reminders and quick log
-                  </p>
-                </div>
-                <Switch
-                  checked={preferences.showDoctorVisitCard}
-                  onCheckedChange={(checked) =>
-                    handlePreferenceChange('showDoctorVisitCard', checked)
-                  }
-                />
-              </div>
+              <SettingToggle
+                checked={preferences.showDoctorVisitCard}
+                description="Display doctor visit reminders and quick log"
+                label="Show Doctor Visit"
+                onCheckedChange={(checked) =>
+                  handlePreferenceChange('showDoctorVisitCard', checked)
+                }
+              />
             </div>
           </div>
 
@@ -266,20 +236,14 @@ export default function DashboardSettingsPage() {
               </p>
             </div>
 
-            <div className="flex items-center justify-between py-2">
-              <div>
-                <Label>Show Activity Timeline</Label>
-                <p className="text-sm text-muted-foreground">
-                  Display the full activity history timeline
-                </p>
-              </div>
-              <Switch
-                checked={preferences.showActivityTimeline}
-                onCheckedChange={(checked) =>
-                  handlePreferenceChange('showActivityTimeline', checked)
-                }
-              />
-            </div>
+            <SettingToggle
+              checked={preferences.showActivityTimeline}
+              description="Display the full activity history timeline"
+              label="Show Activity Timeline"
+              onCheckedChange={(checked) =>
+                handlePreferenceChange('showActivityTimeline', checked)
+              }
+            />
           </div>
         </>
       )}

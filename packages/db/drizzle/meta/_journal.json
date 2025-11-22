@@ -196,6 +196,20 @@
       "tag": "0029_brown_satana",
       "version": "7",
       "when": 1763711746169
+    },
+    {
+      "breakpoints": true,
+      "idx": 30,
+      "tag": "0030_square_puck",
+      "version": "7",
+      "when": 1763751083041
+    },
+    {
+      "breakpoints": true,
+      "idx": 31,
+      "tag": "0031_fix_activities_amount_ml_type",
+      "version": "7",
+      "when": 1732238241000
     }
   ],
   "version": "7"

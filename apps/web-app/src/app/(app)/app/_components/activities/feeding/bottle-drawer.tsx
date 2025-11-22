@@ -15,6 +15,7 @@ export interface BottleFormData {
   amountMl: number;
   bottleType: 'breast_milk' | 'formula' | null;
   notes: string;
+  vitaminDGiven?: boolean;
 }
 
 interface BottleDrawerContentProps {
@@ -52,6 +53,9 @@ export function BottleDrawerContent({
     'breast_milk' | 'formula' | null
   >(initialData?.bottleType ?? null);
   const [notes] = React.useState(initialData?.notes ?? '');
+  const [vitaminDGiven, setVitaminDGiven] = React.useState(
+    initialData?.vitaminDGiven ?? false,
+  );
   // const [notes, setNotes] = React.useState('');
 
   // Call onDataChange whenever form data changes
@@ -61,8 +65,9 @@ export function BottleDrawerContent({
       amountMl,
       bottleType,
       notes,
+      vitaminDGiven,
     });
-  }, [amount, bottleType, notes, unitPref, onDataChange]);
+  }, [amount, bottleType, notes, vitaminDGiven, unitPref, onDataChange]);
 
   // Get step size and min value based on user preference
   const step = getVolumeStep(unitPref);
@@ -126,6 +131,27 @@ export function BottleDrawerContent({
             Formula
           </Button>
         </div>
+      </div>
+
+      {/* Vitamin D */}
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-muted-foreground">Supplements</p>
+        <Button
+          className={`h-12 w-full ${
+            vitaminDGiven
+              ? 'bg-activity-feeding text-activity-feeding-foreground hover:bg-activity-feeding/90'
+              : 'bg-transparent'
+          }`}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setVitaminDGiven(!vitaminDGiven);
+          }}
+          type="button"
+          variant={vitaminDGiven ? 'default' : 'outline'}
+        >
+          Vitamin D given
+        </Button>
       </div>
 
       {/* Notes */}

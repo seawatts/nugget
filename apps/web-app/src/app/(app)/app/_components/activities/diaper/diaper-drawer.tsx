@@ -26,6 +26,7 @@ export interface DiaperFormData {
     | 'diarrhea'
     | null;
   hasRash: boolean;
+  isGassy: boolean;
   notes: string;
 }
 
@@ -56,6 +57,7 @@ export function DiaperDrawerContent({
     | null
   >(null);
   const [hasRash, setHasRash] = useState(false);
+  const [isGassy, setIsGassy] = useState(false);
   const [notes] = useState('');
 
   // Update state when initialData changes
@@ -67,6 +69,7 @@ export function DiaperDrawerContent({
       if (initialData.consistency !== undefined)
         setConsistency(initialData.consistency);
       if (initialData.hasRash !== undefined) setHasRash(initialData.hasRash);
+      if (initialData.isGassy !== undefined) setIsGassy(initialData.isGassy);
     }
   }, [initialData]);
 
@@ -76,11 +79,21 @@ export function DiaperDrawerContent({
       color,
       consistency,
       hasRash,
+      isGassy,
       notes,
       size,
       type: selectedType,
     });
-  }, [selectedType, size, color, consistency, hasRash, notes, onDataChange]);
+  }, [
+    selectedType,
+    size,
+    color,
+    consistency,
+    hasRash,
+    isGassy,
+    notes,
+    onDataChange,
+  ]);
 
   const types = [
     {
@@ -289,6 +302,45 @@ export function DiaperDrawerContent({
             variant={hasRash ? 'default' : 'outline'}
           >
             Has Rash
+          </Button>
+        </div>
+      </div>
+
+      {/* Gassy */}
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-muted-foreground">Gassy?</p>
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            className={`h-12 ${
+              !isGassy
+                ? 'bg-activity-diaper text-activity-diaper-foreground hover:bg-activity-diaper/90'
+                : 'bg-transparent'
+            }`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsGassy(false);
+            }}
+            type="button"
+            variant={!isGassy ? 'default' : 'outline'}
+          >
+            Not Gassy
+          </Button>
+          <Button
+            className={`h-12 ${
+              isGassy
+                ? 'bg-activity-diaper text-activity-diaper-foreground hover:bg-activity-diaper/90'
+                : 'bg-transparent'
+            }`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsGassy(true);
+            }}
+            type="button"
+            variant={isGassy ? 'default' : 'outline'}
+          >
+            Gassy
           </Button>
         </div>
       </div>

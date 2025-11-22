@@ -3,12 +3,11 @@
 import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
-import { DatePicker } from '@nugget/ui/custom/date-picker';
-import { Label } from '@nugget/ui/label';
 import { cn } from '@nugget/ui/lib/utils';
 import { Stethoscope, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import { TimeInput } from '../shared/components/time-input';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { DoctorVisitFormData } from './doctor-visit-drawer';
 import { DoctorVisitDrawerContent } from './doctor-visit-drawer';
@@ -272,23 +271,21 @@ export function DoctorVisitActivityDrawer({
       </div>
 
       {/* Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
         <DoctorVisitDrawerContent
           babyAgeDays={babyAgeDays}
           onDataChange={setFormData}
           vaccinationHistory={vaccinationHistory}
         />
 
-        {/* Date Section */}
-        <div className="space-y-3 min-w-0">
-          <Label className="text-sm font-medium text-muted-foreground">
-            Visit Date
-          </Label>
-          <DatePicker
-            date={startTime}
-            setDate={(date) => date && setStartTime(date)}
-          />
-        </div>
+        {/* Date & Time Section */}
+        <TimeInput
+          id="doctor-visit-date-time"
+          label="Visit Date & Time"
+          onChange={setStartTime}
+          showQuickOptions={false}
+          value={startTime}
+        />
       </div>
 
       {/* Footer with Actions */}

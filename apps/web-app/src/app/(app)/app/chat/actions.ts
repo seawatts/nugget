@@ -599,6 +599,7 @@ export async function sendChatMessageStreamingAction(input: {
  * Get chat reply information for a specific context
  * Returns user information split by yes/no answers for yes/no questions
  * Also includes whether the current user has answered and their answer
+ * For non-yes/no questions, returns all users who have sent messages in the context
  */
 export const getContextChatReplyAction = action
   .schema(
@@ -671,9 +672,67 @@ export const getContextChatReplyAction = action
       }
     }
 
+    // Also check for users who have sent chat messages in this context
+    // This includes users who clicked "Answer" button for non-yes/no questions
+    const allRepliers = [...yesRepliers, ...noRepliers];
+    const chatMessageRepliers = [];
+
+    const chatsForContext = await db.query.Chats.findMany({
+      where: and(
+        eq(Chats.babyId, parsedInput.babyId),
+        eq(Chats.contextType, parsedInput.contextType),
+        eq(Chats.contextId, parsedInput.contextId),
+      ),
+    });
+
+    // Get unique user IDs from chat messages in these chats
+    for (const chat of chatsForContext) {
+      const messages = await db.query.ChatMessages.findMany({
+        where: and(
+          eq(ChatMessages.chatId, chat.id),
+          eq(ChatMessages.role, 'user'), // Only user messages, not assistant
+        ),
+      });
+
+      for (const message of messages) {
+        if (!message.userId || seenUserIds.has(message.userId)) continue;
+
+        seenUserIds.add(message.userId);
+
+        // Get user information
+        const user = await db.query.Users.findFirst({
+          columns: {
+            avatarUrl: true,
+            firstName: true,
+            id: true,
+            lastName: true,
+          },
+          where: eq(Users.id, message.userId),
+        });
+
+        if (user) {
+          const replier = {
+            avatarUrl: user.avatarUrl,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            userId: user.id,
+          };
+
+          // Add to chat message repliers (shown on "Answer" button)
+          chatMessageRepliers.push(replier);
+          allRepliers.push(replier);
+        }
+      }
+    }
+
+    // Check if current user has answered (either via yes/no or by sending a message)
+    const hasCurrentUserAnswered =
+      currentUserAnswer !== null || seenUserIds.has(currentUserId);
+
     return {
+      allRepliers, // Combined list of all users who have interacted (yes/no + chat messages)
       currentUserAnswer,
-      hasCurrentUserAnswered: currentUserAnswer !== null,
+      hasCurrentUserAnswered,
       noRepliers,
       yesRepliers,
     };

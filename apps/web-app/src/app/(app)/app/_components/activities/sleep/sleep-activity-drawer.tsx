@@ -425,7 +425,7 @@ export function SleepActivityDrawer({
       </div>
 
       {/* Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
         {isLoadingInProgress ? (
           <div className="flex items-center justify-center h-full">
             <div className="size-8 animate-spin rounded-full border-4 border-activity-sleep border-t-transparent" />
@@ -440,7 +440,7 @@ export function SleepActivityDrawer({
                 </h3>
                 <TimeInput
                   id="sleep-start-time"
-                  label="Start Time"
+                  label="Start Date & Time"
                   onChange={setStartTime}
                   value={startTime}
                 />

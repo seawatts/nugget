@@ -224,6 +224,7 @@ export function PredictiveFeedingCard({
             lastActivityAmount={formatAmount(prediction.lastFeedingAmount)}
             lastActivityTime={prediction.lastFeedingTime}
             overdueMinutes={prediction.overdueMinutes}
+            predictedAmount={formatAmount(prediction.suggestedAmount)}
             timeFormat={timeFormat}
             timeUntil={timeUntil}
           />
@@ -257,13 +258,14 @@ export function PredictiveFeedingCard({
         activityType="feeding"
         averageInterval={prediction.averageIntervalHours}
         babyAgeDays={babyAgeDays}
+        calculationDetails={prediction.calculationDetails}
         learningContent={learningContent}
         onOpenChange={setShowInfoDrawer}
         open={showInfoDrawer}
         quickLogSettings={quickLogSettings}
         recentPattern={prediction.recentFeedingPattern}
         timeFormat={timeFormat}
-        title="Feeding Details"
+        title="Feeding"
       />
     </>
   );

@@ -48,11 +48,14 @@ function buildOptimisticActivity(
     details = {
       side,
       type: 'nursing' as const,
+      vitaminDGiven: formData.vitaminDGiven,
     };
   } else if (formData.type === 'bottle') {
     feedingSource = formData.bottleType === 'formula' ? 'formula' : 'pumped';
-    // Bottle activities don't have a details schema
-    details = null;
+    details = {
+      type: 'bottle' as const,
+      vitaminDGiven: formData.vitaminDGiven,
+    };
   }
 
   return {
@@ -107,11 +110,14 @@ function buildCreateActivityData(
     details = {
       side,
       type: 'nursing' as const,
+      vitaminDGiven: formData.vitaminDGiven,
     };
   } else if (formData.type === 'bottle') {
     feedingSource = formData.bottleType === 'formula' ? 'formula' : 'pumped';
-    // Bottle activities don't have a details schema
-    details = null;
+    details = {
+      type: 'bottle' as const,
+      vitaminDGiven: formData.vitaminDGiven,
+    };
   }
 
   return {
@@ -156,11 +162,14 @@ function buildUpdateActivityData(
     details = {
       side,
       type: 'nursing' as const,
+      vitaminDGiven: formData.vitaminDGiven,
     };
   } else if (formData.type === 'bottle') {
     feedingSource = formData.bottleType === 'formula' ? 'formula' : 'pumped';
-    // Bottle activities don't have a details schema
-    details = null;
+    details = {
+      type: 'bottle' as const,
+      vitaminDGiven: formData.vitaminDGiven,
+    };
   }
 
   return {

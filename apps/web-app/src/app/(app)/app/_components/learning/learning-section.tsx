@@ -12,6 +12,7 @@ interface LearningSectionProps {
   borderColor: string;
   educationalContent: string;
   tips: string[];
+  children?: React.ReactNode;
 }
 
 export function LearningSection({
@@ -23,6 +24,7 @@ export function LearningSection({
   borderColor,
   educationalContent,
   tips,
+  children,
 }: LearningSectionProps) {
   return (
     <InfoCard
@@ -49,6 +51,7 @@ export function LearningSection({
           ))}
         </ul>
       )}
+      {children}
     </InfoCard>
   );
 }

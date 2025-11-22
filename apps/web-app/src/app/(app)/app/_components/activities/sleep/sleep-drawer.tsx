@@ -214,8 +214,8 @@ export function SleepDrawerContent({
         </div>
       )}
 
-      {/* Timer Display - Only show when actively tracking or creating new activity */}
-      {(!isTimerStopped || isTracking) && (
+      {/* Timer Display - Show when actively tracking or when timer has been stopped */}
+      {(activeActivityId || isTracking) && (
         <div className="bg-card rounded-2xl p-8 text-center">
           <div className="text-6xl font-bold text-foreground mb-2">
             {Math.floor(duration / 3600)

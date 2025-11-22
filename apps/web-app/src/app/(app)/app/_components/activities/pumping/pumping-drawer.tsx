@@ -30,6 +30,7 @@ interface PumpingDrawerContentProps {
   setSelectedDuration?: (duration: number | null) => void;
   setSelectedMethod?: (method: 'electric' | 'manual' | null) => void;
   setNotes?: (notes: string) => void;
+  isEditing?: boolean;
 }
 
 export function PumpingDrawerContent({
@@ -43,6 +44,7 @@ export function PumpingDrawerContent({
   setSelectedDuration: setControlledSelectedDuration,
   setSelectedMethod: setControlledSelectedMethod,
   setNotes: _setControlledNotes,
+  isEditing = false,
 }: PumpingDrawerContentProps = {}) {
   // Fetch baby data and user preferences
   const { data: babies = [] } = api.babies.list.useQuery();
@@ -118,9 +120,14 @@ export function PumpingDrawerContent({
   ]);
 
   // Auto-calculate volumes when duration is selected
-  // Skip auto-calculation when in controlled mode (editing existing activity)
+  // Skip auto-calculation when editing existing activity (to preserve manual edits)
+  // Allow auto-calculation for new activities even in controlled mode
   useEffect(() => {
-    if (!isControlled && selectedDuration !== null && babyAgeDays !== null) {
+    if (
+      (!isControlled || !isEditing) &&
+      selectedDuration !== null &&
+      babyAgeDays !== null
+    ) {
       const volumes = calculatePumpingVolumes(
         babyAgeDays,
         selectedDuration,
@@ -138,6 +145,7 @@ export function PumpingDrawerContent({
     }
   }, [
     isControlled,
+    isEditing,
     selectedDuration,
     babyAgeDays,
     baby?.mlPerPump,

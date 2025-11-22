@@ -300,58 +300,70 @@ export function PredictiveSleepCard({
               ) : effectiveIsOverdue ? (
                 // Show overdue warning
                 <>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-bold text-amber-400">
-                      {formatOverdueTime(prediction.overdueMinutes ?? 0)}{' '}
-                      overdue ({exactTime})
-                    </span>
-                  </div>
+                  {/* Top: Last activity (no label) */}
                   {prediction.lastSleepTime && (
-                    <div className="text-sm opacity-60">
-                      {formatDistanceToNow(prediction.lastSleepTime, {
-                        addSuffix: true,
-                      })}{' '}
-                      •{' '}
-                      {formatTimeWithPreference(
-                        prediction.lastSleepTime,
-                        timeFormat,
-                      )}
-                      {prediction.lastSleepDuration && (
-                        <span>
-                          {' '}
-                          • {Math.floor(prediction.lastSleepDuration / 60)}h{' '}
-                          {prediction.lastSleepDuration % 60}m
-                        </span>
-                      )}
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-lg font-semibold">
+                        {formatDistanceToNow(prediction.lastSleepTime, {
+                          addSuffix: true,
+                        })}
+                      </span>
+                      <span className="text-sm opacity-70">
+                        {formatTimeWithPreference(
+                          prediction.lastSleepTime,
+                          timeFormat,
+                        )}
+                        {prediction.lastSleepDuration && (
+                          <span>
+                            {' '}
+                            • {Math.floor(prediction.lastSleepDuration / 60)}h{' '}
+                            {prediction.lastSleepDuration % 60}m
+                          </span>
+                        )}
+                      </span>
                     </div>
                   )}
+                  {/* Bottom: Next prediction with overdue indicator */}
+                  <div className="text-sm opacity-60">
+                    Next {exactTime}
+                    {prediction.overdueMinutes && (
+                      <span className="text-amber-400 font-medium">
+                        {' '}
+                        • {formatOverdueTime(prediction.overdueMinutes)} overdue
+                      </span>
+                    )}
+                  </div>
                 </>
               ) : (
                 // Show prediction
                 <>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-semibold">{timeUntil}</span>
-                    <span className="text-sm opacity-70">{exactTime}</span>
-                  </div>
+                  {/* Top: Last activity (no label) */}
                   {prediction.lastSleepTime && (
-                    <div className="text-sm opacity-60">
-                      {formatDistanceToNow(prediction.lastSleepTime, {
-                        addSuffix: true,
-                      })}{' '}
-                      •{' '}
-                      {formatTimeWithPreference(
-                        prediction.lastSleepTime,
-                        timeFormat,
-                      )}
-                      {prediction.lastSleepDuration && (
-                        <span>
-                          {' '}
-                          • {Math.floor(prediction.lastSleepDuration / 60)}h{' '}
-                          {prediction.lastSleepDuration % 60}m
-                        </span>
-                      )}
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-lg font-semibold">
+                        {formatDistanceToNow(prediction.lastSleepTime, {
+                          addSuffix: true,
+                        })}
+                      </span>
+                      <span className="text-sm opacity-70">
+                        {formatTimeWithPreference(
+                          prediction.lastSleepTime,
+                          timeFormat,
+                        )}
+                        {prediction.lastSleepDuration && (
+                          <span>
+                            {' '}
+                            • {Math.floor(prediction.lastSleepDuration / 60)}h{' '}
+                            {prediction.lastSleepDuration % 60}m
+                          </span>
+                        )}
+                      </span>
                     </div>
                   )}
+                  {/* Bottom: Next prediction */}
+                  <div className="text-sm opacity-60">
+                    Next {timeUntil} • {exactTime}
+                  </div>
                 </>
               )}
             </div>
@@ -373,6 +385,7 @@ export function PredictiveSleepCard({
         activityType="sleep"
         averageInterval={prediction.averageIntervalHours}
         babyAgeDays={babyAgeDays}
+        calculationDetails={prediction.calculationDetails}
         formatPatternItem={(item): React.ReactNode => (
           <>
             <span className="text-muted-foreground">
@@ -401,7 +414,7 @@ export function PredictiveSleepCard({
         quickLogSettings={quickLogSettings}
         recentPattern={prediction.recentSleepPattern}
         timeFormat={timeFormat}
-        title="Sleep Details"
+        title="Sleep"
       />
     </>
   );

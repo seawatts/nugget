@@ -20,6 +20,7 @@ import {
   Tablet as Toilet,
   UtensilsCrossed,
 } from 'lucide-react';
+import Link from 'next/link';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { formatVolumeDisplay } from './activities/shared/volume-utils';
@@ -230,7 +231,28 @@ export function TodaySummaryCard({
       return activityDate >= todayStart;
     });
 
-    return [...todaysOptimistic, ...todayActivities];
+    // Deduplicate optimistic activities - remove optimistic items if a matching real activity exists
+    const deduplicatedOptimistic = todaysOptimistic.filter(
+      (optimisticActivity) => {
+        // Check if there's a matching real activity (same type, similar timestamp)
+        const hasMatchingRealActivity = todayActivities.some((realActivity) => {
+          // Match by type and timestamp (within 1 second tolerance)
+          if (realActivity.type !== optimisticActivity.type) return false;
+
+          const timeDiff = Math.abs(
+            new Date(realActivity.startTime).getTime() -
+              new Date(optimisticActivity.startTime).getTime(),
+          );
+
+          return timeDiff <= 1000; // 1 second tolerance
+        });
+
+        // Keep optimistic activity only if no matching real activity exists
+        return !hasMatchingRealActivity;
+      },
+    );
+
+    return [...deduplicatedOptimistic, ...todayActivities];
   }, [optimisticActivities, todayActivities, todayStart]);
 
   // Map activity types to display categories
@@ -321,7 +343,10 @@ export function TodaySummaryCard({
     <div className="rounded-xl border border-border bg-linear-to-br from-card/50 to-card/80 backdrop-blur-sm p-5 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
-          <div className="relative flex items-center justify-center size-9 rounded-full bg-linear-to-br from-primary to-primary/80 p-[2px] shadow-md shadow-primary/20">
+          <Link
+            className="relative flex items-center justify-center size-9 rounded-full bg-linear-to-br from-primary to-primary/80 p-[2px] shadow-md shadow-primary/20 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+            href="/app/settings/baby"
+          >
             <div className="size-full rounded-full bg-card flex items-center justify-center p-0.5">
               <NuggetAvatar
                 backgroundColor={babyAvatarBackgroundColor || undefined}
@@ -334,7 +359,7 @@ export function TodaySummaryCard({
                 size="sm"
               />
             </div>
-          </div>
+          </Link>
           <div className="flex flex-col">
             <h2 className="text-lg font-semibold text-foreground leading-tight">
               {babyName ? `${babyName}'s Day` : "Today's Summary"}

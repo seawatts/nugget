@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
 } from '@nugget/ui/alert-dialog';
 import { Button } from '@nugget/ui/button';
+import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { cn } from '@nugget/ui/lib/utils';
 import { useEffect, useState } from 'react';
 import { ActivityDrawerHeader } from '../shared/components/activity-drawer-header';
@@ -25,7 +26,7 @@ interface TimelineFeedingDrawerProps {
   existingActivity: typeof Activities.$inferSelect;
   isOpen: boolean;
   onClose: () => void;
-  babyId?: string;
+  babyId: string;
 }
 
 /**
@@ -43,7 +44,7 @@ export function TimelineFeedingDrawer({
 
   // Fetch baby data to get age information
   const [baby] = api.babies.getByIdLight.useSuspenseQuery({
-    id: babyId ?? '',
+    id: babyId,
   });
 
   // Calculate baby age in days
@@ -84,6 +85,10 @@ export function TimelineFeedingDrawer({
 
       // Set form data based on activity type
       if (existingActivity.type === 'bottle') {
+        const bottleDetails = existingActivity.details as {
+          type: 'bottle';
+          vitaminDGiven?: boolean;
+        } | null;
         setFormData({
           amountMl: existingActivity.amountMl || undefined,
           bottleType:
@@ -92,12 +97,14 @@ export function TimelineFeedingDrawer({
               : 'breast_milk',
           notes: existingActivity.notes || undefined,
           type: 'bottle',
+          vitaminDGiven: bottleDetails?.vitaminDGiven,
         });
       } else if (existingActivity.type === 'nursing') {
         // Extract durations from details or calculate from total duration
         const details = existingActivity.details as {
           side?: 'left' | 'right' | 'both';
           type: 'nursing';
+          vitaminDGiven?: boolean;
         } | null;
         const totalDuration = existingActivity.duration || 0;
 
@@ -120,6 +127,7 @@ export function TimelineFeedingDrawer({
           notes: existingActivity.notes || undefined,
           rightDuration,
           type: 'nursing',
+          vitaminDGiven: details?.vitaminDGiven,
         });
       }
     }
@@ -138,14 +146,12 @@ export function TimelineFeedingDrawer({
         actualEndTime = startTime;
         durationMinutes = 0;
       } else if (formData.type === 'nursing') {
-        // For nursing, auto-calculate end time from start time + total duration
-        const totalNursingMinutes =
-          (formData.leftDuration ?? 0) + (formData.rightDuration ?? 0);
-        actualEndTime = new Date(startTime);
-        actualEndTime.setMinutes(
-          actualEndTime.getMinutes() + totalNursingMinutes,
+        // For nursing, use the endTime set by DateTimeRangePicker
+        // and calculate duration from time difference
+        actualEndTime = endTime;
+        durationMinutes = Math.floor(
+          (endTime.getTime() - startTime.getTime()) / 1000 / 60,
         );
-        durationMinutes = totalNursingMinutes;
       } else {
         // Fallback
         actualEndTime = endTime;
@@ -178,11 +184,15 @@ export function TimelineFeedingDrawer({
         details = {
           side,
           type: 'nursing' as const,
+          vitaminDGiven: formData.vitaminDGiven,
         };
       } else if (formData.type === 'bottle') {
         feedingSource =
           formData.bottleType === 'formula' ? 'formula' : 'pumped';
-        details = null;
+        details = {
+          type: 'bottle' as const,
+          vitaminDGiven: formData.vitaminDGiven,
+        };
       }
 
       await updateActivity({
@@ -222,7 +232,7 @@ export function TimelineFeedingDrawer({
       />
 
       {/* Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
         <FeedingTypeSelector
           activeActivityId={null}
           babyAgeDays={babyAgeDays}
@@ -243,14 +253,24 @@ export function TimelineFeedingDrawer({
             <h3 className="text-sm font-medium text-muted-foreground">
               Time & Date
             </h3>
-            <div className="grid grid-cols-1 gap-3 min-w-0">
-              <TimeInput
-                id="feeding-start-time"
-                label="Start Time"
-                onChange={setStartTime}
-                value={startTime}
+            {formData.type === 'nursing' ? (
+              <DateTimeRangePicker
+                endDate={endTime}
+                mode="range"
+                setEndDate={setEndTime}
+                setStartDate={setStartTime}
+                startDate={startTime}
               />
-            </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 min-w-0">
+                <TimeInput
+                  id="feeding-start-time"
+                  label="Start Date & Time"
+                  onChange={setStartTime}
+                  value={startTime}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>

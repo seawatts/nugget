@@ -20,15 +20,24 @@ export default async function Home() {
     redirect('/app/onboarding');
   }
 
-  // Check if user has a last selected baby
+  // Check if user has home screen preference or last selected baby
   if (userId) {
     const user = await db.query.Users.findFirst({
       where: eq(Users.id, userId),
     });
 
+    // Check for default home screen preference first
+    if (user?.defaultHomeScreenType && user?.defaultHomeScreenId) {
+      if (user.defaultHomeScreenType === 'baby') {
+        redirect(`/app/babies/${user.defaultHomeScreenId}/dashboard`);
+      } else if (user.defaultHomeScreenType === 'user') {
+        redirect(`/app/family/${user.defaultHomeScreenId}`);
+      }
+    }
+
+    // Fall back to last selected baby
     if (user?.lastSelectedBabyId) {
-      // Redirect to last selected baby's dashboard
-      redirect(`/app/babies/${user.lastSelectedBabyId}`);
+      redirect(`/app/babies/${user.lastSelectedBabyId}/dashboard`);
     }
   }
 

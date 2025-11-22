@@ -39,6 +39,7 @@ import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { ChatDialog } from '../../chat/chat-dialog';
 import { MilestoneViewDrawer } from '../../milestones/milestone-view-drawer';
 import { TimelineDiaperDrawer } from '../diaper/timeline-diaper-drawer';
+import { TimelineDoctorVisitDrawer } from '../doctor-visit/timeline-doctor-visit-drawer';
 import { TimelineFeedingDrawer } from '../feeding/timeline-feeding-drawer';
 import { TimelinePumpingDrawer } from '../pumping/timeline-pumping-drawer';
 import { getDisplayNotes } from '../shared/activity-utils';
@@ -296,7 +297,7 @@ function TimelineDrawerWrapper({
 
   return (
     <Drawer onOpenChange={(open) => !open && onClose()} open={isOpen}>
-      <DrawerContent className="max-h-[95vh] bg-background border-none p-0">
+      <DrawerContent className="max-h-[95vh] bg-background border-none p-0 overflow-x-hidden">
         <DrawerTitle className="sr-only">{title}</DrawerTitle>
         {children}
       </DrawerContent>
@@ -456,8 +457,37 @@ export function ActivityTimeline() {
 
   // Merge all timeline items and sort by timestamp
   const allTimelineItems = useMemo(() => {
+    // Deduplicate optimistic activities - remove optimistic items if a matching real activity exists
+    const deduplicatedOptimisticItems = optimisticTimelineItems.filter(
+      (optimisticItem) => {
+        if (optimisticItem.type !== 'activity') return true;
+
+        // Check if there's a matching real activity (same type, similar timestamp)
+        const hasMatchingRealActivity = activityTimelineItems.some(
+          (realItem) => {
+            if (realItem.type !== 'activity') return false;
+
+            const realActivity = realItem.data;
+            const optimisticActivity = optimisticItem.data;
+
+            // Match by type and timestamp (within 1 second tolerance)
+            if (realActivity.type !== optimisticActivity.type) return false;
+
+            const timeDiff = Math.abs(
+              realItem.timestamp.getTime() - optimisticItem.timestamp.getTime(),
+            );
+
+            return timeDiff <= 1000; // 1 second tolerance
+          },
+        );
+
+        // Keep optimistic item only if no matching real activity exists
+        return !hasMatchingRealActivity;
+      },
+    );
+
     const merged = [
-      ...optimisticTimelineItems,
+      ...deduplicatedOptimisticItems,
       ...activityTimelineItems,
       ...milestoneTimelineItems,
       ...chatTimelineItems,
@@ -636,6 +666,8 @@ export function ActivityTimeline() {
                       type?: string;
                       wet?: boolean;
                       dirty?: boolean;
+                      hasRash?: boolean;
+                      isGassy?: boolean;
                     };
                     if (diaperDetails.type === 'wet') {
                       details.push('Pee');
@@ -649,6 +681,16 @@ export function ActivityTimeline() {
                       details.push('Pee');
                     } else if (diaperDetails.dirty) {
                       details.push('Poop');
+                    }
+
+                    // Add gassy indicator
+                    if (diaperDetails.isGassy) {
+                      details.push('Gassy');
+                    }
+
+                    // Add rash indicator
+                    if (diaperDetails.hasRash) {
+                      details.push('Rash');
                     }
                   }
 
@@ -809,6 +851,7 @@ export function ActivityTimeline() {
       {/* Timeline Activity Drawers - For editing activities from timeline */}
       {/* Feeding Drawer */}
       {editingActivity &&
+        baby &&
         (openDrawer === 'feeding' ||
           openDrawer === 'nursing' ||
           openDrawer === 'bottle' ||
@@ -819,7 +862,7 @@ export function ActivityTimeline() {
             title="Edit Feeding"
           >
             <TimelineFeedingDrawer
-              babyId={baby?.id}
+              babyId={baby.id}
               existingActivity={editingActivity}
               isOpen={true}
               onClose={handleDrawerClose}
@@ -828,14 +871,14 @@ export function ActivityTimeline() {
         )}
 
       {/* Sleep Drawer */}
-      {editingActivity && openDrawer === 'sleep' && (
+      {editingActivity && baby && openDrawer === 'sleep' && (
         <TimelineDrawerWrapper
           isOpen={true}
           onClose={handleDrawerClose}
           title="Edit Sleep"
         >
           <TimelineSleepDrawer
-            babyId={baby?.id}
+            babyId={baby.id}
             existingActivity={editingActivity}
             isOpen={true}
             onClose={handleDrawerClose}
@@ -844,14 +887,14 @@ export function ActivityTimeline() {
       )}
 
       {/* Diaper Drawer */}
-      {editingActivity && openDrawer === 'diaper' && (
+      {editingActivity && baby && openDrawer === 'diaper' && (
         <TimelineDrawerWrapper
           isOpen={true}
           onClose={handleDrawerClose}
           title="Edit Diaper"
         >
           <TimelineDiaperDrawer
-            babyId={baby?.id}
+            babyId={baby.id}
             existingActivity={editingActivity}
             isOpen={true}
             onClose={handleDrawerClose}
@@ -860,14 +903,30 @@ export function ActivityTimeline() {
       )}
 
       {/* Pumping Drawer */}
-      {editingActivity && openDrawer === 'pumping' && (
+      {editingActivity && baby && openDrawer === 'pumping' && (
         <TimelineDrawerWrapper
           isOpen={true}
           onClose={handleDrawerClose}
           title="Edit Pumping"
         >
           <TimelinePumpingDrawer
-            babyId={baby?.id}
+            babyId={baby.id}
+            existingActivity={editingActivity}
+            isOpen={true}
+            onClose={handleDrawerClose}
+          />
+        </TimelineDrawerWrapper>
+      )}
+
+      {/* Doctor Visit Drawer */}
+      {editingActivity && baby && openDrawer === 'doctor_visit' && (
+        <TimelineDrawerWrapper
+          isOpen={true}
+          onClose={handleDrawerClose}
+          title="Edit Doctor Visit"
+        >
+          <TimelineDoctorVisitDrawer
+            babyId={baby.id}
             existingActivity={editingActivity}
             isOpen={true}
             onClose={handleDrawerClose}

@@ -210,7 +210,9 @@ export function ActivityDrawer({
       </div>
 
       {/* Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-6 pt-0">{renderContent()}</div>
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 pt-0">
+        {renderContent()}
+      </div>
 
       {/* Footer with Actions */}
       <div className="p-6 pt-4 border-t border-border">
@@ -257,7 +259,7 @@ export function ActivityDrawer({
       open={isOpen}
     >
       <DrawerContent
-        className="max-h-[95vh] bg-background border-none p-0"
+        className="max-h-[95vh] bg-background border-none p-0 overflow-x-hidden"
         onPointerDownOutside={(e) => e.preventDefault()}
       >
         <DrawerTitle className="sr-only">{activity.label}</DrawerTitle>

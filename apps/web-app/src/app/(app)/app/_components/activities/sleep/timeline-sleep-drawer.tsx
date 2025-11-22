@@ -13,10 +13,10 @@ import {
   AlertDialogTitle,
 } from '@nugget/ui/alert-dialog';
 import { Button } from '@nugget/ui/button';
+import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { cn } from '@nugget/ui/lib/utils';
 import { Moon, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { TimeInput } from '../shared/components/time-input';
 import { getFamilyMembersAction } from '../timeline/activity-timeline-filters.actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import { SleepDrawerContent } from './sleep-drawer';
@@ -45,7 +45,6 @@ export function TimelineSleepDrawer({
   // Sleep-specific state
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
-  const [duration, setDuration] = useState(0);
   const [sleepType, setSleepType] = useState<'nap' | 'night'>('nap');
   const [notes, setNotes] = useState('');
   const [sleepQuality, setSleepQuality] = useState<
@@ -117,7 +116,6 @@ export function TimelineSleepDrawer({
           calculatedEndTime.getMinutes() + existingActivity.duration,
         );
         setEndTime(calculatedEndTime);
-        setDuration(existingActivity.duration * 60); // Convert minutes to seconds
       } else {
         setEndTime(new Date(existingActivity.startTime));
       }
@@ -142,14 +140,6 @@ export function TimelineSleepDrawer({
       }
     }
   }, [existingActivity]);
-
-  // Update endTime when startTime or duration changes
-  useEffect(() => {
-    if (duration > 0) {
-      const calculatedEndTime = new Date(startTime.getTime() + duration * 1000);
-      setEndTime(calculatedEndTime);
-    }
-  }, [duration, startTime]);
 
   const handleSave = async () => {
     try {
@@ -220,17 +210,18 @@ export function TimelineSleepDrawer({
       </div>
 
       {/* Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
         {/* Time & Date Section */}
         <div className="space-y-3 min-w-0">
           <h3 className="text-sm font-medium text-muted-foreground">
             Time & Date
           </h3>
-          <TimeInput
-            id="sleep-start-time"
-            label="Start Time"
-            onChange={setStartTime}
-            value={startTime}
+          <DateTimeRangePicker
+            endDate={endTime}
+            mode="range"
+            setEndDate={setEndTime}
+            setStartDate={setStartTime}
+            startDate={startTime}
           />
         </div>
 
@@ -238,13 +229,13 @@ export function TimelineSleepDrawer({
           activeActivityId={null}
           coSleepingWith={coSleepingWith}
           currentUserId={currentUserId}
-          duration={duration}
+          duration={0}
           familyMembers={familyMembers}
           isCoSleeping={isCoSleeping}
           isTimerStopped={true}
           onTimerStart={async () => {}}
           setCoSleepingWith={setCoSleepingWith}
-          setDuration={setDuration}
+          setDuration={() => {}}
           setIsCoSleeping={setIsCoSleeping}
           setSleepLocation={setSleepLocation}
           setSleepQuality={setSleepQuality}

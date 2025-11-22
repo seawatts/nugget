@@ -30,7 +30,15 @@ export const userRouter = {
     .mutation(async ({ ctx, input }) => {
       const [user] = await ctx.db
         .insert(Users)
-        .values({ ...input, id: crypto.randomUUID() })
+        .values({
+          ...input,
+          defaultHomeScreenType: input.defaultHomeScreenType as
+            | 'baby'
+            | 'user'
+            | null
+            | undefined,
+          id: crypto.randomUUID(),
+        })
         .returning();
       return user;
     }),
@@ -74,6 +82,35 @@ export const userRouter = {
 
     return { success: true };
   }),
+
+  // Update user home screen preference
+  updateHomeScreenPreference: protectedProcedure
+    .input(
+      z.object({
+        defaultHomeScreenId: z.string(),
+        defaultHomeScreenType: z.enum(['baby', 'user']),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.auth.userId) {
+        throw new Error('User ID is required');
+      }
+
+      const [updatedUser] = await ctx.db
+        .update(Users)
+        .set({
+          defaultHomeScreenId: input.defaultHomeScreenId,
+          defaultHomeScreenType: input.defaultHomeScreenType,
+        })
+        .where(eq(Users.id, ctx.auth.userId))
+        .returning();
+
+      if (!updatedUser) {
+        throw new Error('Failed to update home screen preference');
+      }
+
+      return updatedUser;
+    }),
 
   // Update user preferences
   updatePreferences: protectedProcedure

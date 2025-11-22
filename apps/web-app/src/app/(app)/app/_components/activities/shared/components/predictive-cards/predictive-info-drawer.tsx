@@ -23,6 +23,18 @@ interface QuickLogSettings {
   activeSettings: string[];
 }
 
+interface CalculationDetails {
+  ageBasedInterval: number; // hours
+  recentAverageInterval: number | null; // hours
+  lastInterval: number | null; // hours
+  weights: {
+    ageBased: number;
+    recentAverage: number;
+    lastInterval: number;
+  };
+  dataPoints: number;
+}
+
 interface PredictiveInfoDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -39,6 +51,7 @@ interface PredictiveInfoDrawerProps {
     [key: string]: unknown;
   }) => ReactNode;
   quickLogSettings?: QuickLogSettings;
+  calculationDetails?: CalculationDetails;
 }
 
 // Map activity types to their color classes for Tailwind
@@ -85,6 +98,7 @@ export function PredictiveInfoDrawer({
   icon,
   formatPatternItem,
   quickLogSettings,
+  calculationDetails,
 }: PredictiveInfoDrawerProps) {
   const theme = getActivityTheme(activityType);
   const Icon = icon || theme.icon;
@@ -92,7 +106,7 @@ export function PredictiveInfoDrawer({
 
   return (
     <Drawer onOpenChange={onOpenChange} open={open}>
-      <DrawerContent className="max-h-[90vh]">
+      <DrawerContent className="max-h-[90vh] overflow-x-hidden">
         <DrawerHeader>
           <DrawerTitle>{title}</DrawerTitle>
         </DrawerHeader>
@@ -110,12 +124,13 @@ export function PredictiveInfoDrawer({
             />
           )}
 
-          {/* Quick Log Info Section */}
+          {/* Quick Log Info Section with Calculation Details */}
           {quickLogSettings && (
             <QuickLogInfoSection
               activityType={activityType}
               bgColor={colorClasses.bgColor}
               borderColor={colorClasses.borderColor}
+              calculationDetails={calculationDetails}
               color={colorClasses.color}
               enabledSettings={quickLogSettings.activeSettings}
               isQuickLogEnabled={quickLogSettings.enabled}

@@ -24,6 +24,18 @@ export interface DiaperPrediction {
   recentSkipTime: Date | null; // Time of most recent skip activity
   // Quick log smart defaults
   suggestedType: 'wet' | 'dirty' | 'both' | null; // predicted type based on recent pattern
+  // Calculation components for displaying how prediction works
+  calculationDetails: {
+    ageBasedInterval: number; // hours
+    recentAverageInterval: number | null; // hours
+    lastInterval: number | null; // hours
+    weights: {
+      ageBased: number;
+      recentAverage: number;
+      lastInterval: number;
+    };
+    dataPoints: number; // number of recent diapers used
+  };
 }
 
 interface DiaperActivity {
@@ -270,6 +282,13 @@ export function predictNextDiaper(
 
     return {
       averageIntervalHours: null,
+      calculationDetails: {
+        ageBasedInterval,
+        dataPoints: 0,
+        lastInterval: null,
+        recentAverageInterval: null,
+        weights: { ageBased: 1.0, lastInterval: 0, recentAverage: 0 },
+      },
       confidenceLevel: 'low',
       intervalHours: ageBasedInterval,
       isOverdue: false,
@@ -291,6 +310,13 @@ export function predictNextDiaper(
     nextDiaperTime.setHours(nextDiaperTime.getHours() + ageBasedInterval);
     return {
       averageIntervalHours: null,
+      calculationDetails: {
+        ageBasedInterval,
+        dataPoints: 0,
+        lastInterval: null,
+        recentAverageInterval: null,
+        weights: { ageBased: 1.0, lastInterval: 0, recentAverage: 0 },
+      },
       confidenceLevel: 'low',
       intervalHours: ageBasedInterval,
       isOverdue: false,
@@ -322,7 +348,8 @@ export function predictNextDiaper(
   }
 
   // Get last interval (between last two diaper changes)
-  const lastInterval = validIntervals.length > 0 ? validIntervals[0] : null;
+  const lastInterval: number | null =
+    validIntervals.length > 0 ? (validIntervals[0] ?? null) : null;
 
   // Analyze feeding and sleep correlations if we have all activities
   let feedingFactor = 0;
@@ -393,12 +420,16 @@ export function predictNextDiaper(
   // Enhanced hybrid prediction: weighted average including correlations
   let predictedInterval: number;
   let confidenceLevel: 'high' | 'medium' | 'low';
+  let weights = { ageBased: 0, lastInterval: 0, recentAverage: 0 };
 
   if (validIntervals.length >= 5) {
     // High confidence: have enough data points
-    const baselineComponent = ageBasedInterval * 0.3;
-    const avgComponent = (averageInterval || ageBasedInterval) * 0.3;
-    const lastComponent = (lastInterval || ageBasedInterval) * 0.15;
+    weights = { ageBased: 0.3, lastInterval: 0.15, recentAverage: 0.3 };
+    const baselineComponent = ageBasedInterval * weights.ageBased;
+    const avgComponent =
+      (averageInterval || ageBasedInterval) * weights.recentAverage;
+    const lastComponent =
+      (lastInterval || ageBasedInterval) * weights.lastInterval;
     const feedingComponent = feedingFactor * 0.15;
     const sleepComponent = sleepFactor * 0.1;
 
@@ -411,15 +442,18 @@ export function predictNextDiaper(
     confidenceLevel = 'high';
   } else if (validIntervals.length >= 2) {
     // Medium confidence: some data but not much
+    weights = { ageBased: 0.4, lastInterval: 0.15, recentAverage: 0.35 };
     predictedInterval =
-      ageBasedInterval * 0.4 +
-      (averageInterval || ageBasedInterval) * 0.35 +
-      (lastInterval || ageBasedInterval) * 0.15 +
+      ageBasedInterval * weights.ageBased +
+      (averageInterval || ageBasedInterval) * weights.recentAverage +
+      (lastInterval || ageBasedInterval) * weights.lastInterval +
       feedingFactor * 0.1;
     confidenceLevel = 'medium';
   } else {
     // Low confidence: fall back to age-based with slight feeding adjustment
-    predictedInterval = ageBasedInterval * 0.85 + feedingFactor * 0.15;
+    weights = { ageBased: 0.85, lastInterval: 0, recentAverage: 0 };
+    predictedInterval =
+      ageBasedInterval * weights.ageBased + feedingFactor * 0.15;
     confidenceLevel = 'low';
   }
 
@@ -459,6 +493,13 @@ export function predictNextDiaper(
 
   return {
     averageIntervalHours: averageInterval,
+    calculationDetails: {
+      ageBasedInterval,
+      dataPoints: diaperActivities.length,
+      lastInterval,
+      recentAverageInterval: averageInterval,
+      weights,
+    },
     confidenceLevel,
     intervalHours: predictedInterval,
     isOverdue,

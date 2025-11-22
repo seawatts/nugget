@@ -21,6 +21,7 @@ export interface NursingFormData {
   rightDuration: number; // in minutes
   notes: string;
   amountMl?: number; // Optional nursing amount in ml
+  vitaminDGiven?: boolean;
 }
 
 interface NursingDrawerContentProps {
@@ -60,6 +61,9 @@ export function NursingDrawerContent({
   const [hasStartedDbTracking, setHasStartedDbTracking] = useState(false);
   const [showSleepConfirmation, setShowSleepConfirmation] = useState(false);
   const [pendingSide, setPendingSide] = useState<'left' | 'right' | null>(null);
+  const [vitaminDGiven, setVitaminDGiven] = useState(
+    initialData?.vitaminDGiven ?? false,
+  );
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch baby data to get birth date for age calculation
@@ -129,8 +133,16 @@ export function NursingDrawerContent({
       leftDuration: Math.floor(leftDuration / 60), // convert seconds to minutes
       notes,
       rightDuration: Math.floor(rightDuration / 60), // convert seconds to minutes
+      vitaminDGiven,
     });
-  }, [leftDuration, rightDuration, notes, amountMl, onDataChange]);
+  }, [
+    leftDuration,
+    rightDuration,
+    notes,
+    amountMl,
+    vitaminDGiven,
+    onDataChange,
+  ]);
 
   const handleSideSelect = async (side: 'left' | 'right') => {
     if (activeSide === side) {
@@ -431,6 +443,27 @@ export function NursingDrawerContent({
           />
         </div>
       )}
+
+      {/* Vitamin D */}
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-muted-foreground">Supplements</p>
+        <Button
+          className={`h-12 w-full ${
+            vitaminDGiven
+              ? 'bg-activity-feeding text-activity-feeding-foreground hover:bg-activity-feeding/90'
+              : 'bg-transparent'
+          }`}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setVitaminDGiven(!vitaminDGiven);
+          }}
+          type="button"
+          variant={vitaminDGiven ? 'default' : 'outline'}
+        >
+          Vitamin D given
+        </Button>
+      </div>
 
       {/* Notes - Using shared component */}
       {/* <NotesField onChange={setNotes} value={notes} /> */}

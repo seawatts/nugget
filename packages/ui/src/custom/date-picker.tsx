@@ -10,9 +10,11 @@ import { cn } from '../lib/utils';
 export const DatePicker = function DatePickerCmp({
   date,
   setDate,
+  disabled = false,
 }: {
   date?: Date;
   setDate: (date?: Date) => void;
+  disabled?: boolean;
 }) {
   return (
     <Popover>
@@ -22,6 +24,7 @@ export const DatePicker = function DatePickerCmp({
             'w-full justify-start text-left font-normal',
             !date && 'text-muted-foreground',
           )}
+          disabled={disabled}
           variant={'outline'}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />

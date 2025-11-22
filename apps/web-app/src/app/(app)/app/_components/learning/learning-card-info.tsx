@@ -66,14 +66,17 @@ export function LearningCardInfo({
             if (result.data.yesRepliers !== undefined) {
               setYesRepliers(result.data.yesRepliers || []);
               setNoRepliers(result.data.noRepliers || []);
-              // Keep combined list for non-yes/no questions
+            }
+
+            // Use allRepliers for the Answer button (includes yes/no + chat message users)
+            if (result.data.allRepliers !== undefined) {
+              setRepliers(result.data.allRepliers || []);
+            } else {
+              // Fallback: combine yes/no repliers if allRepliers not available
               setRepliers([
                 ...(result.data.yesRepliers || []),
                 ...(result.data.noRepliers || []),
               ]);
-            } else {
-              // Fallback for non-yes/no questions
-              setRepliers(result.data || []);
             }
           }
         })

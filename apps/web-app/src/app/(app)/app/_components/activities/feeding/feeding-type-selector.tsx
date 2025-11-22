@@ -27,6 +27,7 @@ export interface FeedingFormData {
   leftDuration?: number;
   rightDuration?: number;
   notes?: string;
+  vitaminDGiven?: boolean;
 }
 
 interface FeedingTypeSelectorProps {
@@ -116,6 +117,7 @@ export function FeedingTypeSelector({
         bottleType: bottleData.bottleType,
         notes: bottleData.notes,
         type: 'bottle',
+        vitaminDGiven: bottleData.vitaminDGiven,
       });
     } else if (selectedType === 'nursing' && nursingData) {
       onFormDataChange?.({
@@ -124,6 +126,7 @@ export function FeedingTypeSelector({
         notes: nursingData.notes,
         rightDuration: nursingData.rightDuration,
         type: 'nursing',
+        vitaminDGiven: nursingData.vitaminDGiven,
       });
     }
   }, [selectedType, bottleData, nursingData, onFormDataChange]);
@@ -166,6 +169,7 @@ export function FeedingTypeSelector({
                     amountMl: initialData.amountMl,
                     bottleType: initialData.bottleType,
                     notes: initialData.notes,
+                    vitaminDGiven: initialData.vitaminDGiven,
                   }
                 : undefined
             }
@@ -184,6 +188,7 @@ export function FeedingTypeSelector({
                     leftDuration: initialData.leftDuration,
                     notes: initialData.notes,
                     rightDuration: initialData.rightDuration,
+                    vitaminDGiven: initialData.vitaminDGiven,
                   }
                 : undefined
             }

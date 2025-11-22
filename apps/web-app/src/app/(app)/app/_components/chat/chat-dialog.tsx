@@ -109,16 +109,6 @@ export function ChatDialogContent({
     }
   }, [activeChat, loadChatMessages]);
 
-  const handleInputFocus = useCallback(() => {
-    // Small delay to allow keyboard to appear
-    setTimeout(() => {
-      inputRef.current?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
-    }, 300);
-  }, []);
-
   const handleSubmit = useCallback(
     async (e?: React.FormEvent<HTMLFormElement>) => {
       e?.preventDefault();
@@ -299,7 +289,6 @@ export function ChatDialogContent({
               disabled={isSending || !babyId}
               name="message"
               onChange={(event) => setInput(event.target.value)}
-              onFocus={handleInputFocus}
               placeholder="Ask a question..."
               ref={inputRef}
               type="text"

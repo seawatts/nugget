@@ -252,6 +252,11 @@ export const Users = pgTable('users', {
   avatarUrl: text('avatarUrl'),
   clerkId: text('clerkId').unique().notNull(),
   createdAt: timestamp('createdAt').defaultNow().notNull(),
+  defaultHomeScreenId: varchar('defaultHomeScreenId', { length: 128 }),
+  // Default home screen preference
+  defaultHomeScreenType: text('defaultHomeScreenType')
+    .$type<'baby' | 'user'>()
+    .default('baby'),
   email: text('email').notNull(),
   firstName: text('firstName'),
   id: varchar('id', { length: 128 }).notNull().primaryKey(),
@@ -488,6 +493,12 @@ export const nursingDetailsSchema = z.object({
   side: z.enum(['left', 'right', 'both']),
   skipped: z.boolean().optional(),
   skipReason: z.string().optional(),
+  vitaminDGiven: z.boolean().optional(),
+});
+
+// Bottle feeding details
+export const bottleDetailsSchema = z.object({
+  vitaminDGiven: z.boolean().optional(),
 });
 
 // Diaper details
@@ -589,6 +600,7 @@ export const doctorVisitDetailsSchema = z.object({
 export const activityDetailsSchema = z
   .discriminatedUnion('type', [
     z.object({ type: z.literal('nursing'), ...nursingDetailsSchema.shape }),
+    z.object({ type: z.literal('bottle'), ...bottleDetailsSchema.shape }),
     z.object({ type: z.literal('diaper'), ...diaperDetailsSchema.shape }),
     z.object({ type: z.literal('wet'), ...diaperDetailsSchema.shape }),
     z.object({ type: z.literal('dirty'), ...diaperDetailsSchema.shape }),
@@ -612,6 +624,7 @@ export type ActivityDetails = z.infer<typeof activityDetailsSchema>;
 
 // Helper type exports for activity details
 export type NursingDetails = z.infer<typeof nursingDetailsSchema>;
+export type BottleDetails = z.infer<typeof bottleDetailsSchema>;
 export type DiaperDetails = z.infer<typeof diaperDetailsSchema>;
 export type MedicineDetails = z.infer<typeof medicineDetailsSchema>;
 export type PumpingDetails = z.infer<typeof pumpingDetailsSchema>;

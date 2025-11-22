@@ -196,8 +196,9 @@ export function TimelinePumpingDrawer({
       </div>
 
       {/* Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
         <PumpingDrawerContent
+          isEditing={true}
           leftAmount={leftAmount}
           notes={notes}
           rightAmount={rightAmount}
@@ -213,11 +214,11 @@ export function TimelinePumpingDrawer({
         {/* Time & Date Section */}
         <div className="space-y-3 min-w-0">
           <h3 className="text-sm font-medium text-muted-foreground">
-            Start Time
+            Start Date & Time
           </h3>
           <TimeInput
             id="pumping-start-time"
-            label="Start Time"
+            label="Start Date & Time"
             onChange={setStartTime}
             value={startTime}
           />

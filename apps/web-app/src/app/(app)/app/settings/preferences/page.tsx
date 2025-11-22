@@ -3,7 +3,14 @@
 import { api } from '@nugget/api/react';
 import { Button } from '@nugget/ui/button';
 import { Label } from '@nugget/ui/label';
-import { Switch } from '@nugget/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@nugget/ui/select';
+import { SettingToggle } from '@nugget/ui/setting-toggle';
 import {
   Baby,
   Droplets,
@@ -11,12 +18,17 @@ import {
   Moon,
   Shield,
   Sun,
+  User as UserIcon,
   Utensils,
   Zap,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { predictNextDiaper } from '../../_components/activities/diaper/prediction';
+import { predictNextFeeding } from '../../_components/activities/feeding/prediction';
+import { predictNextPumping } from '../../_components/activities/pumping/prediction';
+import { predictNextSleep } from '../../_components/activities/sleep/prediction';
 import { QuickLogInfoDrawer } from './_components/quick-log-info-drawer';
 
 type QuickLogInfoType =
@@ -72,7 +84,7 @@ const quickLogInfoContent: Record<
       'You can always adjust the prediction',
       'Patterns typically emerge after 2-3 days',
     ],
-    title: 'Use Predicted Type',
+    title: 'Auto-fill predicted type',
   },
   enable: {
     bgColor: 'bg-primary/5',
@@ -114,7 +126,7 @@ const quickLogInfoContent: Record<
       'Easy to adjust if amount varies',
       'Saves entering 2-3 digit numbers each time',
     ],
-    title: 'Use Last Amount',
+    title: 'Auto-fill from last feeding',
   },
   feedingDuration: {
     bgColor: 'bg-activity-feeding/5',
@@ -128,7 +140,7 @@ const quickLogInfoContent: Record<
       'More accurate than using last duration',
       'Ignores sessions marked as incomplete',
     ],
-    title: 'Use Typical Duration',
+    title: 'Auto-fill average duration',
   },
   feedingType: {
     bgColor: 'bg-activity-feeding/5',
@@ -142,7 +154,7 @@ const quickLogInfoContent: Record<
       'Easy to toggle if switching methods',
       'Remembers breast side for nursing',
     ],
-    title: 'Use Last Type',
+    title: 'Auto-fill feeding method',
   },
   pumping: {
     bgColor: 'bg-activity-pumping/5',
@@ -170,7 +182,7 @@ const quickLogInfoContent: Record<
       'Adjusts as your supply changes',
       'Saves time entering duration',
     ],
-    title: 'Use Typical Duration',
+    title: 'Auto-fill average duration',
   },
   pumpingVolume: {
     bgColor: 'bg-activity-pumping/5',
@@ -184,7 +196,7 @@ const quickLogInfoContent: Record<
       'Volume often higher in morning',
       'Easy to adjust for variance',
     ],
-    title: 'Use Last Volume',
+    title: 'Auto-fill from last session',
   },
   sleep: {
     bgColor: 'bg-activity-sleep/5',
@@ -212,7 +224,7 @@ const quickLogInfoContent: Record<
       'Adjusts for wake windows',
       'Considers circadian rhythm development',
     ],
-    title: 'Use Suggested Duration',
+    title: 'Auto-fill age-based duration',
   },
 };
 
@@ -227,8 +239,91 @@ export default function PreferencesSettingsPage() {
   }, []);
 
   const { data: user, isLoading } = api.user.current.useQuery();
+  const { data: babies } = api.babies.list.useQuery();
+  const { data: familyMembers } = api.familyMembers.all.useQuery();
   const updatePreferences = api.user.updatePreferences.useMutation();
+  const updateHomeScreenPreference =
+    api.user.updateHomeScreenPreference.useMutation();
   const utils = api.useUtils();
+
+  // Get the current baby (first baby or from home screen preference)
+  const currentBabyId = babies?.[0]?.id;
+
+  // Fetch prediction data for showing stats in info dialogs
+  const { data: feedingData } = api.activities.getUpcomingFeeding.useQuery(
+    { babyId: currentBabyId ?? '' },
+    {
+      enabled:
+        Boolean(currentBabyId) &&
+        (openInfoDialog === 'feeding' ||
+          openInfoDialog === 'feedingAmount' ||
+          openInfoDialog === 'feedingDuration' ||
+          openInfoDialog === 'feedingType'),
+    },
+  );
+
+  const { data: diaperData } = api.activities.getUpcomingDiaper.useQuery(
+    { babyId: currentBabyId ?? '' },
+    {
+      enabled:
+        Boolean(currentBabyId) &&
+        (openInfoDialog === 'diaper' || openInfoDialog === 'diaperType'),
+    },
+  );
+
+  const { data: sleepData } = api.activities.getUpcomingSleep.useQuery(
+    { babyId: currentBabyId ?? '' },
+    {
+      enabled:
+        Boolean(currentBabyId) &&
+        (openInfoDialog === 'sleep' || openInfoDialog === 'sleepDuration'),
+    },
+  );
+
+  const { data: pumpingData } = api.activities.getUpcomingPumping.useQuery(
+    { babyId: currentBabyId ?? '' },
+    {
+      enabled:
+        Boolean(currentBabyId) &&
+        (openInfoDialog === 'pumping' ||
+          openInfoDialog === 'pumpingVolume' ||
+          openInfoDialog === 'pumpingDuration'),
+    },
+  );
+
+  // Calculate predictions from API data (predictions are computed client-side)
+  const feedingPrediction = useMemo(() => {
+    if (!feedingData) return null;
+    return predictNextFeeding(
+      feedingData.recentActivities,
+      feedingData.babyBirthDate,
+      feedingData.feedIntervalHours,
+    );
+  }, [feedingData]);
+
+  const diaperPrediction = useMemo(() => {
+    if (!diaperData) return null;
+    return predictNextDiaper(
+      diaperData.recentActivities,
+      diaperData.babyBirthDate,
+    );
+  }, [diaperData]);
+
+  const sleepPrediction = useMemo(() => {
+    if (!sleepData) return null;
+    return predictNextSleep(
+      sleepData.recentActivities,
+      sleepData.babyBirthDate,
+    );
+  }, [sleepData]);
+
+  const pumpingPrediction = useMemo(() => {
+    if (!pumpingData) return null;
+    return predictNextPumping(
+      pumpingData.recentActivities,
+      pumpingData.babyBirthDate,
+    );
+  }, [pumpingData]);
 
   const [preferences, setPreferences] = useState({
     measurementUnit: 'imperial' as 'imperial' | 'metric',
@@ -242,6 +337,14 @@ export default function PreferencesSettingsPage() {
     quickLogSleepUseSuggestedDuration: true,
     temperatureUnit: 'fahrenheit' as 'fahrenheit' | 'celsius',
     timeFormat: '12h' as '12h' | '24h',
+  });
+
+  const [homeScreenPreference, setHomeScreenPreference] = useState<{
+    type: 'baby' | 'user';
+    id: string;
+  }>({
+    id: '',
+    type: 'baby',
   });
 
   // Load preferences from user data
@@ -268,8 +371,21 @@ export default function PreferencesSettingsPage() {
       if (user.theme && user.theme !== theme) {
         setTheme(user.theme);
       }
+      // Load home screen preference
+      if (user.defaultHomeScreenType && user.defaultHomeScreenId) {
+        setHomeScreenPreference({
+          id: user.defaultHomeScreenId,
+          type: user.defaultHomeScreenType as 'baby' | 'user',
+        });
+      } else if (babies && babies.length > 0) {
+        // Default to first baby if no preference set
+        setHomeScreenPreference({
+          id: babies[0]?.id ?? '',
+          type: 'baby',
+        });
+      }
     }
-  }, [user, theme, setTheme]);
+  }, [user, theme, setTheme, babies]);
 
   // Save preferences to database when they change
   const handlePreferenceChange = async (
@@ -294,7 +410,6 @@ export default function PreferencesSettingsPage() {
       await updatePreferences.mutateAsync({ [key]: value });
       // Invalidate the user query to refetch updated data
       await utils.user.current.invalidate();
-      toast.success('Preferences saved');
     } catch (error) {
       // Revert on error
       if (user) {
@@ -332,7 +447,6 @@ export default function PreferencesSettingsPage() {
       await updatePreferences.mutateAsync({ theme });
       // Invalidate the user query to refetch updated data
       await utils.user.current.invalidate();
-      toast.success('Theme saved');
     } catch (error) {
       // Revert on error
       if (user?.theme) {
@@ -340,6 +454,27 @@ export default function PreferencesSettingsPage() {
       }
       toast.error('Failed to save theme');
       console.error('Failed to save theme:', error);
+    }
+  };
+
+  // Save home screen preference to database
+  const handleHomeScreenChange = async (type: 'baby' | 'user', id: string) => {
+    // Optimistic update
+    const previousPreference = { ...homeScreenPreference };
+    setHomeScreenPreference({ id, type });
+
+    try {
+      await updateHomeScreenPreference.mutateAsync({
+        defaultHomeScreenId: id,
+        defaultHomeScreenType: type,
+      });
+      // Invalidate the user query to refetch updated data
+      await utils.user.current.invalidate();
+    } catch (error) {
+      // Revert on error
+      setHomeScreenPreference(previousPreference);
+      toast.error('Failed to save home screen preference');
+      console.error('Failed to save home screen preference:', error);
     }
   };
 
@@ -393,6 +528,102 @@ export default function PreferencesSettingsPage() {
               </Button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold">Default Home Screen</h2>
+          <p className="text-sm text-muted-foreground">
+            Choose which page to show when you open the app
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Home Screen Type</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                className="flex flex-col items-center gap-2 h-auto py-4"
+                onClick={() => {
+                  const firstBaby = babies?.[0];
+                  if (firstBaby) {
+                    handleHomeScreenChange('baby', firstBaby.id);
+                  }
+                }}
+                variant={
+                  homeScreenPreference.type === 'baby' ? 'default' : 'outline'
+                }
+              >
+                <Baby className="h-5 w-5" />
+                <span className="text-sm">Baby Dashboard</span>
+              </Button>
+              <Button
+                className="flex flex-col items-center gap-2 h-auto py-4"
+                onClick={() => {
+                  const currentUser = familyMembers?.find(
+                    (m) => m.userId === user?.id,
+                  );
+                  if (currentUser?.userId) {
+                    handleHomeScreenChange('user', currentUser.userId);
+                  }
+                }}
+                variant={
+                  homeScreenPreference.type === 'user' ? 'default' : 'outline'
+                }
+              >
+                <UserIcon className="h-5 w-5" />
+                <span className="text-sm">User Dashboard</span>
+              </Button>
+            </div>
+          </div>
+
+          {homeScreenPreference.type === 'baby' &&
+            babies &&
+            babies.length > 0 && (
+              <div className="space-y-2">
+                <Label>Select Baby</Label>
+                <Select
+                  onValueChange={(value) =>
+                    handleHomeScreenChange('baby', value)
+                  }
+                  value={homeScreenPreference.id}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a baby" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {babies.map((baby) => (
+                      <SelectItem key={baby.id} value={baby.id}>
+                        {baby.firstName} {baby.lastName || ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+          {homeScreenPreference.type === 'user' && familyMembers && (
+            <div className="space-y-2">
+              <Label>Select User</Label>
+              <Select
+                onValueChange={(value) => handleHomeScreenChange('user', value)}
+                value={homeScreenPreference.id}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a user" />
+                </SelectTrigger>
+                <SelectContent>
+                  {familyMembers.map((member) => (
+                    <SelectItem key={member.userId} value={member.userId}>
+                      {member.user?.firstName} {member.user?.lastName || ''}{' '}
+                      {member.userId === user?.id ? '(You)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -490,11 +721,19 @@ export default function PreferencesSettingsPage() {
       </div>
 
       {/* Quick Log Settings */}
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+      <div className="bg-card border border-border rounded-2xl p-4 md:p-6 space-y-4">
         <div>
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Zap className="h-5 w-5" />
             Quick Log Settings
+            <Button
+              className="size-4 p-0"
+              onClick={() => setOpenInfoDialog('enable')}
+              type="button"
+              variant="ghost"
+            >
+              <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+            </Button>
           </h2>
           <p className="text-sm text-muted-foreground">
             Customize smart defaults for quick logging activities
@@ -502,33 +741,17 @@ export default function PreferencesSettingsPage() {
         </div>
 
         {/* Master Toggle */}
-        <div className="flex items-center justify-between py-2 border-b">
-          <div>
-            <div className="flex items-center gap-1.5">
-              <Label>Enable Quick Log</Label>
-              <Button
-                className="size-4 p-0"
-                onClick={() => setOpenInfoDialog('enable')}
-                type="button"
-                variant="ghost"
-              >
-                <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors" />
-              </Button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Show quick log button on prediction cards
-            </p>
-          </div>
-          <Switch
-            checked={preferences.quickLogEnabled}
-            onCheckedChange={(checked) =>
-              handlePreferenceChange('quickLogEnabled', checked)
-            }
-          />
-        </div>
+        <SettingToggle
+          checked={preferences.quickLogEnabled}
+          description="Show quick log button on prediction cards"
+          label="Enable Quick Log"
+          onCheckedChange={(checked) =>
+            handlePreferenceChange('quickLogEnabled', checked)
+          }
+        />
 
         {/* Feeding Settings */}
-        <div className="space-y-3 pt-2">
+        <div className="space-y-2 pt-2">
           <div className="flex items-center gap-2 font-medium">
             <Droplets className="h-4 w-4" />
             <span>Feeding</span>
@@ -541,80 +764,84 @@ export default function PreferencesSettingsPage() {
               <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors" />
             </Button>
           </div>
-          <div className="space-y-2 pl-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Label className="font-normal">Use last amount</Label>
+          <div className="space-y-1.5 pl-4">
+            <SettingToggle
+              checked={preferences.quickLogFeedingUseLastAmount}
+              className="py-2"
+              disabled={!preferences.quickLogEnabled}
+              label="Auto-fill from last feeding"
+              labelAction={
                 <Button
                   className="size-4 p-0"
-                  onClick={() => setOpenInfoDialog('feedingAmount')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenInfoDialog('feedingAmount');
+                  }}
                   type="button"
                   variant="ghost"
                 >
                   <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                 </Button>
-              </div>
-              <Switch
-                checked={preferences.quickLogFeedingUseLastAmount}
-                disabled={!preferences.quickLogEnabled}
-                onCheckedChange={(checked) =>
-                  handlePreferenceChange(
-                    'quickLogFeedingUseLastAmount',
-                    checked,
-                  )
-                }
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Label className="font-normal">Use typical duration</Label>
+              }
+              labelClassName="font-normal"
+              onCheckedChange={(checked) =>
+                handlePreferenceChange('quickLogFeedingUseLastAmount', checked)
+              }
+            />
+            <SettingToggle
+              checked={preferences.quickLogFeedingUseTypicalDuration}
+              className="py-2"
+              disabled={!preferences.quickLogEnabled}
+              label="Auto-fill average duration"
+              labelAction={
                 <Button
                   className="size-4 p-0"
-                  onClick={() => setOpenInfoDialog('feedingDuration')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenInfoDialog('feedingDuration');
+                  }}
                   type="button"
                   variant="ghost"
                 >
                   <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                 </Button>
-              </div>
-              <Switch
-                checked={preferences.quickLogFeedingUseTypicalDuration}
-                disabled={!preferences.quickLogEnabled}
-                onCheckedChange={(checked) =>
-                  handlePreferenceChange(
-                    'quickLogFeedingUseTypicalDuration',
-                    checked,
-                  )
-                }
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Label className="font-normal">
-                  Use last type (bottle/nursing)
-                </Label>
+              }
+              labelClassName="font-normal"
+              onCheckedChange={(checked) =>
+                handlePreferenceChange(
+                  'quickLogFeedingUseTypicalDuration',
+                  checked,
+                )
+              }
+            />
+            <SettingToggle
+              checked={preferences.quickLogFeedingUseLastType}
+              className="py-2"
+              disabled={!preferences.quickLogEnabled}
+              label="Auto-fill feeding method"
+              labelAction={
                 <Button
                   className="size-4 p-0"
-                  onClick={() => setOpenInfoDialog('feedingType')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenInfoDialog('feedingType');
+                  }}
                   type="button"
                   variant="ghost"
                 >
                   <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                 </Button>
-              </div>
-              <Switch
-                checked={preferences.quickLogFeedingUseLastType}
-                disabled={!preferences.quickLogEnabled}
-                onCheckedChange={(checked) =>
-                  handlePreferenceChange('quickLogFeedingUseLastType', checked)
-                }
-              />
-            </div>
+              }
+              labelClassName="font-normal"
+              onCheckedChange={(checked) =>
+                handlePreferenceChange('quickLogFeedingUseLastType', checked)
+              }
+            />
           </div>
         </div>
 
         {/* Sleep Settings */}
-        <div className="space-y-3 pt-2">
+        <div className="space-y-2 pt-2">
           <div className="flex items-center gap-2 font-medium">
             <Moon className="h-4 w-4" />
             <span>Sleep</span>
@@ -627,35 +854,38 @@ export default function PreferencesSettingsPage() {
               <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors" />
             </Button>
           </div>
-          <div className="space-y-2 pl-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Label className="font-normal">Use suggested duration</Label>
+          <div className="space-y-1.5 pl-4">
+            <SettingToggle
+              checked={preferences.quickLogSleepUseSuggestedDuration}
+              className="py-2"
+              disabled={!preferences.quickLogEnabled}
+              label="Auto-fill age-based duration"
+              labelAction={
                 <Button
                   className="size-4 p-0"
-                  onClick={() => setOpenInfoDialog('sleepDuration')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenInfoDialog('sleepDuration');
+                  }}
                   type="button"
                   variant="ghost"
                 >
                   <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                 </Button>
-              </div>
-              <Switch
-                checked={preferences.quickLogSleepUseSuggestedDuration}
-                disabled={!preferences.quickLogEnabled}
-                onCheckedChange={(checked) =>
-                  handlePreferenceChange(
-                    'quickLogSleepUseSuggestedDuration',
-                    checked,
-                  )
-                }
-              />
-            </div>
+              }
+              labelClassName="font-normal"
+              onCheckedChange={(checked) =>
+                handlePreferenceChange(
+                  'quickLogSleepUseSuggestedDuration',
+                  checked,
+                )
+              }
+            />
           </div>
         </div>
 
         {/* Diaper Settings */}
-        <div className="space-y-3 pt-2">
+        <div className="space-y-2 pt-2">
           <div className="flex items-center gap-2 font-medium">
             <Baby className="h-4 w-4" />
             <span>Diaper</span>
@@ -668,35 +898,38 @@ export default function PreferencesSettingsPage() {
               <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors" />
             </Button>
           </div>
-          <div className="space-y-2 pl-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Label className="font-normal">Use predicted type</Label>
+          <div className="space-y-1.5 pl-4">
+            <SettingToggle
+              checked={preferences.quickLogDiaperUsePredictedType}
+              className="py-2"
+              disabled={!preferences.quickLogEnabled}
+              label="Auto-fill predicted type"
+              labelAction={
                 <Button
                   className="size-4 p-0"
-                  onClick={() => setOpenInfoDialog('diaperType')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenInfoDialog('diaperType');
+                  }}
                   type="button"
                   variant="ghost"
                 >
                   <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                 </Button>
-              </div>
-              <Switch
-                checked={preferences.quickLogDiaperUsePredictedType}
-                disabled={!preferences.quickLogEnabled}
-                onCheckedChange={(checked) =>
-                  handlePreferenceChange(
-                    'quickLogDiaperUsePredictedType',
-                    checked,
-                  )
-                }
-              />
-            </div>
+              }
+              labelClassName="font-normal"
+              onCheckedChange={(checked) =>
+                handlePreferenceChange(
+                  'quickLogDiaperUsePredictedType',
+                  checked,
+                )
+              }
+            />
           </div>
         </div>
 
         {/* Pumping Settings */}
-        <div className="space-y-3 pt-2">
+        <div className="space-y-2 pt-2">
           <div className="flex items-center gap-2 font-medium">
             <Droplets className="h-4 w-4" />
             <span>Pumping</span>
@@ -709,53 +942,56 @@ export default function PreferencesSettingsPage() {
               <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors" />
             </Button>
           </div>
-          <div className="space-y-2 pl-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Label className="font-normal">Use last volume</Label>
+          <div className="space-y-1.5 pl-4">
+            <SettingToggle
+              checked={preferences.quickLogPumpingUseLastVolume}
+              className="py-2"
+              disabled={!preferences.quickLogEnabled}
+              label="Auto-fill from last session"
+              labelAction={
                 <Button
                   className="size-4 p-0"
-                  onClick={() => setOpenInfoDialog('pumpingVolume')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenInfoDialog('pumpingVolume');
+                  }}
                   type="button"
                   variant="ghost"
                 >
                   <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                 </Button>
-              </div>
-              <Switch
-                checked={preferences.quickLogPumpingUseLastVolume}
-                disabled={!preferences.quickLogEnabled}
-                onCheckedChange={(checked) =>
-                  handlePreferenceChange(
-                    'quickLogPumpingUseLastVolume',
-                    checked,
-                  )
-                }
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Label className="font-normal">Use typical duration</Label>
+              }
+              labelClassName="font-normal"
+              onCheckedChange={(checked) =>
+                handlePreferenceChange('quickLogPumpingUseLastVolume', checked)
+              }
+            />
+            <SettingToggle
+              checked={preferences.quickLogPumpingUseTypicalDuration}
+              className="py-2"
+              disabled={!preferences.quickLogEnabled}
+              label="Auto-fill average duration"
+              labelAction={
                 <Button
                   className="size-4 p-0"
-                  onClick={() => setOpenInfoDialog('pumpingDuration')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenInfoDialog('pumpingDuration');
+                  }}
                   type="button"
                   variant="ghost"
                 >
                   <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                 </Button>
-              </div>
-              <Switch
-                checked={preferences.quickLogPumpingUseTypicalDuration}
-                disabled={!preferences.quickLogEnabled}
-                onCheckedChange={(checked) =>
-                  handlePreferenceChange(
-                    'quickLogPumpingUseTypicalDuration',
-                    checked,
-                  )
-                }
-              />
-            </div>
+              }
+              labelClassName="font-normal"
+              onCheckedChange={(checked) =>
+                handlePreferenceChange(
+                  'quickLogPumpingUseTypicalDuration',
+                  checked,
+                )
+              }
+            />
           </div>
         </div>
       </div>
@@ -763,8 +999,42 @@ export default function PreferencesSettingsPage() {
       {/* Info Drawer */}
       {openInfoDialog && (
         <QuickLogInfoDrawer
+          activityName={
+            openInfoDialog === 'feeding' ||
+            openInfoDialog === 'feedingAmount' ||
+            openInfoDialog === 'feedingDuration' ||
+            openInfoDialog === 'feedingType'
+              ? 'feeding'
+              : openInfoDialog === 'diaper' || openInfoDialog === 'diaperType'
+                ? 'diaper'
+                : openInfoDialog === 'sleep' ||
+                    openInfoDialog === 'sleepDuration'
+                  ? 'sleep'
+                  : openInfoDialog === 'pumping' ||
+                      openInfoDialog === 'pumpingVolume' ||
+                      openInfoDialog === 'pumpingDuration'
+                    ? 'pumping session'
+                    : undefined
+          }
           bgColor={quickLogInfoContent[openInfoDialog].bgColor}
           borderColor={quickLogInfoContent[openInfoDialog].borderColor}
+          calculationDetails={
+            openInfoDialog === 'feeding' ||
+            openInfoDialog === 'feedingAmount' ||
+            openInfoDialog === 'feedingDuration' ||
+            openInfoDialog === 'feedingType'
+              ? feedingPrediction?.calculationDetails
+              : openInfoDialog === 'diaper' || openInfoDialog === 'diaperType'
+                ? diaperPrediction?.calculationDetails
+                : openInfoDialog === 'sleep' ||
+                    openInfoDialog === 'sleepDuration'
+                  ? sleepPrediction?.calculationDetails
+                  : openInfoDialog === 'pumping' ||
+                      openInfoDialog === 'pumpingVolume' ||
+                      openInfoDialog === 'pumpingDuration'
+                    ? pumpingPrediction?.calculationDetails
+                    : null
+          }
           color={quickLogInfoContent[openInfoDialog].color}
           educationalContent={
             quickLogInfoContent[openInfoDialog].educationalContent

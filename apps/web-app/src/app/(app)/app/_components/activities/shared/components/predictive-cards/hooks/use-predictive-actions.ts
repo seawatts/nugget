@@ -49,7 +49,7 @@ export function usePredictiveActions({
         endTime: null,
         familyId: 'temp',
         familyMemberId: null,
-        id: `optimistic-${activityType}-${Date.now()}`,
+        id: `activity-optimistic-${activityType}-${Date.now()}`,
         isScheduled: false,
         notes: null,
         startTime: now,

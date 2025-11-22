@@ -18,6 +18,7 @@ interface OptimisticActivitiesState {
     activity: Omit<OptimisticActivity, '_optimistic' | '_tempId'>,
   ) => string;
   removeActivity: (tempId: string) => void;
+  removeByMatch: (type: string, timestamp: Date, toleranceMs?: number) => void;
   clear: () => void;
 }
 
@@ -57,6 +58,22 @@ const useOptimisticActivitiesStoreBase = create<OptimisticActivitiesState>(
     removeActivity: (tempId) => {
       set((state) => ({
         activities: state.activities.filter((a) => a._tempId !== tempId),
+      }));
+    },
+    removeByMatch: (type, timestamp, toleranceMs = 1000) => {
+      set((state) => ({
+        activities: state.activities.filter((a) => {
+          // Don't match if different type
+          if (a.type !== type) return true;
+
+          // Calculate time difference
+          const activityTime = new Date(a.startTime).getTime();
+          const targetTime = timestamp.getTime();
+          const timeDiff = Math.abs(activityTime - targetTime);
+
+          // Keep activities that don't match (time difference > tolerance)
+          return timeDiff > toleranceMs;
+        }),
       }));
     },
   }),

@@ -117,7 +117,7 @@ export function MilestoneCompletionDialog({
 
   return (
     <Drawer onOpenChange={onOpenChange} open={open}>
-      <DrawerContent className="h-[90vh] flex flex-col">
+      <DrawerContent className="h-[90vh] flex flex-col overflow-x-hidden">
         <DrawerHeader className="border-b">
           <DrawerTitle>{milestoneTitle}</DrawerTitle>
         </DrawerHeader>

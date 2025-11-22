@@ -44,6 +44,7 @@ export function DiaperActivityDrawer({
     color: null,
     consistency: null,
     hasRash: false,
+    isGassy: false,
     notes: '',
     size: null,
     type: null,
@@ -86,12 +87,15 @@ export function DiaperActivityDrawer({
           size?: 'little' | 'medium' | 'large';
           color?: string;
           consistency?: string;
+          hasRash?: boolean;
+          isGassy?: boolean;
         };
         setFormData({
           color: (details.color as DiaperFormData['color']) || null,
           consistency:
             (details.consistency as DiaperFormData['consistency']) || null,
-          hasRash: false,
+          hasRash: details.hasRash ?? false,
+          isGassy: details.isGassy ?? false,
           notes: existingActivity.notes || '',
           size: (details.size as DiaperFormData['size']) || null,
           type: details.type || null,
@@ -107,6 +111,7 @@ export function DiaperActivityDrawer({
         color: null,
         consistency: null,
         hasRash: false,
+        isGassy: false,
         notes: '',
         size: null,
         type: null,
@@ -125,6 +130,7 @@ export function DiaperActivityDrawer({
           color: null,
           consistency: null,
           hasRash: false,
+          isGassy: false,
           notes: '',
           size: null,
           type: null,
@@ -193,6 +199,8 @@ export function DiaperActivityDrawer({
       const diaperDetails = {
         color: formData.color ?? undefined,
         consistency: formData.consistency ?? undefined,
+        hasRash: formData.hasRash,
+        isGassy: formData.isGassy,
         size: formData.size ?? undefined,
         type: formData.type,
       };
@@ -208,6 +216,8 @@ export function DiaperActivityDrawer({
           details: {
             color: formData.color,
             consistency: formData.consistency,
+            hasRash: formData.hasRash,
+            isGassy: formData.isGassy,
             size: formData.size,
             type: formData.type, // wet, dirty, or both
           },
@@ -279,7 +289,7 @@ export function DiaperActivityDrawer({
       </div>
 
       {/* Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
         <DiaperDrawerContent onDataChange={setFormData} />
 
         {/* Time & Date Section */}
@@ -289,7 +299,7 @@ export function DiaperActivityDrawer({
           </h3>
           <TimeInput
             id="diaper-time"
-            label="Time"
+            label="Date & Time"
             onChange={setStartTime}
             value={startTime}
           />

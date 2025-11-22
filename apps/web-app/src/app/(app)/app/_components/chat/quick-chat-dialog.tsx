@@ -187,16 +187,6 @@ export function QuickChatDialogContent({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleInputFocus = useCallback(() => {
-    // Small delay to allow keyboard to appear
-    setTimeout(() => {
-      inputRef.current?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
-    }, 300);
-  }, []);
-
   const handleSendMessage = useCallback(async () => {
     const trimmedInput = input.trim();
     if (!trimmedInput || !userId || isSending) return;
@@ -384,7 +374,6 @@ export function QuickChatDialogContent({
             )}
             disabled={isSending}
             onChange={(event) => setInput(event.target.value)}
-            onFocus={handleInputFocus}
             placeholder={placeholder}
             ref={inputRef}
             type="text"

@@ -71,6 +71,54 @@ export function useFeedingDrawerState({
       } else {
         setEndTime(new Date(existingActivity.startTime));
       }
+
+      // Set form data based on activity type
+      if (existingActivity.type === 'bottle') {
+        const bottleDetails = existingActivity.details as {
+          type: 'bottle';
+          vitaminDGiven?: boolean;
+        } | null;
+        setFormData({
+          amountMl: existingActivity.amountMl || undefined,
+          bottleType:
+            existingActivity.feedingSource === 'formula'
+              ? 'formula'
+              : 'breast_milk',
+          notes: existingActivity.notes || undefined,
+          type: 'bottle',
+          vitaminDGiven: bottleDetails?.vitaminDGiven,
+        });
+      } else if (existingActivity.type === 'nursing') {
+        // Extract durations from details or calculate from total duration
+        const details = existingActivity.details as {
+          side?: 'left' | 'right' | 'both';
+          type: 'nursing';
+          vitaminDGiven?: boolean;
+        } | null;
+        const totalDuration = existingActivity.duration || 0;
+
+        let leftDuration = 0;
+        let rightDuration = 0;
+
+        // If we have side info, distribute duration accordingly
+        if (details?.side === 'left') {
+          leftDuration = totalDuration;
+        } else if (details?.side === 'right') {
+          rightDuration = totalDuration;
+        } else {
+          // 'both' or no side info - split evenly
+          leftDuration = Math.floor(totalDuration / 2);
+          rightDuration = totalDuration - leftDuration;
+        }
+
+        setFormData({
+          leftDuration,
+          notes: existingActivity.notes || undefined,
+          rightDuration,
+          type: 'nursing',
+          vitaminDGiven: details?.vitaminDGiven,
+        });
+      }
     } else {
       const now = new Date();
       setStartTime(now);

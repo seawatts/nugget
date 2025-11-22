@@ -25,6 +25,18 @@ export interface PumpingPrediction {
   // Quick log smart defaults
   suggestedVolume: number | null; // in ml, from last session
   suggestedDuration: number | null; // in minutes, age-based typical duration
+  // Calculation components for displaying how prediction works
+  calculationDetails: {
+    ageBasedInterval: number; // hours
+    recentAverageInterval: number | null; // hours
+    lastInterval: number | null; // hours
+    weights: {
+      ageBased: number;
+      recentAverage: number;
+      lastInterval: number;
+    };
+    dataPoints: number; // number of recent pumpings used
+  };
 }
 
 interface PumpingActivity {
@@ -126,6 +138,13 @@ export function predictNextPumping(
 
     return {
       averageIntervalHours: null,
+      calculationDetails: {
+        ageBasedInterval,
+        dataPoints: 0,
+        lastInterval: null,
+        recentAverageInterval: null,
+        weights: { ageBased: 1.0, lastInterval: 0, recentAverage: 0 },
+      },
       confidenceLevel: 'low',
       intervalHours: ageBasedInterval,
       isOverdue: false,
@@ -148,6 +167,13 @@ export function predictNextPumping(
     nextPumpingTime.setHours(nextPumpingTime.getHours() + ageBasedInterval);
     return {
       averageIntervalHours: null,
+      calculationDetails: {
+        ageBasedInterval,
+        dataPoints: 0,
+        lastInterval: null,
+        recentAverageInterval: null,
+        weights: { ageBased: 1.0, lastInterval: 0, recentAverage: 0 },
+      },
       confidenceLevel: 'low',
       intervalHours: ageBasedInterval,
       isOverdue: false,
@@ -180,28 +206,33 @@ export function predictNextPumping(
   }
 
   // Get last interval (between last two pumping sessions)
-  const lastInterval = validIntervals.length > 0 ? validIntervals[0] : null;
+  const lastInterval: number | null =
+    validIntervals.length > 0 ? (validIntervals[0] ?? null) : null;
 
   // Hybrid prediction: weighted average
   let predictedInterval: number;
   let confidenceLevel: 'high' | 'medium' | 'low';
+  let weights = { ageBased: 0, lastInterval: 0, recentAverage: 0 };
 
   if (validIntervals.length >= 3) {
     // High confidence: have enough data points
+    weights = { ageBased: 0.4, lastInterval: 0.2, recentAverage: 0.4 };
     predictedInterval =
-      ageBasedInterval * 0.4 +
-      (averageInterval || ageBasedInterval) * 0.4 +
-      (lastInterval || ageBasedInterval) * 0.2;
+      ageBasedInterval * weights.ageBased +
+      (averageInterval || ageBasedInterval) * weights.recentAverage +
+      (lastInterval || ageBasedInterval) * weights.lastInterval;
     confidenceLevel = 'high';
   } else if (validIntervals.length >= 1) {
     // Medium confidence: some data but not much
+    weights = { ageBased: 0.5, lastInterval: 0.2, recentAverage: 0.3 };
     predictedInterval =
-      ageBasedInterval * 0.5 +
-      (averageInterval || ageBasedInterval) * 0.3 +
-      (lastInterval || ageBasedInterval) * 0.2;
+      ageBasedInterval * weights.ageBased +
+      (averageInterval || ageBasedInterval) * weights.recentAverage +
+      (lastInterval || ageBasedInterval) * weights.lastInterval;
     confidenceLevel = 'medium';
   } else {
     // Low confidence: fall back to age-based
+    weights = { ageBased: 1.0, lastInterval: 0, recentAverage: 0 };
     predictedInterval = ageBasedInterval;
     confidenceLevel = 'low';
   }
@@ -239,6 +270,13 @@ export function predictNextPumping(
 
   return {
     averageIntervalHours: averageInterval,
+    calculationDetails: {
+      ageBasedInterval,
+      dataPoints: pumpingActivities.length,
+      lastInterval,
+      recentAverageInterval: averageInterval,
+      weights,
+    },
     confidenceLevel,
     intervalHours: predictedInterval,
     isOverdue,

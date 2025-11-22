@@ -18,6 +18,7 @@ interface PredictiveTimeDisplayProps {
   exactTime: string;
   lastActivityTime?: Date | null;
   lastActivityAmount?: string | null; // formatted amount string (e.g., "4 oz", "120 ml")
+  predictedAmount?: string | null; // formatted predicted amount string
   elapsedTime?: number;
   timeFormat: '12h' | '24h';
   activityLabel?: string; // e.g., "feeding", "sleeping"
@@ -32,6 +33,7 @@ export function PredictiveTimeDisplay({
   exactTime,
   lastActivityTime,
   lastActivityAmount,
+  predictedAmount,
   elapsedTime = 0,
   timeFormat,
   activityLabel = 'active',
@@ -70,20 +72,31 @@ export function PredictiveTimeDisplay({
   if (effectiveIsOverdue) {
     return (
       <>
-        <div className="flex items-baseline gap-2">
-          <span className="text-lg font-bold text-amber-400">
-            {formatOverdueTime(overdueMinutes ?? 0)} overdue ({exactTime})
-          </span>
-        </div>
+        {/* Top: Last activity (no label) */}
         {lastActivityTime && (
-          <div className="text-sm opacity-60">
-            {formatDistanceToNow(lastActivityTime, {
-              addSuffix: true,
-            })}{' '}
-            • {formatTimeWithPreference(lastActivityTime, timeFormat)}
-            {lastActivityAmount && <span> • {lastActivityAmount}</span>}
+          <div className="flex items-baseline gap-2">
+            <span className="text-lg font-semibold">
+              {formatDistanceToNow(lastActivityTime, {
+                addSuffix: true,
+              })}
+            </span>
+            <span className="text-sm opacity-70">
+              {formatTimeWithPreference(lastActivityTime, timeFormat)}
+              {lastActivityAmount && <span> • {lastActivityAmount}</span>}
+            </span>
           </div>
         )}
+        {/* Bottom: Next prediction with overdue indicator */}
+        <div className="text-sm opacity-60">
+          Next {exactTime}
+          {overdueMinutes && (
+            <span className="text-amber-400 font-medium">
+              {' '}
+              • {formatOverdueTime(overdueMinutes)} overdue
+            </span>
+          )}
+          {predictedAmount && <span> • {predictedAmount}</span>}
+        </div>
       </>
     );
   }
@@ -91,19 +104,25 @@ export function PredictiveTimeDisplay({
   // Predicted/normal state
   return (
     <>
-      <div className="flex items-baseline gap-2">
-        <span className="text-lg font-semibold">{timeUntil}</span>
-        <span className="text-sm opacity-70">{exactTime}</span>
-      </div>
+      {/* Top: Last activity (no label) */}
       {lastActivityTime && (
-        <div className="text-sm opacity-60">
-          {formatDistanceToNow(lastActivityTime, {
-            addSuffix: true,
-          })}{' '}
-          • {formatTimeWithPreference(lastActivityTime, timeFormat)}
-          {lastActivityAmount && <span> • {lastActivityAmount}</span>}
+        <div className="flex items-baseline gap-2">
+          <span className="text-lg font-semibold">
+            {formatDistanceToNow(lastActivityTime, {
+              addSuffix: true,
+            })}
+          </span>
+          <span className="text-sm opacity-70">
+            {formatTimeWithPreference(lastActivityTime, timeFormat)}
+            {lastActivityAmount && <span> • {lastActivityAmount}</span>}
+          </span>
         </div>
       )}
+      {/* Bottom: Next prediction */}
+      <div className="text-sm opacity-60">
+        Next {timeUntil} • {exactTime}
+        {predictedAmount && <span> • {predictedAmount}</span>}
+      </div>
     </>
   );
 }

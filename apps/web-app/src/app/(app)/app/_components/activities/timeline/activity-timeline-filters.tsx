@@ -362,11 +362,11 @@ export function ActivityTimelineFilters({
   return (
     <Drawer onOpenChange={setIsOpen} open={isOpen}>
       <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
-      <DrawerContent className="max-h-[85vh]">
+      <DrawerContent className="max-h-[85vh] overflow-x-hidden">
         <DrawerHeader>
           <DrawerTitle>Filter Timeline</DrawerTitle>
         </DrawerHeader>
-        <div className="px-4 flex-1 overflow-y-auto">
+        <div className="px-4 flex-1 overflow-y-auto overflow-x-hidden">
           <div className="flex flex-col gap-4 pb-4">
             {filterScrollableContent}
           </div>

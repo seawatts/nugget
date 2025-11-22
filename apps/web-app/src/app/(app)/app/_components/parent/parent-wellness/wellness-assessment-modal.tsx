@@ -383,7 +383,7 @@ export function WellnessAssessmentModal({
 
   return (
     <Drawer onOpenChange={handleClose} open={open}>
-      <DrawerContent className="max-h-[90vh]">
+      <DrawerContent className="max-h-[90vh] overflow-x-hidden">
         <DrawerHeader className="text-left">
           <DrawerTitle>{title || 'Wellness Assessment'}</DrawerTitle>
           <DrawerDescription>

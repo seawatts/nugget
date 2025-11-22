@@ -238,7 +238,7 @@ export function FeedingActivityDrawer({
       <ActivityDrawerHeader activityType="feeding" onClose={onClose} />
 
       {/* Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
         {isLoadingInProgress ? (
           <div className="flex items-center justify-center h-full">
             <div className="size-8 animate-spin rounded-full border-4 border-activity-feeding border-t-transparent" />
@@ -250,9 +250,13 @@ export function FeedingActivityDrawer({
               babyAgeDays={babyAgeDays}
               duration={duration}
               existingActivityType={
-                existingActivity || activeActivityId
-                  ? (formData?.type ?? null)
-                  : null
+                (existingActivity?.type === 'bottle' ||
+                existingActivity?.type === 'nursing' ||
+                existingActivity?.type === 'solids'
+                  ? existingActivity.type
+                  : activeActivityId
+                    ? (formData?.type ?? null)
+                    : null) as 'bottle' | 'nursing' | 'solids' | null
               }
               isTimerStopped={isTimerStopped}
               onFormDataChange={setFormData}
@@ -271,7 +275,7 @@ export function FeedingActivityDrawer({
                 <div className="grid grid-cols-1 gap-3 min-w-0">
                   <TimeInput
                     id="feeding-start-time"
-                    label="Start Time"
+                    label="Start Date & Time"
                     onChange={setStartTime}
                     value={startTime}
                   />
