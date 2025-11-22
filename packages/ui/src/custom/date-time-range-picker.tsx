@@ -5,6 +5,7 @@ import { Clock } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../components/button';
 import { Calendar } from '../components/calendar';
+import { Drawer, DrawerContent, DrawerTitle } from '../components/drawer';
 import { Input } from '../components/input';
 import { Label } from '../components/label';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/popover';
@@ -261,71 +262,99 @@ export function DateTimeRangePicker({
     );
   };
 
+  // Trigger button (shared between mobile and desktop)
+  const triggerButton = (
+    <button
+      className={cn(
+        'flex items-center gap-2 text-sm transition-colors hover:opacity-80',
+        className,
+      )}
+      type="button"
+    >
+      <Clock className="size-4" />
+      <span>{formatDisplayText()}</span>
+    </button>
+  );
+
+  // Content (shared between mobile and desktop)
+  const pickerContent = (
+    <>
+      {mode === 'range' && (
+        <div className="flex gap-2 p-3 border-b border-border">
+          <Button
+            onClick={() => setEditingField('start')}
+            size="sm"
+            variant={editingField === 'start' ? 'default' : 'outline'}
+          >
+            Start
+          </Button>
+          <Button
+            onClick={() => setEditingField('end')}
+            size="sm"
+            variant={editingField === 'end' ? 'default' : 'outline'}
+          >
+            End
+          </Button>
+        </div>
+      )}
+
+      <Calendar
+        mode="single"
+        onSelect={handleDateSelect}
+        selected={editingField === 'start' ? startDate : effectiveEndDate}
+      />
+
+      <div className="border-t p-3 space-y-3">
+        {mode === 'single'
+          ? renderTimeSelector(startDate, true)
+          : editingField === 'start'
+            ? renderTimeSelector(startDate, true)
+            : renderTimeSelector(effectiveEndDate, false)}
+
+        <div className="flex gap-2 mt-3">
+          <Button
+            className="flex-1"
+            onClick={() => setIsOpen(false)}
+            size="sm"
+            variant="outline"
+          >
+            Cancel
+          </Button>
+          <Button className="flex-1" onClick={() => setIsOpen(false)} size="sm">
+            Done
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+
+  // Mobile: Use Drawer
+  if (isMobile) {
+    return (
+      <>
+        <button onClick={() => setIsOpen(true)} type="button">
+          {triggerButton}
+        </button>
+        <Drawer onOpenChange={setIsOpen} open={isOpen}>
+          <DrawerContent className="max-h-[90vh]">
+            <DrawerTitle className="sr-only">
+              {mode === 'single'
+                ? 'Select Date & Time'
+                : 'Select Date & Time Range'}
+            </DrawerTitle>
+            <div className="overflow-y-auto">{pickerContent}</div>
+          </DrawerContent>
+        </Drawer>
+      </>
+    );
+  }
+
+  // Desktop: Use Popover
   return (
     <Popover onOpenChange={setIsOpen} open={isOpen}>
-      <PopoverTrigger asChild>
-        <button
-          className={cn(
-            'flex items-center gap-2 text-sm transition-colors hover:opacity-80',
-            className,
-          )}
-          type="button"
-        >
-          <Clock className="size-4" />
-          <span>{formatDisplayText()}</span>
-        </button>
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
       <PopoverContent align="start" className="w-auto p-0">
-        {mode === 'range' && (
-          <div className="flex gap-2 p-3 border-b border-border">
-            <Button
-              onClick={() => setEditingField('start')}
-              size="sm"
-              variant={editingField === 'start' ? 'default' : 'outline'}
-            >
-              Start
-            </Button>
-            <Button
-              onClick={() => setEditingField('end')}
-              size="sm"
-              variant={editingField === 'end' ? 'default' : 'outline'}
-            >
-              End
-            </Button>
-          </div>
-        )}
-
-        <Calendar
-          mode="single"
-          onSelect={handleDateSelect}
-          selected={editingField === 'start' ? startDate : effectiveEndDate}
-        />
-
-        <div className="border-t p-3 space-y-3">
-          {mode === 'single'
-            ? renderTimeSelector(startDate, true)
-            : editingField === 'start'
-              ? renderTimeSelector(startDate, true)
-              : renderTimeSelector(effectiveEndDate, false)}
-
-          <div className="flex gap-2 mt-3">
-            <Button
-              className="flex-1"
-              onClick={() => setIsOpen(false)}
-              size="sm"
-              variant="outline"
-            >
-              Cancel
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={() => setIsOpen(false)}
-              size="sm"
-            >
-              Done
-            </Button>
-          </div>
-        </div>
+        {pickerContent}
       </PopoverContent>
     </Popover>
   );

@@ -22,7 +22,12 @@ import {
 } from '../shared/components/predictive-cards';
 import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
 import { getAssignedMember, suggestFamilyMember } from './assignment';
-import { FeedingAssignmentSection } from './components/feeding-assignment-section';
+import { FeedingGoalDisplay } from './components/feeding-goal-display';
+import {
+  calculateTodaysFeedingStats,
+  getDailyAmountGoal,
+  getDailyFeedingGoal,
+} from './feeding-goals';
 import { getFeedingGuidanceByAge } from './feeding-intervals';
 import { useFeedingActions } from './hooks/use-feeding-actions';
 import { getFeedingLearningContent } from './learning-content';
@@ -44,6 +49,15 @@ export function PredictiveFeedingCard({
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
   const userUnitPref = getVolumeUnit(userData?.measurementUnit || 'metric');
+
+  // Query today's activities for goal tracking
+  const { data: todaysActivitiesData } = api.activities.list.useQuery(
+    {
+      babyId: babyId ?? '',
+      limit: 100,
+    },
+    { enabled: Boolean(babyId) },
+  );
 
   // Use tRPC query for prediction data
   const {
@@ -105,26 +119,19 @@ export function PredictiveFeedingCard({
   });
 
   // Use feeding-specific actions hook
-  const {
-    handleSkip,
-    handleClaim,
-    handleUnclaim,
-    handleQuickLog,
-    claiming,
-    isSkipping,
-    isCreating,
-  } = useFeedingActions({
-    onActivityLogged,
-    predictedTime: data?.prediction.nextFeedingTime,
-    quickLogEnabled: userData?.quickLogEnabled ?? true,
-    scheduledFeedingId: data?.scheduledFeeding?.id,
-    suggestedAmount: data?.prediction.suggestedAmount,
-    suggestedDuration: data?.prediction.suggestedDuration,
-    suggestedType: data?.prediction.suggestedType,
-    useLastAmount: userData?.quickLogFeedingUseLastAmount ?? true,
-    useLastType: userData?.quickLogFeedingUseLastType ?? true,
-    useTypicalDuration: userData?.quickLogFeedingUseTypicalDuration ?? true,
-  });
+  const { handleSkip, handleQuickLog, isSkipping, isCreating } =
+    useFeedingActions({
+      onActivityLogged,
+      predictedTime: data?.prediction.nextFeedingTime,
+      quickLogEnabled: userData?.quickLogEnabled ?? true,
+      scheduledFeedingId: data?.scheduledFeeding?.id,
+      suggestedAmount: data?.prediction.suggestedAmount,
+      suggestedDuration: data?.prediction.suggestedDuration,
+      suggestedType: data?.prediction.suggestedType,
+      useLastAmount: userData?.quickLogFeedingUseLastAmount ?? true,
+      useLastType: userData?.quickLogFeedingUseLastType ?? true,
+      useTypicalDuration: userData?.quickLogFeedingUseTypicalDuration ?? true,
+    });
 
   if (error) {
     return <PredictiveCardError error={error} />;
@@ -136,14 +143,7 @@ export function PredictiveFeedingCard({
 
   if (!data) return null;
 
-  const {
-    prediction,
-    assignedMember,
-    suggestedMember,
-    familyMemberCount,
-    babyAgeDays,
-  } = data;
-  const isAssignedToCurrentUser = assignedMember?.userId === user?.id;
+  const { prediction, babyAgeDays } = data;
 
   // Get learning content for the baby's age
   const learningContent =
@@ -163,8 +163,10 @@ export function PredictiveFeedingCard({
     enabled: userData?.quickLogEnabled ?? true,
   };
 
-  // Only show assignment section if there are multiple family members
-  const showAssignment = familyMemberCount > 1;
+  // Calculate today's feeding statistics for goal display
+  const todaysStats = calculateTodaysFeedingStats(todaysActivitiesData ?? []);
+  const dailyFeedingGoal = getDailyFeedingGoal(babyAgeDays ?? 0);
+  const dailyAmountGoal = getDailyAmountGoal(babyAgeDays ?? 0, userUnitPref);
 
   // Format countdown
   const timeUntil = formatDistanceToNow(displayNextTime, {
@@ -239,8 +241,8 @@ export function PredictiveFeedingCard({
           />
         )}
 
-        {/* Assignment Section - Only show if multiple family members, not overdue, and not actively tracking */}
-        {showAssignment && !effectiveIsOverdue && !inProgressActivity && (
+        {/* Assignment Section - Hidden for now, keeping code intact for future use */}
+        {/* {showAssignment && !effectiveIsOverdue && !inProgressActivity && (
           <FeedingAssignmentSection
             assignedMember={assignedMember}
             claiming={claiming}
@@ -249,6 +251,19 @@ export function PredictiveFeedingCard({
             onClaim={handleClaim}
             onUnclaim={handleUnclaim}
             suggestedMember={suggestedMember}
+          />
+        )} */}
+
+        {/* Goal Tracking Display - Shows feeding progress for today */}
+        {!effectiveIsOverdue && !inProgressActivity && (
+          <FeedingGoalDisplay
+            avgIntervalHours={todaysStats.avgIntervalHours}
+            currentAmount={todaysStats.totalMl}
+            currentCount={todaysStats.count}
+            feedingThemeColor={feedingTheme.color}
+            goalAmount={dailyAmountGoal}
+            goalCount={dailyFeedingGoal}
+            unit={userUnitPref}
           />
         )}
       </Card>

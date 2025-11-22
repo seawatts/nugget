@@ -18,8 +18,14 @@ import {
   usePredictiveActions,
 } from '../shared/components/predictive-cards';
 import { skipSleepAction } from './actions';
+import { SleepGoalDisplay } from './components/sleep-goal-display';
 import { getSleepLearningContent } from './learning-content';
 import { predictNextSleep } from './prediction';
+import {
+  calculateTodaysSleepStats,
+  getDailyNapGoal,
+  getDailySleepHoursGoal,
+} from './sleep-goals';
 import { getSleepGuidanceByAge } from './sleep-intervals';
 
 interface PredictiveSleepCardProps {
@@ -36,6 +42,15 @@ export function PredictiveSleepCard({
 
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
+
+  // Query today's activities for goal tracking
+  const { data: todaysActivitiesData } = api.activities.list.useQuery(
+    {
+      babyId: babyId ?? '',
+      limit: 100,
+    },
+    { enabled: Boolean(babyId) },
+  );
 
   // Use tRPC query for prediction data
   const {
@@ -153,6 +168,11 @@ export function PredictiveSleepCard({
   if (!data) return null;
 
   const { prediction, babyAgeDays } = data;
+
+  // Calculate today's sleep statistics for goal display
+  const todaysStats = calculateTodaysSleepStats(todaysActivitiesData ?? []);
+  const dailyNapGoal = getDailyNapGoal(babyAgeDays ?? 0);
+  const dailySleepHoursGoal = getDailySleepHoursGoal(babyAgeDays ?? 0);
 
   // Check if we should suppress overdue state due to recent skip
   const isRecentlySkipped = prediction.recentSkipTime
@@ -376,6 +396,18 @@ export function PredictiveSleepCard({
             isSkipping={isSkipping}
             onLog={handleCardClick}
             onSkip={handleSkip}
+          />
+        )}
+
+        {/* Goal Tracking Display - Shows sleep progress for today */}
+        {!effectiveIsOverdue && (
+          <SleepGoalDisplay
+            avgNapDuration={todaysStats.avgNapDuration}
+            longestNapMinutes={todaysStats.longestNapMinutes}
+            napCount={todaysStats.napCount}
+            napGoal={dailyNapGoal}
+            sleepHoursGoal={dailySleepHoursGoal}
+            totalSleepMinutes={todaysStats.totalSleepMinutes}
           />
         )}
       </Card>

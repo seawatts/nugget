@@ -18,6 +18,13 @@ import {
   usePredictiveActions,
 } from '../shared/components/predictive-cards';
 import { skipDiaperAction } from './actions';
+import { DiaperGoalDisplay } from './components/diaper-goal-display';
+import {
+  calculateTodaysDiaperStats,
+  getDailyDiaperGoal,
+  getDailyDirtyDiaperGoal,
+  getDailyWetDiaperGoal,
+} from './diaper-goals';
 import { getDiaperGuidanceByAge } from './diaper-intervals';
 import { getDiaperLearningContent } from './learning-content';
 import { predictNextDiaper } from './prediction';
@@ -36,6 +43,15 @@ export function PredictiveDiaperCard({
 
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
+
+  // Query today's activities for goal tracking
+  const { data: todaysActivitiesData } = api.activities.list.useQuery(
+    {
+      babyId: babyId ?? '',
+      limit: 100,
+    },
+    { enabled: Boolean(babyId) },
+  );
 
   // Use tRPC query for prediction data
   const {
@@ -105,6 +121,12 @@ export function PredictiveDiaperCard({
   if (!data) return null;
 
   const { prediction, babyAgeDays } = data;
+
+  // Calculate today's diaper statistics for goal display
+  const todaysStats = calculateTodaysDiaperStats(todaysActivitiesData ?? []);
+  const dailyDiaperGoal = getDailyDiaperGoal(babyAgeDays ?? 0);
+  const dailyWetGoal = getDailyWetDiaperGoal(babyAgeDays ?? 0);
+  const dailyDirtyGoal = getDailyDirtyDiaperGoal(babyAgeDays ?? 0);
 
   // Check if we should suppress overdue state due to recent skip (from DB)
   const isRecentlySkipped = prediction.recentSkipTime
@@ -306,6 +328,19 @@ export function PredictiveDiaperCard({
             isSkipping={isSkipping}
             onLog={handleCardClick}
             onSkip={handleSkip}
+          />
+        )}
+
+        {/* Goal Tracking Display - Shows diaper change progress for today */}
+        {!effectiveIsOverdue && (
+          <DiaperGoalDisplay
+            avgIntervalHours={todaysStats.avgIntervalHours}
+            currentCount={todaysStats.count}
+            dirtyCount={todaysStats.dirtyCount}
+            dirtyGoal={dailyDirtyGoal}
+            goalCount={dailyDiaperGoal}
+            wetCount={todaysStats.wetCount}
+            wetGoal={dailyWetGoal}
           />
         )}
       </Card>
