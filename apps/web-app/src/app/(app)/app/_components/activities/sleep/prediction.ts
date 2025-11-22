@@ -14,6 +14,7 @@ export interface SleepPrediction {
     time: Date;
     duration: number | null;
     intervalFromPrevious: number | null;
+    notes: string | null;
   }>;
   isOverdue: boolean;
   overdueMinutes: number | null;
@@ -63,7 +64,7 @@ function calculateIntervals(sleeps: SleepActivity[]): Array<number | null> {
         const previousTime = previous.endTime
           ? new Date(previous.endTime)
           : new Date(previous.startTime);
-        const hoursApart = differenceInMinutes(currentTime, previousTime) / 60;
+        const hoursApart = differenceInMinutes(previousTime, currentTime) / 60;
         intervals.push(hoursApart);
       } else {
         intervals.push(null);
@@ -289,6 +290,7 @@ export function predictNextSleep(
   const recentPattern = sleepActivities.slice(0, 5).map((sleep, idx) => ({
     duration: sleep.duration || null,
     intervalFromPrevious: intervals[idx] ?? null,
+    notes: sleep.notes,
     time: sleep.endTime ? new Date(sleep.endTime) : new Date(sleep.startTime),
   }));
 

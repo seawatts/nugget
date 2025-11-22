@@ -17,6 +17,8 @@ export interface PumpingPrediction {
     time: Date;
     amountMl: number | null;
     intervalFromPrevious: number | null;
+    duration: number | null;
+    notes: string | null;
   }>;
   isOverdue: boolean;
   overdueMinutes: number | null;
@@ -61,7 +63,7 @@ function calculateIntervals(pumpings: PumpingActivity[]): Array<number | null> {
       if (current && previous) {
         const currentTime = new Date(current.startTime);
         const previousTime = new Date(previous.startTime);
-        const hoursApart = differenceInMinutes(currentTime, previousTime) / 60;
+        const hoursApart = differenceInMinutes(previousTime, currentTime) / 60;
         intervals.push(hoursApart);
       } else {
         intervals.push(null);
@@ -246,7 +248,9 @@ export function predictNextPumping(
   // Build recent pattern for display
   const recentPattern = pumpingActivities.slice(0, 5).map((pumping, idx) => ({
     amountMl: pumping.amountMl || null,
+    duration: pumping.duration,
     intervalFromPrevious: intervals[idx] ?? null,
+    notes: pumping.notes,
     time: new Date(pumping.startTime),
   }));
 

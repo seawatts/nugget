@@ -14,6 +14,10 @@ export interface FeedingPrediction {
   recentFeedingPattern: Array<{
     time: Date;
     intervalFromPrevious: number | null;
+    amountMl: number | null;
+    duration: number | null;
+    notes: string | null;
+    type: string | null;
   }>;
   isOverdue: boolean;
   overdueMinutes: number | null;
@@ -59,7 +63,7 @@ function calculateIntervals(feedings: FeedingActivity[]): Array<number | null> {
       if (current && previous) {
         const currentTime = new Date(current.startTime);
         const previousTime = new Date(previous.startTime);
-        const hoursApart = differenceInMinutes(currentTime, previousTime) / 60;
+        const hoursApart = differenceInMinutes(previousTime, currentTime) / 60;
         intervals.push(hoursApart);
       } else {
         intervals.push(null);
@@ -252,8 +256,12 @@ export function predictNextFeeding(
 
   // Build recent pattern for display
   const recentPattern = feedingActivities.slice(0, 5).map((feeding, idx) => ({
+    amountMl: feeding.amountMl,
+    duration: feeding.duration,
     intervalFromPrevious: intervals[idx] ?? null,
+    notes: feeding.notes,
     time: new Date(feeding.startTime),
+    type: feeding.type,
   }));
 
   // Check if overdue and calculate recovery time

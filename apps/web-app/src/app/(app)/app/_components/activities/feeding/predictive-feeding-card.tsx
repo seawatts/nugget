@@ -21,8 +21,11 @@ import {
 } from '../shared/components/predictive-cards';
 import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
 import { getAssignedMember, suggestFamilyMember } from './assignment';
+import { FeedingStatsDrawer } from './components';
 import { FeedingGoalDisplay } from './components/feeding-goal-display';
 import {
+  calculateFeedingStatsWithComparison,
+  calculateFeedingTrendData,
   calculateTodaysFeedingStats,
   getDailyAmountGoal,
   getDailyFeedingGoal,
@@ -69,6 +72,7 @@ export function PredictiveFeedingCard({
   );
 
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
+  const [showStatsDrawer, setShowStatsDrawer] = useState(false);
 
   // Process prediction data from tRPC query
   const data = queryData
@@ -168,6 +172,44 @@ export function PredictiveFeedingCard({
 
   // Calculate today's feeding statistics for goal display
   const todaysStats = calculateTodaysFeedingStats(todaysActivitiesData ?? []);
+  // Calculate stats comparison for stats drawer
+  const statsComparison = calculateFeedingStatsWithComparison(
+    todaysActivitiesData ?? [],
+  );
+  // Calculate 7-day trend data for stats drawer
+  const trendData = calculateFeedingTrendData(todaysActivitiesData ?? []);
+
+  // Calculate vitamin D tracking for last 7 days
+  const vitaminDData = (() => {
+    const now = new Date();
+    const days: { date: string; displayDate: string; hasVitaminD: boolean }[] =
+      [];
+
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dateKey = date.toISOString().split('T')[0] ?? '';
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+      const monthDay = `${date.getMonth() + 1}/${date.getDate()}`;
+
+      // Check if vitamin D was logged on this day
+      const hasVitaminD = (todaysActivitiesData ?? []).some((activity) => {
+        const activityDate = new Date(activity.startTime);
+        const activityDateKey = activityDate.toISOString().split('T')[0] ?? '';
+        return (
+          (activity.type as string) === 'vitamin' && activityDateKey === dateKey
+        );
+      });
+
+      days.push({
+        date: dateKey,
+        displayDate: `${dayName} ${monthDay}`,
+        hasVitaminD,
+      });
+    }
+
+    return days;
+  })();
+
   // Use predicted interval from the algorithm for more accurate daily goals
   // This adapts to actual patterns like cluster feeding
   const dailyFeedingGoal = getDailyFeedingGoal(
@@ -203,6 +245,11 @@ export function PredictiveFeedingCard({
     setShowInfoDrawer(true);
   };
 
+  const handleStatsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowStatsDrawer(true);
+  };
+
   // Get theme for feeding activity
   const feedingTheme = getActivityTheme('feeding');
   const FeedingIcon = feedingTheme.icon;
@@ -225,7 +272,9 @@ export function PredictiveFeedingCard({
           isFetching={isFetching && !isLoading}
           onInfoClick={handleInfoClick}
           onQuickLog={handleQuickLog}
+          onStatsClick={handleStatsClick}
           quickLogEnabled={userData?.quickLogEnabled ?? true}
+          showStatsIcon={userData?.showActivityGoals ?? true}
           title="Feeding"
         >
           <PredictiveTimeDisplay
@@ -272,13 +321,16 @@ export function PredictiveFeedingCard({
           !inProgressActivity &&
           (userData?.showActivityGoals ?? true) && (
             <FeedingGoalDisplay
-              avgAmountMl={todaysStats.avgAmountMl}
+              amountChange={statsComparison.percentageChange.totalMl}
+              countChange={statsComparison.percentageChange.count}
               currentAmount={todaysStats.totalMl}
               currentCount={todaysStats.count}
+              currentVitaminDCount={todaysStats.vitaminDCount}
               feedingThemeColor={feedingTheme.color}
               goalAmount={dailyAmountGoal}
               goalCount={dailyFeedingGoal}
               unit={userUnitPref}
+              vitaminDChange={statsComparison.percentageChange.vitaminDCount}
             />
           )}
       </Card>
@@ -296,6 +348,17 @@ export function PredictiveFeedingCard({
         recentPattern={prediction.recentFeedingPattern}
         timeFormat={timeFormat}
         title="Feeding"
+        unit={userUnitPref}
+      />
+
+      {/* Stats Drawer */}
+      <FeedingStatsDrawer
+        onOpenChange={setShowStatsDrawer}
+        open={showStatsDrawer}
+        statsComparison={statsComparison}
+        trendData={trendData}
+        unit={userUnitPref}
+        vitaminDData={vitaminDData}
       />
     </>
   );

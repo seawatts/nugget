@@ -17,6 +17,8 @@ export interface DiaperPrediction {
     time: Date;
     type: string | null;
     intervalFromPrevious: number | null;
+    duration: number | null;
+    notes: string | null;
   }>;
   isOverdue: boolean;
   overdueMinutes: number | null;
@@ -60,7 +62,7 @@ function calculateIntervals(diapers: DiaperActivity[]): Array<number | null> {
       if (current && previous) {
         const currentTime = new Date(current.startTime);
         const previousTime = new Date(previous.startTime);
-        const hoursApart = differenceInMinutes(currentTime, previousTime) / 60;
+        const hoursApart = differenceInMinutes(previousTime, currentTime) / 60;
         intervals.push(hoursApart);
       } else {
         intervals.push(null);
@@ -468,7 +470,9 @@ export function predictNextDiaper(
 
   // Build recent pattern for display
   const recentPattern = diaperActivities.slice(0, 5).map((diaper, idx) => ({
+    duration: diaper.duration,
     intervalFromPrevious: intervals[idx] ?? null,
+    notes: diaper.notes,
     time: new Date(diaper.startTime),
     type: getDiaperType(diaper.details),
   }));

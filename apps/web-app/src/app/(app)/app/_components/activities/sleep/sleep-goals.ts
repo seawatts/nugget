@@ -156,3 +156,150 @@ export function calculateTodaysSleepStats(
     totalSleepMinutes,
   };
 }
+
+export interface SleepStatsComparison {
+  current: {
+    napCount: number;
+    totalMinutes: number;
+    avgNapDuration: number | null;
+  };
+  previous: {
+    napCount: number;
+    totalMinutes: number;
+    avgNapDuration: number | null;
+  };
+  percentageChange: {
+    napCount: number | null;
+    totalMinutes: number | null;
+    avgNapDuration: number | null;
+  };
+}
+
+/**
+ * Calculate sleep statistics with comparison between current and previous 24-hour periods
+ * Current period: 0-24 hours ago
+ * Previous period: 24-48 hours ago
+ */
+export function calculateSleepStatsWithComparison(
+  activities: Array<typeof Activities.$inferSelect>,
+): SleepStatsComparison {
+  const now = Date.now();
+  const twentyFourHoursAgo = new Date(now - 24 * 60 * 60 * 1000);
+  const fortyEightHoursAgo = new Date(now - 48 * 60 * 60 * 1000);
+
+  // Helper function to calculate stats for a time period
+  const calculateStatsForPeriod = (startTime: Date, endTime: Date) => {
+    const sleeps = activities.filter((activity) => {
+      if (activity.type !== 'sleep') return false;
+      const activityDate = new Date(activity.startTime);
+      return activityDate >= startTime && activityDate < endTime;
+    });
+
+    const napCount = sleeps.length;
+    const totalMinutes = sleeps.reduce((sum, activity) => {
+      return sum + (activity.duration || 0);
+    }, 0);
+
+    const avgNapDuration = napCount > 0 ? totalMinutes / napCount : null;
+
+    return { avgNapDuration, napCount, totalMinutes };
+  };
+
+  // Calculate current period (last 24 hours)
+  const current = calculateStatsForPeriod(twentyFourHoursAgo, new Date(now));
+
+  // Calculate previous period (24-48 hours ago)
+  const previous = calculateStatsForPeriod(
+    fortyEightHoursAgo,
+    twentyFourHoursAgo,
+  );
+
+  // Calculate percentage changes
+  const calculatePercentageChange = (
+    currentValue: number | null,
+    previousValue: number | null,
+  ): number | null => {
+    if (
+      currentValue === null ||
+      previousValue === null ||
+      previousValue === 0
+    ) {
+      return null;
+    }
+    return ((currentValue - previousValue) / previousValue) * 100;
+  };
+
+  const percentageChange = {
+    avgNapDuration: calculatePercentageChange(
+      current.avgNapDuration,
+      previous.avgNapDuration,
+    ),
+    napCount: calculatePercentageChange(current.napCount, previous.napCount),
+    totalMinutes: calculatePercentageChange(
+      current.totalMinutes,
+      previous.totalMinutes,
+    ),
+  };
+
+  return {
+    current,
+    percentageChange,
+    previous,
+  };
+}
+
+/**
+ * Calculate sleep statistics grouped by day for trend charts
+ * Returns data for the last 7 days
+ */
+export function calculateSleepTrendData(
+  activities: Array<typeof Activities.$inferSelect>,
+): Array<{ date: string; count: number; totalMinutes: number }> {
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  // Filter to sleeps from the last 7 days
+  const recentSleeps = activities.filter((activity) => {
+    const activityDate = new Date(activity.startTime);
+    const isRecent = activityDate >= sevenDaysAgo;
+    const isSleep = activity.type === 'sleep';
+    return isRecent && isSleep;
+  });
+
+  // Group by date
+  const statsByDate = new Map<
+    string,
+    { count: number; totalMinutes: number }
+  >();
+
+  for (const activity of recentSleeps) {
+    const date = new Date(activity.startTime);
+    const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+
+    if (!statsByDate.has(dateKey)) {
+      statsByDate.set(dateKey, { count: 0, totalMinutes: 0 });
+    }
+
+    const stats = statsByDate.get(dateKey);
+    if (!stats) continue;
+
+    stats.count += 1;
+    stats.totalMinutes += activity.duration || 0;
+  }
+
+  // Convert to array and fill in missing dates
+  const result: Array<{ date: string; count: number; totalMinutes: number }> =
+    [];
+  for (let i = 6; i >= 0; i -= 1) {
+    const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+    const dateKey = date.toISOString().split('T')[0];
+    const stats = statsByDate.get(dateKey) || { count: 0, totalMinutes: 0 };
+    result.push({
+      count: stats.count,
+      date: dateKey,
+      totalMinutes: stats.totalMinutes,
+    });
+  }
+
+  return result;
+}

@@ -158,6 +158,8 @@ export const skipDiaperAction = action.action(
     }
 
     // Create a diaper activity marked as skipped
+    // Set endTime to prevent it from appearing as an in-progress activity
+    const now = new Date();
     const activity = await api.activities.create({
       babyId: baby.id,
       details: {
@@ -165,8 +167,9 @@ export const skipDiaperAction = action.action(
         skipReason: 'user_dismissed',
         type: 'diaper',
       },
+      endTime: now,
       isScheduled: false,
-      startTime: new Date(),
+      startTime: now,
       type: 'diaper',
     });
 

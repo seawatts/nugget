@@ -23,6 +23,8 @@ import { formatTimeWithPreference } from '~/lib/format-time';
 interface SleepDrawerContentProps {
   startTime: Date;
   setStartTime: (date: Date) => void;
+  endTime?: Date;
+  setEndTime?: (date: Date) => void;
   duration: number;
   setDuration: (duration: number) => void;
   sleepType: 'nap' | 'night';
@@ -30,6 +32,7 @@ interface SleepDrawerContentProps {
   activeActivityId?: string | null;
   onTimerStart?: () => Promise<void>;
   isTimerStopped?: boolean;
+  isManualEndTime?: boolean;
   sleepQuality?: 'peaceful' | 'restless' | 'fussy' | 'crying';
   setSleepQuality: (
     quality: 'peaceful' | 'restless' | 'fussy' | 'crying',
@@ -79,6 +82,8 @@ interface SleepDrawerContentProps {
 
 export function SleepDrawerContent({
   startTime,
+  endTime: _endTime,
+  setEndTime,
   duration,
   setDuration,
   sleepType,
@@ -86,6 +91,7 @@ export function SleepDrawerContent({
   activeActivityId,
   onTimerStart,
   isTimerStopped = false,
+  isManualEndTime = false,
   sleepQuality,
   setSleepQuality,
   sleepLocation,
@@ -204,7 +210,17 @@ export function SleepDrawerContent({
               <Button
                 className="h-12 bg-transparent"
                 key={quick.label}
-                onClick={() => setDuration(quick.seconds)}
+                onClick={() => {
+                  setDuration(quick.seconds);
+                  // If in manual end time mode, calculate and set the end time
+                  if (isManualEndTime && setEndTime) {
+                    const newEndTime = new Date(startTime);
+                    newEndTime.setSeconds(
+                      newEndTime.getSeconds() + quick.seconds,
+                    );
+                    setEndTime(newEndTime);
+                  }
+                }}
                 variant="outline"
               >
                 {quick.label}
@@ -237,8 +253,8 @@ export function SleepDrawerContent({
         </div>
       )}
 
-      {/* Start/Stop Button - Only show when creating new sleep (not editing from timeline) */}
-      {!activeActivityId && !isTimerStopped && (
+      {/* Start/Stop Button - Only show when creating new sleep (not editing from timeline) and not in manual mode */}
+      {!activeActivityId && !isTimerStopped && !isManualEndTime && (
         <Button
           className={`w-full h-16 text-lg font-semibold ${
             isTracking

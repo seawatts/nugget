@@ -7,7 +7,7 @@ import { Skeleton } from '@nugget/ui/components/skeleton';
 import { Icons } from '@nugget/ui/custom/icons';
 import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { Info, Moon, Zap } from 'lucide-react';
+import { BarChart3, Info, Moon, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
@@ -18,10 +18,13 @@ import {
   usePredictiveActions,
 } from '../shared/components/predictive-cards';
 import { skipSleepAction } from './actions';
+import { SleepStatsDrawer } from './components';
 import { SleepGoalDisplay } from './components/sleep-goal-display';
 import { getSleepLearningContent } from './learning-content';
 import { predictNextSleep } from './prediction';
 import {
+  calculateSleepStatsWithComparison,
+  calculateSleepTrendData,
   calculateTodaysSleepStats,
   getDailyNapGoal,
   getDailySleepHoursGoal,
@@ -64,6 +67,7 @@ export function PredictiveSleepCard({
   );
 
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
+  const [showStatsDrawer, setShowStatsDrawer] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -173,6 +177,12 @@ export function PredictiveSleepCard({
   const todaysStats = calculateTodaysSleepStats(todaysActivitiesData ?? []);
   const dailyNapGoal = getDailyNapGoal(babyAgeDays ?? 0);
   const dailySleepHoursGoal = getDailySleepHoursGoal(babyAgeDays ?? 0);
+  // Calculate stats comparison for stats drawer
+  const statsComparison = calculateSleepStatsWithComparison(
+    todaysActivitiesData ?? [],
+  );
+  // Calculate 7-day trend data for stats drawer
+  const trendData = calculateSleepTrendData(todaysActivitiesData ?? []);
 
   // Check if we should suppress overdue state due to recent skip
   const isRecentlySkipped = prediction.recentSkipTime
@@ -236,6 +246,11 @@ export function PredictiveSleepCard({
     setShowInfoDrawer(true);
   };
 
+  const handleStatsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowStatsDrawer(true);
+  };
+
   // Format elapsed time for display
   const formatElapsedTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -283,6 +298,16 @@ export function PredictiveSleepCard({
                     ) : (
                       <Zap className="size-5 opacity-70" />
                     )}
+                  </button>
+                )}
+                {(userData?.showActivityGoals ?? true) && (
+                  <button
+                    className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                    onClick={handleStatsClick}
+                    title="View detailed statistics"
+                    type="button"
+                  >
+                    <BarChart3 className="size-5 opacity-70" />
                   </button>
                 )}
                 <button
@@ -410,8 +435,6 @@ export function PredictiveSleepCard({
         {/* Goal Tracking Display - Shows sleep progress for today */}
         {!effectiveIsOverdue && (userData?.showActivityGoals ?? true) && (
           <SleepGoalDisplay
-            avgNapDuration={todaysStats.avgNapDuration}
-            longestNapMinutes={todaysStats.longestNapMinutes}
             napCount={todaysStats.napCount}
             napGoal={dailyNapGoal}
             sleepHoursGoal={dailySleepHoursGoal}
@@ -426,27 +449,6 @@ export function PredictiveSleepCard({
         averageInterval={prediction.averageIntervalHours}
         babyAgeDays={babyAgeDays}
         calculationDetails={prediction.calculationDetails}
-        formatPatternItem={(item): React.ReactNode => (
-          <>
-            <span className="text-muted-foreground">
-              {formatTimeWithPreference(item.time, timeFormat)}
-            </span>
-            <div className="flex gap-2 items-center">
-              {'duration' in item && item.duration !== null && (
-                <span className="text-foreground/70 font-medium">
-                  {Math.floor((item.duration as number) / 60)}h{' '}
-                  {(item.duration as number) % 60}m
-                </span>
-              )}
-              {'intervalFromPrevious' in item &&
-                item.intervalFromPrevious !== null && (
-                  <span className="text-muted-foreground/60">
-                    ({(item.intervalFromPrevious as number).toFixed(1)}h apart)
-                  </span>
-                )}
-            </div>
-          </>
-        )}
         icon={Moon}
         learningContent={learningContent}
         onOpenChange={setShowInfoDrawer}
@@ -455,6 +457,14 @@ export function PredictiveSleepCard({
         recentPattern={prediction.recentSleepPattern}
         timeFormat={timeFormat}
         title="Sleep"
+      />
+
+      {/* Stats Drawer */}
+      <SleepStatsDrawer
+        onOpenChange={setShowStatsDrawer}
+        open={showStatsDrawer}
+        statsComparison={statsComparison}
+        trendData={trendData}
       />
     </>
   );

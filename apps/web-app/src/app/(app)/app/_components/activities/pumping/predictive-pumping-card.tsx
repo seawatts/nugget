@@ -13,8 +13,8 @@ import {
   DrawerTitle,
 } from '@nugget/ui/drawer';
 import { cn } from '@nugget/ui/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
-import { Droplets, Info, Zap } from 'lucide-react';
+import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
+import { BarChart3, Droplets, Info, Zap } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
@@ -28,8 +28,13 @@ import {
 import { QuickLogInfoSection } from '../shared/components/quick-log-info-section';
 import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
 import { skipPumpingAction } from './actions';
+import { PumpingStatsDrawer } from './components';
 import { getPumpingLearningContent } from './learning-content';
 import { predictNextPumping } from './prediction';
+import {
+  calculatePumpingStatsWithComparison,
+  calculatePumpingTrendData,
+} from './pumping-goals';
 import { getPumpingGuidanceByAge } from './pumping-intervals';
 
 interface PredictivePumpingCardProps {
@@ -62,7 +67,24 @@ export function PredictivePumpingCard({
     { enabled: Boolean(babyId) },
   );
 
+  // Query last 7 days of activities for trend chart
+  const { data: allActivities } = api.activities.list.useQuery(
+    {
+      babyId: babyId ?? '',
+      limit: 100,
+    },
+    { enabled: Boolean(babyId) },
+  );
+
+  // Filter to last 7 days client-side
+  const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
+  const last7DaysActivities = allActivities?.filter((activity) => {
+    const activityDate = new Date(activity.startTime);
+    return activityDate >= sevenDaysAgo;
+  });
+
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
+  const [showStatsDrawer, setShowStatsDrawer] = useState(false);
 
   // Process prediction data from tRPC query
   const data = queryData
@@ -185,11 +207,32 @@ export function PredictivePumpingCard({
     setShowInfoDrawer(true);
   };
 
+  const handleStatsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowStatsDrawer(true);
+  };
+
   // Format amount for display based on user preference
   const formatAmount = (ml: number | null) => {
     if (!ml) return null;
     return formatVolumeDisplay(ml, userUnitPref, true);
   };
+
+  // Calculate stats for drawer
+  const pumpingTrendData = last7DaysActivities
+    ? calculatePumpingTrendData(last7DaysActivities)
+    : [];
+  const pumpingStatsComparison = last7DaysActivities
+    ? calculatePumpingStatsWithComparison(last7DaysActivities)
+    : {
+        current: { avgAmountMl: null, count: 0, totalMl: 0 },
+        percentageChange: {
+          avgAmountMl: null,
+          count: null,
+          totalMl: null,
+        },
+        previous: { avgAmountMl: null, count: 0, totalMl: 0 },
+      };
 
   return (
     <>
@@ -232,6 +275,14 @@ export function PredictivePumpingCard({
                     )}
                   </button>
                 )}
+                <button
+                  className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                  onClick={handleStatsClick}
+                  title="View statistics"
+                  type="button"
+                >
+                  <BarChart3 className="size-5 opacity-70" />
+                </button>
                 <button
                   className="p-1.5 rounded-full hover:bg-white/10 transition-colors -mr-1.5"
                   onClick={handleInfoClick}
@@ -485,6 +536,15 @@ export function PredictivePumpingCard({
           </div>
         </DrawerContent>
       </Drawer>
+
+      {/* Stats Drawer */}
+      <PumpingStatsDrawer
+        onOpenChange={setShowStatsDrawer}
+        open={showStatsDrawer}
+        statsComparison={pumpingStatsComparison}
+        trendData={pumpingTrendData}
+        unit={userUnitPref}
+      />
     </>
   );
 }

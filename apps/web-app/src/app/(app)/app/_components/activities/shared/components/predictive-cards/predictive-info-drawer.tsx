@@ -6,11 +6,15 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@nugget/ui/drawer';
+import { differenceInMinutes, formatDistanceToNow } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
+import { Baby, Droplet, Droplets, Milk, Moon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { LearningSection } from '../../../../learning/learning-section';
 import { getActivityTheme } from '../../activity-theme-config';
+import { getDisplayNotes } from '../../activity-utils';
+import { formatVolumeDisplay } from '../../volume-utils';
 import { QuickLogInfoSection } from '../quick-log-info-section';
 
 interface LearningContent {
@@ -52,6 +56,7 @@ interface PredictiveInfoDrawerProps {
   }) => ReactNode;
   quickLogSettings?: QuickLogSettings;
   calculationDetails?: CalculationDetails;
+  unit?: 'ML' | 'OZ';
 }
 
 // Map activity types to their color classes for Tailwind
@@ -85,6 +90,45 @@ const ACTIVITY_COLOR_CLASSES: Record<
   },
 };
 
+// Timeline-style activity colors
+const activityColors: Record<string, string> = {
+  bottle: 'border-l-activity-feeding',
+  diaper: 'border-l-activity-diaper',
+  nursing: 'border-l-activity-feeding',
+  pumping: 'border-l-activity-pumping',
+  sleep: 'border-l-activity-sleep',
+  solids: 'border-l-activity-solids',
+};
+
+const activityIconColors: Record<string, string> = {
+  bottle: 'text-activity-feeding',
+  diaper: 'text-activity-diaper',
+  nursing: 'text-activity-feeding',
+  pumping: 'text-activity-pumping',
+  sleep: 'text-activity-sleep',
+  solids: 'text-activity-solids',
+};
+
+const activityIcons: Record<string, LucideIcon> = {
+  bottle: Milk,
+  diaper: Baby,
+  nursing: Droplet,
+  pumping: Droplets,
+  sleep: Moon,
+};
+
+function formatTimeGap(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes} min${minutes !== 1 ? 's' : ''}`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (remainingMinutes === 0) {
+    return `${hours} hour${hours !== 1 ? 's' : ''}`;
+  }
+  return `${hours}h ${remainingMinutes}m`;
+}
+
 export function PredictiveInfoDrawer({
   open,
   onOpenChange,
@@ -96,9 +140,10 @@ export function PredictiveInfoDrawer({
   averageInterval,
   timeFormat,
   icon,
-  formatPatternItem,
+  formatPatternItem: _formatPatternItem,
   quickLogSettings,
   calculationDetails,
+  unit = 'ML',
 }: PredictiveInfoDrawerProps) {
   const theme = getActivityTheme(activityType);
   const Icon = icon || theme.icon;
@@ -143,30 +188,117 @@ export function PredictiveInfoDrawer({
               <p className="text-sm font-medium text-muted-foreground mb-2">
                 Recent {title}s
               </p>
-              <div className="space-y-2">
-                {recentPattern.slice(0, 5).map((item, index) => (
-                  <div
-                    className="flex items-center justify-between text-sm bg-muted/20 rounded px-3 py-2"
-                    key={`${item.time.toISOString()}-${index}`}
-                  >
-                    {formatPatternItem ? (
-                      formatPatternItem(item)
-                    ) : (
-                      <>
-                        <span className="text-muted-foreground">
-                          {formatTimeWithPreference(item.time, timeFormat)}
-                        </span>
-                        {'intervalFromPrevious' in item &&
-                          typeof item.intervalFromPrevious === 'number' &&
-                          item.intervalFromPrevious !== null && (
-                            <span className="text-foreground/70 font-medium">
-                              {item.intervalFromPrevious.toFixed(1)}h interval
-                            </span>
+              <div className="space-y-0">
+                {recentPattern.slice(0, 5).map((item, index) => {
+                  const itemDate = item.time;
+                  const absoluteTime = formatTimeWithPreference(
+                    itemDate,
+                    timeFormat,
+                  );
+                  const relativeTime = formatDistanceToNow(itemDate, {
+                    addSuffix: true,
+                  });
+
+                  // Get icon and colors for this activity type
+                  const Icon = icon || activityIcons[activityType] || Baby;
+                  const colorClass =
+                    activityColors[activityType] || 'border-l-primary';
+                  const iconColorClass =
+                    activityIconColors[activityType] || 'text-primary';
+
+                  // Build details string
+                  const details: string[] = [];
+                  if (
+                    'duration' in item &&
+                    typeof item.duration === 'number' &&
+                    item.duration
+                  ) {
+                    details.push(`${item.duration} min`);
+                  }
+                  if (
+                    'amountMl' in item &&
+                    typeof item.amountMl === 'number' &&
+                    item.amountMl
+                  ) {
+                    details.push(
+                      formatVolumeDisplay(item.amountMl, unit, true),
+                    );
+                  }
+                  // For diaper, add type info
+                  if (activityType === 'diaper' && 'type' in item) {
+                    if (item.type === 'wet') {
+                      details.push('Pee');
+                    } else if (item.type === 'dirty') {
+                      details.push('Poop');
+                    } else if (item.type === 'both') {
+                      details.push('Both');
+                    }
+                  }
+                  const detailsText =
+                    details.length > 0 ? ` / ${details.join(', ')}` : '';
+
+                  // Get notes
+                  const itemNotes =
+                    'notes' in item && typeof item.notes === 'string'
+                      ? item.notes
+                      : '';
+
+                  // Calculate time gap from previous item
+                  const previousItem =
+                    index > 0 ? recentPattern[index - 1] : null;
+                  const timeGapMinutes = previousItem
+                    ? differenceInMinutes(previousItem.time, itemDate)
+                    : 0;
+                  const showTimeGap = timeGapMinutes > 0;
+
+                  return (
+                    <div key={`${item.time.toISOString()}-${index}`}>
+                      {showTimeGap && (
+                        <div className="flex items-center gap-3 py-2">
+                          <div className="h-px bg-border/50 flex-1" />
+                          <span className="text-xs text-muted-foreground/60 font-medium">
+                            {formatTimeGap(timeGapMinutes)}
+                          </span>
+                          <div className="h-px bg-border/50 flex-1" />
+                        </div>
+                      )}
+                      <div
+                        className={`flex items-start gap-3 p-3.5 rounded-xl bg-card/50 border-l-4 ${colorClass} opacity-60 w-full`}
+                      >
+                        <div className="shrink-0 p-2 rounded-lg bg-muted/40">
+                          <Icon className={`size-4 ${iconColorClass}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0 flex items-center gap-2">
+                              <h4 className="text-sm font-medium capitalize">
+                                {title}
+                                {detailsText && (
+                                  <span className="text-muted-foreground font-normal">
+                                    {detailsText}
+                                  </span>
+                                )}
+                              </h4>
+                            </div>
+                            <div className="flex flex-col items-end gap-0.5 shrink-0">
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                {relativeTime}
+                              </span>
+                              <span className="text-xs text-muted-foreground/70 font-mono whitespace-nowrap">
+                                {absoluteTime}
+                              </span>
+                            </div>
+                          </div>
+                          {getDisplayNotes(itemNotes) && (
+                            <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+                              {getDisplayNotes(itemNotes)}
+                            </p>
                           )}
-                      </>
-                    )}
-                  </div>
-                ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

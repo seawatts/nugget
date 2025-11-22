@@ -67,6 +67,7 @@ export function calculateTodaysFeedingStats(
   count: number;
   totalMl: number;
   avgAmountMl: number | null;
+  vitaminDCount: number;
 } {
   // Rolling 24-hour window instead of calendar day
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -100,9 +101,182 @@ export function calculateTodaysFeedingStats(
     avgAmountMl = totalMl / feedingsWithAmount.length;
   }
 
+  // Calculate vitamin D count
+  const vitaminDCount = todaysFeedings.filter((activity) => {
+    const details = activity.details as { vitaminDGiven?: boolean } | null;
+    return details?.vitaminDGiven === true;
+  }).length;
+
   return {
     avgAmountMl,
     count,
     totalMl,
+    vitaminDCount,
   };
+}
+
+export interface FeedingStatsComparison {
+  current: {
+    count: number;
+    totalMl: number;
+    avgAmountMl: number | null;
+    vitaminDCount: number;
+  };
+  previous: {
+    count: number;
+    totalMl: number;
+    avgAmountMl: number | null;
+    vitaminDCount: number;
+  };
+  percentageChange: {
+    count: number | null;
+    totalMl: number | null;
+    avgAmountMl: number | null;
+    vitaminDCount: number | null;
+  };
+}
+
+/**
+ * Calculate feeding statistics with comparison between current and previous 24-hour periods
+ * Current period: 0-24 hours ago
+ * Previous period: 24-48 hours ago
+ */
+export function calculateFeedingStatsWithComparison(
+  activities: Array<typeof Activities.$inferSelect>,
+): FeedingStatsComparison {
+  const now = Date.now();
+  const twentyFourHoursAgo = new Date(now - 24 * 60 * 60 * 1000);
+  const fortyEightHoursAgo = new Date(now - 48 * 60 * 60 * 1000);
+
+  // Helper function to calculate stats for a time period
+  const calculateStatsForPeriod = (startTime: Date, endTime: Date) => {
+    const feedings = activities.filter((activity) => {
+      const activityDate = new Date(activity.startTime);
+      const isInRange = activityDate >= startTime && activityDate < endTime;
+      const isFeeding =
+        activity.type === 'bottle' || activity.type === 'nursing';
+      return isInRange && isFeeding;
+    });
+
+    const count = feedings.length;
+    const totalMl = feedings.reduce((sum, activity) => {
+      if (activity.type === 'bottle' && activity.amountMl) {
+        return sum + activity.amountMl;
+      }
+      return sum;
+    }, 0);
+
+    const feedingsWithAmount = feedings.filter(
+      (activity) => activity.type === 'bottle' && activity.amountMl,
+    );
+    const avgAmountMl =
+      feedingsWithAmount.length > 0
+        ? totalMl / feedingsWithAmount.length
+        : null;
+
+    const vitaminDCount = feedings.filter((activity) => {
+      const details = activity.details as { vitaminDGiven?: boolean } | null;
+      return details?.vitaminDGiven === true;
+    }).length;
+
+    return { avgAmountMl, count, totalMl, vitaminDCount };
+  };
+
+  // Calculate current period (last 24 hours)
+  const current = calculateStatsForPeriod(twentyFourHoursAgo, new Date(now));
+
+  // Calculate previous period (24-48 hours ago)
+  const previous = calculateStatsForPeriod(
+    fortyEightHoursAgo,
+    twentyFourHoursAgo,
+  );
+
+  // Calculate percentage changes
+  const calculatePercentageChange = (
+    currentValue: number | null,
+    previousValue: number | null,
+  ): number | null => {
+    if (
+      currentValue === null ||
+      previousValue === null ||
+      previousValue === 0
+    ) {
+      return null;
+    }
+    return ((currentValue - previousValue) / previousValue) * 100;
+  };
+
+  const percentageChange = {
+    avgAmountMl: calculatePercentageChange(
+      current.avgAmountMl,
+      previous.avgAmountMl,
+    ),
+    count: calculatePercentageChange(current.count, previous.count),
+    totalMl: calculatePercentageChange(current.totalMl, previous.totalMl),
+    vitaminDCount: calculatePercentageChange(
+      current.vitaminDCount,
+      previous.vitaminDCount,
+    ),
+  };
+
+  return {
+    current,
+    percentageChange,
+    previous,
+  };
+}
+
+/**
+ * Calculate feeding statistics grouped by day for trend charts
+ * Returns data for the last 7 days
+ */
+export function calculateFeedingTrendData(
+  activities: Array<typeof Activities.$inferSelect>,
+): Array<{ date: string; count: number; totalMl: number }> {
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  // Filter to feedings from the last 7 days
+  const recentFeedings = activities.filter((activity) => {
+    const activityDate = new Date(activity.startTime);
+    const isRecent = activityDate >= sevenDaysAgo;
+    const isFeeding = activity.type === 'bottle' || activity.type === 'nursing';
+    return isRecent && isFeeding;
+  });
+
+  // Group by date
+  const statsByDate = new Map<string, { count: number; totalMl: number }>();
+
+  for (const activity of recentFeedings) {
+    const date = new Date(activity.startTime);
+    const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+
+    if (!statsByDate.has(dateKey)) {
+      statsByDate.set(dateKey, { count: 0, totalMl: 0 });
+    }
+
+    const stats = statsByDate.get(dateKey);
+    if (!stats) continue;
+
+    stats.count += 1;
+
+    if (activity.type === 'bottle' && activity.amountMl) {
+      stats.totalMl += activity.amountMl;
+    }
+  }
+
+  // Convert to array and fill in missing dates
+  const result: Array<{ date: string; count: number; totalMl: number }> = [];
+  for (let i = 6; i >= 0; i -= 1) {
+    const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+    const dateKey = date.toISOString().split('T')[0];
+    const stats = statsByDate.get(dateKey) || { count: 0, totalMl: 0 };
+    result.push({
+      count: stats.count,
+      date: dateKey,
+      totalMl: stats.totalMl,
+    });
+  }
+
+  return result;
 }

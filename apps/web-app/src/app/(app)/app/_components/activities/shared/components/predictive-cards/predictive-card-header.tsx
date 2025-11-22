@@ -2,7 +2,7 @@
 
 import { Icons } from '@nugget/ui/custom/icons';
 import type { LucideIcon } from 'lucide-react';
-import { Info, Zap } from 'lucide-react';
+import { BarChart3, Info, Zap } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 interface PredictiveCardHeaderProps {
@@ -10,9 +10,11 @@ interface PredictiveCardHeaderProps {
   icon: LucideIcon;
   isFetching?: boolean;
   onInfoClick: (e: React.MouseEvent) => void;
+  onStatsClick?: (e: React.MouseEvent) => void;
   onQuickLog?: (e: React.MouseEvent) => void;
   isCreatingQuickLog?: boolean;
   quickLogEnabled?: boolean;
+  showStatsIcon?: boolean;
   children?: ReactNode;
 }
 
@@ -21,9 +23,11 @@ export function PredictiveCardHeader({
   icon: Icon,
   isFetching,
   onInfoClick,
+  onStatsClick,
   onQuickLog,
   isCreatingQuickLog,
   quickLogEnabled = true,
+  showStatsIcon = false,
   children,
 }: PredictiveCardHeaderProps) {
   return (
@@ -51,6 +55,16 @@ export function PredictiveCardHeader({
                 ) : (
                   <Zap className="size-5 opacity-70" />
                 )}
+              </button>
+            )}
+            {showStatsIcon && onStatsClick && (
+              <button
+                className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                onClick={onStatsClick}
+                title="View detailed statistics"
+                type="button"
+              >
+                <BarChart3 className="size-5 opacity-70" />
               </button>
             )}
             <button

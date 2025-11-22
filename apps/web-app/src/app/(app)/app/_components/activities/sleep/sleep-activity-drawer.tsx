@@ -14,7 +14,10 @@ import {
   AlertDialogTitle,
 } from '@nugget/ui/alert-dialog';
 import { Button } from '@nugget/ui/button';
+import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
+import { Label } from '@nugget/ui/label';
 import { cn } from '@nugget/ui/lib/utils';
+import { Switch } from '@nugget/ui/switch';
 import { Moon, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
@@ -99,6 +102,7 @@ export function SleepActivityDrawer({
   const [isTimerStopped, setIsTimerStopped] = useState(false);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
   const [isLoadingInProgress, setIsLoadingInProgress] = useState(false);
+  const [isManualEndTime, setIsManualEndTime] = useState(false);
 
   const isPending = isCreating || isUpdating;
   const isEditing = Boolean(existingActivity) || Boolean(activeActivityId);
@@ -178,6 +182,7 @@ export function SleepActivityDrawer({
       setWakeReason(undefined);
       setIsCoSleeping(false);
       setCoSleepingWith([]);
+      setIsManualEndTime(false);
     }
   }, [existingActivity]);
 
@@ -242,6 +247,7 @@ export function SleepActivityDrawer({
         setWakeReason(undefined);
         setIsCoSleeping(false);
         setCoSleepingWith([]);
+        setIsManualEndTime(false);
       }, 300); // Standard drawer animation duration
 
       return () => clearTimeout(timeoutId);
@@ -435,15 +441,40 @@ export function SleepActivityDrawer({
             {/* Time & Date Section - Hide when timer is running */}
             {(!activeActivityId || isTimerStopped) && (
               <div className="space-y-3 min-w-0">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Time & Date
-                </h3>
-                <TimeInput
-                  id="sleep-start-time"
-                  label="Start Date & Time"
-                  onChange={setStartTime}
-                  value={startTime}
-                />
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Time & Date
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={isManualEndTime}
+                      id="manual-end-time"
+                      onCheckedChange={setIsManualEndTime}
+                    />
+                    <Label
+                      className="text-sm font-normal cursor-pointer"
+                      htmlFor="manual-end-time"
+                    >
+                      Set end time
+                    </Label>
+                  </div>
+                </div>
+                {isManualEndTime ? (
+                  <DateTimeRangePicker
+                    endDate={endTime}
+                    mode="range"
+                    setEndDate={setEndTime}
+                    setStartDate={setStartTime}
+                    startDate={startTime}
+                  />
+                ) : (
+                  <TimeInput
+                    id="sleep-start-time"
+                    label="Start Date & Time"
+                    onChange={setStartTime}
+                    value={startTime}
+                  />
+                )}
               </div>
             )}
 
@@ -452,12 +483,15 @@ export function SleepActivityDrawer({
               coSleepingWith={coSleepingWith}
               currentUserId={currentUserId}
               duration={duration}
+              endTime={endTime}
               familyMembers={familyMembers}
               isCoSleeping={isCoSleeping}
+              isManualEndTime={isManualEndTime}
               isTimerStopped={isTimerStopped}
               onTimerStart={handleTimerStart}
               setCoSleepingWith={setCoSleepingWith}
               setDuration={setDuration}
+              setEndTime={setEndTime}
               setIsCoSleeping={setIsCoSleeping}
               setSleepLocation={setSleepLocation}
               setSleepQuality={setSleepQuality}

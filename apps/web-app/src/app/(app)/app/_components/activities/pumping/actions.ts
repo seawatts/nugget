@@ -146,6 +146,8 @@ export const skipPumpingAction = action.action(
     }
 
     // Create the skip activity
+    // Set endTime to prevent it from appearing as an in-progress activity
+    const now = new Date();
     const activity = await api.activities.create({
       amountMl: null,
       babyId: baby.id,
@@ -154,8 +156,9 @@ export const skipPumpingAction = action.action(
         skipReason: 'user_dismissed',
         type: 'pumping',
       },
+      endTime: now,
       isScheduled: false,
-      startTime: new Date(),
+      startTime: now,
       type: 'pumping',
     });
 

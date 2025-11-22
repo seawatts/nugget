@@ -323,6 +323,8 @@ export const skipFeedingAction = action.action(
     }
 
     // Create a nursing/feeding activity marked as skipped
+    // Set endTime to prevent it from appearing as an in-progress activity
+    const now = new Date();
     const activity = await api.activities.create({
       babyId: baby.id,
       details: {
@@ -331,8 +333,10 @@ export const skipFeedingAction = action.action(
         skipReason: 'user_dismissed',
         type: 'nursing',
       },
+      duration: 0,
+      endTime: now,
       isScheduled: false,
-      startTime: new Date(),
+      startTime: now,
       type: 'nursing',
     });
 

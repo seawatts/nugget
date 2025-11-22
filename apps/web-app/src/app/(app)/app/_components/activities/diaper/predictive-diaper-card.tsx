@@ -6,8 +6,8 @@ import { Card } from '@nugget/ui/card';
 import { Skeleton } from '@nugget/ui/components/skeleton';
 import { Icons } from '@nugget/ui/custom/icons';
 import { cn } from '@nugget/ui/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
-import { Baby, Info, Zap } from 'lucide-react';
+import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
+import { Baby, BarChart3, Info, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
@@ -18,8 +18,11 @@ import {
   usePredictiveActions,
 } from '../shared/components/predictive-cards';
 import { skipDiaperAction } from './actions';
+import { DiaperStatsDrawer } from './components';
 import { DiaperGoalDisplay } from './components/diaper-goal-display';
 import {
+  calculateDiaperStatsWithComparison,
+  calculateDiaperTrendData,
   calculateTodaysDiaperStats,
   getDailyDiaperGoal,
   getDailyDirtyDiaperGoal,
@@ -53,6 +56,22 @@ export function PredictiveDiaperCard({
     { enabled: Boolean(babyId) },
   );
 
+  // Query last 7 days of activities for trend chart
+  const { data: allActivities } = api.activities.list.useQuery(
+    {
+      babyId: babyId ?? '',
+      limit: 100,
+    },
+    { enabled: Boolean(babyId) },
+  );
+
+  // Filter to last 7 days client-side
+  const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
+  const last7DaysActivities = allActivities?.filter((activity) => {
+    const activityDate = new Date(activity.startTime);
+    return activityDate >= sevenDaysAgo;
+  });
+
   // Use tRPC query for prediction data
   const {
     data: queryData,
@@ -65,6 +84,7 @@ export function PredictiveDiaperCard({
   );
 
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
+  const [showStatsDrawer, setShowStatsDrawer] = useState(false);
 
   // Process prediction data from tRPC query
   const data = queryData
@@ -199,6 +219,28 @@ export function PredictiveDiaperCard({
     setShowInfoDrawer(true);
   };
 
+  const handleStatsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowStatsDrawer(true);
+  };
+
+  // Calculate stats for drawer
+  const diaperTrendData = last7DaysActivities
+    ? calculateDiaperTrendData(last7DaysActivities)
+    : [];
+  const diaperStatsComparison = last7DaysActivities
+    ? calculateDiaperStatsWithComparison(last7DaysActivities)
+    : {
+        current: { both: 0, dirty: 0, total: 0, wet: 0 },
+        percentageChange: {
+          both: null,
+          dirty: null,
+          total: null,
+          wet: null,
+        },
+        previous: { both: 0, dirty: 0, total: 0, wet: 0 },
+      };
+
   return (
     <>
       <Card
@@ -241,6 +283,14 @@ export function PredictiveDiaperCard({
                   </button>
                 )}
                 <button
+                  className="p-1.5 rounded-full hover:bg-black/10 transition-colors"
+                  onClick={handleStatsClick}
+                  title="View statistics"
+                  type="button"
+                >
+                  <BarChart3 className="size-5 opacity-70" />
+                </button>
+                <button
                   className="p-1.5 rounded-full hover:bg-black/10 transition-colors -mr-1.5"
                   onClick={handleInfoClick}
                   type="button"
@@ -282,7 +332,7 @@ export function PredictiveDiaperCard({
                   )}
                   {/* Bottom: Next prediction with overdue indicator */}
                   {(userData?.showPredictiveTimes ?? true) && (
-                    <div className="text-sm opacity-60 break-words">
+                    <div className="text-sm opacity-60 wrap-break-word">
                       Next {exactTime}
                       {prediction.overdueMinutes && (
                         <span className="text-amber-400 font-medium">
@@ -320,7 +370,7 @@ export function PredictiveDiaperCard({
                   )}
                   {/* Bottom: Next prediction */}
                   {(userData?.showPredictiveTimes ?? true) && (
-                    <div className="text-sm opacity-60 break-words">
+                    <div className="text-sm opacity-60 wrap-break-word">
                       Next {timeUntil} • {exactTime}
                     </div>
                   )}
@@ -342,7 +392,6 @@ export function PredictiveDiaperCard({
         {/* Goal Tracking Display - Shows diaper change progress for today */}
         {!effectiveIsOverdue && (userData?.showActivityGoals ?? true) && (
           <DiaperGoalDisplay
-            avgIntervalHours={todaysStats.avgIntervalHours}
             currentCount={todaysStats.count}
             dirtyCount={todaysStats.dirtyCount}
             dirtyGoal={dailyDirtyGoal}
@@ -359,28 +408,6 @@ export function PredictiveDiaperCard({
         averageInterval={prediction.averageIntervalHours}
         babyAgeDays={babyAgeDays}
         calculationDetails={prediction.calculationDetails}
-        formatPatternItem={(item): React.ReactNode => {
-          return (
-            <>
-              <span className="text-muted-foreground">
-                {formatTimeWithPreference(item.time, timeFormat)}
-              </span>
-              <div className="flex gap-2 items-center">
-                {'type' in item && item.type ? (
-                  <span className="text-foreground/70 font-medium">
-                    {formatDiaperType(item.type as string)}
-                  </span>
-                ) : null}
-                {'intervalFromPrevious' in item &&
-                item.intervalFromPrevious !== null ? (
-                  <span className="text-muted-foreground/60">
-                    ({(item.intervalFromPrevious as number).toFixed(1)}h apart)
-                  </span>
-                ) : null}
-              </div>
-            </>
-          );
-        }}
         icon={Baby}
         learningContent={learningContent}
         onOpenChange={setShowInfoDrawer}
@@ -389,6 +416,14 @@ export function PredictiveDiaperCard({
         recentPattern={prediction.recentDiaperPattern}
         timeFormat={timeFormat}
         title="Diaper"
+      />
+
+      {/* Stats Drawer */}
+      <DiaperStatsDrawer
+        onOpenChange={setShowStatsDrawer}
+        open={showStatsDrawer}
+        statsComparison={diaperStatsComparison}
+        trendData={diaperTrendData}
       />
     </>
   );
