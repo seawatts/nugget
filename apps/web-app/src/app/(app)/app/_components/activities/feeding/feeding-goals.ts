@@ -1,5 +1,4 @@
 import type { Activities } from '@nugget/db/schema';
-import { startOfDay } from 'date-fns';
 import { getFeedingIntervalByAge } from './feeding-intervals';
 
 /**
@@ -60,7 +59,7 @@ export function getDailyAmountGoal(
 }
 
 /**
- * Calculate today's feeding statistics from activities
+ * Calculate feeding statistics from the last 24 hours (rolling window)
  */
 export function calculateTodaysFeedingStats(
   activities: Array<typeof Activities.$inferSelect>,
@@ -69,14 +68,15 @@ export function calculateTodaysFeedingStats(
   totalMl: number;
   avgAmountMl: number | null;
 } {
-  const today = startOfDay(new Date());
+  // Rolling 24-hour window instead of calendar day
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  // Filter to today's feeding activities
+  // Filter to feedings from the last 24 hours
   const todaysFeedings = activities.filter((activity) => {
     const activityDate = new Date(activity.startTime);
-    const isToday = activityDate >= today;
+    const isRecent = activityDate >= twentyFourHoursAgo;
     const isFeeding = activity.type === 'bottle' || activity.type === 'nursing';
-    return isToday && isFeeding;
+    return isRecent && isFeeding;
   });
 
   // Calculate count

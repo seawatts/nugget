@@ -49,7 +49,8 @@ export function getDailySleepHoursGoal(ageDays: number): number {
 }
 
 /**
- * Calculate today's sleep statistics from activities
+ * Calculate sleep statistics for sessions that ended today (including in-progress)
+ * Counts full duration of sleep sessions that end today, even if they started yesterday
  */
 export function calculateTodaysSleepStats(
   activities: Array<typeof Activities.$inferSelect>,
@@ -62,20 +63,42 @@ export function calculateTodaysSleepStats(
 } {
   const today = startOfDay(new Date());
 
-  // Filter to today's sleep activities (completed ones with duration)
+  // Filter to sleep sessions that ENDED today (or are in progress)
   const todaysSleeps = activities.filter((activity) => {
-    const activityDate = new Date(activity.startTime);
-    const isToday = activityDate >= today;
     const isSleep = activity.type === 'sleep';
-    const isCompleted = activity.duration && activity.duration > 0;
-    return isToday && isSleep && isCompleted;
+    if (!isSleep) return false;
+
+    // For completed sleep: check if it ended today
+    if (activity.duration && activity.duration > 0) {
+      const startTime = new Date(activity.startTime);
+      const endTime = new Date(
+        startTime.getTime() + activity.duration * 60 * 1000,
+      );
+      return endTime >= today;
+    }
+
+    // For in-progress sleep: check if it started before now
+    const startTime = new Date(activity.startTime);
+    return startTime < new Date();
+  });
+
+  // For in-progress sleep, calculate elapsed time
+  const sleepsWithDuration = todaysSleeps.map((activity) => {
+    if (activity.duration && activity.duration > 0) {
+      return activity;
+    }
+    // Calculate elapsed time for in-progress sleep
+    const elapsed = Math.floor(
+      (Date.now() - new Date(activity.startTime).getTime()) / (1000 * 60),
+    );
+    return { ...activity, duration: elapsed };
   });
 
   // Calculate nap count
-  const napCount = todaysSleeps.length;
+  const napCount = sleepsWithDuration.length;
 
   // Calculate total sleep time in minutes
-  const totalSleepMinutes = todaysSleeps.reduce((sum, activity) => {
+  const totalSleepMinutes = sleepsWithDuration.reduce((sum, activity) => {
     return sum + (activity.duration || 0);
   }, 0);
 
@@ -89,15 +112,15 @@ export function calculateTodaysSleepStats(
   let longestNapMinutes: number | null = null;
   if (napCount > 0) {
     longestNapMinutes = Math.max(
-      ...todaysSleeps.map((activity) => activity.duration || 0),
+      ...sleepsWithDuration.map((activity) => activity.duration || 0),
     );
   }
 
   // Calculate average interval between sleep sessions
   let avgIntervalHours: number | null = null;
-  if (todaysSleeps.length > 1) {
+  if (sleepsWithDuration.length > 1) {
     // Sort by start time
-    const sorted = [...todaysSleeps].sort(
+    const sorted = [...sleepsWithDuration].sort(
       (a, b) =>
         new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
     );

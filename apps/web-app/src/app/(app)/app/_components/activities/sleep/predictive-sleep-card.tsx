@@ -329,7 +329,7 @@ export function PredictiveSleepCard({
                       <span className="text-lg font-semibold">
                         {formatDistanceToNow(prediction.lastSleepTime, {
                           addSuffix: true,
-                        })}
+                        }).replace(/^about /, '')}
                       </span>
                       <span className="text-sm opacity-70">
                         {formatTimeWithPreference(
@@ -369,7 +369,7 @@ export function PredictiveSleepCard({
                       <span className="text-lg font-semibold">
                         {formatDistanceToNow(prediction.lastSleepTime, {
                           addSuffix: true,
-                        })}
+                        }).replace(/^about /, '')}
                       </span>
                       <span className="text-sm opacity-70">
                         {formatTimeWithPreference(

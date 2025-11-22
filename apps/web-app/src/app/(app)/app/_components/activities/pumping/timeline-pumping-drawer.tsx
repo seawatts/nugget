@@ -137,9 +137,9 @@ export function TimelinePumpingDrawer({
 
       // Create details object
       const pumpingDetails = {
-        leftAmount: leftAmountMl,
+        leftBreastMl: leftAmountMl,
         method: selectedMethod,
-        rightAmount: rightAmountMl,
+        rightBreastMl: rightAmountMl,
         type: 'pumping' as const,
       };
 

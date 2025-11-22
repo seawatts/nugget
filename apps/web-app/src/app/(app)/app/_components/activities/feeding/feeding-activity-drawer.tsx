@@ -22,6 +22,7 @@ import { TimeInput } from '../shared/components/time-input';
 import { useInProgressSleep } from '../shared/hooks/use-in-progress-sleep';
 import { autoStopInProgressSleepAction } from '../sleep/actions';
 import { useActivityMutations } from '../use-activity-mutations';
+import { FeedingDrawerSkeleton } from './feeding-drawer-skeleton';
 import { FeedingTypeSelector } from './feeding-type-selector';
 import { useFeedingDrawerState } from './hooks/use-feeding-drawer-state';
 import { useFeedingSave } from './hooks/use-feeding-save';
@@ -240,9 +241,7 @@ export function FeedingActivityDrawer({
       {/* Content - Scrollable */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
         {isLoadingInProgress ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="size-8 animate-spin rounded-full border-4 border-activity-feeding border-t-transparent" />
-          </div>
+          <FeedingDrawerSkeleton />
         ) : (
           <>
             <FeedingTypeSelector

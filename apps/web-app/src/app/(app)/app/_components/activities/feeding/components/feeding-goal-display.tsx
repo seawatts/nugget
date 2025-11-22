@@ -1,5 +1,7 @@
 'use client';
 
+import { mlToOz } from '../../shared/volume-utils';
+
 interface FeedingGoalDisplayProps {
   currentCount: number;
   goalCount: number;
@@ -21,14 +23,12 @@ export function FeedingGoalDisplay({
 }: FeedingGoalDisplayProps) {
   // Convert currentAmount from ml to user's preferred unit
   const displayAmount =
-    unit === 'OZ'
-      ? Math.round((currentAmount / 29.5735) * 10) / 10 // Round to 1 decimal
-      : Math.round(currentAmount);
+    unit === 'OZ' ? mlToOz(currentAmount) : Math.round(currentAmount);
 
   // Format average amount
   const avgAmountDisplay = avgAmountMl
     ? unit === 'OZ'
-      ? `${Math.round((avgAmountMl / 29.5735) * 10) / 10}${unit.toLowerCase()}` // Round to 1 decimal
+      ? `${mlToOz(avgAmountMl)}${unit.toLowerCase()}`
       : `${Math.round(avgAmountMl)}${unit.toLowerCase()}`
     : '--';
 

@@ -1,5 +1,5 @@
 import type { Activities } from '@nugget/db/schema';
-import { differenceInHours, startOfDay } from 'date-fns';
+import { differenceInHours } from 'date-fns';
 import { getDiaperIntervalByAge } from './diaper-intervals';
 
 /**
@@ -39,7 +39,7 @@ export function getDailyDirtyDiaperGoal(ageDays: number): number {
 }
 
 /**
- * Calculate today's diaper statistics from activities
+ * Calculate diaper statistics from the last 24 hours (rolling window)
  */
 export function calculateTodaysDiaperStats(
   activities: Array<typeof Activities.$inferSelect>,
@@ -50,14 +50,15 @@ export function calculateTodaysDiaperStats(
   bothCount: number;
   avgIntervalHours: number | null;
 } {
-  const today = startOfDay(new Date());
+  // Rolling 24-hour window instead of calendar day
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  // Filter to today's diaper activities
+  // Filter to diapers from the last 24 hours
   const todaysDiapers = activities.filter((activity) => {
     const activityDate = new Date(activity.startTime);
-    const isToday = activityDate >= today;
+    const isRecent = activityDate >= twentyFourHoursAgo;
     const isDiaper = activity.type === 'diaper';
-    return isToday && isDiaper;
+    return isRecent && isDiaper;
   });
 
   // Calculate count

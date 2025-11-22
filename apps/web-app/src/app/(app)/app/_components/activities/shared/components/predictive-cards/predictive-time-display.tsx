@@ -82,7 +82,7 @@ export function PredictiveTimeDisplay({
             <span className="text-lg font-semibold shrink-0">
               {formatDistanceToNow(lastActivityTime, {
                 addSuffix: true,
-              })}
+              }).replace(/^about /, '')}
             </span>
             <span className="text-sm opacity-70 truncate min-w-0">
               {formatTimeWithPreference(lastActivityTime, timeFormat)}
@@ -116,7 +116,7 @@ export function PredictiveTimeDisplay({
           <span className="text-lg font-semibold shrink-0">
             {formatDistanceToNow(lastActivityTime, {
               addSuffix: true,
-            })}
+            }).replace(/^about /, '')}
           </span>
           <span className="text-sm opacity-70 truncate min-w-0">
             {formatTimeWithPreference(lastActivityTime, timeFormat)}

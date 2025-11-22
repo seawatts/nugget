@@ -37,12 +37,14 @@ export interface SleepPrediction {
 interface SleepActivity {
   id: string;
   startTime: Date;
+  endTime: Date | null;
   type: string;
   duration: number | null;
 }
 
 /**
  * Calculate the time intervals between consecutive sleep sessions
+ * Uses endTime (when baby woke up) if available, otherwise falls back to startTime
  */
 function calculateIntervals(sleeps: SleepActivity[]): Array<number | null> {
   const intervals: Array<number | null> = [];
@@ -54,8 +56,13 @@ function calculateIntervals(sleeps: SleepActivity[]): Array<number | null> {
       const current = sleeps[i];
       const previous = sleeps[i - 1];
       if (current && previous) {
-        const currentTime = new Date(current.startTime);
-        const previousTime = new Date(previous.startTime);
+        // Use endTime if available (when baby woke up), otherwise startTime
+        const currentTime = current.endTime
+          ? new Date(current.endTime)
+          : new Date(current.startTime);
+        const previousTime = previous.endTime
+          ? new Date(previous.endTime)
+          : new Date(previous.startTime);
         const hoursApart = differenceInMinutes(currentTime, previousTime) / 60;
         intervals.push(hoursApart);
       } else {
@@ -222,7 +229,10 @@ export function predictNextSleep(
     };
   }
 
-  const lastSleepTime = new Date(lastSleep.startTime);
+  // Use endTime if available (when baby woke up), otherwise fall back to startTime
+  const lastSleepTime = lastSleep.endTime
+    ? new Date(lastSleep.endTime)
+    : new Date(lastSleep.startTime);
   const lastSleepDuration = lastSleep.duration || null;
 
   // Calculate intervals between consecutive sleep sessions
@@ -275,10 +285,11 @@ export function predictNextSleep(
   nextSleepTime.setMinutes(nextSleepTime.getMinutes() + predictedInterval * 60);
 
   // Build recent pattern for display
+  // Use endTime (when baby woke up) if available, otherwise startTime
   const recentPattern = sleepActivities.slice(0, 5).map((sleep, idx) => ({
     duration: sleep.duration || null,
     intervalFromPrevious: intervals[idx] ?? null,
-    time: new Date(sleep.startTime),
+    time: sleep.endTime ? new Date(sleep.endTime) : new Date(sleep.startTime),
   }));
 
   // Check if overdue and calculate recovery time (reuse ageDays from earlier)

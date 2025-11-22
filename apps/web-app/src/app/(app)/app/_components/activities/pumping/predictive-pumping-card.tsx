@@ -257,7 +257,7 @@ export function PredictivePumpingCard({
                       <span className="text-lg font-semibold">
                         {formatDistanceToNow(prediction.lastPumpingTime, {
                           addSuffix: true,
-                        })}
+                        }).replace(/^about /, '')}
                       </span>
                       <span className="text-sm opacity-70">
                         {formatTimeWithPreference(
@@ -296,7 +296,7 @@ export function PredictivePumpingCard({
                       <span className="text-lg font-semibold">
                         {formatDistanceToNow(prediction.lastPumpingTime, {
                           addSuffix: true,
-                        })}
+                        }).replace(/^about /, '')}
                       </span>
                       <span className="text-sm opacity-70">
                         {formatTimeWithPreference(
