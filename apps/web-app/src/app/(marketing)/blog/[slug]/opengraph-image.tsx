@@ -5,7 +5,7 @@ import { getPost } from '~/app/(marketing)/_lib/blog';
 import { NuggetOgBackground } from '~/components/og/nugget-og-background';
 import { NUGGET_COLORS, OG_SIZE } from '~/lib/og-utils';
 
-export const runtime = 'edge';
+// Note: Using Node.js runtime because getPost() needs filesystem access
 export const alt = 'Blog Post';
 export const size = {
   height: 630,
