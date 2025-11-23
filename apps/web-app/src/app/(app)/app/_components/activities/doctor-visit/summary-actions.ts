@@ -2,6 +2,7 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { getApi } from '@nugget/api/server';
+import { format } from 'date-fns';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';
 
@@ -55,10 +56,10 @@ function calculateBabyAgeDays(birthDate: Date | null): number {
 }
 
 /**
- * Format date as YYYY-MM-DD for grouping
+ * Format date as YYYY-MM-DD for grouping using local timezone
  */
 function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0] || '';
+  return format(date, 'yyyy-MM-dd');
 }
 
 /**

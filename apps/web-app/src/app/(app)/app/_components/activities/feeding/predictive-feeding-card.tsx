@@ -4,7 +4,7 @@ import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Card } from '@nugget/ui/card';
 import { cn } from '@nugget/ui/lib/utils';
-import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
+import { format, formatDistanceToNow, startOfDay, subDays } from 'date-fns';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
@@ -196,7 +196,7 @@ export function PredictiveFeedingCard({
 
     for (let i = 6; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const dateKey = date.toISOString().split('T')[0] ?? '';
+      const dateKey = format(date, 'yyyy-MM-dd');
       const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
       const monthDay = `${date.getMonth() + 1}/${date.getDate()}`;
 
@@ -204,7 +204,7 @@ export function PredictiveFeedingCard({
       // Vitamin D is stored in feeding activity details as vitaminDGiven boolean
       const hasVitaminD = (last7DaysActivities ?? []).some((activity) => {
         const activityDate = new Date(activity.startTime);
-        const activityDateKey = activityDate.toISOString().split('T')[0] ?? '';
+        const activityDateKey = format(activityDate, 'yyyy-MM-dd');
 
         const isCorrectDate = activityDateKey === dateKey;
         const isFeeding =

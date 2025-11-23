@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from '@nugget/ui/select';
 import { Switch } from '@nugget/ui/switch';
+import { format } from 'date-fns';
 import {
   AlertCircle,
   Baby,
@@ -142,7 +143,7 @@ const formatAmount = (ml: Ml, pref: 'ML' | 'OZ') => {
   return `${mlToOz(ml).toFixed(1)} oz`;
 };
 
-const formatDateKey = (date: Date) => date.toISOString().split('T')[0];
+const formatDateKey = (date: Date) => format(date, 'yyyy-MM-dd');
 
 const defaultTargets: TargetWindow[] = [
   {

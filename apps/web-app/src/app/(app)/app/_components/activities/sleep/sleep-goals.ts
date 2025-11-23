@@ -1,5 +1,5 @@
 import type { Activities } from '@nugget/db/schema';
-import { differenceInHours, startOfDay } from 'date-fns';
+import { differenceInHours, format, startOfDay } from 'date-fns';
 
 /**
  * Calculate recommended daily nap count based on baby's age
@@ -277,7 +277,7 @@ export function calculateSleepTrendData(
 
   for (const activity of recentSleeps) {
     const date = new Date(activity.startTime);
-    const dateKey = date.toISOString().split('T')[0] as string; // YYYY-MM-DD
+    const dateKey = format(date, 'yyyy-MM-dd');
 
     if (!statsByDate.has(dateKey)) {
       statsByDate.set(dateKey, { count: 0, totalMinutes: 0 });
@@ -295,7 +295,7 @@ export function calculateSleepTrendData(
     [];
   for (let i = 6; i >= 0; i -= 1) {
     const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-    const dateKey = date.toISOString().split('T')[0] as string;
+    const dateKey = format(date, 'yyyy-MM-dd');
     const stats = statsByDate.get(dateKey) || { count: 0, totalMinutes: 0 };
     result.push({
       count: stats.count,
