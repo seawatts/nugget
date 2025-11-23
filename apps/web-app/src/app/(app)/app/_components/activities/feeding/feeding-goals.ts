@@ -60,7 +60,7 @@ export function getDailyAmountGoal(
 }
 
 /**
- * Calculate feeding statistics from the last 24 hours (rolling window)
+ * Calculate feeding statistics for the given activities
  */
 export function calculateTodaysFeedingStats(
   activities: Array<typeof Activities.$inferSelect>,
@@ -70,15 +70,10 @@ export function calculateTodaysFeedingStats(
   avgAmountMl: number | null;
   vitaminDCount: number;
 } {
-  // Rolling 24-hour window instead of calendar day
-  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-  // Filter to feedings from the last 24 hours
+  // Filter to feeding activities only (caller is responsible for time filtering)
   const todaysFeedings = activities.filter((activity) => {
-    const activityDate = new Date(activity.startTime);
-    const isRecent = activityDate >= twentyFourHoursAgo;
     const isFeeding = activity.type === 'bottle' || activity.type === 'nursing';
-    return isRecent && isFeeding;
+    return isFeeding;
   });
 
   // Calculate count

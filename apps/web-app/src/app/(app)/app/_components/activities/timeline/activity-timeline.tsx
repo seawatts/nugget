@@ -47,6 +47,7 @@ import {
   formatLengthDisplay,
   formatWeightDisplay,
 } from '../shared/measurement-utils';
+import { formatMinutesToHoursMinutes } from '../shared/time-formatting-utils';
 import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
 import { TimelineSleepDrawer } from '../sleep/timeline-sleep-drawer';
 import type { TimelineItem } from './activity-timeline.actions';
@@ -648,7 +649,14 @@ export function ActivityTimeline() {
                   );
 
                   if (activity.duration) {
-                    details.push(`${activity.duration} min`);
+                    // Format sleep duration as hours and minutes, others as minutes
+                    if (activity.type === 'sleep') {
+                      details.push(
+                        formatMinutesToHoursMinutes(activity.duration),
+                      );
+                    } else {
+                      details.push(`${activity.duration} min`);
+                    }
                   }
                   if (activity.amountMl) {
                     details.push(

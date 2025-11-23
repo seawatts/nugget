@@ -10,19 +10,19 @@ export interface StatsComparison {
 
 export interface SleepStatsComparison {
   current: {
-    napCount: number;
+    sleepCount: number;
     totalMinutes: number;
-    avgNapDuration: number | null;
+    avgSleepDuration: number | null;
   };
   previous: {
-    napCount: number;
+    sleepCount: number;
     totalMinutes: number;
-    avgNapDuration: number | null;
+    avgSleepDuration: number | null;
   };
   percentageChange: {
-    napCount: number | null;
+    sleepCount: number | null;
     totalMinutes: number | null;
-    avgNapDuration: number | null;
+    avgSleepDuration: number | null;
   };
 }
 
@@ -90,3 +90,33 @@ export const TIME_RANGE_OPTIONS: TimeRangeOption[] = [
   { hours: 336, label: '2 Weeks', value: '2w' },
   { hours: 720, label: '1 Month', value: '1m' },
 ];
+
+// Frequency visualization types
+export interface FrequencyHeatmapData {
+  dayOfWeek: number; // 0-6 (Sunday-Saturday)
+  hour: number; // 0-23
+  count: number;
+}
+
+export interface TimeBlockActivity {
+  startTime: Date;
+  endTime?: Date;
+  type?: string;
+}
+
+export interface TimeBlockData {
+  date: string;
+  blocks: Array<{
+    hour: number;
+    count: number;
+    activities: TimeBlockActivity[];
+  }>;
+}
+
+export interface FrequencyInsights {
+  peakHours: Array<{ hour: number; count: number }>;
+  consistencyScore: number; // 0-100
+  longestGap: { hours: number; from: Date | null; to: Date | null };
+}
+
+export type FrequencyViewType = 'heatmap' | 'timeblock';

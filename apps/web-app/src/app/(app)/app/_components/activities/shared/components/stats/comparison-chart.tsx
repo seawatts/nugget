@@ -19,20 +19,27 @@ import type { ComparisonData } from '../../types';
 interface ComparisonChartProps {
   data: ComparisonData[];
   colorClass: string;
+  currentLabel?: string;
+  previousLabel?: string;
 }
 
-export function ComparisonChart({ data, colorClass }: ComparisonChartProps) {
+export function ComparisonChart({
+  data,
+  colorClass,
+  currentLabel = 'Current',
+  previousLabel = 'Previous',
+}: ComparisonChartProps) {
   return (
     <ChartContainer
       className="h-[200px] w-full"
       config={{
         current: {
           color: colorClass,
-          label: 'Last 24h',
+          label: currentLabel,
         },
         previous: {
           color: 'var(--muted-foreground)',
-          label: 'Previous 24h',
+          label: previousLabel,
         },
       }}
     >

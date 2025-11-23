@@ -475,41 +475,6 @@ export function PredictivePumpingCard({
               </InfoCard>
             )}
 
-            {/* Recent Pattern */}
-            {prediction.recentPumpingPattern.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-2">
-                  Recent Pumping Sessions
-                </p>
-                <div className="space-y-2">
-                  {prediction.recentPumpingPattern
-                    .slice(0, 5)
-                    .map((pumping) => (
-                      <div
-                        className="flex items-center justify-between text-sm bg-muted/20 rounded px-3 py-2"
-                        key={pumping.time.toISOString()}
-                      >
-                        <span className="text-muted-foreground">
-                          {formatTimeWithPreference(pumping.time, timeFormat)}
-                        </span>
-                        <div className="flex gap-2 items-center">
-                          {pumping.amountMl !== null && (
-                            <span className="text-foreground/70 font-medium">
-                              {formatAmount(pumping.amountMl)}
-                            </span>
-                          )}
-                          {pumping.intervalFromPrevious !== null && (
-                            <span className="text-muted-foreground/60">
-                              ({pumping.intervalFromPrevious.toFixed(1)}h apart)
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
             {/* Average Interval */}
             {prediction.averageIntervalHours !== null && (
               <div className="flex items-center justify-between text-sm bg-muted/20 rounded px-3 py-2">
@@ -528,6 +493,8 @@ export function PredictivePumpingCard({
         activities={last7DaysActivities ?? []}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
+        recentActivities={prediction.recentPumpingPattern}
+        timeFormat={timeFormat}
         trendData={pumpingTrendData}
         unit={userUnitPref}
       />

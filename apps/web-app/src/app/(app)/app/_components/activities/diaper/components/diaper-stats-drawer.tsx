@@ -10,12 +10,16 @@ import {
   DropdownMenuTrigger,
 } from '@nugget/ui/dropdown-menu';
 import { ChevronDown } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ComparisonChart,
+  FrequencyHeatmap,
+  FrequencyInsightsComponent,
   getComparisonContent,
   getTrendContent,
+  RecentActivitiesList,
   StatsDrawerWrapper,
+  TimeBlockChart,
 } from '../../shared/components/stats';
 import type {
   AmountType,
@@ -24,6 +28,11 @@ import type {
   TrendData,
 } from '../../shared/types';
 import { TIME_RANGE_OPTIONS } from '../../shared/types';
+import {
+  calculateHourlyFrequency,
+  calculateTimeBlockData,
+  detectPatterns,
+} from '../../shared/utils/frequency-utils';
 import { calculateDiaperStatsWithComparison } from '../diaper-goals';
 import { DiaperTrendChart } from './diaper-trend-chart';
 
@@ -34,6 +43,12 @@ interface DiaperStatsDrawerProps {
   onOpenChange: (open: boolean) => void;
   trendData: TrendData[];
   activities: Array<typeof Activities.$inferSelect>; // Raw activities for dynamic stats calculation
+  recentActivities: Array<{
+    time: Date;
+    type?: 'wet' | 'dirty' | 'both';
+    [key: string]: unknown;
+  }>;
+  timeFormat: '12h' | '24h';
 }
 
 export function DiaperStatsDrawer({
@@ -41,10 +56,16 @@ export function DiaperStatsDrawer({
   onOpenChange,
   trendData,
   activities,
+  recentActivities,
+  timeFormat,
 }: DiaperStatsDrawerProps) {
   const [metricType, setMetricType] = useState<DiaperMetricType>('total');
   const [amountType, setAmountType] = useState<AmountType>('total');
   const [timeRange, setTimeRange] = useState<ComparisonTimeRange>('24h');
+  const [timelineFilterType, setTimelineFilterType] =
+    useState<DiaperMetricType>('total');
+  const [heatmapFilterType, setHeatmapFilterType] =
+    useState<DiaperMetricType>('total');
 
   // Calculate stats based on selected time range
   const statsComparison = useMemo(() => {
@@ -58,8 +79,11 @@ export function DiaperStatsDrawer({
   }, [activities, timeRange]);
 
   const trendContent = getTrendContent('diaper');
-  const comparisonContent = getComparisonContent(timeRange);
+  const selectedRangeHours =
+    TIME_RANGE_OPTIONS.find((opt) => opt.value === timeRange)?.hours ?? 24;
+  const comparisonContent = getComparisonContent(timeRange, selectedRangeHours);
 
+  // Helper functions
   const getMetricLabel = (type: DiaperMetricType) => {
     switch (type) {
       case 'total':
@@ -72,6 +96,56 @@ export function DiaperStatsDrawer({
         return 'Both';
     }
   };
+
+  // Calculate frequency data
+  const diaperActivities = useMemo(
+    () => activities.filter((a) => a.type === 'diaper'),
+    [activities],
+  );
+
+  // Filter activities by diaper type
+  const filterByDiaperType = useCallback(
+    (
+      activities: Array<typeof Activities.$inferSelect>,
+      filterType: DiaperMetricType,
+    ) => {
+      if (filterType === 'total') return activities;
+
+      return activities.filter((activity) => {
+        const details = activity.details as { type?: string } | null;
+        const type = details?.type;
+
+        if (filterType === 'both') {
+          return type === 'both';
+        }
+
+        // For 'wet' or 'dirty', include exact matches OR 'both'
+        return type === filterType || type === 'both';
+      });
+    },
+    [],
+  );
+
+  const frequencyHeatmapData = useMemo(() => {
+    const filteredActivities = filterByDiaperType(
+      diaperActivities,
+      heatmapFilterType,
+    );
+    return calculateHourlyFrequency(filteredActivities);
+  }, [diaperActivities, heatmapFilterType, filterByDiaperType]);
+
+  const timeBlockData = useMemo(() => {
+    const filteredActivities = filterByDiaperType(
+      diaperActivities,
+      timelineFilterType,
+    );
+    return calculateTimeBlockData(filteredActivities, 7);
+  }, [diaperActivities, timelineFilterType, filterByDiaperType]);
+
+  const frequencyInsights = useMemo(
+    () => detectPatterns(diaperActivities),
+    [diaperActivities],
+  );
 
   const comparisonData: ComparisonData[] = [
     {
@@ -201,9 +275,119 @@ export function DiaperStatsDrawer({
         </div>
         <ComparisonChart
           colorClass="var(--activity-diaper)"
+          currentLabel={comparisonContent.currentLabel}
           data={comparisonData}
+          previousLabel={comparisonContent.previousLabel}
         />
       </Card>
+
+      {/* Timeline Card */}
+      <Card className="p-4">
+        <div className="mb-3 flex items-start justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-foreground">Timeline</h3>
+            <p className="text-xs text-muted-foreground">
+              When changes occur throughout the day
+            </p>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                {getMetricLabel(timelineFilterType)}
+                <ChevronDown className="ml-1 size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setTimelineFilterType('total')}>
+                All
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTimelineFilterType('wet')}>
+                Pee
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTimelineFilterType('dirty')}>
+                Poop
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTimelineFilterType('both')}>
+                Both
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <TimeBlockChart
+          colorVar="var(--activity-diaper)"
+          data={timeBlockData}
+          timeFormat={timeFormat}
+        />
+      </Card>
+
+      {/* Heatmap Card */}
+      <Card className="p-4">
+        <div className="mb-3 flex items-start justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-foreground">Heatmap</h3>
+            <p className="text-xs text-muted-foreground">
+              Frequency patterns by day and time
+            </p>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                {getMetricLabel(heatmapFilterType)}
+                <ChevronDown className="ml-1 size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setHeatmapFilterType('total')}>
+                All
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setHeatmapFilterType('wet')}>
+                Pee
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setHeatmapFilterType('dirty')}>
+                Poop
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setHeatmapFilterType('both')}>
+                Both
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <FrequencyHeatmap
+          colorVar="var(--activity-diaper)"
+          data={frequencyHeatmapData}
+          timeFormat={timeFormat}
+        />
+      </Card>
+
+      {/* Frequency Insights Section */}
+      <Card className="p-4">
+        <div className="mb-3">
+          <h3 className="text-sm font-medium text-foreground">
+            Pattern Insights
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Key trends and patterns
+          </p>
+        </div>
+        <FrequencyInsightsComponent
+          activityLabel="diaper changes"
+          colorVar="var(--activity-diaper)"
+          insights={frequencyInsights}
+          timeFormat={timeFormat}
+        />
+      </Card>
+
+      {/* Recent Activities Section */}
+      {recentActivities.length > 0 && (
+        <Card className="p-4">
+          <RecentActivitiesList
+            activities={recentActivities}
+            activityType="diaper"
+            timeFormat={timeFormat}
+            title="Diaper"
+          />
+        </Card>
+      )}
     </StatsDrawerWrapper>
   );
 }

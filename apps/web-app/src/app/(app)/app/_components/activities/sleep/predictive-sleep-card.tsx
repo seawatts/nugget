@@ -443,8 +443,8 @@ export function PredictiveSleepCard({
         {/* Goal Tracking Display - Shows sleep progress for today */}
         {!effectiveIsOverdue && (userData?.showActivityGoals ?? true) && (
           <SleepGoalDisplay
-            napCount={todaysStats.napCount}
             napGoal={dailyNapGoal}
+            sleepCount={todaysStats.sleepCount}
             sleepHoursGoal={dailySleepHoursGoal}
             totalSleepMinutes={todaysStats.totalSleepMinutes}
           />
@@ -462,7 +462,6 @@ export function PredictiveSleepCard({
         onOpenChange={setShowInfoDrawer}
         open={showInfoDrawer}
         quickLogSettings={quickLogSettings}
-        recentPattern={prediction.recentSleepPattern}
         timeFormat={timeFormat}
         title="Sleep"
       />
@@ -472,6 +471,8 @@ export function PredictiveSleepCard({
         activities={last7DaysActivities ?? []}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
+        recentActivities={prediction.recentSleepPattern}
+        timeFormat={timeFormat}
         trendData={trendData}
       />
     </>

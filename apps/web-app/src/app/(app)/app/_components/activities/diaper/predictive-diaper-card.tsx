@@ -400,7 +400,6 @@ export function PredictiveDiaperCard({
         onOpenChange={setShowInfoDrawer}
         open={showInfoDrawer}
         quickLogSettings={quickLogSettings}
-        recentPattern={prediction.recentDiaperPattern}
         timeFormat={timeFormat}
         title="Diaper"
       />
@@ -410,6 +409,8 @@ export function PredictiveDiaperCard({
         activities={last7DaysActivities ?? []}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
+        recentActivities={prediction.recentDiaperPattern}
+        timeFormat={timeFormat}
         trendData={diaperTrendData}
       />
     </>

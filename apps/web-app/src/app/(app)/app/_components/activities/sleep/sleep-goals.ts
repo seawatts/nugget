@@ -55,10 +55,10 @@ export function getDailySleepHoursGoal(ageDays: number): number {
 export function calculateTodaysSleepStats(
   activities: Array<typeof Activities.$inferSelect>,
 ): {
-  napCount: number;
+  sleepCount: number;
   totalSleepMinutes: number;
-  avgNapDuration: number | null;
-  longestNapMinutes: number | null;
+  avgSleepDuration: number | null;
+  longestSleepMinutes: number | null;
   avgIntervalHours: number | null;
 } {
   const today = startOfDay(new Date());
@@ -94,24 +94,24 @@ export function calculateTodaysSleepStats(
     return { ...activity, duration: elapsed };
   });
 
-  // Calculate nap count
-  const napCount = sleepsWithDuration.length;
+  // Calculate sleep count
+  const sleepCount = sleepsWithDuration.length;
 
   // Calculate total sleep time in minutes
   const totalSleepMinutes = sleepsWithDuration.reduce((sum, activity) => {
     return sum + (activity.duration || 0);
   }, 0);
 
-  // Calculate average nap duration
-  let avgNapDuration: number | null = null;
-  if (napCount > 0) {
-    avgNapDuration = totalSleepMinutes / napCount;
+  // Calculate average sleep duration
+  let avgSleepDuration: number | null = null;
+  if (sleepCount > 0) {
+    avgSleepDuration = totalSleepMinutes / sleepCount;
   }
 
-  // Find longest nap
-  let longestNapMinutes: number | null = null;
-  if (napCount > 0) {
-    longestNapMinutes = Math.max(
+  // Find longest sleep
+  let longestSleepMinutes: number | null = null;
+  if (sleepCount > 0) {
+    longestSleepMinutes = Math.max(
       ...sleepsWithDuration.map((activity) => activity.duration || 0),
     );
   }
@@ -150,28 +150,28 @@ export function calculateTodaysSleepStats(
 
   return {
     avgIntervalHours,
-    avgNapDuration,
-    longestNapMinutes,
-    napCount,
+    avgSleepDuration,
+    longestSleepMinutes,
+    sleepCount,
     totalSleepMinutes,
   };
 }
 
 export interface SleepStatsComparison {
   current: {
-    napCount: number;
+    sleepCount: number;
     totalMinutes: number;
-    avgNapDuration: number | null;
+    avgSleepDuration: number | null;
   };
   previous: {
-    napCount: number;
+    sleepCount: number;
     totalMinutes: number;
-    avgNapDuration: number | null;
+    avgSleepDuration: number | null;
   };
   percentageChange: {
-    napCount: number | null;
+    sleepCount: number | null;
     totalMinutes: number | null;
-    avgNapDuration: number | null;
+    avgSleepDuration: number | null;
   };
 }
 
@@ -198,14 +198,14 @@ export function calculateSleepStatsWithComparison(
       return activityDate >= startTime && activityDate < endTime;
     });
 
-    const napCount = sleeps.length;
+    const sleepCount = sleeps.length;
     const totalMinutes = sleeps.reduce((sum, activity) => {
       return sum + (activity.duration || 0);
     }, 0);
 
-    const avgNapDuration = napCount > 0 ? totalMinutes / napCount : null;
+    const avgSleepDuration = sleepCount > 0 ? totalMinutes / sleepCount : null;
 
-    return { avgNapDuration, napCount, totalMinutes };
+    return { avgSleepDuration, sleepCount, totalMinutes };
   };
 
   // Calculate current period
@@ -233,11 +233,14 @@ export function calculateSleepStatsWithComparison(
   };
 
   const percentageChange = {
-    avgNapDuration: calculatePercentageChange(
-      current.avgNapDuration,
-      previous.avgNapDuration,
+    avgSleepDuration: calculatePercentageChange(
+      current.avgSleepDuration,
+      previous.avgSleepDuration,
     ),
-    napCount: calculatePercentageChange(current.napCount, previous.napCount),
+    sleepCount: calculatePercentageChange(
+      current.sleepCount,
+      previous.sleepCount,
+    ),
     totalMinutes: calculatePercentageChange(
       current.totalMinutes,
       previous.totalMinutes,
@@ -301,6 +304,209 @@ export function calculateSleepTrendData(
       count: stats.count,
       date: dateKey,
       totalMinutes: stats.totalMinutes,
+    });
+  }
+
+  return result;
+}
+
+export interface CoSleeperStats {
+  userId: string;
+  count: number;
+  totalMinutes: number;
+}
+
+export interface CoSleeperTrendData {
+  date: string;
+  byUser: Record<string, { count: number; totalMinutes: number }>;
+}
+
+/**
+ * Calculate co-sleeper statistics grouped by day and family member
+ * Returns data for the last 7 days
+ */
+export function calculateCoSleeperTrendData(
+  activities: Array<typeof Activities.$inferSelect>,
+): CoSleeperTrendData[] {
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  // Filter to co-sleeping sessions from the last 7 days
+  const recentCoSleeps = activities.filter((activity) => {
+    const activityDate = new Date(activity.startTime);
+    const isRecent = activityDate >= sevenDaysAgo;
+    const isSleep = activity.type === 'sleep';
+    const isCoSleeping =
+      activity.details &&
+      activity.details.type === 'sleep' &&
+      activity.details.isCoSleeping === true &&
+      Array.isArray(activity.details.coSleepingWith) &&
+      activity.details.coSleepingWith.length > 0;
+    return isRecent && isSleep && isCoSleeping;
+  });
+
+  // Group by date and user
+  const statsByDate = new Map<
+    string,
+    Record<string, { count: number; totalMinutes: number }>
+  >();
+
+  for (const activity of recentCoSleeps) {
+    const date = new Date(activity.startTime);
+    const dateKey = format(date, 'yyyy-MM-dd');
+
+    if (!statsByDate.has(dateKey)) {
+      statsByDate.set(dateKey, {});
+    }
+
+    const dateStats = statsByDate.get(dateKey);
+    if (!dateStats) continue;
+
+    // Add stats for each co-sleeping family member
+    if (
+      activity.details &&
+      activity.details.type === 'sleep' &&
+      Array.isArray(activity.details.coSleepingWith)
+    ) {
+      for (const userId of activity.details.coSleepingWith) {
+        if (!dateStats[userId]) {
+          dateStats[userId] = { count: 0, totalMinutes: 0 };
+        }
+        dateStats[userId].count += 1;
+        dateStats[userId].totalMinutes += activity.duration || 0;
+      }
+    }
+  }
+
+  // Convert to array and fill in missing dates
+  const result: CoSleeperTrendData[] = [];
+  for (let i = 6; i >= 0; i -= 1) {
+    const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const stats = statsByDate.get(dateKey) || {};
+    result.push({
+      byUser: stats,
+      date: dateKey,
+    });
+  }
+
+  return result;
+}
+
+export interface CoSleeperComparisonData {
+  userId: string;
+  current: {
+    count: number;
+    totalMinutes: number;
+  };
+  previous: {
+    count: number;
+    totalMinutes: number;
+  };
+  percentageChange: {
+    count: number | null;
+    totalMinutes: number | null;
+  };
+}
+
+/**
+ * Calculate co-sleeper statistics with comparison between current and previous periods
+ * Groups data by family member
+ */
+export function calculateCoSleeperStatsWithComparison(
+  activities: Array<typeof Activities.$inferSelect>,
+  timeRangeHours = 24,
+): CoSleeperComparisonData[] {
+  const now = Date.now();
+  const currentPeriodStart = new Date(now - timeRangeHours * 60 * 60 * 1000);
+  const previousPeriodStart = new Date(
+    now - timeRangeHours * 2 * 60 * 60 * 1000,
+  );
+
+  // Helper function to calculate stats for a time period
+  const calculateStatsForPeriod = (startTime: Date, endTime: Date) => {
+    const coSleeps = activities.filter((activity) => {
+      if (activity.type !== 'sleep') return false;
+      const activityDate = new Date(activity.startTime);
+      const isInPeriod = activityDate >= startTime && activityDate < endTime;
+      const isCoSleeping =
+        activity.details &&
+        activity.details.type === 'sleep' &&
+        activity.details.isCoSleeping === true &&
+        Array.isArray(activity.details.coSleepingWith) &&
+        activity.details.coSleepingWith.length > 0;
+      return isInPeriod && isCoSleeping;
+    });
+
+    // Group by user
+    const statsByUser = new Map<
+      string,
+      { count: number; totalMinutes: number }
+    >();
+
+    for (const activity of coSleeps) {
+      if (
+        activity.details &&
+        activity.details.type === 'sleep' &&
+        Array.isArray(activity.details.coSleepingWith)
+      ) {
+        for (const userId of activity.details.coSleepingWith) {
+          if (!statsByUser.has(userId)) {
+            statsByUser.set(userId, { count: 0, totalMinutes: 0 });
+          }
+          const userStats = statsByUser.get(userId);
+          if (userStats) {
+            userStats.count += 1;
+            userStats.totalMinutes += activity.duration || 0;
+          }
+        }
+      }
+    }
+
+    return statsByUser;
+  };
+
+  // Calculate current period
+  const currentStats = calculateStatsForPeriod(
+    currentPeriodStart,
+    new Date(now),
+  );
+
+  // Calculate previous period
+  const previousStats = calculateStatsForPeriod(
+    previousPeriodStart,
+    currentPeriodStart,
+  );
+
+  // Merge all user IDs from both periods
+  const allUserIds = new Set([...currentStats.keys(), ...previousStats.keys()]);
+
+  // Calculate percentage changes
+  const calculatePercentageChange = (
+    currentValue: number,
+    previousValue: number,
+  ): number | null => {
+    if (previousValue === 0) return null;
+    return ((currentValue - previousValue) / previousValue) * 100;
+  };
+
+  // Build comparison data for each user
+  const result: CoSleeperComparisonData[] = [];
+  for (const userId of allUserIds) {
+    const current = currentStats.get(userId) || { count: 0, totalMinutes: 0 };
+    const previous = previousStats.get(userId) || { count: 0, totalMinutes: 0 };
+
+    result.push({
+      current,
+      percentageChange: {
+        count: calculatePercentageChange(current.count, previous.count),
+        totalMinutes: calculatePercentageChange(
+          current.totalMinutes,
+          previous.totalMinutes,
+        ),
+      },
+      previous,
+      userId,
     });
   }
 

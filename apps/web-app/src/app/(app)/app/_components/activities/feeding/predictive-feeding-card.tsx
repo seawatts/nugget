@@ -359,7 +359,6 @@ export function PredictiveFeedingCard({
         onOpenChange={setShowInfoDrawer}
         open={showInfoDrawer}
         quickLogSettings={quickLogSettings}
-        recentPattern={prediction.recentFeedingPattern}
         timeFormat={timeFormat}
         title="Feeding"
         unit={userUnitPref}
@@ -370,6 +369,8 @@ export function PredictiveFeedingCard({
         activities={last7DaysActivities ?? []}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
+        recentActivities={prediction.recentFeedingPattern}
+        timeFormat={timeFormat}
         trendData={trendData}
         unit={userUnitPref}
         vitaminDData={vitaminDData}

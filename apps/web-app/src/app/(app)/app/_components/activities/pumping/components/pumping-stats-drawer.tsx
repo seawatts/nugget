@@ -13,9 +13,13 @@ import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
   ComparisonChart,
+  FrequencyHeatmap,
+  FrequencyInsightsComponent,
   getComparisonContent,
   getTrendContent,
+  RecentActivitiesList,
   StatsDrawerWrapper,
+  TimeBlockChart,
 } from '../../shared/components/stats';
 import type {
   AmountType,
@@ -25,6 +29,11 @@ import type {
   TrendData,
 } from '../../shared/types';
 import { TIME_RANGE_OPTIONS } from '../../shared/types';
+import {
+  calculateHourlyFrequency,
+  calculateTimeBlockData,
+  detectPatterns,
+} from '../../shared/utils/frequency-utils';
 import { mlToOz } from '../../shared/volume-utils';
 import { calculatePumpingStatsWithComparison } from '../pumping-goals';
 import { PumpingTrendChart } from './pumping-trend-chart';
@@ -35,6 +44,12 @@ interface PumpingStatsDrawerProps {
   trendData: TrendData[];
   activities: Array<typeof Activities.$inferSelect>; // Raw activities for dynamic stats calculation
   unit: 'ML' | 'OZ';
+  recentActivities: Array<{
+    time: Date;
+    amountMl?: number;
+    [key: string]: unknown;
+  }>;
+  timeFormat: '12h' | '24h';
 }
 
 export function PumpingStatsDrawer({
@@ -43,10 +58,18 @@ export function PumpingStatsDrawer({
   trendData,
   activities,
   unit,
+  recentActivities,
+  timeFormat,
 }: PumpingStatsDrawerProps) {
   const [metricType, setMetricType] = useState<MetricType>('count');
   const [amountType, setAmountType] = useState<AmountType>('total');
   const [timeRange, setTimeRange] = useState<ComparisonTimeRange>('24h');
+  const [timelineMetric, setTimelineMetric] = useState<'count' | 'amount'>(
+    'count',
+  );
+  const [heatmapMetric, setHeatmapMetric] = useState<'count' | 'amount'>(
+    'count',
+  );
 
   const handleMetricTypeChange = (newType: MetricType) => {
     setMetricType(newType);
@@ -68,7 +91,30 @@ export function PumpingStatsDrawer({
   }, [activities, timeRange]);
 
   const trendContent = getTrendContent('pumping', metricType);
-  const comparisonContent = getComparisonContent(timeRange);
+  const selectedRangeHours =
+    TIME_RANGE_OPTIONS.find((opt) => opt.value === timeRange)?.hours ?? 24;
+  const comparisonContent = getComparisonContent(timeRange, selectedRangeHours);
+
+  // Calculate frequency data
+  const pumpingActivities = useMemo(
+    () => activities.filter((a) => a.type === 'pumping'),
+    [activities],
+  );
+
+  const frequencyHeatmapData = useMemo(
+    () => calculateHourlyFrequency(pumpingActivities),
+    [pumpingActivities],
+  );
+
+  const timeBlockData = useMemo(
+    () => calculateTimeBlockData(pumpingActivities, 7),
+    [pumpingActivities],
+  );
+
+  const frequencyInsights = useMemo(
+    () => detectPatterns(pumpingActivities),
+    [pumpingActivities],
+  );
 
   const formatAmount = (ml: number) => {
     if (unit === 'OZ') {
@@ -225,9 +271,108 @@ export function PumpingStatsDrawer({
         </div>
         <ComparisonChart
           colorClass="var(--activity-pumping)"
+          currentLabel={comparisonContent.currentLabel}
           data={comparisonData}
+          previousLabel={comparisonContent.previousLabel}
         />
       </Card>
+
+      {/* Timeline Card */}
+      <Card className="p-4">
+        <div className="mb-3 flex items-start justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-foreground">Timeline</h3>
+            <p className="text-xs text-muted-foreground">
+              When sessions occur throughout the day
+            </p>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                {timelineMetric === 'count' ? 'Count' : 'Amount'}
+                <ChevronDown className="ml-1 size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setTimelineMetric('count')}>
+                Count
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTimelineMetric('amount')}>
+                Amount
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <TimeBlockChart
+          colorVar="var(--activity-pumping)"
+          data={timeBlockData}
+          timeFormat={timeFormat}
+        />
+      </Card>
+
+      {/* Heatmap Card */}
+      <Card className="p-4">
+        <div className="mb-3 flex items-start justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-foreground">Heatmap</h3>
+            <p className="text-xs text-muted-foreground">
+              Frequency patterns by day and time
+            </p>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                {heatmapMetric === 'count' ? 'Count' : 'Amount'}
+                <ChevronDown className="ml-1 size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setHeatmapMetric('count')}>
+                Count
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setHeatmapMetric('amount')}>
+                Amount
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <FrequencyHeatmap
+          colorVar="var(--activity-pumping)"
+          data={frequencyHeatmapData}
+          timeFormat={timeFormat}
+        />
+      </Card>
+
+      {/* Frequency Insights Section */}
+      <Card className="p-4">
+        <div className="mb-3">
+          <h3 className="text-sm font-medium text-foreground">
+            Pattern Insights
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Key trends and patterns
+          </p>
+        </div>
+        <FrequencyInsightsComponent
+          activityLabel="pumping sessions"
+          colorVar="var(--activity-pumping)"
+          insights={frequencyInsights}
+          timeFormat={timeFormat}
+        />
+      </Card>
+
+      {/* Recent Activities Section */}
+      {recentActivities.length > 0 && (
+        <Card className="p-4">
+          <RecentActivitiesList
+            activities={recentActivities}
+            activityType="pumping"
+            timeFormat={timeFormat}
+            title="Pumping"
+            unit={unit}
+          />
+        </Card>
+      )}
     </StatsDrawerWrapper>
   );
 }

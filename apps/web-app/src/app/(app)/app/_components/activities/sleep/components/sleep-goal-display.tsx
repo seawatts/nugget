@@ -1,14 +1,14 @@
 'use client';
 
 interface SleepGoalDisplayProps {
-  napCount: number;
+  sleepCount: number;
   napGoal: number;
   totalSleepMinutes: number;
   sleepHoursGoal: number;
 }
 
 export function SleepGoalDisplay({
-  napCount,
+  sleepCount,
   napGoal,
   totalSleepMinutes,
   sleepHoursGoal,
@@ -19,11 +19,11 @@ export function SleepGoalDisplay({
   return (
     <div className="flex items-center justify-between pt-4 mt-4 border-t border-white/20">
       <div className="flex items-center gap-6">
-        {/* Nap Count */}
+        {/* Sleep Count */}
         <div className="flex flex-col">
-          <span className="text-xs opacity-60">Naps</span>
+          <span className="text-xs opacity-60">Sleeps</span>
           <span className="text-sm font-medium">
-            {napCount}/{napGoal}
+            {sleepCount}/{napGoal}
           </span>
         </div>
 

@@ -13,9 +13,13 @@ import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
   ComparisonChart,
+  FrequencyHeatmap,
+  FrequencyInsightsComponent,
   getComparisonContent,
   getTrendContent,
+  RecentActivitiesList,
   StatsDrawerWrapper,
+  TimeBlockChart,
 } from '../../shared/components/stats';
 import type {
   AmountType,
@@ -26,6 +30,11 @@ import type {
   VitaminDDay,
 } from '../../shared/types';
 import { TIME_RANGE_OPTIONS } from '../../shared/types';
+import {
+  calculateHourlyFrequency,
+  calculateTimeBlockData,
+  detectPatterns,
+} from '../../shared/utils/frequency-utils';
 import { mlToOz } from '../../shared/volume-utils';
 import { calculateFeedingStatsWithComparison } from '../feeding-goals';
 import { FeedingTrendChart } from './feeding-trend-chart';
@@ -38,6 +47,12 @@ interface FeedingStatsDrawerProps {
   activities: Array<typeof Activities.$inferSelect>; // Raw activities for dynamic stats calculation
   unit: 'ML' | 'OZ';
   vitaminDData?: VitaminDDay[];
+  recentActivities: Array<{
+    time: Date;
+    amountMl?: number;
+    [key: string]: unknown;
+  }>;
+  timeFormat: '12h' | '24h';
 }
 
 export function FeedingStatsDrawer({
@@ -47,10 +62,18 @@ export function FeedingStatsDrawer({
   activities,
   unit,
   vitaminDData,
+  recentActivities,
+  timeFormat,
 }: FeedingStatsDrawerProps) {
   const [metricType, setMetricType] = useState<MetricType>('count');
   const [amountType, setAmountType] = useState<AmountType>('total');
   const [timeRange, setTimeRange] = useState<ComparisonTimeRange>('24h');
+  const [timelineMetric, setTimelineMetric] = useState<'count' | 'amount'>(
+    'count',
+  );
+  const [heatmapMetric, setHeatmapMetric] = useState<'count' | 'amount'>(
+    'count',
+  );
 
   const handleMetricTypeChange = (newType: MetricType) => {
     setMetricType(newType);
@@ -72,7 +95,30 @@ export function FeedingStatsDrawer({
   }, [activities, timeRange]);
 
   const trendContent = getTrendContent('feeding', metricType);
-  const comparisonContent = getComparisonContent(timeRange);
+  const selectedRangeHours =
+    TIME_RANGE_OPTIONS.find((opt) => opt.value === timeRange)?.hours ?? 24;
+  const comparisonContent = getComparisonContent(timeRange, selectedRangeHours);
+
+  // Calculate frequency data
+  const feedingActivities = useMemo(
+    () => activities.filter((a) => a.type === 'feeding'),
+    [activities],
+  );
+
+  const frequencyHeatmapData = useMemo(
+    () => calculateHourlyFrequency(feedingActivities),
+    [feedingActivities],
+  );
+
+  const timeBlockData = useMemo(
+    () => calculateTimeBlockData(feedingActivities, 7),
+    [feedingActivities],
+  );
+
+  const frequencyInsights = useMemo(
+    () => detectPatterns(feedingActivities),
+    [feedingActivities],
+  );
 
   const formatAmount = (ml: number) => {
     if (unit === 'OZ') {
@@ -244,9 +290,108 @@ export function FeedingStatsDrawer({
         </div>
         <ComparisonChart
           colorClass="var(--activity-feeding)"
+          currentLabel={comparisonContent.currentLabel}
           data={comparisonData}
+          previousLabel={comparisonContent.previousLabel}
         />
       </Card>
+
+      {/* Timeline Card */}
+      <Card className="p-4">
+        <div className="mb-3 flex items-start justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-foreground">Timeline</h3>
+            <p className="text-xs text-muted-foreground">
+              When feedings occur throughout the day
+            </p>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                {timelineMetric === 'count' ? 'Count' : 'Amount'}
+                <ChevronDown className="ml-1 size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setTimelineMetric('count')}>
+                Count
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTimelineMetric('amount')}>
+                Amount
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <TimeBlockChart
+          colorVar="var(--activity-feeding)"
+          data={timeBlockData}
+          timeFormat={timeFormat}
+        />
+      </Card>
+
+      {/* Heatmap Card */}
+      <Card className="p-4">
+        <div className="mb-3 flex items-start justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-foreground">Heatmap</h3>
+            <p className="text-xs text-muted-foreground">
+              Frequency patterns by day and time
+            </p>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                {heatmapMetric === 'count' ? 'Count' : 'Amount'}
+                <ChevronDown className="ml-1 size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setHeatmapMetric('count')}>
+                Count
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setHeatmapMetric('amount')}>
+                Amount
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <FrequencyHeatmap
+          colorVar="var(--activity-feeding)"
+          data={frequencyHeatmapData}
+          timeFormat={timeFormat}
+        />
+      </Card>
+
+      {/* Frequency Insights Section */}
+      <Card className="p-4">
+        <div className="mb-3">
+          <h3 className="text-sm font-medium text-foreground">
+            Pattern Insights
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Key trends and patterns
+          </p>
+        </div>
+        <FrequencyInsightsComponent
+          activityLabel="feedings"
+          colorVar="var(--activity-feeding)"
+          insights={frequencyInsights}
+          timeFormat={timeFormat}
+        />
+      </Card>
+
+      {/* Recent Activities Section */}
+      {recentActivities.length > 0 && (
+        <Card className="p-4">
+          <RecentActivitiesList
+            activities={recentActivities}
+            activityType="feeding"
+            timeFormat={timeFormat}
+            title="Feeding"
+            unit={unit}
+          />
+        </Card>
+      )}
     </StatsDrawerWrapper>
   );
 }
