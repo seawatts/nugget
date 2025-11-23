@@ -24,7 +24,6 @@ import { getAssignedMember, suggestFamilyMember } from './assignment';
 import { FeedingStatsDrawer } from './components';
 import { FeedingGoalDisplay } from './components/feeding-goal-display';
 import {
-  calculateFeedingStatsWithComparison,
   calculateFeedingTrendData,
   calculateTodaysFeedingStats,
   getDailyAmountGoal,
@@ -186,10 +185,6 @@ export function PredictiveFeedingCard({
 
   // Calculate today's feeding statistics for goal display
   const todaysStats = calculateTodaysFeedingStats(todaysActivitiesData ?? []);
-  // Calculate stats comparison for stats drawer
-  const statsComparison = calculateFeedingStatsWithComparison(
-    todaysActivitiesData ?? [],
-  );
   // Calculate 7-day trend data for stats drawer (needs last 7 days of data)
   const trendData = calculateFeedingTrendData(last7DaysActivities ?? []);
 
