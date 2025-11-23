@@ -58,7 +58,7 @@ function buildOptimisticActivity(
     };
   } else if (formData.type === 'vitamin_d') {
     details = {
-      method: formData.method,
+      method: formData.method ?? undefined,
       type: 'vitamin_d' as const,
     };
   }
@@ -124,7 +124,7 @@ function buildCreateActivityData(
     };
   } else if (formData.type === 'vitamin_d') {
     details = {
-      method: formData.method,
+      method: formData.method ?? undefined,
       type: 'vitamin_d' as const,
     };
   }

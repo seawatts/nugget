@@ -41,6 +41,7 @@ export interface FeedingFormData {
   rightDuration?: number;
   notes?: string;
   method?: 'drops' | 'spray' | null;
+  vitaminDGiven?: boolean;
 }
 
 interface FeedingTypeSelectorProps {

@@ -118,7 +118,12 @@ export const getActivitiesAction = action
 
         // Filter by activity types if specified
         if (activityTypes && activityTypes.length > 0) {
-          activityConditions.push(inArray(ActivitiesTable.type, activityTypes));
+          activityConditions.push(
+            inArray(
+              ActivitiesTable.type,
+              activityTypes as (typeof ActivitiesTable.type.$inferInsert)[],
+            ),
+          );
         }
 
         // Filter by user IDs if specified

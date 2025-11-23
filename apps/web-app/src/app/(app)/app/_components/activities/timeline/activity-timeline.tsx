@@ -548,21 +548,22 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
   // Handle result updates
   useEffect(() => {
     if (hasSucceeded && result.data) {
+      const resultData = result.data; // Capture data to ensure TypeScript understands it's defined
       setPages((prev) => {
         if (isInitialLoadRef.current) {
           // Initial load or filter change - replace all pages
           isInitialLoadRef.current = false;
           hasCompletedInitialLoadRef.current = true;
-          return [result.data];
+          return [resultData];
         }
         if (isFetchingNextPage) {
           // Append new page to existing pages
-          return [...prev, result.data];
+          return [...prev, resultData];
         }
         // No change if not loading
         return prev;
       });
-      setCurrentCursor(result.data.nextCursor);
+      setCurrentCursor(resultData.nextCursor);
       setIsFetchingNextPage(false);
     }
   }, [hasSucceeded, result.data, isFetchingNextPage]);

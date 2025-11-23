@@ -371,7 +371,7 @@ export function calculateSleepTrendData(
     '24h': 1,
   };
 
-  const days = daysMap[timeRange];
+  const days = daysMap[timeRange] ?? 7; // Default to 7 days if timeRange is invalid
   const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   // Filter to sleeps from the selected time range
@@ -413,7 +413,7 @@ export function calculateSleepTrendData(
     // Convert to array and fill in missing weeks
     const result: Array<{ date: string; count: number; totalMinutes: number }> =
       [];
-    const numWeeks = Math.ceil(days / 7);
+    const numWeeks = Math.ceil((days ?? 7) / 7);
     for (let i = numWeeks - 1; i >= 0; i -= 1) {
       const date = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
       const dayOfWeek = date.getDay();
@@ -457,7 +457,7 @@ export function calculateSleepTrendData(
   // Convert to array and fill in missing dates
   const result: Array<{ date: string; count: number; totalMinutes: number }> =
     [];
-  for (let i = days - 1; i >= 0; i -= 1) {
+  for (let i = (days ?? 7) - 1; i >= 0; i -= 1) {
     const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
     const dateKey = format(date, 'yyyy-MM-dd');
     const stats = statsByDate.get(dateKey) || { count: 0, totalMinutes: 0 };
@@ -571,7 +571,7 @@ export function calculateCoSleeperTrendData(
     '24h': 1,
   };
 
-  const days = daysMap[timeRange];
+  const days = daysMap[timeRange] ?? 7; // Default to 7 days if timeRange is invalid
   const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   // Filter to co-sleeping sessions from the selected time range
@@ -630,7 +630,7 @@ export function calculateCoSleeperTrendData(
 
     // Convert to array and fill in missing weeks
     const result: CoSleeperTrendData[] = [];
-    const numWeeks = Math.ceil(days / 7);
+    const numWeeks = Math.ceil((days ?? 7) / 7);
     for (let i = numWeeks - 1; i >= 0; i -= 1) {
       const date = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
       const dayOfWeek = date.getDay();
@@ -684,7 +684,7 @@ export function calculateCoSleeperTrendData(
 
   // Convert to array and fill in missing dates
   const result: CoSleeperTrendData[] = [];
-  for (let i = days - 1; i >= 0; i -= 1) {
+  for (let i = (days ?? 7) - 1; i >= 0; i -= 1) {
     const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
     const dateKey = format(date, 'yyyy-MM-dd');
     const stats = statsByDate.get(dateKey) || {};

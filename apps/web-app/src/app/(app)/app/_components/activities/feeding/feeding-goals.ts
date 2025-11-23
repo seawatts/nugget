@@ -297,7 +297,7 @@ export function calculateFeedingTrendData(
     '24h': 1,
   };
 
-  const days = daysMap[timeRange];
+  const days = daysMap[timeRange] ?? 7; // Default to 7 days if timeRange is invalid
   const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   // Filter to feedings from the selected time range
@@ -338,7 +338,7 @@ export function calculateFeedingTrendData(
 
     // Convert to array and fill in missing weeks
     const result: Array<{ date: string; count: number; totalMl: number }> = [];
-    const numWeeks = Math.ceil(days / 7);
+    const numWeeks = Math.ceil((days ?? 7) / 7);
     for (let i = numWeeks - 1; i >= 0; i -= 1) {
       const date = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
       const dayOfWeek = date.getDay();
@@ -381,7 +381,7 @@ export function calculateFeedingTrendData(
 
   // Convert to array and fill in missing dates
   const result: Array<{ date: string; count: number; totalMl: number }> = [];
-  for (let i = days - 1; i >= 0; i -= 1) {
+  for (let i = (days ?? 7) - 1; i >= 0; i -= 1) {
     const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
     const dateKey = format(date, 'yyyy-MM-dd');
     const stats = statsByDate.get(dateKey) || { count: 0, totalMl: 0 };

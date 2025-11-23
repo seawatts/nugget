@@ -32,6 +32,7 @@ const ACTIVITY_BG_CLASSES: Record<ActivityType, string> = {
   solids: 'bg-activity-solids',
   temperature: 'bg-activity-temperature',
   tummy_time: 'bg-activity-tummy-time',
+  vitamin_d: 'bg-activity-medicine',
 };
 
 export function ActivityDrawerHeader({

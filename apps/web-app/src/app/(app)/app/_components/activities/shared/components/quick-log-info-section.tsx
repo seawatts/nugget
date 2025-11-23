@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { InfoCard } from '../../../shared/info-card';
 
 interface QuickLogInfoSectionProps {
-  activityType: 'feeding' | 'diaper' | 'sleep' | 'pumping';
+  activityType: 'feeding' | 'diaper' | 'sleep' | 'pumping' | 'vitamin_d';
   enabledSettings: string[];
   isQuickLogEnabled: boolean;
   color: string;
