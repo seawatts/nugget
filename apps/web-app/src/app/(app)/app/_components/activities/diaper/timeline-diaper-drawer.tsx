@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import {
   AlertDialog,
@@ -15,7 +16,7 @@ import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
 import { Baby, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { TimeInput } from '../shared/components/time-input';
+import { ClickableTimeDisplay } from '../shared/components/clickable-time-display';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { DiaperFormData } from './diaper-drawer';
 import { DiaperDrawerContent } from './diaper-drawer';
@@ -39,6 +40,10 @@ export function TimelineDiaperDrawer({
 }: TimelineDiaperDrawerProps) {
   const { updateActivity, deleteActivity, isUpdating, isDeleting } =
     useActivityMutations();
+
+  // Fetch user preferences for time format
+  const { data: user } = api.user.current.useQuery();
+  const timeFormat = user?.timeFormat || '12h';
 
   // Diaper-specific state
   const [startTime, setStartTime] = useState(new Date());
@@ -74,6 +79,30 @@ export function TimelineDiaperDrawer({
           hasRash?: boolean;
           isGassy?: boolean;
         };
+
+        // Get diaper type - prioritize specific types over generic 'diaper'
+        // Check if details.type is a specific type (wet, dirty, both)
+        const detailsHasSpecificType =
+          details.type && ['wet', 'dirty', 'both'].includes(details.type);
+        const activityHasSpecificType = ['wet', 'dirty', 'both'].includes(
+          existingActivity.type,
+        );
+
+        const diaperType = detailsHasSpecificType
+          ? details.type
+          : activityHasSpecificType
+            ? (existingActivity.type as 'wet' | 'dirty' | 'both')
+            : null;
+
+        console.log('Timeline Diaper Drawer - Setting formData:', {
+          activityHasSpecificType,
+          activityType: existingActivity.type,
+          calculatedDiaperType: diaperType,
+          details,
+          detailsHasSpecificType,
+          detailsType: details.type,
+        });
+
         setFormData({
           color: (details.color as DiaperFormData['color']) || null,
           consistency:
@@ -82,13 +111,25 @@ export function TimelineDiaperDrawer({
           isGassy: details.isGassy ?? false,
           notes: existingActivity.notes || '',
           size: (details.size as DiaperFormData['size']) || null,
-          type: details.type || null,
+          type: diaperType,
         });
-      } else if (existingActivity.notes) {
-        setFormData((prev) => ({
-          ...prev,
+      } else {
+        // No details field - check if activity type is a diaper type
+        const diaperType = ['wet', 'dirty', 'both'].includes(
+          existingActivity.type,
+        )
+          ? (existingActivity.type as 'wet' | 'dirty' | 'both')
+          : null;
+
+        setFormData({
+          color: null,
+          consistency: null,
+          hasRash: false,
+          isGassy: false,
           notes: existingActivity.notes || '',
-        }));
+          size: null,
+          type: diaperType,
+        });
       }
     }
   }, [existingActivity]);
@@ -126,9 +167,10 @@ export function TimelineDiaperDrawer({
 
   const handleDelete = async () => {
     try {
-      await deleteActivity(existingActivity.id);
+      // Close drawer immediately for better UX
       setShowDeleteConfirmation(false);
       onClose();
+      await deleteActivity(existingActivity.id);
     } catch (error) {
       console.error('Failed to delete activity:', error);
     }
@@ -141,7 +183,7 @@ export function TimelineDiaperDrawer({
     <>
       {/* Custom Header with Activity Color */}
       <div className="p-6 pb-4 bg-activity-diaper">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <Baby
               className="size-8 text-activity-diaper-foreground"
@@ -159,6 +201,15 @@ export function TimelineDiaperDrawer({
             <X className="size-6" />
           </button>
         </div>
+        <div className="ml-11">
+          <ClickableTimeDisplay
+            className="text-activity-diaper-foreground"
+            mode="single"
+            onStartTimeChange={setStartTime}
+            startTime={startTime}
+            timeFormat={timeFormat}
+          />
+        </div>
       </div>
 
       {/* Content - Scrollable */}
@@ -167,19 +218,6 @@ export function TimelineDiaperDrawer({
           initialData={formData}
           onDataChange={setFormData}
         />
-
-        {/* Time & Date Section */}
-        <div className="space-y-3 min-w-0">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            Time & Date
-          </h3>
-          <TimeInput
-            id="diaper-time"
-            label="Date & Time"
-            onChange={setStartTime}
-            value={startTime}
-          />
-        </div>
       </div>
 
       {/* Footer with Actions */}

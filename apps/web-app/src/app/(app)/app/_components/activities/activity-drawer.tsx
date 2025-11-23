@@ -34,7 +34,7 @@ interface ActivityDrawerProps {
   existingActivity?: typeof Activities.$inferSelect | null;
   isOpen: boolean;
   onClose: () => void;
-  babyId?: string;
+  babyId: string;
 }
 
 /**
@@ -110,19 +110,19 @@ export function ActivityDrawer({
           />
         );
       case 'potty':
-        return <PottyDrawer />;
+        return <PottyDrawer babyId={babyId} />;
       case 'activity':
-        return <ActivityDrawerContent />;
+        return <ActivityDrawerContent babyId={babyId} />;
       case 'tummy-time':
-        return <TummyTimeDrawer />;
+        return <TummyTimeDrawer babyId={babyId} />;
       case 'medicine':
-        return <MedicineDrawer />;
+        return <MedicineDrawer babyId={babyId} />;
       case 'temperature':
-        return <TemperatureDrawer />;
+        return <TemperatureDrawer babyId={babyId} />;
       case 'growth':
-        return <GrowthDrawer />;
+        return <GrowthDrawer babyId={babyId} />;
       case 'bath':
-        return <BathDrawer />;
+        return <BathDrawer babyId={babyId} />;
       default:
         return null;
     }

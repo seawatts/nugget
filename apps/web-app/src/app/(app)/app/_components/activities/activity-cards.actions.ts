@@ -30,6 +30,7 @@ const createActivityInputSchema = z.object({
     'potty',
     'doctor_visit',
   ]),
+  babyId: z.string(),
 });
 
 /**
@@ -50,11 +51,13 @@ export const createActivityAction = action
       // Create tRPC API helper
       const api = await getApi();
 
-      // Get the most recent baby
-      const baby = await api.babies.getMostRecent();
+      const { babyId } = parsedInput;
+
+      // Get the baby to check birth date
+      const baby = await api.babies.getByIdLight({ id: babyId });
 
       if (!baby) {
-        throw new Error('No baby found. Please complete onboarding first.');
+        throw new Error('Baby not found.');
       }
 
       // Get default activity data based on type and baby's birth date
@@ -65,7 +68,7 @@ export const createActivityAction = action
 
       // Create the activity
       const activity = await api.activities.create({
-        babyId: baby.id,
+        babyId,
         details: null,
         ...defaultData,
       });
@@ -80,6 +83,7 @@ export const createActivityAction = action
 const createActivityWithDetailsInputSchema = z.object({
   activityType: z.string(),
   amountMl: z.number().optional(),
+  babyId: z.string(),
   details: z
     .union([
       z.object({
@@ -148,17 +152,12 @@ export const createActivityWithDetailsAction = action
       // Create tRPC API helper
       const api = await getApi();
 
-      // Get the most recent baby
-      const baby = await api.babies.getMostRecent();
-
-      if (!baby) {
-        throw new Error('No baby found. Please complete onboarding first.');
-      }
+      const { babyId } = parsedInput;
 
       // Create the activity with provided details
       const activity = await api.activities.create({
         amountMl: parsedInput.amountMl,
-        babyId: baby.id,
+        babyId,
         details: parsedInput.details || null,
         duration: parsedInput.duration,
         feedingSource: parsedInput.feedingSource,

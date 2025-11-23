@@ -16,7 +16,7 @@ import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
 import { Droplets, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { TimeInput } from '../shared/components/time-input';
+import { ClickableTimeDisplay } from '../shared/components/clickable-time-display';
 import { useActivityMutations } from '../use-activity-mutations';
 import { PumpingDrawerContent } from './pumping-drawer';
 
@@ -40,10 +40,11 @@ export function TimelinePumpingDrawer({
   const { updateActivity, deleteActivity, isUpdating, isDeleting } =
     useActivityMutations();
 
-  // Fetch user preferences to determine default unit
+  // Fetch user preferences to determine default unit and time format
   const { data: user } = api.user.current.useQuery();
   const measurementUnit = user?.measurementUnit || 'metric';
   const userUnitPref = measurementUnit === 'imperial' ? 'OZ' : 'ML';
+  const timeFormat = user?.timeFormat || '12h';
 
   // Helper function to get initial amounts from existing activity
   const getInitialAmounts = () => {
@@ -163,9 +164,10 @@ export function TimelinePumpingDrawer({
 
   const handleDelete = async () => {
     try {
-      await deleteActivity(existingActivity.id);
+      // Close drawer immediately for better UX
       setShowDeleteConfirmation(false);
       onClose();
+      await deleteActivity(existingActivity.id);
     } catch (error) {
       console.error('Failed to delete activity:', error);
     }
@@ -175,7 +177,7 @@ export function TimelinePumpingDrawer({
     <>
       {/* Custom Header with Activity Color */}
       <div className="p-6 pb-4 bg-activity-pumping">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <Droplets
               className="size-8 text-activity-pumping-foreground"
@@ -192,6 +194,16 @@ export function TimelinePumpingDrawer({
           >
             <X className="size-6" />
           </button>
+        </div>
+        <div className="ml-11">
+          <ClickableTimeDisplay
+            className="text-activity-pumping-foreground"
+            duration={selectedDuration ?? undefined}
+            mode="single"
+            onStartTimeChange={setStartTime}
+            startTime={startTime}
+            timeFormat={timeFormat}
+          />
         </div>
       </div>
 
@@ -210,19 +222,6 @@ export function TimelinePumpingDrawer({
           setSelectedDuration={setSelectedDuration}
           setSelectedMethod={setSelectedMethod}
         />
-
-        {/* Time & Date Section */}
-        <div className="space-y-3 min-w-0">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            Start Date & Time
-          </h3>
-          <TimeInput
-            id="pumping-start-time"
-            label="Start Date & Time"
-            onChange={setStartTime}
-            value={startTime}
-          />
-        </div>
       </div>
 
       {/* Footer with Actions */}

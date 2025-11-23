@@ -27,6 +27,7 @@ interface UseFeedingActionsOptions {
   useLastAmount?: boolean;
   useTypicalDuration?: boolean;
   useLastType?: boolean;
+  babyId?: string;
 }
 
 export function useFeedingActions({
@@ -40,6 +41,7 @@ export function useFeedingActions({
   useLastAmount = true,
   useTypicalDuration = true,
   useLastType = true,
+  babyId,
 }: UseFeedingActionsOptions) {
   const utils = api.useUtils();
   const [claiming, setClaiming] = useState(false);
@@ -63,6 +65,7 @@ export function useFeedingActions({
   const { handleQuickLog, handleSkip, isCreating, isSkipping } =
     usePredictiveActions({
       activityType: 'feeding',
+      babyId,
       defaultQuickLogData,
       onActivityLogged,
       skipAction: skipFeedingAction,

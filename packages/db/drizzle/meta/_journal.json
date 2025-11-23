@@ -231,6 +231,13 @@
       "tag": "0034_real_sue_storm",
       "version": "7",
       "when": 1763788040779
+    },
+    {
+      "breakpoints": true,
+      "idx": 35,
+      "tag": "0035_first_blindfold",
+      "version": "7",
+      "when": 1763882866049
     }
   ],
   "version": "7"

@@ -1,6 +1,6 @@
 {
   "catalog": {
-    "@clerk/nextjs": "6.35.3",
+    "@clerk/nextjs": "6.35.4",
     "@supabase/supabase-js": "2.84.0",
     "@t3-oss/env-core": "0.13.8",
     "@t3-oss/env-nextjs": "0.13.8",
@@ -37,13 +37,13 @@
     "@nugget/commitlint-config": "workspace:*",
     "@testing-library/react": "16.3.0",
     "@types/bun": "1.2.23",
-    "checkly": "6.9.1",
+    "checkly": "6.9.2",
     "knip": "5.70.1",
     "lefthook": "2.0.4",
     "shadcn": "^3.5.0",
     "turbo": "^2.6.1",
     "typescript": "5.9.3",
-    "vitest": "4.0.12"
+    "vitest": "4.0.13"
   },
   "engines": {
     "node": ">=20.12.0"

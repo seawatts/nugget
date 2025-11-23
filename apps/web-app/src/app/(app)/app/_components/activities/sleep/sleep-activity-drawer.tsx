@@ -14,24 +14,21 @@ import {
   AlertDialogTitle,
 } from '@nugget/ui/alert-dialog';
 import { Button } from '@nugget/ui/button';
-import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
-import { Label } from '@nugget/ui/label';
-import { cn } from '@nugget/ui/lib/utils';
-import { Switch } from '@nugget/ui/switch';
+
 import { Moon, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getInProgressSleepActivityAction } from '../activity-cards.actions';
-import { TimeInput } from '../shared/components/time-input';
 import { getFamilyMembersAction } from '../timeline/activity-timeline-filters.actions';
 import { useActivityMutations } from '../use-activity-mutations';
-import { SleepDrawerContent } from './sleep-drawer';
+import { SleepModeSelector } from './sleep-mode-selector';
 
+type SleepMode = 'timer' | 'manual' | null;
 interface SleepActivityDrawerProps {
   existingActivity?: typeof Activities.$inferSelect | null;
   isOpen: boolean;
   onClose: () => void;
-  babyId?: string;
+  babyId: string;
 }
 
 /**
@@ -103,6 +100,7 @@ export function SleepActivityDrawer({
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
   const [isLoadingInProgress, setIsLoadingInProgress] = useState(false);
   const [isManualEndTime, setIsManualEndTime] = useState(false);
+  const [selectedMode, setSelectedMode] = useState<SleepMode>(null);
 
   const isPending = isCreating || isUpdating;
   const isEditing = Boolean(existingActivity) || Boolean(activeActivityId);
@@ -141,6 +139,8 @@ export function SleepActivityDrawer({
       } else {
         setEndTime(new Date(existingActivity.startTime));
       }
+      // Set mode to manual for existing activities
+      setSelectedMode('manual');
     } else {
       const now = new Date();
       setStartTime(now);
@@ -222,6 +222,8 @@ export function SleepActivityDrawer({
                 inProgressActivity.details.coSleepingWith || [],
               );
             }
+            // Set mode to timer since we loaded an in-progress activity
+            setSelectedMode('timer');
           } else {
             setActiveActivityId(null);
           }
@@ -248,6 +250,7 @@ export function SleepActivityDrawer({
         setIsCoSleeping(false);
         setCoSleepingWith([]);
         setIsManualEndTime(false);
+        setSelectedMode(null);
       }, 300); // Standard drawer animation duration
 
       return () => clearTimeout(timeoutId);
@@ -258,6 +261,7 @@ export function SleepActivityDrawer({
     try {
       const activity = await createActivity({
         activityType: 'sleep',
+        babyId,
         details: {
           coSleepingWith: isCoSleeping ? coSleepingWith : undefined,
           isCoSleeping: isCoSleeping || undefined,
@@ -297,13 +301,14 @@ export function SleepActivityDrawer({
   };
 
   const handleAbandonSleep = async () => {
+    setShowCancelConfirmation(false);
+    onClose();
+
     if (activeActivityId) {
       try {
         await deleteActivity(activeActivityId);
         setActiveActivityId(null);
         setIsTimerStopped(false);
-        setShowCancelConfirmation(false);
-        onClose();
       } catch (error) {
         console.error('Failed to delete in-progress activity:', error);
       }
@@ -360,6 +365,9 @@ export function SleepActivityDrawer({
         addOptimisticActivity(optimisticActivity);
       }
 
+      // Close drawer immediately for better UX
+      onClose();
+
       if (activeActivityId && !existingActivity) {
         // Update in-progress activity - set endTime to complete it
         await updateActivity({
@@ -387,6 +395,7 @@ export function SleepActivityDrawer({
         // Create new activity - mutation hook handles invalidation and clears optimistic state
         await createActivity({
           activityType: 'sleep',
+          babyId,
           details: sleepDetails,
           duration: durationMinutes,
           notes: notes || undefined,
@@ -396,14 +405,53 @@ export function SleepActivityDrawer({
 
       // Explicitly invalidate all activity queries to ensure UI updates
       await utils.activities.invalidate();
-
-      // Close drawer AFTER save completes to prevent race conditions
-      onClose();
     } catch (error) {
       console.error('Failed to save sleep:', error);
       // Still close on error
       onClose();
     }
+  };
+
+  const handleModeSelect = async (mode: SleepMode) => {
+    setSelectedMode(mode);
+
+    // Auto-start timer when timer mode is selected (and not editing existing activity)
+    if (mode === 'timer' && !existingActivity && !activeActivityId) {
+      // Start timer in background without blocking UI
+      void handleTimerStart();
+    }
+  };
+
+  // Get button text based on mode and state
+  const getButtonText = () => {
+    if (selectedMode === 'timer') {
+      // Timer auto-starts, so only show Stop or Save
+      if (!isTimerStopped && (activeActivityId || isCreating))
+        return 'Stop Timer';
+      return isPending && isTimerStopped ? 'Saving...' : 'Save';
+    }
+
+    // Manual entry mode
+    return isPending
+      ? 'Saving...'
+      : activeActivityId && !existingActivity
+        ? 'Save'
+        : isEditing
+          ? 'Update'
+          : 'Save';
+  };
+
+  // Get button click handler based on mode and state
+  const getButtonClickHandler = () => {
+    if (selectedMode === 'timer') {
+      // Timer auto-starts, so only handle Stop or Save
+      if (!isTimerStopped && (activeActivityId || isCreating))
+        return handleStop;
+      return handleSave;
+    }
+
+    // Manual entry mode
+    return handleSave;
   };
 
   return (
@@ -432,117 +480,71 @@ export function SleepActivityDrawer({
 
       {/* Content - Scrollable */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
-        {isLoadingInProgress ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="size-8 animate-spin rounded-full border-4 border-activity-sleep border-t-transparent" />
+        <SleepModeSelector
+          activeActivityId={activeActivityId}
+          coSleepingWith={coSleepingWith}
+          currentUserId={currentUserId}
+          duration={duration}
+          endTime={endTime}
+          existingActivity={existingActivity}
+          familyMembers={familyMembers}
+          isCoSleeping={isCoSleeping}
+          isLoading={isLoadingInProgress}
+          isManualEndTime={isManualEndTime}
+          isTimerStopped={isTimerStopped}
+          onModeSelect={handleModeSelect}
+          onTimerStart={handleTimerStart}
+          selectedMode={selectedMode}
+          setCoSleepingWith={setCoSleepingWith}
+          setDuration={setDuration}
+          setEndTime={setEndTime}
+          setIsCoSleeping={setIsCoSleeping}
+          setSleepLocation={setSleepLocation}
+          setSleepQuality={setSleepQuality}
+          setSleepType={setSleepType}
+          setStartTime={setStartTime}
+          setWakeReason={setWakeReason}
+          sleepLocation={sleepLocation}
+          sleepQuality={sleepQuality}
+          sleepType={sleepType}
+          startTime={startTime}
+          wakeReason={wakeReason}
+        />
+      </div>
+
+      {/* Footer with Actions - Only show after mode is selected */}
+      {selectedMode && (
+        <div className="p-6 pt-4 border-t border-border">
+          <div className="flex gap-3">
+            <Button
+              className="flex-1 h-12 text-base bg-transparent"
+              disabled={isLoadingInProgress}
+              onClick={handleCancelClick}
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button
+              className={cn(
+                'flex-1 h-12 text-base font-semibold',
+                selectedMode === 'timer' &&
+                  (activeActivityId || isCreating) &&
+                  !isTimerStopped
+                  ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
+                  : 'bg-activity-sleep text-activity-sleep-foreground',
+              )}
+              disabled={
+                (selectedMode === 'timer' && isTimerStopped && isPending) ||
+                (selectedMode === 'manual' && isPending) ||
+                isLoadingInProgress
+              }
+              onClick={getButtonClickHandler()}
+            >
+              {getButtonText()}
+            </Button>
           </div>
-        ) : (
-          <>
-            {/* Time & Date Section - Hide when timer is running */}
-            {(!activeActivityId || isTimerStopped) && (
-              <div className="space-y-3 min-w-0">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-muted-foreground">
-                    Time & Date
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={isManualEndTime}
-                      id="manual-end-time"
-                      onCheckedChange={setIsManualEndTime}
-                    />
-                    <Label
-                      className="text-sm font-normal cursor-pointer"
-                      htmlFor="manual-end-time"
-                    >
-                      Set end time
-                    </Label>
-                  </div>
-                </div>
-                {isManualEndTime ? (
-                  <DateTimeRangePicker
-                    endDate={endTime}
-                    mode="range"
-                    setEndDate={setEndTime}
-                    setStartDate={setStartTime}
-                    startDate={startTime}
-                  />
-                ) : (
-                  <TimeInput
-                    id="sleep-start-time"
-                    label="Start Date & Time"
-                    onChange={setStartTime}
-                    value={startTime}
-                  />
-                )}
-              </div>
-            )}
-
-            <SleepDrawerContent
-              activeActivityId={activeActivityId}
-              coSleepingWith={coSleepingWith}
-              currentUserId={currentUserId}
-              duration={duration}
-              endTime={endTime}
-              familyMembers={familyMembers}
-              isCoSleeping={isCoSleeping}
-              isManualEndTime={isManualEndTime}
-              isTimerStopped={isTimerStopped}
-              onTimerStart={handleTimerStart}
-              setCoSleepingWith={setCoSleepingWith}
-              setDuration={setDuration}
-              setEndTime={setEndTime}
-              setIsCoSleeping={setIsCoSleeping}
-              setSleepLocation={setSleepLocation}
-              setSleepQuality={setSleepQuality}
-              setSleepType={setSleepType}
-              setStartTime={setStartTime}
-              setWakeReason={setWakeReason}
-              sleepLocation={sleepLocation}
-              sleepQuality={sleepQuality}
-              sleepType={sleepType}
-              startTime={startTime}
-              wakeReason={wakeReason}
-            />
-          </>
-        )}
-      </div>
-
-      {/* Footer with Actions */}
-      <div className="p-6 pt-4 border-t border-border">
-        <div className="flex gap-3">
-          <Button
-            className="flex-1 h-12 text-base bg-transparent"
-            disabled={isLoadingInProgress}
-            onClick={handleCancelClick}
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button
-            className={cn(
-              'flex-1 h-12 text-base font-semibold',
-              activeActivityId && !isTimerStopped
-                ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
-                : 'bg-activity-sleep text-activity-sleep-foreground',
-            )}
-            disabled={isPending || isLoadingInProgress}
-            onClick={
-              activeActivityId && !isTimerStopped ? handleStop : handleSave
-            }
-          >
-            {activeActivityId && !isTimerStopped
-              ? 'Stop'
-              : isPending
-                ? 'Saving...'
-                : activeActivityId && !existingActivity
-                  ? 'Save'
-                  : isEditing
-                    ? 'Update'
-                    : 'Save'}
-          </Button>
         </div>
-      </div>
+      )}
 
       {/* Cancel Confirmation Dialog */}
       <AlertDialog

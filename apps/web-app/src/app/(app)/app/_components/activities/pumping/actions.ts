@@ -17,11 +17,16 @@ export interface UpcomingPumpingData {
   babyAgeDays: number | null;
 }
 
+const getUpcomingPumpingInputSchema = z.object({
+  babyId: z.string(),
+});
+
 /**
  * Get upcoming pumping prediction
  */
-export const getUpcomingPumpingAction = action.action(
-  async (): Promise<UpcomingPumpingData> => {
+export const getUpcomingPumpingAction = action
+  .schema(getUpcomingPumpingInputSchema)
+  .action(async ({ parsedInput }): Promise<UpcomingPumpingData> => {
     // Verify authentication
     const authResult = await auth();
     if (!authResult.userId || !authResult.orgId) {
@@ -31,11 +36,13 @@ export const getUpcomingPumpingAction = action.action(
     // Create tRPC caller
     const api = await getApi();
 
-    // Get the most recent baby
-    const baby = await api.babies.getMostRecent();
+    const { babyId } = parsedInput;
+
+    // Get the baby to check birth date
+    const baby = await api.babies.getByIdLight({ id: babyId });
 
     if (!baby) {
-      throw new Error('No baby found. Please complete onboarding first.');
+      throw new Error('Baby not found.');
     }
 
     // Calculate baby's age in days
@@ -76,11 +83,11 @@ export const getUpcomingPumpingAction = action.action(
       guidanceMessage,
       prediction,
     };
-  },
-);
+  });
 
 const quickLogPumpingInputSchema = z.object({
   amountMl: z.number().optional(), // amount in ml
+  babyId: z.string(),
   time: z.string().datetime().optional(), // defaults to now
 });
 
@@ -101,17 +108,12 @@ export const quickLogPumpingAction = action
         throw new Error('Authentication required');
       }
 
-      // Get the most recent baby
-      const baby = await api.babies.getMostRecent();
-
-      if (!baby) {
-        throw new Error('No baby found. Please complete onboarding first.');
-      }
+      const { babyId } = parsedInput;
 
       // Create the pumping activity
       const activity = await api.activities.create({
         amountMl: parsedInput.amountMl || null,
-        babyId: baby.id,
+        babyId,
         details: null,
         isScheduled: false,
         startTime: parsedInput.time ? new Date(parsedInput.time) : new Date(),
@@ -125,46 +127,49 @@ export const quickLogPumpingAction = action
     },
   );
 
+const skipPumpingInputSchema = z.object({
+  babyId: z.string(),
+});
+
 /**
  * Skip a pumping activity (for dismissing overdue reminders)
  */
-export const skipPumpingAction = action.action(
-  async (): Promise<{ activity: typeof Activities.$inferSelect }> => {
-    const api = await getApi();
+export const skipPumpingAction = action
+  .schema(skipPumpingInputSchema)
+  .action(
+    async ({
+      parsedInput,
+    }): Promise<{ activity: typeof Activities.$inferSelect }> => {
+      const api = await getApi();
 
-    // Verify authentication
-    const authResult = await auth();
-    if (!authResult.userId) {
-      throw new Error('Authentication required');
-    }
+      // Verify authentication
+      const authResult = await auth();
+      if (!authResult.userId) {
+        throw new Error('Authentication required');
+      }
 
-    // Get the most recent baby
-    const baby = await api.babies.getMostRecent();
+      const { babyId } = parsedInput;
 
-    if (!baby) {
-      throw new Error('No baby found. Please complete onboarding first.');
-    }
-
-    // Create the skip activity
-    // Set endTime to prevent it from appearing as an in-progress activity
-    const now = new Date();
-    const activity = await api.activities.create({
-      amountMl: null,
-      babyId: baby.id,
-      details: {
-        skipped: true,
-        skipReason: 'user_dismissed',
+      // Create the skip activity
+      // Set endTime to prevent it from appearing as an in-progress activity
+      const now = new Date();
+      const activity = await api.activities.create({
+        amountMl: null,
+        babyId,
+        details: {
+          skipped: true,
+          skipReason: 'user_dismissed',
+          type: 'pumping',
+        },
+        endTime: now,
+        isScheduled: false,
+        startTime: now,
         type: 'pumping',
-      },
-      endTime: now,
-      isScheduled: false,
-      startTime: now,
-      type: 'pumping',
-    });
+      });
 
-    // Revalidate pages
-    revalidateAppPaths();
+      // Revalidate pages
+      revalidateAppPaths();
 
-    return { activity };
-  },
-);
+      return { activity };
+    },
+  );

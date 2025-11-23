@@ -1,9 +1,11 @@
 'use client';
 
 import { api } from '@nugget/api/react';
+import type { Activities } from '@nugget/db/schema';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
 import {
+  ArrowLeft,
   Baby,
   BedDouble,
   Car,
@@ -11,14 +13,13 @@ import {
   Flame,
   Moon,
   Music,
-  Play,
   Shield,
   Smile,
-  Square,
   Volume2,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
+import { TimeSelectionMode } from '../shared/components/time-selection-mode';
 
 interface SleepDrawerContentProps {
   startTime: Date;
@@ -33,6 +34,9 @@ interface SleepDrawerContentProps {
   onTimerStart?: () => Promise<void>;
   isTimerStopped?: boolean;
   isManualEndTime?: boolean;
+  mode?: 'timer' | 'manual';
+  onBack?: () => void;
+  existingActivity?: typeof Activities.$inferSelect | null;
   sleepQuality?: 'peaceful' | 'restless' | 'fussy' | 'crying';
   setSleepQuality: (
     quality: 'peaceful' | 'restless' | 'fussy' | 'crying',
@@ -78,10 +82,12 @@ interface SleepDrawerContentProps {
     avatarUrl?: string | null;
     userId: string;
   }>;
+  hideTimeSelection?: boolean;
 }
 
 export function SleepDrawerContent({
   startTime,
+  setStartTime,
   endTime: _endTime,
   setEndTime,
   duration,
@@ -91,7 +97,8 @@ export function SleepDrawerContent({
   activeActivityId,
   onTimerStart,
   isTimerStopped = false,
-  isManualEndTime = false,
+  mode = 'manual',
+  onBack,
   sleepQuality,
   setSleepQuality,
   sleepLocation,
@@ -104,14 +111,18 @@ export function SleepDrawerContent({
   setCoSleepingWith,
   currentUserId,
   familyMembers = [],
+  hideTimeSelection = false,
 }: SleepDrawerContentProps) {
   const { data: user } = api.user.current.useQuery();
   const [isTracking, setIsTracking] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Set tracking state if there's an active activity
+  // Calculate end time based on start time and duration
+  const endTime = _endTime || new Date(startTime.getTime() + duration * 1000);
+
+  // Set tracking state when in timer mode or there's an active activity
   useEffect(() => {
-    if (activeActivityId && !isTimerStopped) {
+    if ((mode === 'timer' || activeActivityId) && !isTimerStopped) {
       setIsTracking(true);
       // Calculate elapsed time from startTime
       const elapsedSeconds = Math.floor(
@@ -122,7 +133,7 @@ export function SleepDrawerContent({
       // Reset tracking state when activity is cleared or timer is stopped
       setIsTracking(false);
     }
-  }, [activeActivityId, isTimerStopped, startTime, setDuration]);
+  }, [mode, activeActivityId, isTimerStopped, startTime, setDuration]);
 
   // Timer effect - runs when isTracking is true
   useEffect(() => {
@@ -147,26 +158,16 @@ export function SleepDrawerContent({
     };
   }, [isTracking, startTime, setDuration]);
 
-  const handleStartStop = async () => {
-    if (!isTracking) {
-      // Don't reset startTime - respect whatever the user has already set
-      // Only reset duration to 0 when starting tracking
-      setDuration(0);
-      setIsTracking(true);
-
-      // Create activity in database immediately
-      if (onTimerStart) {
-        await onTimerStart();
-      }
-    } else {
-      setIsTracking(false);
-    }
-  };
-
   const quickDurations = [
     { label: '30 min', seconds: 30 * 60 },
     { label: '1 hour', seconds: 60 * 60 },
     { label: '2 hours', seconds: 120 * 60 },
+  ];
+
+  const quickTimeOptions = [
+    { label: '15 mins ago', minutes: 15 },
+    { label: '30 mins ago', minutes: 30 },
+    { label: '1 hour ago', minutes: 60 },
   ];
 
   const qualityOptions = [
@@ -196,88 +197,84 @@ export function SleepDrawerContent({
     { label: 'Unknown', value: 'unknown' as const },
   ];
 
-  // Determine if we should show detail fields
-  const showDetailFields = !activeActivityId || isTimerStopped;
+  // Determine if we should show detail fields based on mode
+  // Timer mode: only show when timer is stopped
+  // Manual Entry mode: always show
+  const showDetailFields = mode === 'manual' || isTimerStopped;
 
   return (
     <div className="space-y-6">
-      {/* Quick Add - Moved to top - Hide when timer is active */}
-      {showDetailFields && (
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-muted-foreground">Quick Add</p>
-          <div className="grid grid-cols-3 gap-3">
-            {quickDurations.map((quick) => (
-              <Button
-                className="h-12 bg-transparent"
-                key={quick.label}
-                onClick={() => {
-                  setDuration(quick.seconds);
-                  // If in manual end time mode, calculate and set the end time
-                  if (isManualEndTime && setEndTime) {
-                    const newEndTime = new Date(startTime);
-                    newEndTime.setSeconds(
-                      newEndTime.getSeconds() + quick.seconds,
-                    );
-                    setEndTime(newEndTime);
-                  }
-                }}
-                variant="outline"
-              >
-                {quick.label}
-              </Button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Timer Display - Show when actively tracking or when timer has been stopped */}
-      {(activeActivityId || isTracking) && (
-        <div className="bg-card rounded-2xl p-8 text-center">
-          <div className="text-6xl font-bold text-foreground mb-2">
-            {Math.floor(duration / 3600)
-              .toString()
-              .padStart(2, '0')}
-            :
-            {Math.floor((duration % 3600) / 60)
-              .toString()
-              .padStart(2, '0')}
-            :{(duration % 60).toString().padStart(2, '0')}
-          </div>
-          <p className="text-muted-foreground">Duration</p>
-          {isTracking && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Started{' '}
-              {formatTimeWithPreference(startTime, user?.timeFormat ?? '12h')}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Start/Stop Button - Only show when creating new sleep (not editing from timeline) and not in manual mode */}
-      {!activeActivityId && !isTimerStopped && !isManualEndTime && (
+      {/* Back Button - Show in manual mode if not editing */}
+      {mode === 'manual' && onBack && (
         <Button
-          className={`w-full h-16 text-lg font-semibold ${
-            isTracking
-              ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
-              : 'bg-activity-sleep hover:bg-activity-sleep/90 text-activity-sleep-foreground'
-          }`}
-          onClick={handleStartStop}
+          className="w-full h-12 text-base bg-transparent"
+          onClick={onBack}
+          variant="outline"
         >
-          {isTracking ? (
-            <>
-              <Square className="mr-2 h-5 w-5" />
-              Stop Sleep
-            </>
-          ) : (
-            <>
-              <Play className="mr-2 h-5 w-5" />
-              Start Sleep
-            </>
-          )}
+          <ArrowLeft className="mr-2 h-5 w-5" />
+          Back to Sleep Options
         </Button>
       )}
 
-      {/* Sleep Type - Hide when timer is active */}
+      {/* TIMER MODE */}
+      {mode === 'timer' && (
+        <>
+          {/* Timer Display - Show immediately in timer mode */}
+          <div className="bg-activity-sleep/10 border-2 border-activity-sleep rounded-2xl p-8 text-center">
+            <div className="text-6xl font-bold text-activity-sleep mb-2">
+              {Math.floor(duration / 3600)
+                .toString()
+                .padStart(2, '0')}
+              :
+              {Math.floor((duration % 3600) / 60)
+                .toString()
+                .padStart(2, '0')}
+              :{(duration % 60).toString().padStart(2, '0')}
+            </div>
+            <p className="text-activity-sleep/80 font-medium">Duration</p>
+            <p className="mt-2 text-sm text-activity-sleep/70">
+              Started{' '}
+              {formatTimeWithPreference(startTime, user?.timeFormat ?? '12h')}
+            </p>
+          </div>
+
+          {/* Time Selection Component - Always visible in timer mode */}
+          {!hideTimeSelection && (
+            <TimeSelectionMode
+              activityColor="bg-activity-sleep"
+              activityTextColor="text-activity-sleep-foreground"
+              duration={duration}
+              endTime={endTime}
+              quickTimeOptions={quickTimeOptions}
+              setDuration={setDuration}
+              setEndTime={setEndTime}
+              setStartTime={setStartTime}
+              showDurationOptions={false}
+              startTime={startTime}
+              timeFormat={user?.timeFormat ?? '12h'}
+            />
+          )}
+        </>
+      )}
+
+      {/* MANUAL MODE */}
+      {mode === 'manual' && !hideTimeSelection && (
+        <TimeSelectionMode
+          activityColor="bg-activity-sleep"
+          activityTextColor="text-activity-sleep-foreground"
+          duration={duration}
+          endTime={endTime}
+          quickDurationOptions={quickDurations}
+          quickTimeOptions={quickTimeOptions}
+          setDuration={setDuration}
+          setEndTime={setEndTime}
+          setStartTime={setStartTime}
+          startTime={startTime}
+          timeFormat={user?.timeFormat ?? '12h'}
+        />
+      )}
+
+      {/* Sleep Type - Show for both modes when detail fields are visible */}
       {showDetailFields && (
         <div className="space-y-3">
           <p className="text-sm font-medium text-muted-foreground">
@@ -309,6 +306,88 @@ export function SleepDrawerContent({
               Night Sleep
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* Co-sleeping - Moved higher, show when detail fields are visible */}
+      {showDetailFields && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">
+            Co-sleeping (optional)
+          </p>
+          <Button
+            className={`h-12 w-full ${
+              isCoSleeping
+                ? 'bg-activity-sleep text-activity-sleep-foreground'
+                : 'bg-transparent'
+            }`}
+            onClick={() => {
+              const newValue = !isCoSleeping;
+              setIsCoSleeping(newValue);
+              if (newValue && currentUserId) {
+                // Auto-select current user when enabling co-sleeping
+                setCoSleepingWith([currentUserId]);
+              } else if (!newValue) {
+                // Clear selections when disabling
+                setCoSleepingWith([]);
+              }
+            }}
+            variant={isCoSleeping ? 'default' : 'outline'}
+          >
+            <BedDouble className="mr-2 h-4 w-4" />
+            Co-sleeping
+          </Button>
+
+          {/* Family member selection - shown when co-sleeping is enabled */}
+          {isCoSleeping && familyMembers.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Who is co-sleeping?
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {familyMembers.map((member) => (
+                  <Button
+                    className={`h-12 justify-start ${
+                      coSleepingWith.includes(member.userId)
+                        ? 'bg-activity-sleep text-activity-sleep-foreground'
+                        : 'bg-transparent'
+                    }`}
+                    key={member.userId}
+                    onClick={() => {
+                      if (coSleepingWith.includes(member.userId)) {
+                        setCoSleepingWith(
+                          coSleepingWith.filter((id) => id !== member.userId),
+                        );
+                      } else {
+                        setCoSleepingWith([...coSleepingWith, member.userId]);
+                      }
+                    }}
+                    variant={
+                      coSleepingWith.includes(member.userId)
+                        ? 'default'
+                        : 'outline'
+                    }
+                  >
+                    <Avatar className="size-6 mr-2">
+                      <AvatarImage
+                        alt={member.name}
+                        src={member.avatarUrl || undefined}
+                      />
+                      <AvatarFallback className="text-xs">
+                        {member.name
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')
+                          .toUpperCase()
+                          .slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="truncate">{member.name}</span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -396,88 +475,6 @@ export function SleepDrawerContent({
               </Button>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Co-sleeping - Hide when timer is active */}
-      {showDetailFields && (
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-muted-foreground">
-            Co-sleeping (optional)
-          </p>
-          <Button
-            className={`h-12 w-full ${
-              isCoSleeping
-                ? 'bg-activity-sleep text-activity-sleep-foreground'
-                : 'bg-transparent'
-            }`}
-            onClick={() => {
-              const newValue = !isCoSleeping;
-              setIsCoSleeping(newValue);
-              if (newValue && currentUserId) {
-                // Auto-select current user when enabling co-sleeping
-                setCoSleepingWith([currentUserId]);
-              } else if (!newValue) {
-                // Clear selections when disabling
-                setCoSleepingWith([]);
-              }
-            }}
-            variant={isCoSleeping ? 'default' : 'outline'}
-          >
-            <BedDouble className="mr-2 h-4 w-4" />
-            Co-sleeping
-          </Button>
-
-          {/* Family member selection - shown when co-sleeping is enabled */}
-          {isCoSleeping && familyMembers.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">
-                Who is co-sleeping?
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {familyMembers.map((member) => (
-                  <Button
-                    className={`h-12 justify-start ${
-                      coSleepingWith.includes(member.userId)
-                        ? 'bg-activity-sleep text-activity-sleep-foreground'
-                        : 'bg-transparent'
-                    }`}
-                    key={member.userId}
-                    onClick={() => {
-                      if (coSleepingWith.includes(member.userId)) {
-                        setCoSleepingWith(
-                          coSleepingWith.filter((id) => id !== member.userId),
-                        );
-                      } else {
-                        setCoSleepingWith([...coSleepingWith, member.userId]);
-                      }
-                    }}
-                    variant={
-                      coSleepingWith.includes(member.userId)
-                        ? 'default'
-                        : 'outline'
-                    }
-                  >
-                    <Avatar className="size-6 mr-2">
-                      <AvatarImage
-                        alt={member.name}
-                        src={member.avatarUrl || undefined}
-                      />
-                      <AvatarFallback className="text-xs">
-                        {member.name
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')
-                          .toUpperCase()
-                          .slice(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="truncate">{member.name}</span>
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 

@@ -70,14 +70,14 @@ export function SwipeableMilestoneCard({
       {/* Swipe overlays */}
       {isDragging && showRightOverlay && (
         <div
-          className="absolute inset-0 z-10 rounded-2xl bg-green-500 flex items-center justify-center pointer-events-none transition-opacity duration-200"
+          className="absolute inset-0 z-10 rounded-2xl bg-primary flex items-center justify-center pointer-events-none transition-opacity duration-200"
           style={{ opacity: overlayOpacity }}
         >
           <div
             className="rounded-full bg-white p-4 transition-transform duration-200"
             style={{ transform: `scale(${iconScale})` }}
           >
-            <Check className="size-12 text-green-500" strokeWidth={3} />
+            <Check className="size-12 text-primary" strokeWidth={3} />
           </div>
         </div>
       )}

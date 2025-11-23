@@ -1,22 +1,36 @@
 import type { Activities } from '@nugget/db/schema';
 import { format } from 'date-fns';
+import { calculateWeightedInterval } from '../shared/adaptive-weighting';
 import { getFeedingIntervalByAge } from './feeding-intervals';
 
 /**
  * Calculate recommended daily feeding count based on baby's age and actual patterns
- * Uses 24 hours divided by predicted interval (if available) or age-appropriate interval
+ * Uses adaptive weighting to gradually shift from age-based to pattern-based recommendations
  * @param ageDays - Baby's age in days
  * @param predictedIntervalHours - Optional predicted interval from the prediction algorithm
+ * @param dataPointsCount - Optional number of recent activities used in prediction
  * @returns Estimated number of feedings per day
  */
 export function getDailyFeedingGoal(
   ageDays: number,
   predictedIntervalHours?: number | null,
+  dataPointsCount?: number,
 ): number {
-  // Use predicted interval if available (based on actual patterns), otherwise fall back to age-based
-  const intervalHours =
-    predictedIntervalHours ?? getFeedingIntervalByAge(ageDays);
-  return Math.round(24 / intervalHours);
+  const ageBasedInterval = getFeedingIntervalByAge(ageDays);
+
+  // If no prediction data or data points count, use age-based only
+  if (!predictedIntervalHours || dataPointsCount === undefined) {
+    return Math.round(24 / ageBasedInterval);
+  }
+
+  // Calculate weighted interval using adaptive algorithm
+  const weightedInterval = calculateWeightedInterval(
+    ageBasedInterval,
+    predictedIntervalHours,
+    dataPointsCount,
+  );
+
+  return Math.round(24 / weightedInterval);
 }
 
 /**
@@ -25,14 +39,20 @@ export function getDailyFeedingGoal(
  * @param ageDays - Baby's age in days
  * @param unit - Unit preference (ML or OZ)
  * @param predictedIntervalHours - Optional predicted interval from the prediction algorithm
+ * @param dataPointsCount - Optional number of recent activities used in prediction
  * @returns Estimated total daily amount in the specified unit
  */
 export function getDailyAmountGoal(
   ageDays: number,
   unit: 'ML' | 'OZ',
   predictedIntervalHours?: number | null,
+  dataPointsCount?: number,
 ): number {
-  const feedingCount = getDailyFeedingGoal(ageDays, predictedIntervalHours);
+  const feedingCount = getDailyFeedingGoal(
+    ageDays,
+    predictedIntervalHours,
+    dataPointsCount,
+  );
   let amountPerFeeding: number;
 
   // Define typical amounts per feeding by age
@@ -68,7 +88,6 @@ export function calculateTodaysFeedingStats(
   count: number;
   totalMl: number;
   avgAmountMl: number | null;
-  vitaminDCount: number;
 } {
   // Filter to feeding activities only (caller is responsible for time filtering)
   const todaysFeedings = activities.filter((activity) => {
@@ -97,17 +116,10 @@ export function calculateTodaysFeedingStats(
     avgAmountMl = totalMl / feedingsWithAmount.length;
   }
 
-  // Calculate vitamin D count
-  const vitaminDCount = todaysFeedings.filter((activity) => {
-    const details = activity.details as { vitaminDGiven?: boolean } | null;
-    return details?.vitaminDGiven === true;
-  }).length;
-
   return {
     avgAmountMl,
     count,
     totalMl,
-    vitaminDCount,
   };
 }
 
@@ -116,19 +128,16 @@ export interface FeedingStatsComparison {
     count: number;
     totalMl: number;
     avgAmountMl: number | null;
-    vitaminDCount: number;
   };
   previous: {
     count: number;
     totalMl: number;
     avgAmountMl: number | null;
-    vitaminDCount: number;
   };
   percentageChange: {
     count: number | null;
     totalMl: number | null;
     avgAmountMl: number | null;
-    vitaminDCount: number | null;
   };
 }
 
@@ -171,12 +180,7 @@ export function calculateFeedingStatsWithComparison(
         ? totalMl / feedingsWithAmount.length
         : null;
 
-    const vitaminDCount = feedings.filter((activity) => {
-      const details = activity.details as { vitaminDGiven?: boolean } | null;
-      return details?.vitaminDGiven === true;
-    }).length;
-
-    return { avgAmountMl, count, totalMl, vitaminDCount };
+    return { avgAmountMl, count, totalMl };
   };
 
   // Calculate current period
@@ -210,10 +214,6 @@ export function calculateFeedingStatsWithComparison(
     ),
     count: calculatePercentageChange(current.count, previous.count),
     totalMl: calculatePercentageChange(current.totalMl, previous.totalMl),
-    vitaminDCount: calculatePercentageChange(
-      current.vitaminDCount,
-      previous.vitaminDCount,
-    ),
   };
 
   return {
@@ -229,19 +229,136 @@ export function calculateFeedingStatsWithComparison(
  */
 export function calculateFeedingTrendData(
   activities: Array<typeof Activities.$inferSelect>,
+  timeRange: '24h' | '7d' | '2w' | '1m' | '3m' | '6m' = '7d',
 ): Array<{ date: string; count: number; totalMl: number }> {
   const now = new Date();
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  // Filter to feedings from the last 7 days
+  if (timeRange === '24h') {
+    // For 24h view, group by hour
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // Filter to feedings from the last 24 hours
+    const recentFeedings = activities.filter((activity) => {
+      const activityDate = new Date(activity.startTime);
+      const isRecent = activityDate >= twentyFourHoursAgo;
+      const isFeeding =
+        activity.type === 'bottle' || activity.type === 'nursing';
+      return isRecent && isFeeding;
+    });
+
+    // Group by hour
+    const statsByHour = new Map<string, { count: number; totalMl: number }>();
+
+    for (const activity of recentFeedings) {
+      const date = new Date(activity.startTime);
+      // Format as "yyyy-MM-dd HH:00" for hourly grouping
+      const hourKey = format(date, 'yyyy-MM-dd HH:00');
+
+      if (!statsByHour.has(hourKey)) {
+        statsByHour.set(hourKey, { count: 0, totalMl: 0 });
+      }
+
+      const stats = statsByHour.get(hourKey);
+      if (!stats) continue;
+
+      stats.count += 1;
+
+      if (activity.amountMl) {
+        stats.totalMl += activity.amountMl;
+      }
+    }
+
+    // Convert to array and fill in missing hours
+    const result: Array<{ date: string; count: number; totalMl: number }> = [];
+    for (let i = 23; i >= 0; i -= 1) {
+      const date = new Date(now.getTime() - i * 60 * 60 * 1000);
+      const hourKey = format(date, 'yyyy-MM-dd HH:00');
+      const stats = statsByHour.get(hourKey) || { count: 0, totalMl: 0 };
+      result.push({
+        count: stats.count,
+        date: hourKey,
+        totalMl: stats.totalMl,
+      });
+    }
+
+    return result;
+  }
+
+  // For longer time ranges, determine if we should use daily or weekly grouping
+  const useWeeklyGrouping = timeRange === '3m' || timeRange === '6m';
+
+  // Calculate the time range in days
+  const daysMap: Record<string, number> = {
+    '1m': 30,
+    '2w': 14,
+    '3m': 90,
+    '6m': 180,
+    '7d': 7,
+    '24h': 1,
+  };
+
+  const days = daysMap[timeRange];
+  const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+  // Filter to feedings from the selected time range
   const recentFeedings = activities.filter((activity) => {
     const activityDate = new Date(activity.startTime);
-    const isRecent = activityDate >= sevenDaysAgo;
+    const isRecent = activityDate >= startDate;
     const isFeeding = activity.type === 'bottle' || activity.type === 'nursing';
     return isRecent && isFeeding;
   });
 
-  // Group by date
+  if (useWeeklyGrouping) {
+    // Group by week
+    const statsByWeek = new Map<string, { count: number; totalMl: number }>();
+
+    for (const activity of recentFeedings) {
+      const date = new Date(activity.startTime);
+      // Get the Monday of the week for this date
+      const dayOfWeek = date.getDay();
+      const diff = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek; // Adjust so Monday is first day
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() + diff);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekKey = format(weekStart, 'yyyy-MM-dd');
+
+      if (!statsByWeek.has(weekKey)) {
+        statsByWeek.set(weekKey, { count: 0, totalMl: 0 });
+      }
+
+      const stats = statsByWeek.get(weekKey);
+      if (!stats) continue;
+
+      stats.count += 1;
+
+      if (activity.amountMl) {
+        stats.totalMl += activity.amountMl;
+      }
+    }
+
+    // Convert to array and fill in missing weeks
+    const result: Array<{ date: string; count: number; totalMl: number }> = [];
+    const numWeeks = Math.ceil(days / 7);
+    for (let i = numWeeks - 1; i >= 0; i -= 1) {
+      const date = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+      const dayOfWeek = date.getDay();
+      const diff = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() + diff);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekKey = format(weekStart, 'yyyy-MM-dd');
+      const stats = statsByWeek.get(weekKey) || { count: 0, totalMl: 0 };
+      result.push({
+        count: stats.count,
+        date: weekKey,
+        totalMl: stats.totalMl,
+      });
+    }
+
+    return result;
+  }
+
+  // For daily grouping (7d, 2w, 1m)
   const statsByDate = new Map<string, { count: number; totalMl: number }>();
 
   for (const activity of recentFeedings) {
@@ -264,7 +381,7 @@ export function calculateFeedingTrendData(
 
   // Convert to array and fill in missing dates
   const result: Array<{ date: string; count: number; totalMl: number }> = [];
-  for (let i = 6; i >= 0; i -= 1) {
+  for (let i = days - 1; i >= 0; i -= 1) {
     const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
     const dateKey = format(date, 'yyyy-MM-dd');
     const stats = statsByDate.get(dateKey) || { count: 0, totalMl: 0 };

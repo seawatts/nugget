@@ -4,6 +4,7 @@ import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
+import { startOfDay, subDays } from 'date-fns';
 import { Stethoscope, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
@@ -17,7 +18,7 @@ interface DoctorVisitActivityDrawerProps {
   existingActivity?: typeof Activities.$inferSelect | null;
   isOpen: boolean;
   onClose: () => void;
-  babyId?: string;
+  babyId: string;
 }
 
 /**
@@ -42,12 +43,14 @@ export function DoctorVisitActivityDrawer({
     { enabled: Boolean(babyId) && isOpen },
   );
 
-  // Query doctor visit activities to get vaccination history
+  // Query doctor visit activities to get vaccination history (last 2 years)
+  const twoYearsAgo = useMemo(() => startOfDay(subDays(new Date(), 730)), []);
   const { data: doctorVisitActivities = [] } = api.activities.list.useQuery(
     {
       activityTypes: ['doctor_visit'],
       babyId: babyId ?? '',
-      limit: 100,
+      limit: 1000,
+      since: twoYearsAgo,
     },
     { enabled: Boolean(babyId) && isOpen },
   );
@@ -233,6 +236,7 @@ export function DoctorVisitActivityDrawer({
         // Create new activity
         await createActivity({
           activityType: 'doctor_visit',
+          babyId,
           details: doctorVisitDetails,
           notes: formData.notes || undefined,
           startTime,
@@ -279,13 +283,38 @@ export function DoctorVisitActivityDrawer({
         />
 
         {/* Date & Time Section */}
-        <TimeInput
-          id="doctor-visit-date-time"
-          label="Visit Date & Time"
-          onChange={setStartTime}
-          showQuickOptions={false}
-          value={startTime}
-        />
+        <div className="space-y-3 min-w-0">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            When was the visit?
+          </h3>
+          <div className="grid grid-cols-3 gap-3 mb-3">
+            {[
+              { label: 'Just now', minutes: 0 },
+              { label: '1 hour ago', minutes: 60 },
+              { label: 'Earlier today', minutes: 180 },
+            ].map((option) => (
+              <Button
+                className="h-12 bg-transparent"
+                key={option.label}
+                onClick={() => {
+                  const newTime = new Date();
+                  newTime.setMinutes(newTime.getMinutes() - option.minutes);
+                  setStartTime(newTime);
+                }}
+                variant="outline"
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+          <TimeInput
+            id="doctor-visit-date-time"
+            label="Or select custom date & time"
+            onChange={setStartTime}
+            showQuickOptions={false}
+            value={startTime}
+          />
+        </div>
       </div>
 
       {/* Footer with Actions */}

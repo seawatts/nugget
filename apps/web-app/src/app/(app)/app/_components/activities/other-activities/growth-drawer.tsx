@@ -12,9 +12,10 @@ import { createActivityWithDetailsAction } from '../activity-cards.actions';
 interface GrowthDrawerProps {
   onClose?: () => void;
   onSaved?: () => void;
+  babyId: string;
 }
 
-export function GrowthDrawer({ onClose, onSaved }: GrowthDrawerProps) {
+export function GrowthDrawer({ onClose, onSaved, babyId }: GrowthDrawerProps) {
   const [weight, setWeight] = useState('');
   const [weightUnit, setWeightUnit] = useState('lbs');
   const [height, setHeight] = useState('');
@@ -54,6 +55,7 @@ export function GrowthDrawer({ onClose, onSaved }: GrowthDrawerProps) {
 
     createActivity({
       activityType: 'growth',
+      babyId,
       details: undefined,
       notes: growthNotes || undefined,
       startTime: new Date(),

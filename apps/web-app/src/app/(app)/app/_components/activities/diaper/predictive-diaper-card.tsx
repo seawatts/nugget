@@ -9,8 +9,9 @@ import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
 import { Baby, BarChart3, Info, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import {
   PredictiveCardSkeleton,
   PredictiveInfoDrawer,
@@ -46,25 +47,27 @@ export function PredictiveDiaperCard({
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
 
-  // Query today's activities for goal tracking
-  const { data: todaysActivitiesData } = api.activities.list.useQuery(
-    {
-      babyId: babyId ?? '',
-      limit: 100,
-    },
-    { enabled: Boolean(babyId) },
-  );
+  // Get optimistic activities from store
+  const optimisticActivities = useOptimisticActivitiesStore.use.activities();
 
-  // Query last 7 days of activities for trend chart
+  // Fetch last 30 days of activities for stats and trend chart
+  const thirtyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 30)), []);
   const { data: allActivities } = api.activities.list.useQuery(
     {
       babyId: babyId ?? '',
-      limit: 100,
+      limit: 1000,
+      since: thirtyDaysAgo,
     },
     { enabled: Boolean(babyId) },
   );
 
-  // Filter to last 7 days client-side
+  // Filter to today's activities for goal display
+  const todaysActivitiesData = allActivities?.filter((activity) => {
+    const activityDate = new Date(activity.startTime);
+    return activityDate >= startOfDay(new Date());
+  });
+
+  // Filter to last 7 days for trend data
   const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
   const last7DaysActivities = allActivities?.filter((activity) => {
     const activityDate = new Date(activity.startTime);
@@ -85,6 +88,11 @@ export function PredictiveDiaperCard({
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
 
+  // Merge optimistic and recent activities
+  const mergedActivities = queryData
+    ? [...optimisticActivities, ...queryData.recentActivities]
+    : [];
+
   // Process prediction data from tRPC query
   const data = queryData
     ? {
@@ -94,9 +102,10 @@ export function PredictiveDiaperCard({
             ? getDiaperGuidanceByAge(queryData.babyAgeDays)
             : 'Check diaper regularly and change when wet or soiled.',
         prediction: predictNextDiaper(
-          queryData.recentActivities.filter((a) => a.type === 'diaper'),
+          // Merge optimistic activities with recent activities for accurate predictions
+          mergedActivities.filter((a) => a.type === 'diaper'),
           queryData.babyBirthDate,
-          queryData.recentActivities,
+          mergedActivities,
         ),
       }
     : null;
@@ -116,6 +125,7 @@ export function PredictiveDiaperCard({
   const { handleQuickLog, handleSkip, isCreating, isSkipping } =
     usePredictiveActions({
       activityType: 'diaper',
+      babyId,
       defaultQuickLogData,
       onActivityLogged: _onActivityLogged,
       skipAction: skipDiaperAction,
@@ -143,8 +153,16 @@ export function PredictiveDiaperCard({
 
   // Calculate today's diaper statistics for goal display
   const todaysStats = calculateTodaysDiaperStats(todaysActivitiesData ?? []);
-  const dailyDiaperGoal = getDailyDiaperGoal(babyAgeDays ?? 0);
-  const dailyWetGoal = getDailyWetDiaperGoal(babyAgeDays ?? 0);
+  const dailyDiaperGoal = getDailyDiaperGoal(
+    babyAgeDays ?? 0,
+    prediction.averageIntervalHours,
+    prediction.calculationDetails.dataPoints,
+  );
+  const dailyWetGoal = getDailyWetDiaperGoal(
+    babyAgeDays ?? 0,
+    prediction.averageIntervalHours,
+    prediction.calculationDetails.dataPoints,
+  );
   const dailyDirtyGoal = getDailyDirtyDiaperGoal(babyAgeDays ?? 0);
 
   // Check if we should suppress overdue state due to recent skip (from DB)

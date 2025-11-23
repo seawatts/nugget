@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
@@ -8,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { StopSleepConfirmationDialog } from '../shared/components/stop-sleep-confirmation-dialog';
-import { TimeInput } from '../shared/components/time-input';
+import { TimeSelectionMode } from '../shared/components/time-selection-mode';
 import { useInProgressSleep } from '../shared/hooks/use-in-progress-sleep';
 import { autoStopInProgressSleepAction } from '../sleep/actions';
 import { useActivityMutations } from '../use-activity-mutations';
@@ -19,7 +20,7 @@ interface DiaperActivityDrawerProps {
   existingActivity?: typeof Activities.$inferSelect | null;
   isOpen: boolean;
   onClose: () => void;
-  babyId?: string;
+  babyId: string;
 }
 
 /**
@@ -40,6 +41,8 @@ export function DiaperActivityDrawer({
 
   // Diaper-specific state
   const [startTime, setStartTime] = useState(new Date());
+  const [endTime, setEndTime] = useState(new Date());
+  const [duration, setDuration] = useState(0);
   const [formData, setFormData] = useState<DiaperFormData>({
     color: null,
     consistency: null,
@@ -49,6 +52,9 @@ export function DiaperActivityDrawer({
     size: null,
     type: null,
   });
+
+  // Fetch user for time format
+  const { data: user } = api.user.current.useQuery();
 
   // Check for in-progress sleep
   const { inProgressSleep, sleepDuration } = useInProgressSleep({
@@ -90,6 +96,21 @@ export function DiaperActivityDrawer({
           hasRash?: boolean;
           isGassy?: boolean;
         };
+
+        // Get diaper type - prioritize specific types over generic 'diaper'
+        // Check if details.type is a specific type (wet, dirty, both)
+        const detailsHasSpecificType =
+          details.type && ['wet', 'dirty', 'both'].includes(details.type);
+        const activityHasSpecificType = ['wet', 'dirty', 'both'].includes(
+          existingActivity.type,
+        );
+
+        const diaperType = detailsHasSpecificType
+          ? details.type
+          : activityHasSpecificType
+            ? (existingActivity.type as 'wet' | 'dirty' | 'both')
+            : null;
+
         setFormData({
           color: (details.color as DiaperFormData['color']) || null,
           consistency:
@@ -98,8 +119,21 @@ export function DiaperActivityDrawer({
           isGassy: details.isGassy ?? false,
           notes: existingActivity.notes || '',
           size: (details.size as DiaperFormData['size']) || null,
-          type: details.type || null,
+          type: diaperType,
         });
+      } else {
+        // No details field - check if activity type is a diaper type
+        const diaperType = ['wet', 'dirty', 'both'].includes(
+          existingActivity.type,
+        )
+          ? (existingActivity.type as 'wet' | 'dirty' | 'both')
+          : null;
+
+        setFormData((prev) => ({
+          ...prev,
+          notes: existingActivity.notes || '',
+          type: diaperType,
+        }));
       }
     }
 
@@ -144,7 +178,7 @@ export function DiaperActivityDrawer({
   const handleStopSleepAndSave = async () => {
     try {
       // Stop the in-progress sleep
-      const result = await autoStopInProgressSleepAction();
+      const result = await autoStopInProgressSleepAction({ babyId });
       if (result?.data?.activity) {
         toast.info('Sleep tracking stopped');
       }
@@ -251,6 +285,7 @@ export function DiaperActivityDrawer({
         // Create new activity
         await createActivity({
           activityType: 'diaper',
+          babyId,
           details: diaperDetails,
           notes: formData.notes || undefined,
           startTime,
@@ -290,20 +325,26 @@ export function DiaperActivityDrawer({
 
       {/* Content - Scrollable */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
-        <DiaperDrawerContent onDataChange={setFormData} />
+        {/* Time Selection */}
+        <TimeSelectionMode
+          activityColor="bg-activity-diaper"
+          activityTextColor="text-activity-diaper-foreground"
+          duration={duration}
+          endTime={endTime}
+          quickTimeOptions={[
+            { label: '15 mins ago', minutes: 15 },
+            { label: '30 mins ago', minutes: 30 },
+            { label: '1 hour ago', minutes: 60 },
+          ]}
+          setDuration={setDuration}
+          setEndTime={setEndTime}
+          setStartTime={setStartTime}
+          showDurationOptions={false}
+          startTime={startTime}
+          timeFormat={user?.timeFormat ?? '12h'}
+        />
 
-        {/* Time & Date Section */}
-        <div className="space-y-3 min-w-0">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            Time & Date
-          </h3>
-          <TimeInput
-            id="diaper-time"
-            label="Date & Time"
-            onChange={setStartTime}
-            value={startTime}
-          />
-        </div>
+        <DiaperDrawerContent onDataChange={setFormData} />
       </div>
 
       {/* Footer with Actions */}

@@ -2,7 +2,7 @@
 
 import { differenceInMinutes, formatDistanceToNow } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
-import { Baby, Droplet, Droplets, Milk, Moon } from 'lucide-react';
+import { Baby, Droplet, Droplets, Milk, Moon, SunDim } from 'lucide-react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { getDisplayNotes } from '../../activity-utils';
 import { formatVolumeDisplay } from '../../volume-utils';
@@ -18,7 +18,7 @@ interface RecentActivity {
 
 interface RecentActivitiesListProps {
   activities: RecentActivity[];
-  activityType: 'feeding' | 'diaper' | 'sleep' | 'pumping';
+  activityType: 'feeding' | 'diaper' | 'sleep' | 'pumping' | 'vitamin_d';
   timeFormat: '12h' | '24h';
   unit?: 'ML' | 'OZ';
   icon?: LucideIcon;
@@ -34,6 +34,7 @@ const activityColors: Record<string, string> = {
   pumping: 'border-l-activity-pumping',
   sleep: 'border-l-activity-sleep',
   solids: 'border-l-activity-solids',
+  vitamin_d: 'border-l-activity-vitamin-d',
 };
 
 const activityIconColors: Record<string, string> = {
@@ -44,6 +45,7 @@ const activityIconColors: Record<string, string> = {
   pumping: 'text-activity-pumping',
   sleep: 'text-activity-sleep',
   solids: 'text-activity-solids',
+  vitamin_d: 'text-activity-vitamin-d',
 };
 
 const activityIcons: Record<string, LucideIcon> = {
@@ -53,6 +55,7 @@ const activityIcons: Record<string, LucideIcon> = {
   nursing: Droplet,
   pumping: Droplets,
   sleep: Moon,
+  vitamin_d: SunDim,
 };
 
 function formatTimeGap(minutes: number): string {

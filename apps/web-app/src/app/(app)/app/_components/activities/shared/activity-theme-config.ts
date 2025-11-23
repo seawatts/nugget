@@ -10,6 +10,7 @@ import {
   Droplets,
   Milk,
   Moon,
+  Pill,
   Stethoscope,
   Thermometer,
 } from 'lucide-react';
@@ -28,7 +29,8 @@ export type ActivityType =
   | 'tummy_time'
   | 'growth'
   | 'potty'
-  | 'doctor_visit';
+  | 'doctor_visit'
+  | 'vitamin_d';
 
 export interface ActivityTheme {
   /** OKLCH color value for the activity */
@@ -145,6 +147,13 @@ export const ACTIVITY_THEMES: Record<ActivityType, ActivityTheme> = {
     icon: Baby,
     label: 'Tummy Time',
     textColor: 'text-activity-tummy-time-foreground',
+  },
+  vitamin_d: {
+    color: 'activity-vitamin-d',
+    description: 'Daily vitamin D supplement',
+    icon: Pill,
+    label: 'Vitamin D',
+    textColor: 'text-activity-vitamin-d-foreground',
   },
 };
 

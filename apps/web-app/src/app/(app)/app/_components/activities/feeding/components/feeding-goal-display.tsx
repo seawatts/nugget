@@ -9,7 +9,6 @@ interface FeedingGoalDisplayProps {
   goalAmount: number; // in user's preferred unit value
   unit: 'ML' | 'OZ';
   feedingThemeColor: string;
-  currentVitaminDCount: number;
 }
 
 export function FeedingGoalDisplay({
@@ -19,7 +18,6 @@ export function FeedingGoalDisplay({
   goalAmount,
   unit,
   feedingThemeColor: _feedingThemeColor,
-  currentVitaminDCount,
 }: FeedingGoalDisplayProps) {
   // Convert currentAmount from ml to user's preferred unit
   const displayAmount =
@@ -44,12 +42,6 @@ export function FeedingGoalDisplay({
           <span className="text-sm font-medium">
             {displayAmount}/{goalAmount}
           </span>
-        </div>
-
-        {/* Vitamin D */}
-        <div className="flex flex-col">
-          <span className="text-xs opacity-60">Vitamin D</span>
-          <span className="text-sm font-medium">{currentVitaminDCount}/1</span>
         </div>
       </div>
     </div>

@@ -76,6 +76,8 @@
   --activity-chat-foreground: oklch(0.985 0 0);
   --activity-doctor-visit: oklch(0.67 0.19 210);
   --activity-doctor-visit-foreground: oklch(0.985 0 0);
+  --activity-vitamin-d: oklch(0.68 0.18 50);
+  --activity-vitamin-d-foreground: oklch(0.98 0.02 0);
 
   /* Custom --- */
   /* Animation durations */
@@ -153,6 +155,8 @@
   --activity-chat-foreground: oklch(0.985 0 0);
   --activity-doctor-visit: oklch(0.67 0.19 210);
   --activity-doctor-visit-foreground: oklch(0.985 0 0);
+  --activity-vitamin-d: oklch(0.68 0.18 50);
+  --activity-vitamin-d-foreground: oklch(0.98 0.02 0);
 }
 
 @theme inline {
@@ -229,6 +233,8 @@
   --color-activity-doctor-visit-foreground: var(
     --activity-doctor-visit-foreground
   );
+  --color-activity-vitamin-d: var(--activity-vitamin-d);
+  --color-activity-vitamin-d-foreground: var(--activity-vitamin-d-foreground);
   --animate-accordion-down: accordion-down 0.1s ease-out;
   --animate-accordion-up: accordion-up 0.1s ease-out;
 

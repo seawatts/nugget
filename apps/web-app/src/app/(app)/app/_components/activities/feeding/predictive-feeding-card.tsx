@@ -4,10 +4,11 @@ import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Card } from '@nugget/ui/card';
 import { cn } from '@nugget/ui/lib/utils';
-import { format, formatDistanceToNow, startOfDay, subDays } from 'date-fns';
+import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getActivityTheme } from '../shared/activity-theme-config';
 import {
   PredictiveCardError,
@@ -24,7 +25,6 @@ import { getAssignedMember, suggestFamilyMember } from './assignment';
 import { FeedingStatsDrawer } from './components';
 import { FeedingGoalDisplay } from './components/feeding-goal-display';
 import {
-  calculateFeedingTrendData,
   calculateTodaysFeedingStats,
   getDailyAmountGoal,
   getDailyFeedingGoal,
@@ -50,12 +50,16 @@ export function PredictiveFeedingCard({
   const timeFormat = userData?.timeFormat || '12h';
   const userUnitPref = getVolumeUnit(userData?.measurementUnit || 'metric');
 
-  // Query today's activities for goal tracking
-  // Fetch activities for stats and vitamin D tracking
+  // Get optimistic activities from store
+  const optimisticActivities = useOptimisticActivitiesStore.use.activities();
+
+  // Fetch last 30 days of activities for stats and vitamin D tracking
+  const thirtyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 30)), []);
   const { data: allActivities } = api.activities.list.useQuery(
     {
       babyId: babyId ?? '',
-      limit: 100, // Maximum allowed by API
+      limit: 1000,
+      since: thirtyDaysAgo,
     },
     { enabled: Boolean(babyId) },
   );
@@ -104,7 +108,8 @@ export function PredictiveFeedingCard({
             : "Follow your pediatrician's feeding recommendations.",
         inProgressActivity: queryData.inProgressActivity,
         prediction: predictNextFeeding(
-          queryData.recentActivities,
+          // Merge optimistic activities with recent activities for accurate predictions
+          [...optimisticActivities, ...queryData.recentActivities],
           queryData.babyBirthDate,
           queryData.feedIntervalHours,
         ),
@@ -141,6 +146,7 @@ export function PredictiveFeedingCard({
   // Use feeding-specific actions hook
   const { handleSkip, handleQuickLog, isSkipping, isCreating } =
     useFeedingActions({
+      babyId,
       onActivityLogged,
       predictedTime: data?.prediction.nextFeedingTime,
       quickLogEnabled: userData?.quickLogEnabled ?? true,
@@ -186,57 +192,19 @@ export function PredictiveFeedingCard({
   // Calculate today's feeding statistics for goal display
   const todaysStats = calculateTodaysFeedingStats(todaysActivitiesData ?? []);
   // Calculate 7-day trend data for stats drawer (needs last 7 days of data)
-  const trendData = calculateFeedingTrendData(last7DaysActivities ?? []);
-
-  // Calculate vitamin D tracking for last 7 days
-  const vitaminDData = (() => {
-    const now = new Date();
-    const days: { date: string; displayDate: string; hasVitaminD: boolean }[] =
-      [];
-
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const dateKey = format(date, 'yyyy-MM-dd');
-      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-      const monthDay = `${date.getMonth() + 1}/${date.getDate()}`;
-
-      // Check if vitamin D was logged on this day
-      // Vitamin D is stored in feeding activity details as vitaminDGiven boolean
-      const hasVitaminD = (last7DaysActivities ?? []).some((activity) => {
-        const activityDate = new Date(activity.startTime);
-        const activityDateKey = format(activityDate, 'yyyy-MM-dd');
-
-        const isCorrectDate = activityDateKey === dateKey;
-        const isFeeding =
-          activity.type === 'nursing' || activity.type === 'bottle';
-        const hasVitaminDGiven =
-          activity.details &&
-          'vitaminDGiven' in activity.details &&
-          activity.details.vitaminDGiven === true;
-
-        return isCorrectDate && isFeeding && hasVitaminDGiven;
-      });
-
-      days.push({
-        date: dateKey,
-        displayDate: `${dayName} ${monthDay}`,
-        hasVitaminD,
-      });
-    }
-
-    return days;
-  })();
 
   // Use predicted interval from the algorithm for more accurate daily goals
   // This adapts to actual patterns like cluster feeding
   const dailyFeedingGoal = getDailyFeedingGoal(
     babyAgeDays ?? 0,
     prediction.intervalHours,
+    prediction.calculationDetails.dataPoints,
   );
   const dailyAmountGoal = getDailyAmountGoal(
     babyAgeDays ?? 0,
     userUnitPref,
     prediction.intervalHours,
+    prediction.calculationDetails.dataPoints,
   );
 
   // Format countdown
@@ -340,7 +308,6 @@ export function PredictiveFeedingCard({
             <FeedingGoalDisplay
               currentAmount={todaysStats.totalMl}
               currentCount={todaysStats.count}
-              currentVitaminDCount={todaysStats.vitaminDCount}
               feedingThemeColor={feedingTheme.color}
               goalAmount={dailyAmountGoal}
               goalCount={dailyFeedingGoal}
@@ -374,9 +341,7 @@ export function PredictiveFeedingCard({
           amountMl: item.amountMl ?? undefined,
         }))}
         timeFormat={timeFormat}
-        trendData={trendData}
         unit={userUnitPref}
-        vitaminDData={vitaminDData}
       />
     </>
   );

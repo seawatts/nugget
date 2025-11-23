@@ -17,6 +17,7 @@ export interface ActivityStats {
 
 const getActivityStatsInputSchema = z.object({
   activityType: z.enum(['pumping', 'solids', 'potty', 'tummy_time']),
+  babyId: z.string(),
 });
 
 /**
@@ -35,16 +36,11 @@ export const getActivityStatsAction = action
     // Create tRPC API helper
     const api = await getApi();
 
-    // Get the most recent baby
-    const baby = await api.babies.getMostRecent();
-
-    if (!baby) {
-      throw new Error('No baby found. Please complete onboarding first.');
-    }
+    const { babyId } = parsedInput;
 
     // Fetch recent activities
     const recentActivities = await api.activities.list({
-      babyId: baby.id,
+      babyId,
       limit: 50,
     });
 

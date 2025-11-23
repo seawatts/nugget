@@ -1,22 +1,56 @@
 import type { Activities } from '@nugget/db/schema';
 import { differenceInHours, format } from 'date-fns';
+import { calculateWeightedInterval } from '../shared/adaptive-weighting';
 import { getDiaperIntervalByAge } from './diaper-intervals';
 
 /**
- * Calculate recommended daily diaper change count based on baby's age
- * Uses 24 hours divided by age-appropriate interval
+ * Calculate recommended daily diaper change count based on baby's age and actual patterns
+ * Uses adaptive weighting to gradually shift from age-based to pattern-based recommendations
+ * @param ageDays - Baby's age in days
+ * @param predictedIntervalHours - Optional predicted interval from the prediction algorithm
+ * @param dataPointsCount - Optional number of recent activities used in prediction
+ * @returns Estimated number of diaper changes per day
  */
-export function getDailyDiaperGoal(ageDays: number): number {
-  const intervalHours = getDiaperIntervalByAge(ageDays);
-  return Math.round(24 / intervalHours);
+export function getDailyDiaperGoal(
+  ageDays: number,
+  predictedIntervalHours?: number | null,
+  dataPointsCount?: number,
+): number {
+  const ageBasedInterval = getDiaperIntervalByAge(ageDays);
+
+  // If no prediction data or data points count, use age-based only
+  if (!predictedIntervalHours || dataPointsCount === undefined) {
+    return Math.round(24 / ageBasedInterval);
+  }
+
+  // Calculate weighted interval using adaptive algorithm
+  const weightedInterval = calculateWeightedInterval(
+    ageBasedInterval,
+    predictedIntervalHours,
+    dataPointsCount,
+  );
+
+  return Math.round(24 / weightedInterval);
 }
 
 /**
- * Calculate recommended daily wet diaper (pee) count based on baby's age
+ * Calculate recommended daily wet diaper (pee) count based on baby's age and actual patterns
  * Typically ~60-70% of total diaper changes are wet
+ * @param ageDays - Baby's age in days
+ * @param predictedIntervalHours - Optional predicted interval from the prediction algorithm
+ * @param dataPointsCount - Optional number of recent activities used in prediction
+ * @returns Estimated number of wet diapers per day
  */
-export function getDailyWetDiaperGoal(ageDays: number): number {
-  const totalGoal = getDailyDiaperGoal(ageDays);
+export function getDailyWetDiaperGoal(
+  ageDays: number,
+  predictedIntervalHours?: number | null,
+  dataPointsCount?: number,
+): number {
+  const totalGoal = getDailyDiaperGoal(
+    ageDays,
+    predictedIntervalHours,
+    dataPointsCount,
+  );
   // Newborns have more frequent wet diapers (70%)
   // Older babies have fewer relative wet diapers (60%)
   const wetPercentage = ageDays <= 30 ? 0.7 : 0.6;

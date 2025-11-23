@@ -63,7 +63,12 @@ export interface VitaminDDay {
 
 export type MetricType = 'count' | 'amount' | 'hours';
 export type AmountType = 'total' | 'average';
-export type ActivityType = 'feeding' | 'diaper' | 'sleep' | 'pumping';
+export type ActivityType =
+  | 'feeding'
+  | 'diaper'
+  | 'sleep'
+  | 'pumping'
+  | 'vitamin_d';
 
 // Time range options for comparison charts
 export type ComparisonTimeRange =

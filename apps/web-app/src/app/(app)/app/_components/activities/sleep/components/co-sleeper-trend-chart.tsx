@@ -7,6 +7,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@nugget/ui/chart';
+import { format } from 'date-fns';
 import {
   Bar,
   BarChart,
@@ -15,7 +16,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { formatChartDate } from '../../shared/components/stats';
 import type { AmountType } from '../../shared/types';
 import type { CoSleeperTrendData } from '../sleep-goals';
 
@@ -23,6 +23,7 @@ interface CoSleeperTrendChartProps {
   data: CoSleeperTrendData[];
   metricType: 'count' | 'hours';
   amountType: AmountType;
+  timeRange: '24h' | '7d' | '2w' | '1m' | '3m' | '6m';
   familyMembers: Array<{
     id: string;
     userId: string;
@@ -44,6 +45,7 @@ export function CoSleeperTrendChart({
   data,
   metricType,
   amountType,
+  timeRange,
   familyMembers,
 }: CoSleeperTrendChartProps) {
   // Get unique user IDs from the data
@@ -64,7 +66,15 @@ export function CoSleeperTrendChart({
   // Format data for the chart
   const formattedData = data.map((item) => {
     const date = new Date(item.date);
-    const displayDate = formatChartDate(date);
+    // Format based on time range
+    let displayDate: string;
+    if (timeRange === '24h') {
+      displayDate = format(date, 'HH:mm'); // Show hour for 24h view
+    } else if (timeRange === '3m' || timeRange === '6m') {
+      displayDate = format(date, 'M/d'); // Show date for 3m and 6m (weekly grouping)
+    } else {
+      displayDate = format(date, 'EEE'); // Show day abbreviation for 7d, 2w, 1m
+    }
 
     const dataPoint: Record<string, string | number> = {
       displayDate,

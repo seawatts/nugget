@@ -8,8 +8,8 @@ import { toast } from 'sonner';
 import { calculateBabyAgeDays } from '../shared/baby-age-utils';
 import { AmountAdjuster } from '../shared/components/amount-adjuster';
 // import { NotesField } from '../shared/components/notes-field';
-import { QuickSelectButtons } from '../shared/components/quick-select-buttons';
 import { StopSleepConfirmationDialog } from '../shared/components/stop-sleep-confirmation-dialog';
+import { TimeSelectionMode } from '../shared/components/time-selection-mode';
 import { useInProgressSleep } from '../shared/hooks/use-in-progress-sleep';
 import { formatTime } from '../shared/time-formatting-utils';
 import { getVolumeStep, mlToOz, ozToMl } from '../shared/volume-utils';
@@ -21,7 +21,6 @@ export interface NursingFormData {
   rightDuration: number; // in minutes
   notes: string;
   amountMl?: number; // Optional nursing amount in ml
-  vitaminDGiven?: boolean;
 }
 
 interface NursingDrawerContentProps {
@@ -33,6 +32,8 @@ interface NursingDrawerContentProps {
   setDuration?: (duration: number) => void;
   startTime?: Date;
   setStartTime?: (date: Date) => void;
+  endTime?: Date;
+  setEndTime?: (date: Date) => void;
   initialData?: Partial<NursingFormData>;
 }
 
@@ -41,6 +42,11 @@ export function NursingDrawerContent({
   activeActivityId,
   onTimerStart,
   duration: externalDuration,
+  setDuration,
+  startTime: externalStartTime,
+  setStartTime,
+  endTime: externalEndTime,
+  setEndTime,
   initialData,
 }: NursingDrawerContentProps) {
   const [activeSide, setActiveSide] = useState<'left' | 'right' | null>(null);
@@ -61,10 +67,20 @@ export function NursingDrawerContent({
   const [hasStartedDbTracking, setHasStartedDbTracking] = useState(false);
   const [showSleepConfirmation, setShowSleepConfirmation] = useState(false);
   const [pendingSide, setPendingSide] = useState<'left' | 'right' | null>(null);
-  const [vitaminDGiven, setVitaminDGiven] = useState(
-    initialData?.vitaminDGiven ?? false,
-  );
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Local state for time selection if not provided via props
+  const [localStartTime, setLocalStartTime] = useState(new Date());
+  const [localEndTime, setLocalEndTime] = useState(new Date());
+  const [localDuration, setLocalDuration] = useState(0);
+
+  // Use props if available, otherwise use local state
+  const startTime = externalStartTime ?? localStartTime;
+  const handleSetStartTime = setStartTime ?? setLocalStartTime;
+  const endTime = externalEndTime ?? localEndTime;
+  const handleSetEndTime = setEndTime ?? setLocalEndTime;
+  const duration = externalDuration ?? localDuration;
+  const handleSetDuration = setDuration ?? setLocalDuration;
 
   // Fetch baby data to get birth date for age calculation
   const { data: babies = [] } = api.babies.list.useQuery();
@@ -133,16 +149,8 @@ export function NursingDrawerContent({
       leftDuration: Math.floor(leftDuration / 60), // convert seconds to minutes
       notes,
       rightDuration: Math.floor(rightDuration / 60), // convert seconds to minutes
-      vitaminDGiven,
     });
-  }, [
-    leftDuration,
-    rightDuration,
-    notes,
-    amountMl,
-    vitaminDGiven,
-    onDataChange,
-  ]);
+  }, [leftDuration, rightDuration, notes, amountMl, onDataChange]);
 
   const handleSideSelect = async (side: 'left' | 'right') => {
     if (activeSide === side) {
@@ -175,7 +183,7 @@ export function NursingDrawerContent({
   const handleStopSleepAndStart = async () => {
     try {
       // Stop the in-progress sleep
-      const result = await autoStopInProgressSleepAction();
+      const result = await autoStopInProgressSleepAction({ babyId });
       if (result?.data?.activity) {
         toast.info('Sleep tracking stopped');
       }
@@ -213,13 +221,6 @@ export function NursingDrawerContent({
 
     // Clear pending side
     setPendingSide(null);
-  };
-
-  const handleQuickAdd = (minutes: number) => {
-    const seconds = minutes * 60;
-    // Add duration to BOTH sides simultaneously
-    setLeftDuration(seconds);
-    setRightDuration(seconds);
   };
 
   const toggleTimer = () => {
@@ -283,13 +284,23 @@ export function NursingDrawerContent({
 
   return (
     <div className="space-y-6">
-      {/* Quick Duration - Using shared component */}
-      <QuickSelectButtons
-        formatValue={(min: number) => `${min}m`}
-        label="Quick Add Duration"
-        onSelect={handleQuickAdd}
-        options={[5, 10, 15, 20]}
-        selected={null}
+      {/* Time Selection Mode */}
+      <TimeSelectionMode
+        activityColor="bg-activity-feeding"
+        activityTextColor="text-activity-feeding-foreground"
+        duration={duration}
+        endTime={endTime}
+        quickDurationOptions={[
+          { label: '5 min', seconds: 5 * 60 },
+          { label: '10 min', seconds: 10 * 60 },
+          { label: '15 min', seconds: 15 * 60 },
+        ]}
+        setDuration={handleSetDuration}
+        setEndTime={handleSetEndTime}
+        setStartTime={handleSetStartTime}
+        showStartTimeOptions={false}
+        startTime={startTime}
+        timeFormat={user?.timeFormat ?? '12h'}
       />
 
       {/* Side Selection */}
@@ -443,27 +454,6 @@ export function NursingDrawerContent({
           />
         </div>
       )}
-
-      {/* Vitamin D */}
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-muted-foreground">Supplements</p>
-        <Button
-          className={`h-12 w-full ${
-            vitaminDGiven
-              ? 'bg-activity-feeding text-activity-feeding-foreground hover:bg-activity-feeding/90'
-              : 'bg-transparent'
-          }`}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setVitaminDGiven(!vitaminDGiven);
-          }}
-          type="button"
-          variant={vitaminDGiven ? 'default' : 'outline'}
-        >
-          Vitamin D given
-        </Button>
-      </div>
 
       {/* Notes - Using shared component */}
       {/* <NotesField onChange={setNotes} value={notes} /> */}

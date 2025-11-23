@@ -7,7 +7,7 @@ import { cn } from '@nugget/ui/lib/utils';
 import { Droplets, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
-import { TimeInput } from '../shared/components/time-input';
+import { TimeSelectionMode } from '../shared/components/time-selection-mode';
 import { useActivityMutations } from '../use-activity-mutations';
 import { PumpingDrawerContent } from './pumping-drawer';
 
@@ -15,7 +15,7 @@ interface PumpingActivityDrawerProps {
   existingActivity?: typeof Activities.$inferSelect | null;
   isOpen: boolean;
   onClose: () => void;
-  babyId?: string;
+  babyId: string;
 }
 
 /**
@@ -41,6 +41,8 @@ export function PumpingActivityDrawer({
 
   // Pumping-specific state
   const [startTime, setStartTime] = useState(new Date());
+  const [endTime, setEndTime] = useState(new Date());
+  const [duration, setDuration] = useState(0);
   const [leftAmount, setLeftAmount] = useState(userUnitPref === 'OZ' ? 2 : 60);
   const [rightAmount, setRightAmount] = useState(
     userUnitPref === 'OZ' ? 2 : 60,
@@ -50,6 +52,20 @@ export function PumpingActivityDrawer({
     'electric' | 'manual' | null
   >(null);
   const [notes, setNotes] = useState('');
+
+  // Quick duration options for pumping (in seconds for TimeSelectionMode)
+  const quickDurations = [
+    { label: '10 min', seconds: 10 * 60 },
+    { label: '15 min', seconds: 15 * 60 },
+    { label: '20 min', seconds: 20 * 60 },
+  ];
+
+  // Update selectedDuration when duration changes
+  useEffect(() => {
+    if (duration > 0) {
+      setSelectedDuration(Math.floor(duration / 60)); // Convert seconds to minutes
+    }
+  }, [duration]);
 
   const isPending = isCreating || isUpdating;
   const isEditing = Boolean(existingActivity);
@@ -198,6 +214,7 @@ export function PumpingActivityDrawer({
         await createActivity({
           activityType: 'pumping',
           amountMl: totalAmountMl,
+          babyId,
           details: pumpingDetails,
           duration: durationMinutes ?? undefined,
           feedingSource: 'pumped',
@@ -236,6 +253,20 @@ export function PumpingActivityDrawer({
 
       {/* Content - Scrollable */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
+        {/* Time Selection */}
+        <TimeSelectionMode
+          activityColor="bg-activity-pumping"
+          activityTextColor="text-activity-pumping-foreground"
+          duration={duration}
+          endTime={endTime}
+          quickDurationOptions={quickDurations}
+          setDuration={setDuration}
+          setEndTime={setEndTime}
+          setStartTime={setStartTime}
+          startTime={startTime}
+          timeFormat={user?.timeFormat ?? '12h'}
+        />
+
         <PumpingDrawerContent
           isEditing={Boolean(existingActivity)}
           leftAmount={leftAmount}
@@ -249,19 +280,6 @@ export function PumpingActivityDrawer({
           setSelectedDuration={setSelectedDuration}
           setSelectedMethod={setSelectedMethod}
         />
-
-        {/* Time & Date Section */}
-        <div className="space-y-3 min-w-0">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            Start Time
-          </h3>
-          <TimeInput
-            id="pumping-start-time"
-            label="Start Date & Time"
-            onChange={setStartTime}
-            value={startTime}
-          />
-        </div>
       </div>
 
       {/* Footer with Actions */}

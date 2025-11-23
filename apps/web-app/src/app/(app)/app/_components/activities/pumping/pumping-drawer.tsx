@@ -87,8 +87,6 @@ export function PumpingDrawerContent({
 
   const setLeftAmount = setControlledLeftAmount || setInternalLeftAmount;
   const setRightAmount = setControlledRightAmount || setInternalRightAmount;
-  const setSelectedDuration =
-    setControlledSelectedDuration || setInternalSelectedDuration;
   const setSelectedMethod =
     setControlledSelectedMethod || setInternalSelectedMethod;
 
@@ -161,100 +159,74 @@ export function PumpingDrawerContent({
 
   return (
     <div className="space-y-6">
-      {/* Duration - Moved to top */}
-      <div className="space-y-3">
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">Duration</p>
-          <p className="text-xs text-muted-foreground/70 mt-1">
-            {babyAgeDays !== null
-              ? "Volumes will auto-fill based on your baby's age"
-              : 'Select duration to auto-fill suggested volumes'}
-          </p>
-        </div>
-        <div className="grid grid-cols-4 gap-2">
-          {[10, 15, 20, 30].map((min) => (
-            <Button
-              className={`h-12 ${
-                selectedDuration === min
-                  ? 'bg-activity-pumping text-activity-pumping-foreground hover:bg-activity-pumping/90'
-                  : 'bg-transparent'
-              }`}
-              key={min}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setSelectedDuration(min);
-              }}
-              type="button"
-              variant={selectedDuration === min ? 'default' : 'outline'}
-            >
-              {min}m
-            </Button>
-          ))}
-        </div>
-      </div>
-
       {/* Amount Selectors */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Left Side */}
-        <div className="bg-card rounded-2xl p-6">
-          <p className="text-sm font-medium text-muted-foreground mb-4 text-center">
-            Left
+      <div className="space-y-3">
+        {babyAgeDays !== null && (
+          <p className="text-xs text-muted-foreground/70">
+            Volumes will auto-fill based on duration and your baby&apos;s age
           </p>
-          <div className="flex items-center justify-center gap-3">
-            <Button
-              className="h-10 w-10 rounded-full bg-transparent"
-              onClick={() =>
-                setLeftAmount(Math.max(minAmount, leftAmount - step))
-              }
-              size="icon"
-              variant="outline"
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <div className="text-center min-w-[60px]">
-              <div className="text-3xl font-bold">{leftAmount}</div>
-              <p className="text-xs text-muted-foreground">{unit}</p>
+        )}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Left Side */}
+          <div className="bg-card rounded-2xl p-6">
+            <p className="text-sm font-medium text-muted-foreground mb-4 text-center">
+              Left
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <Button
+                className="h-10 w-10 rounded-full bg-transparent"
+                onClick={() =>
+                  setLeftAmount(Math.max(minAmount, leftAmount - step))
+                }
+                size="icon"
+                variant="outline"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <div className="text-center min-w-[60px]">
+                <div className="text-3xl font-bold">{leftAmount}</div>
+                <p className="text-xs text-muted-foreground">{unit}</p>
+              </div>
+              <Button
+                className="h-10 w-10 rounded-full bg-transparent"
+                onClick={() => setLeftAmount(leftAmount + step)}
+                size="icon"
+                variant="outline"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              className="h-10 w-10 rounded-full bg-transparent"
-              onClick={() => setLeftAmount(leftAmount + step)}
-              size="icon"
-              variant="outline"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
           </div>
-        </div>
 
-        {/* Right Side */}
-        <div className="bg-card rounded-2xl p-6">
-          <p className="text-sm font-medium text-muted-foreground mb-4 text-center">
-            Right
-          </p>
-          <div className="flex items-center justify-center gap-3">
-            <Button
-              className="h-10 w-10 rounded-full bg-transparent"
-              onClick={() =>
-                setRightAmount(Math.max(minAmount, rightAmount - step))
-              }
-              size="icon"
-              variant="outline"
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <div className="text-center min-w-[60px]">
-              <div className="text-3xl font-bold">{rightAmount}</div>
-              <p className="text-xs text-muted-foreground">{unit}</p>
+          {/* Right Side */}
+          <div className="bg-card rounded-2xl p-6">
+            <p className="text-sm font-medium text-muted-foreground mb-4 text-center">
+              Right
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <Button
+                className="h-10 w-10 rounded-full bg-transparent"
+                onClick={() =>
+                  setRightAmount(Math.max(minAmount, rightAmount - step))
+                }
+                size="icon"
+                variant="outline"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <div className="text-center min-w-[60px]">
+                <div className="text-3xl font-bold">{rightAmount}</div>
+                <p className="text-xs text-muted-foreground">{unit}</p>
+              </div>
+              <Button
+                className="h-10 w-10 rounded-full bg-transparent"
+                onClick={() => setRightAmount(rightAmount + step)}
+                size="icon"
+                variant="outline"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              className="h-10 w-10 rounded-full bg-transparent"
-              onClick={() => setRightAmount(rightAmount + step)}
-              size="icon"
-              variant="outline"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </div>

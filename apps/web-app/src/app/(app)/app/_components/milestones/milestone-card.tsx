@@ -262,7 +262,7 @@ export function MilestoneCard({
     <FeatureCard
       className={
         isCompleted
-          ? 'relative border-green-500 border-2 bg-green-500/10 shadow-lg shadow-green-500/20'
+          ? 'relative border-primary border-2 bg-primary/10 shadow-lg shadow-primary/20'
           : ''
       }
       colorConfig={colorConfig}
@@ -271,8 +271,8 @@ export function MilestoneCard({
       {/* Completion checkmark overlay */}
       {isCompleted && (
         <div className="absolute top-3 right-3 z-10">
-          <div className="rounded-full bg-green-600 p-1 shadow-md">
-            <CheckCircle2 className="size-5 text-white" />
+          <div className="rounded-full bg-primary p-1 shadow-md">
+            <CheckCircle2 className="size-5 text-primary-foreground" />
           </div>
         </div>
       )}

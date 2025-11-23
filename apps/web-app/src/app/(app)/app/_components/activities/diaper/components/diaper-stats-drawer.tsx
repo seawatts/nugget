@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@nugget/ui/dropdown-menu';
+import { subDays } from 'date-fns';
 import { ChevronDown } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -103,6 +104,14 @@ export function DiaperStatsDrawer({
     [activities],
   );
 
+  // Filter to last 30 days for heatmap
+  const last30DaysDiaperActivities = useMemo(() => {
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    return diaperActivities.filter(
+      (activity) => new Date(activity.startTime) >= thirtyDaysAgo,
+    );
+  }, [diaperActivities]);
+
   // Filter activities by diaper type
   const filterByDiaperType = useCallback(
     (
@@ -128,11 +137,11 @@ export function DiaperStatsDrawer({
 
   const frequencyHeatmapData = useMemo(() => {
     const filteredActivities = filterByDiaperType(
-      diaperActivities,
+      last30DaysDiaperActivities,
       heatmapFilterType,
     );
     return calculateHourlyFrequency(filteredActivities);
-  }, [diaperActivities, heatmapFilterType, filterByDiaperType]);
+  }, [last30DaysDiaperActivities, heatmapFilterType, filterByDiaperType]);
 
   const timeBlockData = useMemo(() => {
     const filteredActivities = filterByDiaperType(

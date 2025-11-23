@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@clerk/chrome-extension": "2.8.3",
+    "@clerk/chrome-extension": "2.8.4",
     "@clerk/nextjs": "catalog:",
     "@nugget/logger": "workspace:*",
     "@nugget/ui": "workspace:*",

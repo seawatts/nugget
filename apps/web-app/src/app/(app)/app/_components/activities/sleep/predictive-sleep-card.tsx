@@ -9,8 +9,9 @@ import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
 import { BarChart3, Info, Moon, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import {
   PredictiveCardSkeleton,
   PredictiveInfoDrawer,
@@ -45,11 +46,16 @@ export function PredictiveSleepCard({
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
 
-  // Fetch activities for stats and trend tracking
+  // Get optimistic activities from store
+  const optimisticActivities = useOptimisticActivitiesStore.use.activities();
+
+  // Fetch last 30 days of activities for stats and trend tracking
+  const thirtyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 30)), []);
   const { data: allActivities } = api.activities.list.useQuery(
     {
       babyId: babyId ?? '',
-      limit: 100, // Maximum allowed by API
+      limit: 1000,
+      since: thirtyDaysAgo,
     },
     { enabled: Boolean(babyId) },
   );
@@ -102,7 +108,8 @@ export function PredictiveSleepCard({
             ? getSleepGuidanceByAge(queryData.babyAgeDays)
             : "Follow your pediatrician's sleep recommendations.",
         prediction: predictNextSleep(
-          queryData.recentActivities,
+          // Merge optimistic activities with recent activities for accurate predictions
+          [...optimisticActivities, ...queryData.recentActivities],
           queryData.babyBirthDate,
         ),
       }
@@ -129,6 +136,7 @@ export function PredictiveSleepCard({
   const { handleQuickLog, handleSkip, isCreating, isSkipping } =
     usePredictiveActions({
       activityType: 'sleep',
+      babyId,
       defaultQuickLogData,
       onActivityLogged: _onActivityLogged,
       skipAction: skipSleepAction,
@@ -187,7 +195,11 @@ export function PredictiveSleepCard({
 
   // Calculate today's sleep statistics for goal display
   const todaysStats = calculateTodaysSleepStats(todaysActivitiesData ?? []);
-  const dailyNapGoal = getDailyNapGoal(babyAgeDays ?? 0);
+  const dailyNapGoal = getDailyNapGoal(
+    babyAgeDays ?? 0,
+    prediction.averageIntervalHours,
+    prediction.calculationDetails.dataPoints,
+  );
   const dailySleepHoursGoal = getDailySleepHoursGoal(babyAgeDays ?? 0);
   // Calculate 7-day trend data for stats drawer
   const trendData = calculateSleepTrendData(todaysActivitiesData ?? []);

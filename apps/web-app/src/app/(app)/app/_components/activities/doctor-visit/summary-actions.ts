@@ -68,13 +68,13 @@ function formatDate(date: Date): string {
 export const getDoctorVisitSummaryAction = action
   .schema(
     z.object({
-      babyId: z.string().optional(),
+      babyId: z.string(),
       endDate: z.date(),
       startDate: z.date(),
     }),
   )
   .action(async ({ parsedInput }): Promise<DoctorVisitSummaryData> => {
-    const { startDate, endDate, babyId: inputBabyId } = parsedInput;
+    const { startDate, endDate, babyId } = parsedInput;
 
     // Verify authentication
     const authResult = await auth();
@@ -85,13 +85,11 @@ export const getDoctorVisitSummaryAction = action
     // Create tRPC caller
     const api = await getApi();
 
-    // Get the most recent baby if not provided
-    const baby = inputBabyId
-      ? await api.babies.getById({ id: inputBabyId })
-      : await api.babies.getMostRecent();
+    // Get the baby
+    const baby = await api.babies.getByIdLight({ id: babyId });
 
     if (!baby) {
-      throw new Error('No baby found. Please complete onboarding first.');
+      throw new Error('Baby not found.');
     }
 
     const babyAgeDays = calculateBabyAgeDays(baby.birthDate);

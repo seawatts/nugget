@@ -23,8 +23,8 @@ export function VitaminDTracker({ days }: VitaminDTrackerProps) {
             <div
               className={`flex size-10 items-center justify-center rounded-full transition-colors ${
                 day.hasVitaminD
-                  ? 'bg-green-500/20 text-green-600 dark:bg-green-500/30 dark:text-green-400'
-                  : 'bg-red-500/20 text-red-600 dark:bg-red-500/30 dark:text-red-400'
+                  ? 'bg-green-500/30 text-green-100 dark:bg-green-400/30 dark:text-green-200'
+                  : 'bg-white/10 text-white/40 dark:bg-white/10 dark:text-white/30'
               }`}
             >
               {day.hasVitaminD ? (

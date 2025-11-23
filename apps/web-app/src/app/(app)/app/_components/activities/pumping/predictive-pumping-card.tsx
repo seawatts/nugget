@@ -16,8 +16,9 @@ import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
 import { BarChart3, Droplets, Info, Zap } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { LearningSection } from '../../learning/learning-section';
 import { InfoCard } from '../../shared/info-card';
 import {
@@ -53,6 +54,9 @@ export function PredictivePumpingCard({
   const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
   const timeFormat = user?.timeFormat || '12h';
 
+  // Get optimistic activities from store
+  const optimisticActivities = useOptimisticActivitiesStore.use.activities();
+
   // Use tRPC query for prediction data
   const {
     data: queryData,
@@ -64,16 +68,18 @@ export function PredictivePumpingCard({
     { enabled: Boolean(babyId) },
   );
 
-  // Query last 7 days of activities for trend chart
+  // Fetch last 30 days of activities for stats and trend chart
+  const thirtyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 30)), []);
   const { data: allActivities } = api.activities.list.useQuery(
     {
       babyId: babyId ?? '',
-      limit: 100,
+      limit: 1000,
+      since: thirtyDaysAgo,
     },
     { enabled: Boolean(babyId) },
   );
 
-  // Filter to last 7 days client-side
+  // Filter to last 7 days for trend data
   const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
   const last7DaysActivities = allActivities?.filter((activity) => {
     const activityDate = new Date(activity.startTime);
@@ -92,7 +98,8 @@ export function PredictivePumpingCard({
             ? getPumpingGuidanceByAge(queryData.babyAgeDays)
             : 'Pump regularly to establish and maintain milk supply.',
         prediction: predictNextPumping(
-          queryData.recentActivities,
+          // Merge optimistic activities with recent activities for accurate predictions
+          [...optimisticActivities, ...queryData.recentActivities],
           queryData.babyBirthDate,
         ),
       }
@@ -119,6 +126,7 @@ export function PredictivePumpingCard({
   const { handleQuickLog, handleSkip, isCreating, isSkipping } =
     usePredictiveActions({
       activityType: 'pumping',
+      babyId,
       defaultQuickLogData,
       onActivityLogged: _onActivityLogged,
       skipAction: skipPumpingAction,

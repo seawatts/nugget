@@ -11,9 +11,10 @@ import { createActivityWithDetailsAction } from '../activity-cards.actions';
 interface PottyDrawerProps {
   onClose?: () => void;
   onSaved?: () => void;
+  babyId: string;
 }
 
-export function PottyDrawer({ onClose, onSaved }: PottyDrawerProps) {
+export function PottyDrawer({ onClose, onSaved, babyId }: PottyDrawerProps) {
   const [type, setType] = useState<'pee' | 'poop' | 'both'>('pee');
   const [notes, setNotes] = useState('');
 
@@ -38,6 +39,7 @@ export function PottyDrawer({ onClose, onSaved }: PottyDrawerProps) {
   const handleSave = () => {
     createActivity({
       activityType: 'potty',
+      babyId,
       notes: notes || undefined,
       startTime: new Date(),
     });

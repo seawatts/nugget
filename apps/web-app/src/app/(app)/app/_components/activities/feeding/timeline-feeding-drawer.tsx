@@ -13,11 +13,10 @@ import {
   AlertDialogTitle,
 } from '@nugget/ui/alert-dialog';
 import { Button } from '@nugget/ui/button';
-import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { cn } from '@nugget/ui/lib/utils';
-import { useEffect, useState } from 'react';
-import { ActivityDrawerHeader } from '../shared/components/activity-drawer-header';
-import { TimeInput } from '../shared/components/time-input';
+import { Utensils, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ClickableTimeDisplay } from '../shared/components/clickable-time-display';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { FeedingFormData } from './feeding-type-selector';
 import { FeedingTypeSelector } from './feeding-type-selector';
@@ -47,6 +46,10 @@ export function TimelineFeedingDrawer({
     id: babyId,
   });
 
+  // Fetch user preferences for time format
+  const [user] = api.user.current.useSuspenseQuery();
+  const timeFormat = user?.timeFormat || '12h';
+
   // Calculate baby age in days
   const babyAgeDays = baby?.birthDate
     ? Math.floor(
@@ -66,6 +69,17 @@ export function TimelineFeedingDrawer({
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   const isPending = isUpdating || isDeleting;
+
+  // Calculate duration in minutes for display
+  const durationMinutes = useMemo(() => {
+    if (formData?.type === 'nursing') {
+      return Math.floor((endTime.getTime() - startTime.getTime()) / 1000 / 60);
+    }
+    return 0;
+  }, [formData?.type, startTime, endTime]);
+
+  // Determine mode based on feeding type
+  const timeDisplayMode = formData?.type === 'nursing' ? 'range' : 'single';
 
   // Load existing activity data
   useEffect(() => {
@@ -214,9 +228,10 @@ export function TimelineFeedingDrawer({
 
   const handleDelete = async () => {
     try {
-      await deleteActivity(existingActivity.id);
+      // Close drawer immediately for better UX
       setShowDeleteConfirmation(false);
       onClose();
+      await deleteActivity(existingActivity.id);
     } catch (error) {
       console.error('Failed to delete activity:', error);
     }
@@ -224,12 +239,45 @@ export function TimelineFeedingDrawer({
 
   return (
     <>
-      {/* Header */}
-      <ActivityDrawerHeader
-        activityType="feeding"
-        customTitle="Edit Feeding"
-        onClose={onClose}
-      />
+      {/* Custom Header with Activity Color */}
+      <div className="p-6 pb-4 bg-activity-feeding">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <Utensils
+              className="size-8 text-activity-feeding-foreground"
+              strokeWidth={1.5}
+            />
+            <h2 className="text-2xl font-bold text-activity-feeding-foreground">
+              Edit Feeding
+            </h2>
+          </div>
+          <button
+            className="p-2 rounded-full hover:bg-black/10 transition-colors text-activity-feeding-foreground"
+            onClick={onClose}
+            type="button"
+          >
+            <X className="size-6" />
+          </button>
+        </div>
+        {formData && (
+          <div className="ml-11">
+            <ClickableTimeDisplay
+              className="text-activity-feeding-foreground"
+              duration={
+                timeDisplayMode === 'range' ? durationMinutes : undefined
+              }
+              endTime={timeDisplayMode === 'range' ? endTime : undefined}
+              mode={timeDisplayMode}
+              onEndTimeChange={
+                timeDisplayMode === 'range' ? setEndTime : undefined
+              }
+              onStartTimeChange={setStartTime}
+              startTime={startTime}
+              timeFormat={timeFormat}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Content - Scrollable */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
@@ -246,33 +294,6 @@ export function TimelineFeedingDrawer({
           setStartTime={setStartTime}
           startTime={startTime}
         />
-
-        {/* Time & Date Section */}
-        {formData && (
-          <div className="space-y-3 min-w-0">
-            <h3 className="text-sm font-medium text-muted-foreground">
-              Time & Date
-            </h3>
-            {formData.type === 'nursing' ? (
-              <DateTimeRangePicker
-                endDate={endTime}
-                mode="range"
-                setEndDate={setEndTime}
-                setStartDate={setStartTime}
-                startDate={startTime}
-              />
-            ) : (
-              <div className="grid grid-cols-1 gap-3 min-w-0">
-                <TimeInput
-                  id="feeding-start-time"
-                  label="Start Date & Time"
-                  onChange={setStartTime}
-                  value={startTime}
-                />
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Footer with Actions */}

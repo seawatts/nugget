@@ -12,9 +12,14 @@ import { createActivityWithDetailsAction } from '../activity-cards.actions';
 interface TummyTimeDrawerProps {
   onClose?: () => void;
   onSaved?: () => void;
+  babyId: string;
 }
 
-export function TummyTimeDrawer({ onClose, onSaved }: TummyTimeDrawerProps) {
+export function TummyTimeDrawer({
+  onClose,
+  onSaved,
+  babyId,
+}: TummyTimeDrawerProps) {
   const [duration, setDuration] = useState(5);
   const [notes, setNotes] = useState('');
 
@@ -39,6 +44,7 @@ export function TummyTimeDrawer({ onClose, onSaved }: TummyTimeDrawerProps) {
   const handleSave = () => {
     createActivity({
       activityType: 'tummy_time',
+      babyId,
       duration,
       notes: notes || undefined,
       startTime: new Date(),

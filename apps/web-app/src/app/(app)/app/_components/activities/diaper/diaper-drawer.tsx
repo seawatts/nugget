@@ -62,8 +62,12 @@ export function DiaperDrawerContent({
 
   // Update state when initialData changes
   useEffect(() => {
+    console.log('DiaperDrawerContent - Received initialData:', initialData);
     if (initialData) {
-      if (initialData.type !== undefined) setSelectedType(initialData.type);
+      if (initialData.type !== undefined) {
+        console.log('DiaperDrawerContent - Setting type to:', initialData.type);
+        setSelectedType(initialData.type);
+      }
       if (initialData.size !== undefined) setSize(initialData.size);
       if (initialData.color !== undefined) setColor(initialData.color);
       if (initialData.consistency !== undefined)

@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@clerk/nextjs';
+import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import {
   AlertDialog,
@@ -13,10 +14,10 @@ import {
   AlertDialogTitle,
 } from '@nugget/ui/alert-dialog';
 import { Button } from '@nugget/ui/button';
-import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
 import { cn } from '@nugget/ui/lib/utils';
 import { Moon, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { ClickableTimeDisplay } from '../shared/components/clickable-time-display';
 import { getFamilyMembersAction } from '../timeline/activity-timeline-filters.actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import { SleepDrawerContent } from './sleep-drawer';
@@ -41,6 +42,10 @@ export function TimelineSleepDrawer({
   const { userId } = useAuth();
   const { updateActivity, deleteActivity, isUpdating, isDeleting } =
     useActivityMutations();
+
+  // Fetch user preferences for time format
+  const { data: user } = api.user.current.useQuery();
+  const timeFormat = user?.timeFormat || '12h';
 
   // Sleep-specific state
   const [startTime, setStartTime] = useState(new Date());
@@ -85,6 +90,11 @@ export function TimelineSleepDrawer({
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   const isPending = isUpdating || isDeleting;
+
+  // Calculate duration in minutes
+  const durationMinutes = Math.floor(
+    (endTime.getTime() - startTime.getTime()) / 1000 / 60,
+  );
 
   // Fetch family members when drawer opens
   useEffect(() => {
@@ -159,6 +169,9 @@ export function TimelineSleepDrawer({
         wakeReason: wakeReason,
       };
 
+      // Close drawer immediately for better UX
+      onClose();
+
       // Update existing activity
       await updateActivity({
         details: sleepDetails,
@@ -168,8 +181,6 @@ export function TimelineSleepDrawer({
         notes: notes || undefined,
         startTime,
       });
-
-      onClose();
     } catch (error) {
       console.error('Failed to update sleep:', error);
     }
@@ -177,9 +188,10 @@ export function TimelineSleepDrawer({
 
   const handleDelete = async () => {
     try {
-      await deleteActivity(existingActivity.id);
+      // Close drawer immediately for better UX
       setShowDeleteConfirmation(false);
       onClose();
+      await deleteActivity(existingActivity.id);
     } catch (error) {
       console.error('Failed to delete activity:', error);
     }
@@ -189,7 +201,7 @@ export function TimelineSleepDrawer({
     <>
       {/* Custom Header with Activity Color */}
       <div className="p-6 pb-4 bg-activity-sleep">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <Moon
               className="size-8 text-activity-sleep-foreground"
@@ -207,30 +219,29 @@ export function TimelineSleepDrawer({
             <X className="size-6" />
           </button>
         </div>
+        <div className="ml-11">
+          <ClickableTimeDisplay
+            className="text-activity-sleep-foreground"
+            duration={durationMinutes}
+            endTime={endTime}
+            mode="range"
+            onEndTimeChange={setEndTime}
+            onStartTimeChange={setStartTime}
+            startTime={startTime}
+            timeFormat={timeFormat}
+          />
+        </div>
       </div>
 
       {/* Content - Scrollable */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
-        {/* Time & Date Section */}
-        <div className="space-y-3 min-w-0">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            Time & Date
-          </h3>
-          <DateTimeRangePicker
-            endDate={endTime}
-            mode="range"
-            setEndDate={setEndTime}
-            setStartDate={setStartTime}
-            startDate={startTime}
-          />
-        </div>
-
         <SleepDrawerContent
           activeActivityId={null}
           coSleepingWith={coSleepingWith}
           currentUserId={currentUserId}
           duration={0}
           familyMembers={familyMembers}
+          hideTimeSelection={true}
           isCoSleeping={isCoSleeping}
           isTimerStopped={true}
           onTimerStart={async () => {}}

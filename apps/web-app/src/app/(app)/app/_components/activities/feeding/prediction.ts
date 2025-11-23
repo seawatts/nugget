@@ -88,6 +88,36 @@ function getTypicalFeedingDuration(ageDays: number | null): number {
 }
 
 /**
+ * Calculate the most common feeding type from recent feedings
+ * Returns 'nursing' as default if no feedings or tied counts
+ */
+function getMostCommonFeedingType(
+  feedingActivities: FeedingActivity[],
+): 'bottle' | 'nursing' {
+  if (feedingActivities.length === 0) {
+    return 'nursing'; // Default to nursing if no history
+  }
+
+  // Count occurrences of each type
+  let bottleCount = 0;
+  let nursingCount = 0;
+
+  for (const feeding of feedingActivities) {
+    if (feeding.type === 'bottle') {
+      bottleCount++;
+    } else if (feeding.type === 'nursing') {
+      nursingCount++;
+    }
+  }
+
+  // Return the most common type, defaulting to nursing if tied or neither found
+  if (bottleCount > nursingCount) {
+    return 'bottle';
+  }
+  return 'nursing';
+}
+
+/**
  * Hybrid prediction algorithm that combines:
  * - Age-based baseline interval (40%)
  * - Recent average interval (40%)
@@ -163,7 +193,7 @@ export function predictNextFeeding(
       suggestedAmount: null,
       suggestedDuration: getTypicalFeedingDuration(ageDays),
       suggestedRecoveryTime: null,
-      suggestedType: null,
+      suggestedType: 'nursing', // Default to nursing when no history
     };
   }
 
@@ -193,15 +223,14 @@ export function predictNextFeeding(
       suggestedAmount: null,
       suggestedDuration: getTypicalFeedingDuration(ageDays),
       suggestedRecoveryTime: null,
-      suggestedType: null,
+      suggestedType: 'nursing', // Default to nursing when no history
     };
   }
   const lastFeedingTime = new Date(lastFeeding.startTime);
   const lastFeedingAmount = lastFeeding.amountMl || null;
-  const lastFeedingType =
-    lastFeeding.type === 'bottle' || lastFeeding.type === 'nursing'
-      ? lastFeeding.type
-      : null;
+
+  // Calculate the most common feeding type from recent history
+  const mostCommonType = getMostCommonFeedingType(feedingActivities);
 
   // Calculate intervals between consecutive feedings
   const intervals = calculateIntervals(feedingActivities);
@@ -303,7 +332,7 @@ export function predictNextFeeding(
     suggestedAmount: lastFeedingAmount,
     suggestedDuration: getTypicalFeedingDuration(ageDays),
     suggestedRecoveryTime,
-    suggestedType: lastFeedingType,
+    suggestedType: mostCommonType, // Use most common type instead of last feeding type
   };
 }
 

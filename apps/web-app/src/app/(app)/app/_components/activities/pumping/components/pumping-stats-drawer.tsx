@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@nugget/ui/dropdown-menu';
+import { subDays } from 'date-fns';
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
@@ -101,9 +102,17 @@ export function PumpingStatsDrawer({
     [activities],
   );
 
+  // Filter to last 30 days for heatmap
+  const last30DaysPumpingActivities = useMemo(() => {
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    return pumpingActivities.filter(
+      (activity) => new Date(activity.startTime) >= thirtyDaysAgo,
+    );
+  }, [pumpingActivities]);
+
   const frequencyHeatmapData = useMemo(
-    () => calculateHourlyFrequency(pumpingActivities),
-    [pumpingActivities],
+    () => calculateHourlyFrequency(last30DaysPumpingActivities),
+    [last30DaysPumpingActivities],
   );
 
   const timeBlockData = useMemo(

@@ -27,11 +27,16 @@ export interface UpcomingFeedingData {
   familyMemberCount: number;
 }
 
+const getUpcomingFeedingInputSchema = z.object({
+  babyId: z.string(),
+});
+
 /**
  * Get upcoming feeding prediction and suggested family member
  */
-export const getUpcomingFeedingAction = action.action(
-  async (): Promise<UpcomingFeedingData> => {
+export const getUpcomingFeedingAction = action
+  .schema(getUpcomingFeedingInputSchema)
+  .action(async ({ parsedInput }): Promise<UpcomingFeedingData> => {
     const api = await getApi();
 
     // Verify authentication
@@ -40,11 +45,13 @@ export const getUpcomingFeedingAction = action.action(
       throw new Error('Authentication required');
     }
 
-    // Get the most recent baby
-    const baby = await api.babies.getMostRecent();
+    const { babyId } = parsedInput;
+
+    // Get the baby to check birth date and feed interval
+    const baby = await api.babies.getByIdLight({ id: babyId });
 
     if (!baby) {
-      throw new Error('No baby found. Please complete onboarding first.');
+      throw new Error('Baby not found.');
     }
 
     // Calculate baby's age in days
@@ -109,10 +116,10 @@ export const getUpcomingFeedingAction = action.action(
       scheduledFeeding: scheduledFeeding || null,
       suggestedMember,
     };
-  },
-);
+  });
 
 const claimFeedingInputSchema = z.object({
+  babyId: z.string(),
   predictedTime: z.string(), // ISO date string
 });
 
@@ -134,16 +141,11 @@ export const claimFeedingAction = action
       // Create tRPC caller
       const api = await getApi();
 
-      // Get the most recent baby
-      const baby = await api.babies.getMostRecent();
-
-      if (!baby) {
-        throw new Error('No baby found. Please complete onboarding first.');
-      }
+      const { babyId } = parsedInput;
 
       // Check if there's already a scheduled feeding
       const recentActivities = await api.activities.list({
-        babyId: baby.id,
+        babyId,
         limit: 20,
       });
 
@@ -167,7 +169,7 @@ export const claimFeedingAction = action
         // Create new scheduled feeding
         activity = await api.activities.create({
           assignedUserId: authResult.userId,
-          babyId: baby.id,
+          babyId,
           details: null,
           isScheduled: true,
           startTime: new Date(parsedInput.predictedTime),
@@ -255,6 +257,7 @@ export const unclaimFeedingAction = action
 
 const quickLogFeedingInputSchema = z.object({
   amountMl: z.number().optional(),
+  babyId: z.string(),
   time: z.string().datetime().optional(), // defaults to now
   type: z.enum(['bottle', 'nursing']).optional(), // defaults to bottle
 });
@@ -277,20 +280,19 @@ export const quickLogFeedingAction = action
       // Create tRPC caller
       const api = await getApi();
 
-      // Get the most recent baby
-      const baby = await api.babies.getMostRecent();
+      const { babyId } = parsedInput;
 
-      if (!baby) {
-        throw new Error('No baby found. Please complete onboarding first.');
-      }
-
-      // Create the feeding activity
+      // Create the feeding activity as a completed activity (with endTime)
+      // This prevents it from appearing as "currently feeding"
+      const now = parsedInput.time ? new Date(parsedInput.time) : new Date();
       const activity = await api.activities.create({
         amountMl: parsedInput.amountMl,
-        babyId: baby.id,
+        babyId,
         details: null,
+        duration: 0,
+        endTime: now,
         isScheduled: false,
-        startTime: parsedInput.time ? new Date(parsedInput.time) : new Date(),
+        startTime: now,
         type: parsedInput.type || 'bottle',
       });
 
@@ -301,48 +303,51 @@ export const quickLogFeedingAction = action
     },
   );
 
+const skipFeedingInputSchema = z.object({
+  babyId: z.string(),
+});
+
 /**
  * Skip a feeding reminder
  * Creates a skip activity to persist the skip state across devices/sessions
  */
-export const skipFeedingAction = action.action(
-  async (): Promise<{ activity: typeof Activities.$inferSelect }> => {
-    const api = await getApi();
+export const skipFeedingAction = action
+  .schema(skipFeedingInputSchema)
+  .action(
+    async ({
+      parsedInput,
+    }): Promise<{ activity: typeof Activities.$inferSelect }> => {
+      const api = await getApi();
 
-    // Verify authentication
-    const authResult = await auth();
-    if (!authResult.userId) {
-      throw new Error('Authentication required');
-    }
+      // Verify authentication
+      const authResult = await auth();
+      if (!authResult.userId) {
+        throw new Error('Authentication required');
+      }
 
-    // Get the most recent baby
-    const baby = await api.babies.getMostRecent();
+      const { babyId } = parsedInput;
 
-    if (!baby) {
-      throw new Error('No baby found. Please complete onboarding first.');
-    }
-
-    // Create a nursing/feeding activity marked as skipped
-    // Set endTime to prevent it from appearing as an in-progress activity
-    const now = new Date();
-    const activity = await api.activities.create({
-      babyId: baby.id,
-      details: {
-        side: 'both',
-        skipped: true,
-        skipReason: 'user_dismissed',
+      // Create a nursing/feeding activity marked as skipped
+      // Set endTime to prevent it from appearing as an in-progress activity
+      const now = new Date();
+      const activity = await api.activities.create({
+        babyId,
+        details: {
+          side: 'both',
+          skipped: true,
+          skipReason: 'user_dismissed',
+          type: 'nursing',
+        },
+        duration: 0,
+        endTime: now,
+        isScheduled: false,
+        startTime: now,
         type: 'nursing',
-      },
-      duration: 0,
-      endTime: now,
-      isScheduled: false,
-      startTime: now,
-      type: 'nursing',
-    });
+      });
 
-    // Revalidate pages
-    revalidateAppPaths();
+      // Revalidate pages
+      revalidateAppPaths();
 
-    return { activity };
-  },
-);
+      return { activity };
+    },
+  );

@@ -71,6 +71,7 @@ export const activityTypeEnum = pgEnum('activityType', [
   'growth',
   'potty',
   'doctor_visit',
+  'vitamin_d',
 ]);
 export const activitySubjectTypeEnum = pgEnum('activitySubjectType', [
   'baby',
@@ -608,6 +609,11 @@ export const doctorVisitDetailsSchema = z.object({
   weightKg: z.string().optional(),
 });
 
+// Vitamin D details
+export const vitaminDDetailsSchema = z.object({
+  method: z.enum(['drops', 'spray']).optional(),
+});
+
 // Discriminated union for all activity details
 export const activityDetailsSchema = z
   .discriminatedUnion('type', [
@@ -629,6 +635,10 @@ export const activityDetailsSchema = z
       type: z.literal('doctor_visit'),
       ...doctorVisitDetailsSchema.shape,
     }),
+    z.object({
+      type: z.literal('vitamin_d'),
+      ...vitaminDDetailsSchema.shape,
+    }),
   ])
   .nullable();
 
@@ -644,6 +654,7 @@ export type SolidFoodDetails = z.infer<typeof solidFoodDetailsSchema>;
 export type TemperatureDetails = z.infer<typeof temperatureDetailsSchema>;
 export type SleepDetails = z.infer<typeof sleepDetailsSchema>;
 export type DoctorVisitDetails = z.infer<typeof doctorVisitDetailsSchema>;
+export type VitaminDDetails = z.infer<typeof vitaminDDetailsSchema>;
 
 // ============================================================================
 // Tables - Baby Tracking

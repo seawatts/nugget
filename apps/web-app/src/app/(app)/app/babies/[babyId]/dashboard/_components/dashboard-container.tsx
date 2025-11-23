@@ -98,7 +98,7 @@ export function DashboardContainer() {
       {/* Timeline */}
       {baby.showActivityTimeline && (
         <Suspense fallback={<ActivityTimelineSkeleton />}>
-          <ActivityTimeline />
+          <ActivityTimeline babyId={babyId} />
         </Suspense>
       )}
     </main>

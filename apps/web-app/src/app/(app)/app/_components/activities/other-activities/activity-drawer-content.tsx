@@ -12,11 +12,13 @@ import { createActivityWithDetailsAction } from '../activity-cards.actions';
 interface ActivityDrawerContentProps {
   onClose?: () => void;
   onSaved?: () => void;
+  babyId: string;
 }
 
 export function ActivityDrawerContent({
   onClose,
   onSaved,
+  babyId,
 }: ActivityDrawerContentProps) {
   const [activityType, setActivityType] = useState('play');
   const [duration, setDuration] = useState(30);
@@ -45,6 +47,7 @@ export function ActivityDrawerContent({
   const handleSave = () => {
     createActivity({
       activityType: 'bath',
+      babyId,
       duration,
       notes: notes || undefined,
       startTime: new Date(),

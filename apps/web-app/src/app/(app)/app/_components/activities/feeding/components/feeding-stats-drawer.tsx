@@ -9,44 +9,30 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@nugget/ui/dropdown-menu';
+import { subDays } from 'date-fns';
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
-  ComparisonChart,
   FrequencyHeatmap,
   FrequencyInsightsComponent,
-  getComparisonContent,
-  getTrendContent,
   RecentActivitiesList,
   StatsDrawerWrapper,
   TimeBlockChart,
 } from '../../shared/components/stats';
-import type {
-  AmountType,
-  ComparisonData,
-  ComparisonTimeRange,
-  MetricType,
-  TrendData,
-  VitaminDDay,
-} from '../../shared/types';
-import { TIME_RANGE_OPTIONS } from '../../shared/types';
+import type { AmountType } from '../../shared/types';
 import {
   calculateHourlyFrequency,
   calculateTimeBlockData,
   detectPatterns,
 } from '../../shared/utils/frequency-utils';
-import { mlToOz } from '../../shared/volume-utils';
-import { calculateFeedingStatsWithComparison } from '../feeding-goals';
+import { calculateFeedingTrendData } from '../feeding-goals';
 import { FeedingTrendChart } from './feeding-trend-chart';
-import { VitaminDTracker } from './vitamin-d-tracker';
 
 interface FeedingStatsDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  trendData: TrendData[];
   activities: Array<typeof Activities.$inferSelect>; // Raw activities for dynamic stats calculation
   unit: 'ML' | 'OZ';
-  vitaminDData?: VitaminDDay[];
   recentActivities: Array<{
     time: Date;
     amountMl?: number;
@@ -58,16 +44,16 @@ interface FeedingStatsDrawerProps {
 export function FeedingStatsDrawer({
   open,
   onOpenChange,
-  trendData,
   activities,
   unit,
-  vitaminDData,
   recentActivities,
   timeFormat,
 }: FeedingStatsDrawerProps) {
-  const [metricType, setMetricType] = useState<MetricType>('count');
-  const [amountType, setAmountType] = useState<AmountType>('total');
-  const [timeRange, setTimeRange] = useState<ComparisonTimeRange>('24h');
+  const [trendTimeRange, setTrendTimeRange] = useState<
+    '24h' | '7d' | '2w' | '1m' | '3m' | '6m'
+  >('7d');
+  const [countAmountType, setCountAmountType] = useState<AmountType>('total');
+  const [amountAmountType, setAmountAmountType] = useState<AmountType>('total');
   const [timelineMetric, setTimelineMetric] = useState<'count' | 'amount'>(
     'count',
   );
@@ -75,29 +61,11 @@ export function FeedingStatsDrawer({
     'count',
   );
 
-  const handleMetricTypeChange = (newType: MetricType) => {
-    setMetricType(newType);
-    // Reset to 'total' when switching to 'count'
-    if (newType === 'count' && amountType === 'average') {
-      setAmountType('total');
-    }
-  };
-
-  // Calculate stats based on selected time range
-  const statsComparison = useMemo(() => {
-    const selectedRange = TIME_RANGE_OPTIONS.find(
-      (opt) => opt.value === timeRange,
-    );
-    return calculateFeedingStatsWithComparison(
-      activities,
-      selectedRange?.hours ?? 24,
-    );
-  }, [activities, timeRange]);
-
-  const trendContent = getTrendContent('feeding', metricType);
-  const selectedRangeHours =
-    TIME_RANGE_OPTIONS.find((opt) => opt.value === timeRange)?.hours ?? 24;
-  const comparisonContent = getComparisonContent(timeRange, selectedRangeHours);
+  // Calculate trend data based on selected time range
+  const dynamicTrendData = useMemo(
+    () => calculateFeedingTrendData(activities, trendTimeRange),
+    [activities, trendTimeRange],
+  );
 
   // Calculate frequency data
   const feedingActivities = useMemo(
@@ -105,9 +73,17 @@ export function FeedingStatsDrawer({
     [activities],
   );
 
+  // Filter to last 30 days for heatmap
+  const last30DaysFeedingActivities = useMemo(() => {
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    return feedingActivities.filter(
+      (activity) => new Date(activity.startTime) >= thirtyDaysAgo,
+    );
+  }, [feedingActivities]);
+
   const frequencyHeatmapData = useMemo(
-    () => calculateHourlyFrequency(feedingActivities),
-    [feedingActivities],
+    () => calculateHourlyFrequency(last30DaysFeedingActivities),
+    [last30DaysFeedingActivities],
   );
 
   const timeBlockData = useMemo(
@@ -120,107 +96,56 @@ export function FeedingStatsDrawer({
     [feedingActivities],
   );
 
-  const formatAmount = (ml: number) => {
-    if (unit === 'OZ') {
-      return mlToOz(ml);
-    }
-    return Math.round(ml);
-  };
-
-  const comparisonData: ComparisonData[] = [
-    {
-      current: statsComparison.current.count,
-      metric: 'Feedings',
-      previous: statsComparison.previous.count,
-    },
-  ];
-
-  if (statsComparison.current.totalMl !== undefined) {
-    comparisonData.push({
-      current:
-        unit === 'OZ'
-          ? formatAmount(statsComparison.current.totalMl)
-          : statsComparison.current.totalMl,
-      metric: `Total (${unit.toLowerCase()})`,
-      previous:
-        unit === 'OZ'
-          ? formatAmount(statsComparison.previous.totalMl ?? 0)
-          : (statsComparison.previous.totalMl ?? 0),
-    });
-  }
-
-  if (statsComparison.current.avgAmountMl !== undefined) {
-    comparisonData.push({
-      current:
-        statsComparison.current.avgAmountMl !== null &&
-        statsComparison.current.avgAmountMl !== undefined
-          ? unit === 'OZ'
-            ? formatAmount(statsComparison.current.avgAmountMl)
-            : statsComparison.current.avgAmountMl
-          : 0,
-      metric: `Avg (${unit.toLowerCase()})`,
-      previous:
-        statsComparison.previous.avgAmountMl !== null &&
-        statsComparison.previous.avgAmountMl !== undefined
-          ? unit === 'OZ'
-            ? formatAmount(statsComparison.previous.avgAmountMl)
-            : statsComparison.previous.avgAmountMl
-          : 0,
-    });
-  }
-
   return (
     <StatsDrawerWrapper
       onOpenChange={onOpenChange}
       open={open}
       title="Feeding Statistics"
     >
-      {/* Vitamin D Tracking */}
-      {vitaminDData && vitaminDData.length > 0 && (
-        <Card className="p-4">
-          <div className="mb-3">
-            <h3 className="text-sm font-medium text-foreground">
-              Vitamin D - Last 7 Days
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Daily supplement tracking
-            </p>
-          </div>
-          <VitaminDTracker days={vitaminDData} />
-        </Card>
-      )}
-
-      {/* Trend Chart Section */}
+      {/* Count Trend Chart */}
       <Card className="p-4">
         <div className="mb-3 space-y-3">
           <div className="flex items-start justify-between">
             <div>
               <h3 className="text-sm font-medium text-foreground">
-                {trendContent.title}
+                Feeding Count
               </h3>
               <p className="text-xs text-muted-foreground">
-                {trendContent.description}
+                Number of feedings over time
               </p>
             </div>
             <div className="flex gap-2">
-              {/* Metric Type Dropdown */}
+              {/* Time Range Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" variant="outline">
-                    {metricType === 'count' ? 'Count' : 'Amount'}
+                    {trendTimeRange === '24h' && '24 Hours'}
+                    {trendTimeRange === '7d' && '7 Days'}
+                    {trendTimeRange === '2w' && '2 Weeks'}
+                    {trendTimeRange === '1m' && '1 Month'}
+                    {trendTimeRange === '3m' && '3 Months'}
+                    {trendTimeRange === '6m' && '6 Months'}
                     <ChevronDown className="ml-1 size-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => handleMetricTypeChange('count')}
-                  >
-                    Count
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('24h')}>
+                    24 Hours
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleMetricTypeChange('amount')}
-                  >
-                    Amount
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('7d')}>
+                    7 Days
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('2w')}>
+                    2 Weeks
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('1m')}>
+                    1 Month
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('3m')}>
+                    3 Months
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('6m')}>
+                    6 Months
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -229,70 +154,106 @@ export function FeedingStatsDrawer({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" variant="outline">
-                    {amountType === 'total' ? 'Total' : 'Average'}
+                    {countAmountType === 'total' ? 'Total' : 'Average'}
                     <ChevronDown className="ml-1 size-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setAmountType('total')}>
+                  <DropdownMenuItem onClick={() => setCountAmountType('total')}>
                     Total
                   </DropdownMenuItem>
-                  {metricType !== 'count' && (
-                    <DropdownMenuItem onClick={() => setAmountType('average')}>
-                      Average
-                    </DropdownMenuItem>
-                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
         </div>
         <FeedingTrendChart
-          amountType={amountType}
-          data={trendData}
-          metricType={metricType as 'count' | 'amount'}
+          amountType={countAmountType}
+          data={dynamicTrendData}
+          metricType="count"
+          timeRange={trendTimeRange}
           unit={unit}
         />
       </Card>
 
-      {/* Comparison Stats Section */}
+      {/* Amount Trend Chart */}
       <Card className="p-4">
-        <div className="mb-3 flex items-start justify-between">
-          <div>
-            <h3 className="text-sm font-medium text-foreground">
-              {comparisonContent.title}
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              {comparisonContent.description}
-            </p>
+        <div className="mb-3 space-y-3">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-foreground">
+                Feeding Amount
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Volume consumed over time
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {/* Time Range Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    {trendTimeRange === '24h' && '24 Hours'}
+                    {trendTimeRange === '7d' && '7 Days'}
+                    {trendTimeRange === '2w' && '2 Weeks'}
+                    {trendTimeRange === '1m' && '1 Month'}
+                    {trendTimeRange === '3m' && '3 Months'}
+                    {trendTimeRange === '6m' && '6 Months'}
+                    <ChevronDown className="ml-1 size-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('24h')}>
+                    24 Hours
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('7d')}>
+                    7 Days
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('2w')}>
+                    2 Weeks
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('1m')}>
+                    1 Month
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('3m')}>
+                    3 Months
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('6m')}>
+                    6 Months
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Total/Average Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    {amountAmountType === 'total' ? 'Total' : 'Average'}
+                    <ChevronDown className="ml-1 size-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => setAmountAmountType('total')}
+                  >
+                    Total
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setAmountAmountType('average')}
+                  >
+                    Average
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline">
-                {
-                  TIME_RANGE_OPTIONS.find((opt) => opt.value === timeRange)
-                    ?.label
-                }
-                <ChevronDown className="ml-1 size-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {TIME_RANGE_OPTIONS.map((option) => (
-                <DropdownMenuItem
-                  key={option.value}
-                  onClick={() => setTimeRange(option.value)}
-                >
-                  {option.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
-        <ComparisonChart
-          colorClass="var(--activity-feeding)"
-          currentLabel={comparisonContent.currentLabel}
-          data={comparisonData}
-          previousLabel={comparisonContent.previousLabel}
+        <FeedingTrendChart
+          amountType={amountAmountType}
+          data={dynamicTrendData}
+          metricType="amount"
+          timeRange={trendTimeRange}
+          unit={unit}
         />
       </Card>
 

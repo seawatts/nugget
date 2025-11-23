@@ -18,11 +18,9 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { ActivityDrawerHeader } from '../shared/components/activity-drawer-header';
 import { StopSleepConfirmationDialog } from '../shared/components/stop-sleep-confirmation-dialog';
-import { TimeInput } from '../shared/components/time-input';
 import { useInProgressSleep } from '../shared/hooks/use-in-progress-sleep';
 import { autoStopInProgressSleepAction } from '../sleep/actions';
 import { useActivityMutations } from '../use-activity-mutations';
-import { FeedingDrawerSkeleton } from './feeding-drawer-skeleton';
 import { FeedingTypeSelector } from './feeding-type-selector';
 import { useFeedingDrawerState } from './hooks/use-feeding-drawer-state';
 import { useFeedingSave } from './hooks/use-feeding-save';
@@ -62,6 +60,12 @@ export function FeedingActivityDrawer({
       )
     : null;
 
+  // Fetch user for time format
+  api.user.current.useQuery();
+
+  // State for time selection
+  const [nursingEndTime, setNursingEndTime] = useState(new Date());
+
   // Consolidated state management
   const {
     startTime,
@@ -85,6 +89,7 @@ export function FeedingActivityDrawer({
   // Save management
   const { saveActivity } = useFeedingSave({
     activeActivityId,
+    babyId,
     clearTimerState,
     existingActivity,
   });
@@ -173,7 +178,7 @@ export function FeedingActivityDrawer({
 
     try {
       // Stop the in-progress sleep
-      const result = await autoStopInProgressSleepAction();
+      const result = await autoStopInProgressSleepAction({ babyId });
       if (result?.data?.activity) {
         toast.info('Sleep tracking stopped');
       }
@@ -240,50 +245,30 @@ export function FeedingActivityDrawer({
 
       {/* Content - Scrollable */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
-        {isLoadingInProgress ? (
-          <FeedingDrawerSkeleton />
-        ) : (
-          <>
-            <FeedingTypeSelector
-              activeActivityId={activeActivityId}
-              babyAgeDays={babyAgeDays}
-              duration={duration}
-              existingActivityType={
-                (existingActivity?.type === 'bottle' ||
-                existingActivity?.type === 'nursing' ||
-                existingActivity?.type === 'solids'
-                  ? existingActivity.type
-                  : activeActivityId
-                    ? (formData?.type ?? null)
-                    : null) as 'bottle' | 'nursing' | 'solids' | null
-              }
-              isTimerStopped={isTimerStopped}
-              onFormDataChange={setFormData}
-              onTimerStart={handleTimerStart}
-              setDuration={setDuration}
-              setStartTime={setStartTime}
-              startTime={startTime}
-            />
-
-            {/* Time & Date Section - Only show when timer has been stopped or no active tracking */}
-            {formData && (activeActivityId ? isTimerStopped : true) && (
-              <div className="space-y-3 min-w-0">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Time & Date
-                </h3>
-                <div className="grid grid-cols-1 gap-3 min-w-0">
-                  <TimeInput
-                    id="feeding-start-time"
-                    label="Start Date & Time"
-                    onChange={setStartTime}
-                    value={startTime}
-                  />
-                  {/* End time is auto-calculated for nursing based on durations */}
-                </div>
-              </div>
-            )}
-          </>
-        )}
+        <FeedingTypeSelector
+          activeActivityId={activeActivityId}
+          babyAgeDays={babyAgeDays}
+          duration={duration}
+          endTime={nursingEndTime}
+          existingActivityType={
+            (existingActivity?.type === 'bottle' ||
+            existingActivity?.type === 'nursing' ||
+            existingActivity?.type === 'solids' ||
+            existingActivity?.type === 'vitamin_d'
+              ? existingActivity.type
+              : activeActivityId
+                ? (formData?.type ?? null)
+                : null) as 'bottle' | 'nursing' | 'solids' | 'vitamin_d' | null
+          }
+          isLoading={isLoadingInProgress}
+          isTimerStopped={isTimerStopped}
+          onFormDataChange={setFormData}
+          onTimerStart={handleTimerStart}
+          setDuration={setDuration}
+          setEndTime={setNursingEndTime}
+          setStartTime={setStartTime}
+          startTime={startTime}
+        />
       </div>
 
       {/* Footer with Actions - Only show after feeding type is selected */}

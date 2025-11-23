@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { getApi } from '@nugget/api/server';
 import type { Activities } from '@nugget/db/schema';
 import { createSafeActionClient } from 'next-safe-action';
+import { z } from 'zod';
 
 const action = createSafeActionClient();
 
@@ -24,12 +25,17 @@ function calculateBabyAgeDays(birthDate: Date | null): number | null {
   return diffDays;
 }
 
+const getUpcomingDoctorVisitInputSchema = z.object({
+  babyId: z.string(),
+});
+
 /**
  * Get upcoming doctor visit prediction data
  * Returns recent activities and baby info for client-side prediction
  */
-export const getUpcomingDoctorVisitAction = action.action(
-  async (): Promise<UpcomingDoctorVisitData> => {
+export const getUpcomingDoctorVisitAction = action
+  .schema(getUpcomingDoctorVisitInputSchema)
+  .action(async ({ parsedInput }): Promise<UpcomingDoctorVisitData> => {
     // Verify authentication
     const authResult = await auth();
     if (!authResult.userId || !authResult.orgId) {
@@ -39,11 +45,13 @@ export const getUpcomingDoctorVisitAction = action.action(
     // Create tRPC caller
     const api = await getApi();
 
-    // Get the most recent baby
-    const baby = await api.babies.getMostRecent();
+    const { babyId } = parsedInput;
+
+    // Get the baby to check birth date
+    const baby = await api.babies.getByIdLight({ id: babyId });
 
     if (!baby) {
-      throw new Error('No baby found. Please complete onboarding first.');
+      throw new Error('Baby not found.');
     }
 
     // Calculate baby's age in days
@@ -53,7 +61,7 @@ export const getUpcomingDoctorVisitAction = action.action(
     // We want to see complete history to match against schedule
     const recentActivities = await api.activities.list({
       activityTypes: ['doctor_visit'],
-      babyId: baby.id,
+      babyId,
       limit: 100,
     });
 
@@ -62,5 +70,4 @@ export const getUpcomingDoctorVisitAction = action.action(
       babyBirthDate: baby.birthDate,
       recentActivities,
     };
-  },
-);
+  });

@@ -17,11 +17,16 @@ export interface UpcomingDiaperData {
   babyAgeDays: number | null;
 }
 
+const getUpcomingDiaperInputSchema = z.object({
+  babyId: z.string(),
+});
+
 /**
  * Get upcoming diaper change prediction
  */
-export const getUpcomingDiaperAction = action.action(
-  async (): Promise<UpcomingDiaperData> => {
+export const getUpcomingDiaperAction = action
+  .schema(getUpcomingDiaperInputSchema)
+  .action(async ({ parsedInput }): Promise<UpcomingDiaperData> => {
     // Verify authentication
     const authResult = await auth();
     if (!authResult.userId || !authResult.orgId) {
@@ -31,11 +36,13 @@ export const getUpcomingDiaperAction = action.action(
     // Create tRPC caller
     const api = await getApi();
 
-    // Get the most recent baby
-    const baby = await api.babies.getMostRecent();
+    const { babyId } = parsedInput;
+
+    // Get the baby to check birth date
+    const baby = await api.babies.getByIdLight({ id: babyId });
 
     if (!baby) {
-      throw new Error('No baby found. Please complete onboarding first.');
+      throw new Error('Baby not found.');
     }
 
     // Calculate baby's age in days
@@ -85,10 +92,10 @@ export const getUpcomingDiaperAction = action.action(
       guidanceMessage,
       prediction,
     };
-  },
-);
+  });
 
 const quickLogDiaperInputSchema = z.object({
+  babyId: z.string(),
   time: z.string().datetime().optional(), // defaults to now
   type: z.enum(['wet', 'dirty', 'both']).optional(), // defaults to wet
 });
@@ -110,17 +117,12 @@ export const quickLogDiaperAction = action
         throw new Error('Authentication required');
       }
 
-      // Get the most recent baby
-      const baby = await api.babies.getMostRecent();
-
-      if (!baby) {
-        throw new Error('No baby found. Please complete onboarding first.');
-      }
+      const { babyId } = parsedInput;
 
       // Create the diaper activity with type details
       const diaperType = parsedInput.type || 'wet';
       const activity = await api.activities.create({
-        babyId: baby.id,
+        babyId,
         details: {
           type: diaperType,
         },
@@ -136,46 +138,49 @@ export const quickLogDiaperAction = action
     },
   );
 
+const skipDiaperInputSchema = z.object({
+  babyId: z.string(),
+});
+
 /**
  * Skip a diaper change reminder
  * Creates a skip activity to persist the skip state across devices/sessions
  */
-export const skipDiaperAction = action.action(
-  async (): Promise<{ activity: typeof Activities.$inferSelect }> => {
-    const api = await getApi();
+export const skipDiaperAction = action
+  .schema(skipDiaperInputSchema)
+  .action(
+    async ({
+      parsedInput,
+    }): Promise<{ activity: typeof Activities.$inferSelect }> => {
+      const api = await getApi();
 
-    // Verify authentication
-    const authResult = await auth();
-    if (!authResult.userId) {
-      throw new Error('Authentication required');
-    }
+      // Verify authentication
+      const authResult = await auth();
+      if (!authResult.userId) {
+        throw new Error('Authentication required');
+      }
 
-    // Get the most recent baby
-    const baby = await api.babies.getMostRecent();
+      const { babyId } = parsedInput;
 
-    if (!baby) {
-      throw new Error('No baby found. Please complete onboarding first.');
-    }
-
-    // Create a diaper activity marked as skipped
-    // Set endTime to prevent it from appearing as an in-progress activity
-    const now = new Date();
-    const activity = await api.activities.create({
-      babyId: baby.id,
-      details: {
-        skipped: true,
-        skipReason: 'user_dismissed',
+      // Create a diaper activity marked as skipped
+      // Set endTime to prevent it from appearing as an in-progress activity
+      const now = new Date();
+      const activity = await api.activities.create({
+        babyId,
+        details: {
+          skipped: true,
+          skipReason: 'user_dismissed',
+          type: 'diaper',
+        },
+        endTime: now,
+        isScheduled: false,
+        startTime: now,
         type: 'diaper',
-      },
-      endTime: now,
-      isScheduled: false,
-      startTime: now,
-      type: 'diaper',
-    });
+      });
 
-    // Revalidate pages
-    revalidateAppPaths();
+      // Revalidate pages
+      revalidateAppPaths();
 
-    return { activity };
-  },
-);
+      return { activity };
+    },
+  );

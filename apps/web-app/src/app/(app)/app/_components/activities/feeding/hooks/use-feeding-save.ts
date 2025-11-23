@@ -10,6 +10,7 @@ interface UseFeedingSaveProps {
   existingActivity?: typeof Activities.$inferSelect | null;
   activeActivityId: string | null;
   clearTimerState: () => void;
+  babyId?: string;
 }
 
 // Utility functions
@@ -26,7 +27,8 @@ function buildOptimisticActivity(
   // Determine feedingSource and details based on type
   let feedingSource: 'pumped' | 'donor' | 'direct' | 'formula' | null = null;
   let details: ActivityDetails = null;
-  const activityType: 'bottle' | 'nursing' | 'solids' = formData.type;
+  const activityType: 'bottle' | 'nursing' | 'solids' | 'vitamin_d' =
+    formData.type;
 
   if (formData.type === 'nursing') {
     feedingSource = 'direct';
@@ -48,13 +50,16 @@ function buildOptimisticActivity(
     details = {
       side,
       type: 'nursing' as const,
-      vitaminDGiven: formData.vitaminDGiven,
     };
   } else if (formData.type === 'bottle') {
     feedingSource = formData.bottleType === 'formula' ? 'formula' : 'pumped';
     details = {
       type: 'bottle' as const,
-      vitaminDGiven: formData.vitaminDGiven,
+    };
+  } else if (formData.type === 'vitamin_d') {
+    details = {
+      method: formData.method,
+      type: 'vitamin_d' as const,
     };
   }
 
@@ -88,7 +93,8 @@ function buildCreateActivityData(
   // Determine feedingSource and details based on type
   let feedingSource: 'pumped' | 'donor' | 'direct' | 'formula' | undefined;
   let details: ActivityDetails = null;
-  const activityType: 'bottle' | 'nursing' | 'solids' = formData.type;
+  const activityType: 'bottle' | 'nursing' | 'solids' | 'vitamin_d' =
+    formData.type;
 
   if (formData.type === 'nursing') {
     feedingSource = 'direct';
@@ -110,13 +116,16 @@ function buildCreateActivityData(
     details = {
       side,
       type: 'nursing' as const,
-      vitaminDGiven: formData.vitaminDGiven,
     };
   } else if (formData.type === 'bottle') {
     feedingSource = formData.bottleType === 'formula' ? 'formula' : 'pumped';
     details = {
       type: 'bottle' as const,
-      vitaminDGiven: formData.vitaminDGiven,
+    };
+  } else if (formData.type === 'vitamin_d') {
+    details = {
+      method: formData.method,
+      type: 'vitamin_d' as const,
     };
   }
 
@@ -162,13 +171,11 @@ function buildUpdateActivityData(
     details = {
       side,
       type: 'nursing' as const,
-      vitaminDGiven: formData.vitaminDGiven,
     };
   } else if (formData.type === 'bottle') {
     feedingSource = formData.bottleType === 'formula' ? 'formula' : 'pumped';
     details = {
       type: 'bottle' as const,
-      vitaminDGiven: formData.vitaminDGiven,
     };
   }
 
@@ -188,6 +195,7 @@ export function useFeedingSave({
   existingActivity,
   activeActivityId,
   clearTimerState,
+  babyId,
 }: UseFeedingSaveProps) {
   const { createActivity, updateActivity } = useActivityMutations();
   const addOptimisticActivity = useOptimisticActivitiesStore(
@@ -247,6 +255,9 @@ export function useFeedingSave({
           addOptimisticActivity(optimisticActivity);
         }
 
+        // Close drawer immediately for better UX
+        onClose();
+
         // Update existing or in-progress activity
         if (existingActivity || activeActivityId) {
           const activityId = existingActivity?.id ?? activeActivityId ?? '';
@@ -265,10 +276,8 @@ export function useFeedingSave({
             baseData,
             durationMinutes,
           );
-          await createActivity(createData);
+          await createActivity({ ...createData, babyId });
         }
-
-        onClose();
       } catch (error) {
         console.error('Failed to save feeding:', error);
       }
@@ -280,6 +289,7 @@ export function useFeedingSave({
       updateActivity,
       addOptimisticActivity,
       clearTimerState,
+      babyId,
     ],
   );
 

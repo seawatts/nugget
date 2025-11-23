@@ -1,6 +1,7 @@
 // Export BAML client
 export { b, BamlAsyncClient } from './baml_client/async_client';
 export * from './baml_client/types';
+export * from './content-cache';
 
 // Export context utilities
 export { buildBamlContext } from './context-builder';

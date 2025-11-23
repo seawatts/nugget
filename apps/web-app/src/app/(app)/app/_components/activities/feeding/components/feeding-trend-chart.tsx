@@ -5,6 +5,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@nugget/ui/chart';
+import { format } from 'date-fns';
 import {
   Bar,
   BarChart,
@@ -13,7 +14,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { formatChartDate } from '../../shared/components/stats';
 import type { AmountType, TrendData } from '../../shared/types';
 import { mlToOz } from '../../shared/volume-utils';
 
@@ -22,6 +22,7 @@ interface FeedingTrendChartProps {
   metricType: 'count' | 'amount';
   unit: 'ML' | 'OZ';
   amountType: AmountType;
+  timeRange: '24h' | '7d' | '2w' | '1m' | '3m' | '6m';
 }
 
 export function FeedingTrendChart({
@@ -29,10 +30,19 @@ export function FeedingTrendChart({
   metricType,
   unit,
   amountType,
+  timeRange,
 }: FeedingTrendChartProps) {
   const formattedData = data.map((item) => {
     const date = new Date(item.date);
-    const displayDate = formatChartDate(date);
+    // Format based on time range
+    let displayDate: string;
+    if (timeRange === '24h') {
+      displayDate = format(date, 'HH:mm'); // Show hour for 24h view
+    } else if (timeRange === '3m' || timeRange === '6m') {
+      displayDate = format(date, 'M/d'); // Show date for 3m and 6m (weekly grouping)
+    } else {
+      displayDate = format(date, 'EEE'); // Show day abbreviation for 7d, 2w, 1m
+    }
 
     let value = 0;
     if (metricType === 'count') {

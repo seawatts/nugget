@@ -14,9 +14,10 @@ import {
 } from '@nugget/ui/alert-dialog';
 import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
+import { startOfDay, subDays } from 'date-fns';
 import { Stethoscope, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { TimeInput } from '../shared/components/time-input';
+import { ClickableTimeDisplay } from '../shared/components/clickable-time-display';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { DoctorVisitFormData } from './doctor-visit-drawer';
 import { DoctorVisitDrawerContent } from './doctor-visit-drawer';
@@ -42,18 +43,24 @@ export function TimelineDoctorVisitDrawer({
   const { updateActivity, deleteActivity, isUpdating, isDeleting } =
     useActivityMutations();
 
+  // Fetch user preferences for time format
+  const { data: user } = api.user.current.useQuery();
+  const timeFormat = user?.timeFormat || '12h';
+
   // Query baby information to get birth date
   const { data: baby } = api.babies.getByIdLight.useQuery(
     { id: babyId ?? '' },
     { enabled: Boolean(babyId) && isOpen },
   );
 
-  // Query doctor visit activities to get vaccination history
+  // Query doctor visit activities to get vaccination history (last 2 years)
+  const twoYearsAgo = useMemo(() => startOfDay(subDays(new Date(), 730)), []);
   const { data: doctorVisitActivities = [] } = api.activities.list.useQuery(
     {
       activityTypes: ['doctor_visit'],
       babyId: babyId ?? '',
-      limit: 100,
+      limit: 1000,
+      since: twoYearsAgo,
     },
     { enabled: Boolean(babyId) && isOpen },
   );
@@ -165,9 +172,10 @@ export function TimelineDoctorVisitDrawer({
 
   const handleDelete = async () => {
     try {
-      await deleteActivity(existingActivity.id);
+      // Close drawer immediately for better UX
       setShowDeleteConfirmation(false);
       onClose();
+      await deleteActivity(existingActivity.id);
     } catch (error) {
       console.error('Failed to delete activity:', error);
     }
@@ -180,7 +188,7 @@ export function TimelineDoctorVisitDrawer({
     <>
       {/* Custom Header with Activity Color */}
       <div className="p-6 pb-4 bg-activity-doctor-visit">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <Stethoscope
               className="size-8 text-activity-doctor-visit-foreground"
@@ -198,6 +206,15 @@ export function TimelineDoctorVisitDrawer({
             <X className="size-6" />
           </button>
         </div>
+        <div className="ml-11">
+          <ClickableTimeDisplay
+            className="text-activity-doctor-visit-foreground"
+            mode="single"
+            onStartTimeChange={setStartTime}
+            startTime={startTime}
+            timeFormat={timeFormat}
+          />
+        </div>
       </div>
 
       {/* Content - Scrollable */}
@@ -208,19 +225,6 @@ export function TimelineDoctorVisitDrawer({
           onDataChange={setFormData}
           vaccinationHistory={vaccinationHistory}
         />
-
-        {/* Time & Date Section */}
-        <div className="space-y-3 min-w-0">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            Time & Date
-          </h3>
-          <TimeInput
-            id="doctor-visit-time"
-            label="Time"
-            onChange={setStartTime}
-            value={startTime}
-          />
-        </div>
       </div>
 
       {/* Footer with Actions */}

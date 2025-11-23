@@ -37,11 +37,11 @@ interface PredictiveInfoDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  activityType: 'feeding' | 'diaper' | 'sleep' | 'pumping';
+  activityType: 'feeding' | 'diaper' | 'sleep' | 'pumping' | 'vitamin_d';
   learningContent: LearningContent | null;
   babyAgeDays: number | null;
-  averageInterval: number | null;
-  timeFormat: '12h' | '24h';
+  averageInterval?: number | null;
+  timeFormat?: '12h' | '24h';
   icon?: LucideIcon;
   quickLogSettings?: QuickLogSettings;
   calculationDetails?: CalculationDetails;
@@ -50,7 +50,7 @@ interface PredictiveInfoDrawerProps {
 
 // Map activity types to their color classes for Tailwind
 const ACTIVITY_COLOR_CLASSES: Record<
-  'feeding' | 'diaper' | 'sleep' | 'pumping',
+  'feeding' | 'diaper' | 'sleep' | 'pumping' | 'vitamin_d',
   {
     bgColor: string;
     borderColor: string;
@@ -76,6 +76,11 @@ const ACTIVITY_COLOR_CLASSES: Record<
     bgColor: 'bg-activity-sleep/5',
     borderColor: 'border-activity-sleep/20',
     color: 'bg-activity-sleep/10 text-activity-sleep',
+  },
+  vitamin_d: {
+    bgColor: 'bg-activity-vitamin-d/5',
+    borderColor: 'border-activity-vitamin-d/20',
+    color: 'bg-activity-vitamin-d/10 text-activity-vitamin-d',
   },
 };
 
@@ -129,7 +134,7 @@ export function PredictiveInfoDrawer({
           )}
 
           {/* Average Interval */}
-          {averageInterval !== null && (
+          {averageInterval !== null && averageInterval !== undefined && (
             <div className="flex items-center justify-between text-sm bg-muted/20 rounded px-3 py-2">
               <span className="text-muted-foreground">Average interval</span>
               <span className="text-foreground font-medium">

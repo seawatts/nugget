@@ -428,7 +428,7 @@ export const activitiesRouter = createTRPCRouter({
       fortyEightHoursAgo.setHours(fortyEightHoursAgo.getHours() - 48);
 
       const recentActivities = await ctx.db.query.Activities.findMany({
-        limit: 50,
+        limit: 200,
         orderBy: [desc(Activities.startTime)],
         where: and(
           eq(Activities.babyId, baby.id),
@@ -510,7 +510,7 @@ export const activitiesRouter = createTRPCRouter({
       fortyEightHoursAgo.setHours(fortyEightHoursAgo.getHours() - 48);
 
       const recentActivities = await ctx.db.query.Activities.findMany({
-        limit: 50,
+        limit: 200,
         orderBy: [desc(Activities.startTime)],
         where: and(
           eq(Activities.babyId, baby.id),
@@ -560,7 +560,7 @@ export const activitiesRouter = createTRPCRouter({
       seventyTwoHoursAgo.setHours(seventyTwoHoursAgo.getHours() - 72);
 
       const recentActivities = await ctx.db.query.Activities.findMany({
-        limit: 50,
+        limit: 200,
         orderBy: [desc(Activities.startTime)],
         where: and(
           eq(Activities.babyId, baby.id),
@@ -583,7 +583,8 @@ export const activitiesRouter = createTRPCRouter({
         activityTypes: z.array(z.string()).optional(),
         babyId: z.string(),
         isScheduled: z.boolean().optional(),
-        limit: z.number().min(1).max(100).default(50),
+        limit: z.number().min(1).max(1000).default(50),
+        since: z.date().optional(),
         type: z
           .enum(Object.keys(ActivityTypeType) as [string, ...string[]])
           .optional(),
@@ -595,8 +596,15 @@ export const activitiesRouter = createTRPCRouter({
         throw new Error('Authentication required');
       }
 
-      const { babyId, limit, type, isScheduled, userIds, activityTypes } =
-        input;
+      const {
+        babyId,
+        limit,
+        type,
+        isScheduled,
+        userIds,
+        activityTypes,
+        since,
+      } = input;
 
       // Verify baby belongs to family
       const baby = await ctx.db.query.Babies.findFirst({
@@ -631,6 +639,9 @@ export const activitiesRouter = createTRPCRouter({
             >,
           ),
         );
+      }
+      if (since) {
+        conditions.push(gte(Activities.startTime, since));
       }
 
       return ctx.db.query.Activities.findMany({

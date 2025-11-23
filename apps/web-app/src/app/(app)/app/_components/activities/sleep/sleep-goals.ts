@@ -1,10 +1,12 @@
 import type { Activities } from '@nugget/db/schema';
 import { differenceInHours, format, startOfDay } from 'date-fns';
+import { calculateWeightedInterval } from '../shared/adaptive-weighting';
+import { getSleepIntervalByAge } from './sleep-intervals';
 
 /**
- * Calculate recommended daily nap count based on baby's age
+ * Get age-based nap count recommendation
  */
-export function getDailyNapGoal(ageDays: number): number {
+function getAgeBasedNapCount(ageDays: number): number {
   // Newborn (0-7 days): 4-5 naps
   if (ageDays <= 7) return 5;
   // 1-4 weeks: 4-5 naps
@@ -21,6 +23,47 @@ export function getDailyNapGoal(ageDays: number): number {
   if (ageDays <= 547) return 2;
   // 18+ months: 1 nap
   return 1;
+}
+
+/**
+ * Calculate recommended daily nap count based on baby's age and actual patterns
+ * Uses adaptive weighting to gradually shift from age-based to pattern-based recommendations
+ * @param ageDays - Baby's age in days
+ * @param predictedIntervalHours - Optional predicted interval from the prediction algorithm
+ * @param dataPointsCount - Optional number of recent activities used in prediction
+ * @returns Estimated number of naps per day
+ */
+export function getDailyNapGoal(
+  ageDays: number,
+  predictedIntervalHours?: number | null,
+  dataPointsCount?: number,
+): number {
+  // Get age-based interval for sleep
+  const ageBasedInterval = getSleepIntervalByAge(ageDays);
+
+  // If no prediction data or data points count, use age-based recommendation
+  if (!predictedIntervalHours || dataPointsCount === undefined) {
+    return getAgeBasedNapCount(ageDays);
+  }
+
+  // Calculate weighted interval using adaptive algorithm
+  const weightedInterval = calculateWeightedInterval(
+    ageBasedInterval,
+    predictedIntervalHours,
+    dataPointsCount,
+  );
+
+  // Calculate nap count based on weighted interval
+  // Assuming baby is awake for ~12-14 hours during the day (varies by age)
+  const wakefulHours = ageDays <= 90 ? 10 : ageDays <= 180 ? 12 : 14;
+  const napCount = Math.round(wakefulHours / weightedInterval);
+
+  // Ensure reasonable bounds based on age
+  const minNaps = ageDays <= 90 ? 3 : ageDays <= 365 ? 2 : 1;
+  const maxNaps =
+    ageDays <= 28 ? 6 : ageDays <= 90 ? 5 : ageDays <= 365 ? 4 : 3;
+
+  return Math.max(minNaps, Math.min(maxNaps, napCount));
 }
 
 /**
@@ -260,19 +303,137 @@ export function calculateSleepStatsWithComparison(
  */
 export function calculateSleepTrendData(
   activities: Array<typeof Activities.$inferSelect>,
+  timeRange: '24h' | '7d' | '2w' | '1m' | '3m' | '6m' = '7d',
 ): Array<{ date: string; count: number; totalMinutes: number }> {
   const now = new Date();
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  // Filter to sleeps from the last 7 days
+  if (timeRange === '24h') {
+    // For 24h view, group by hour
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // Filter to sleeps from the last 24 hours
+    const recentSleeps = activities.filter((activity) => {
+      const activityDate = new Date(activity.startTime);
+      const isRecent = activityDate >= twentyFourHoursAgo;
+      const isSleep = activity.type === 'sleep';
+      return isRecent && isSleep;
+    });
+
+    // Group by hour
+    const statsByHour = new Map<
+      string,
+      { count: number; totalMinutes: number }
+    >();
+
+    for (const activity of recentSleeps) {
+      const date = new Date(activity.startTime);
+      // Format as "yyyy-MM-dd HH:00" for hourly grouping
+      const hourKey = format(date, 'yyyy-MM-dd HH:00');
+
+      if (!statsByHour.has(hourKey)) {
+        statsByHour.set(hourKey, { count: 0, totalMinutes: 0 });
+      }
+
+      const stats = statsByHour.get(hourKey);
+      if (!stats) continue;
+
+      stats.count += 1;
+      stats.totalMinutes += activity.duration || 0;
+    }
+
+    // Convert to array and fill in missing hours
+    const result: Array<{ date: string; count: number; totalMinutes: number }> =
+      [];
+    for (let i = 23; i >= 0; i -= 1) {
+      const date = new Date(now.getTime() - i * 60 * 60 * 1000);
+      const hourKey = format(date, 'yyyy-MM-dd HH:00');
+      const stats = statsByHour.get(hourKey) || { count: 0, totalMinutes: 0 };
+      result.push({
+        count: stats.count,
+        date: hourKey,
+        totalMinutes: stats.totalMinutes,
+      });
+    }
+
+    return result;
+  }
+
+  // For longer time ranges, determine if we should use daily or weekly grouping
+  const useWeeklyGrouping = timeRange === '3m' || timeRange === '6m';
+
+  // Calculate the time range in days
+  const daysMap: Record<string, number> = {
+    '1m': 30,
+    '2w': 14,
+    '3m': 90,
+    '6m': 180,
+    '7d': 7,
+    '24h': 1,
+  };
+
+  const days = daysMap[timeRange];
+  const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+  // Filter to sleeps from the selected time range
   const recentSleeps = activities.filter((activity) => {
     const activityDate = new Date(activity.startTime);
-    const isRecent = activityDate >= sevenDaysAgo;
+    const isRecent = activityDate >= startDate;
     const isSleep = activity.type === 'sleep';
     return isRecent && isSleep;
   });
 
-  // Group by date
+  if (useWeeklyGrouping) {
+    // Group by week
+    const statsByWeek = new Map<
+      string,
+      { count: number; totalMinutes: number }
+    >();
+
+    for (const activity of recentSleeps) {
+      const date = new Date(activity.startTime);
+      // Get the Monday of the week for this date
+      const dayOfWeek = date.getDay();
+      const diff = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek; // Adjust so Monday is first day
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() + diff);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekKey = format(weekStart, 'yyyy-MM-dd');
+
+      if (!statsByWeek.has(weekKey)) {
+        statsByWeek.set(weekKey, { count: 0, totalMinutes: 0 });
+      }
+
+      const stats = statsByWeek.get(weekKey);
+      if (!stats) continue;
+
+      stats.count += 1;
+      stats.totalMinutes += activity.duration || 0;
+    }
+
+    // Convert to array and fill in missing weeks
+    const result: Array<{ date: string; count: number; totalMinutes: number }> =
+      [];
+    const numWeeks = Math.ceil(days / 7);
+    for (let i = numWeeks - 1; i >= 0; i -= 1) {
+      const date = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+      const dayOfWeek = date.getDay();
+      const diff = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() + diff);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekKey = format(weekStart, 'yyyy-MM-dd');
+      const stats = statsByWeek.get(weekKey) || { count: 0, totalMinutes: 0 };
+      result.push({
+        count: stats.count,
+        date: weekKey,
+        totalMinutes: stats.totalMinutes,
+      });
+    }
+
+    return result;
+  }
+
+  // For daily grouping (7d, 2w, 1m)
   const statsByDate = new Map<
     string,
     { count: number; totalMinutes: number }
@@ -296,7 +457,7 @@ export function calculateSleepTrendData(
   // Convert to array and fill in missing dates
   const result: Array<{ date: string; count: number; totalMinutes: number }> =
     [];
-  for (let i = 6; i >= 0; i -= 1) {
+  for (let i = days - 1; i >= 0; i -= 1) {
     const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
     const dateKey = format(date, 'yyyy-MM-dd');
     const stats = statsByDate.get(dateKey) || { count: 0, totalMinutes: 0 };
@@ -327,14 +488,96 @@ export interface CoSleeperTrendData {
  */
 export function calculateCoSleeperTrendData(
   activities: Array<typeof Activities.$inferSelect>,
+  timeRange: '24h' | '7d' | '2w' | '1m' | '3m' | '6m' = '7d',
 ): CoSleeperTrendData[] {
   const now = new Date();
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  // Filter to co-sleeping sessions from the last 7 days
+  if (timeRange === '24h') {
+    // For 24h view, group by hour
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // Filter to co-sleeping sessions from the last 24 hours
+    const recentCoSleeps = activities.filter((activity) => {
+      const activityDate = new Date(activity.startTime);
+      const isRecent = activityDate >= twentyFourHoursAgo;
+      const isSleep = activity.type === 'sleep';
+      const isCoSleeping =
+        activity.details &&
+        activity.details.type === 'sleep' &&
+        activity.details.isCoSleeping === true &&
+        Array.isArray(activity.details.coSleepingWith) &&
+        activity.details.coSleepingWith.length > 0;
+      return isRecent && isSleep && isCoSleeping;
+    });
+
+    // Group by hour and user
+    const statsByHour = new Map<
+      string,
+      Record<string, { count: number; totalMinutes: number }>
+    >();
+
+    for (const activity of recentCoSleeps) {
+      const date = new Date(activity.startTime);
+      const hourKey = format(date, 'yyyy-MM-dd HH:00');
+
+      if (!statsByHour.has(hourKey)) {
+        statsByHour.set(hourKey, {});
+      }
+
+      const hourStats = statsByHour.get(hourKey);
+      if (!hourStats) continue;
+
+      // Add stats for each co-sleeping family member
+      if (
+        activity.details &&
+        activity.details.type === 'sleep' &&
+        Array.isArray(activity.details.coSleepingWith)
+      ) {
+        for (const userId of activity.details.coSleepingWith) {
+          if (!hourStats[userId]) {
+            hourStats[userId] = { count: 0, totalMinutes: 0 };
+          }
+          hourStats[userId].count += 1;
+          hourStats[userId].totalMinutes += activity.duration || 0;
+        }
+      }
+    }
+
+    // Convert to array and fill in missing hours
+    const result: CoSleeperTrendData[] = [];
+    for (let i = 23; i >= 0; i -= 1) {
+      const date = new Date(now.getTime() - i * 60 * 60 * 1000);
+      const hourKey = format(date, 'yyyy-MM-dd HH:00');
+      const stats = statsByHour.get(hourKey) || {};
+      result.push({
+        byUser: stats,
+        date: hourKey,
+      });
+    }
+
+    return result;
+  }
+
+  // For longer time ranges, determine if we should use daily or weekly grouping
+  const useWeeklyGrouping = timeRange === '3m' || timeRange === '6m';
+
+  // Calculate the time range in days
+  const daysMap: Record<string, number> = {
+    '1m': 30,
+    '2w': 14,
+    '3m': 90,
+    '6m': 180,
+    '7d': 7,
+    '24h': 1,
+  };
+
+  const days = daysMap[timeRange];
+  const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+  // Filter to co-sleeping sessions from the selected time range
   const recentCoSleeps = activities.filter((activity) => {
     const activityDate = new Date(activity.startTime);
-    const isRecent = activityDate >= sevenDaysAgo;
+    const isRecent = activityDate >= startDate;
     const isSleep = activity.type === 'sleep';
     const isCoSleeping =
       activity.details &&
@@ -345,7 +588,68 @@ export function calculateCoSleeperTrendData(
     return isRecent && isSleep && isCoSleeping;
   });
 
-  // Group by date and user
+  if (useWeeklyGrouping) {
+    // Group by week and user
+    const statsByWeek = new Map<
+      string,
+      Record<string, { count: number; totalMinutes: number }>
+    >();
+
+    for (const activity of recentCoSleeps) {
+      const date = new Date(activity.startTime);
+      // Get the Monday of the week for this date
+      const dayOfWeek = date.getDay();
+      const diff = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() + diff);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekKey = format(weekStart, 'yyyy-MM-dd');
+
+      if (!statsByWeek.has(weekKey)) {
+        statsByWeek.set(weekKey, {});
+      }
+
+      const weekStats = statsByWeek.get(weekKey);
+      if (!weekStats) continue;
+
+      // Add stats for each co-sleeping family member
+      if (
+        activity.details &&
+        activity.details.type === 'sleep' &&
+        Array.isArray(activity.details.coSleepingWith)
+      ) {
+        for (const userId of activity.details.coSleepingWith) {
+          if (!weekStats[userId]) {
+            weekStats[userId] = { count: 0, totalMinutes: 0 };
+          }
+          weekStats[userId].count += 1;
+          weekStats[userId].totalMinutes += activity.duration || 0;
+        }
+      }
+    }
+
+    // Convert to array and fill in missing weeks
+    const result: CoSleeperTrendData[] = [];
+    const numWeeks = Math.ceil(days / 7);
+    for (let i = numWeeks - 1; i >= 0; i -= 1) {
+      const date = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+      const dayOfWeek = date.getDay();
+      const diff = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() + diff);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekKey = format(weekStart, 'yyyy-MM-dd');
+      const stats = statsByWeek.get(weekKey) || {};
+      result.push({
+        byUser: stats,
+        date: weekKey,
+      });
+    }
+
+    return result;
+  }
+
+  // For daily grouping (7d, 2w, 1m)
   const statsByDate = new Map<
     string,
     Record<string, { count: number; totalMinutes: number }>
@@ -380,7 +684,7 @@ export function calculateCoSleeperTrendData(
 
   // Convert to array and fill in missing dates
   const result: CoSleeperTrendData[] = [];
-  for (let i = 6; i >= 0; i -= 1) {
+  for (let i = days - 1; i >= 0; i -= 1) {
     const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
     const dateKey = format(date, 'yyyy-MM-dd');
     const stats = statsByDate.get(dateKey) || {};

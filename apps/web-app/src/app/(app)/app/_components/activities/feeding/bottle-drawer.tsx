@@ -1,10 +1,12 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import { Button } from '@nugget/ui/button';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AmountAdjuster } from '../shared/components/amount-adjuster';
 // import { NotesField } from '../shared/components/notes-field';
 import { QuickSelectButtons } from '../shared/components/quick-select-buttons';
+import { TimeSelectionMode } from '../shared/components/time-selection-mode';
 import {
   getQuickSelectVolumesByAge,
   getVolumeStep,
@@ -15,7 +17,6 @@ export interface BottleFormData {
   amountMl: number;
   bottleType: 'breast_milk' | 'formula' | null;
   notes: string;
-  vitaminDGiven?: boolean;
 }
 
 interface BottleDrawerContentProps {
@@ -23,6 +24,12 @@ interface BottleDrawerContentProps {
   onDataChange?: (data: BottleFormData) => void;
   babyAgeDays?: number | null;
   initialData?: Partial<BottleFormData>;
+  duration?: number;
+  setDuration?: (duration: number) => void;
+  startTime?: Date;
+  setStartTime?: (date: Date) => void;
+  endTime?: Date;
+  setEndTime?: (date: Date) => void;
 }
 
 export function BottleDrawerContent({
@@ -30,6 +37,12 @@ export function BottleDrawerContent({
   onDataChange,
   babyAgeDays = null,
   initialData,
+  duration: externalDuration,
+  setDuration,
+  startTime: externalStartTime,
+  setStartTime,
+  endTime: externalEndTime,
+  setEndTime,
 }: BottleDrawerContentProps) {
   // Get age-appropriate quick select values
   const quickSelectValues = getQuickSelectVolumesByAge(babyAgeDays, unitPref);
@@ -53,10 +66,23 @@ export function BottleDrawerContent({
     'breast_milk' | 'formula' | null
   >(initialData?.bottleType ?? null);
   const [notes] = React.useState(initialData?.notes ?? '');
-  const [vitaminDGiven, setVitaminDGiven] = React.useState(
-    initialData?.vitaminDGiven ?? false,
-  );
   // const [notes, setNotes] = React.useState('');
+
+  // Local state for time selection if not provided via props
+  const [localStartTime, setLocalStartTime] = useState(new Date());
+  const [localEndTime, setLocalEndTime] = useState(new Date());
+  const [localDuration, setLocalDuration] = useState(0);
+
+  // Use props if available, otherwise use local state
+  const startTime = externalStartTime ?? localStartTime;
+  const handleSetStartTime = setStartTime ?? setLocalStartTime;
+  const endTime = externalEndTime ?? localEndTime;
+  const handleSetEndTime = setEndTime ?? setLocalEndTime;
+  const duration = externalDuration ?? localDuration;
+  const handleSetDuration = setDuration ?? setLocalDuration;
+
+  // Fetch user preferences for time format
+  const { data: user } = api.user.current.useQuery();
 
   // Call onDataChange whenever form data changes
   useEffect(() => {
@@ -65,9 +91,8 @@ export function BottleDrawerContent({
       amountMl,
       bottleType,
       notes,
-      vitaminDGiven,
     });
-  }, [amount, bottleType, notes, vitaminDGiven, unitPref, onDataChange]);
+  }, [amount, bottleType, notes, unitPref, onDataChange]);
 
   // Get step size and min value based on user preference
   const step = getVolumeStep(unitPref);
@@ -76,6 +101,25 @@ export function BottleDrawerContent({
 
   return (
     <div className="space-y-6">
+      {/* Time Selection Mode */}
+      <TimeSelectionMode
+        activityColor="bg-activity-feeding"
+        activityTextColor="text-activity-feeding-foreground"
+        duration={duration}
+        endTime={endTime}
+        quickDurationOptions={[
+          { label: '5 min', seconds: 5 * 60 },
+          { label: '10 min', seconds: 10 * 60 },
+          { label: '15 min', seconds: 15 * 60 },
+        ]}
+        setDuration={handleSetDuration}
+        setEndTime={handleSetEndTime}
+        setStartTime={handleSetStartTime}
+        showDurationOptions={false}
+        startTime={startTime}
+        timeFormat={user?.timeFormat ?? '12h'}
+      />
+
       {/* Quick Amounts */}
       <QuickSelectButtons
         activeColorClass="bg-activity-feeding text-activity-feeding-foreground hover:bg-activity-feeding/90"
@@ -131,27 +175,6 @@ export function BottleDrawerContent({
             Formula
           </Button>
         </div>
-      </div>
-
-      {/* Vitamin D */}
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-muted-foreground">Supplements</p>
-        <Button
-          className={`h-12 w-full ${
-            vitaminDGiven
-              ? 'bg-activity-feeding text-activity-feeding-foreground hover:bg-activity-feeding/90'
-              : 'bg-transparent'
-          }`}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setVitaminDGiven(!vitaminDGiven);
-          }}
-          type="button"
-          variant={vitaminDGiven ? 'default' : 'outline'}
-        >
-          Vitamin D given
-        </Button>
       </div>
 
       {/* Notes */}

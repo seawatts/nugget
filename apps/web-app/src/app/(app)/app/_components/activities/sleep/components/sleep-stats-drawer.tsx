@@ -11,37 +11,26 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@nugget/ui/dropdown-menu';
+import { subDays } from 'date-fns';
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
-  ComparisonChart,
   FrequencyHeatmap,
   FrequencyInsightsComponent,
-  getComparisonContent,
-  getTrendContent,
   RecentActivitiesList,
   StatsDrawerWrapper,
   TimeBlockChart,
 } from '../../shared/components/stats';
-import type {
-  AmountType,
-  ComparisonData,
-  ComparisonTimeRange,
-  MetricType,
-  TrendData,
-} from '../../shared/types';
-import { TIME_RANGE_OPTIONS } from '../../shared/types';
+import type { AmountType, TrendData } from '../../shared/types';
 import {
   calculateHourlyFrequency,
   calculateTimeBlockData,
   detectPatterns,
 } from '../../shared/utils/frequency-utils';
 import {
-  calculateCoSleeperStatsWithComparison,
   calculateCoSleeperTrendData,
-  calculateSleepStatsWithComparison,
+  calculateSleepTrendData,
 } from '../sleep-goals';
-import { CoSleeperComparisonChart } from './co-sleeper-comparison-chart';
 import { CoSleeperTrendChart } from './co-sleeper-trend-chart';
 import { SleepTrendChart } from './sleep-trend-chart';
 
@@ -61,22 +50,25 @@ interface SleepStatsDrawerProps {
 export function SleepStatsDrawer({
   open,
   onOpenChange,
-  trendData,
   activities,
   recentActivities,
   timeFormat,
 }: SleepStatsDrawerProps) {
-  const [metricType, setMetricType] = useState<MetricType>('count');
-  const [amountType, setAmountType] = useState<AmountType>('total');
-  const [timeRange, setTimeRange] = useState<ComparisonTimeRange>('24h');
+  const [trendTimeRange, setTrendTimeRange] = useState<
+    '24h' | '7d' | '2w' | '1m' | '3m' | '6m'
+  >('7d');
+  const [sessionsAmountType, setSessionsAmountType] =
+    useState<AmountType>('total');
+  const [hoursAmountType, setHoursAmountType] = useState<AmountType>('total');
 
   // Co-sleeper chart states
-  const [coSleeperMetricType, setCoSleeperMetricType] =
-    useState<MetricType>('hours');
-  const [coSleeperAmountType, setCoSleeperAmountType] =
+  const [coSleeperTimeRange, setCoSleeperTimeRange] = useState<
+    '24h' | '7d' | '2w' | '1m' | '3m' | '6m'
+  >('7d');
+  const [coSleeperSessionsAmountType, setCoSleeperSessionsAmountType] =
     useState<AmountType>('total');
-  const [coSleeperTimeRange, setCoSleeperTimeRange] =
-    useState<ComparisonTimeRange>('24h');
+  const [coSleeperHoursAmountType, setCoSleeperHoursAmountType] =
+    useState<AmountType>('total');
   const [selectedFamilyMemberId, setSelectedFamilyMemberId] = useState<
     string | 'all'
   >('all');
@@ -92,53 +84,17 @@ export function SleepStatsDrawer({
     userId: member.userId,
   }));
 
-  const handleMetricTypeChange = (newType: MetricType) => {
-    setMetricType(newType);
-    // Reset to 'total' when switching to 'count' (Sleeps)
-    if (newType === 'count' && amountType === 'average') {
-      setAmountType('total');
-    }
-  };
-
-  const handleCoSleeperMetricTypeChange = (newType: MetricType) => {
-    setCoSleeperMetricType(newType);
-    // Reset to 'total' when switching to 'count'
-    if (newType === 'count' && coSleeperAmountType === 'average') {
-      setCoSleeperAmountType('total');
-    }
-  };
-
-  // Calculate stats based on selected time range
-  const statsComparison = useMemo(() => {
-    const selectedRange = TIME_RANGE_OPTIONS.find(
-      (opt) => opt.value === timeRange,
-    );
-    return calculateSleepStatsWithComparison(
-      activities,
-      selectedRange?.hours ?? 24,
-    );
-  }, [activities, timeRange]);
-
-  const trendContent = getTrendContent('sleep', metricType);
-  const selectedRangeHours =
-    TIME_RANGE_OPTIONS.find((opt) => opt.value === timeRange)?.hours ?? 24;
-  const comparisonContent = getComparisonContent(timeRange, selectedRangeHours);
-
-  // Calculate co-sleeper data
-  const coSleeperTrendData = useMemo(
-    () => calculateCoSleeperTrendData(activities),
-    [activities],
+  // Calculate trend data based on selected time range
+  const dynamicTrendData = useMemo(
+    () => calculateSleepTrendData(activities, trendTimeRange),
+    [activities, trendTimeRange],
   );
 
-  const coSleeperComparisonData = useMemo(() => {
-    const selectedRange = TIME_RANGE_OPTIONS.find(
-      (opt) => opt.value === coSleeperTimeRange,
-    );
-    return calculateCoSleeperStatsWithComparison(
-      activities,
-      selectedRange?.hours ?? 24,
-    );
-  }, [activities, coSleeperTimeRange]);
+  // Calculate co-sleeper data based on selected time range
+  const coSleeperTrendData = useMemo(
+    () => calculateCoSleeperTrendData(activities, coSleeperTimeRange),
+    [activities, coSleeperTimeRange],
+  );
 
   // Filter data by selected family member
   const filteredCoSleeperTrendData = useMemo(() => {
@@ -155,31 +111,23 @@ export function SleepStatsDrawer({
     });
   }, [coSleeperTrendData, selectedFamilyMemberId]);
 
-  const filteredCoSleeperComparisonData = useMemo(() => {
-    if (selectedFamilyMemberId === 'all') return coSleeperComparisonData;
-
-    return coSleeperComparisonData.filter(
-      (item) => item.userId === selectedFamilyMemberId,
-    );
-  }, [coSleeperComparisonData, selectedFamilyMemberId]);
-
-  const coSleeperSelectedRangeHours =
-    TIME_RANGE_OPTIONS.find((opt) => opt.value === coSleeperTimeRange)?.hours ??
-    24;
-  const coSleeperComparisonContent = getComparisonContent(
-    coSleeperTimeRange,
-    coSleeperSelectedRangeHours,
-  );
-
   // Calculate frequency data
   const sleepActivities = useMemo(
     () => activities.filter((a) => a.type === 'sleep'),
     [activities],
   );
 
+  // Filter to last 30 days for heatmap
+  const last30DaysSleepActivities = useMemo(() => {
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    return sleepActivities.filter(
+      (activity) => new Date(activity.startTime) >= thirtyDaysAgo,
+    );
+  }, [sleepActivities]);
+
   const frequencyHeatmapData = useMemo(
-    () => calculateHourlyFrequency(sleepActivities),
-    [sleepActivities],
+    () => calculateHourlyFrequency(last30DaysSleepActivities),
+    [last30DaysSleepActivities],
   );
 
   const timeBlockData = useMemo(
@@ -192,65 +140,56 @@ export function SleepStatsDrawer({
     [sleepActivities],
   );
 
-  const comparisonData: ComparisonData[] = [
-    {
-      current: statsComparison.current.sleepCount,
-      metric: 'Sleeps',
-      previous: statsComparison.previous.sleepCount,
-    },
-    {
-      current: Number((statsComparison.current.totalMinutes / 60).toFixed(1)),
-      metric: 'Total (h)',
-      previous: Number((statsComparison.previous.totalMinutes / 60).toFixed(1)),
-    },
-    {
-      current: statsComparison.current.avgSleepDuration
-        ? Number((statsComparison.current.avgSleepDuration / 60).toFixed(1))
-        : 0,
-      metric: 'Avg Sleep (h)',
-      previous: statsComparison.previous.avgSleepDuration
-        ? Number((statsComparison.previous.avgSleepDuration / 60).toFixed(1))
-        : 0,
-    },
-  ];
-
   return (
     <StatsDrawerWrapper
       onOpenChange={onOpenChange}
       open={open}
       title="Sleep Statistics"
     >
-      {/* Trend Chart Section */}
+      {/* Sleep Sessions Trend Chart */}
       <Card className="p-4">
         <div className="mb-3 space-y-3">
           <div className="flex items-start justify-between">
             <div>
               <h3 className="text-sm font-medium text-foreground">
-                {trendContent.title}
+                Sleep Sessions
               </h3>
               <p className="text-xs text-muted-foreground">
-                {trendContent.description}
+                Number of sleep sessions over time
               </p>
             </div>
             <div className="flex gap-2">
-              {/* Metric Type Dropdown */}
+              {/* Time Range Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" variant="outline">
-                    {metricType === 'count' ? 'Sleeps' : 'Hours'}
+                    {trendTimeRange === '24h' && '24 Hours'}
+                    {trendTimeRange === '7d' && '7 Days'}
+                    {trendTimeRange === '2w' && '2 Weeks'}
+                    {trendTimeRange === '1m' && '1 Month'}
+                    {trendTimeRange === '3m' && '3 Months'}
+                    {trendTimeRange === '6m' && '6 Months'}
                     <ChevronDown className="ml-1 size-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => handleMetricTypeChange('count')}
-                  >
-                    Sleeps
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('24h')}>
+                    24 Hours
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleMetricTypeChange('hours')}
-                  >
-                    Hours
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('7d')}>
+                    7 Days
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('2w')}>
+                    2 Weeks
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('1m')}>
+                    1 Month
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('3m')}>
+                    3 Months
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('6m')}>
+                    6 Months
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -259,84 +198,121 @@ export function SleepStatsDrawer({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" variant="outline">
-                    {amountType === 'total' ? 'Total' : 'Average'}
+                    {sessionsAmountType === 'total' ? 'Total' : 'Average'}
                     <ChevronDown className="ml-1 size-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setAmountType('total')}>
+                  <DropdownMenuItem
+                    onClick={() => setSessionsAmountType('total')}
+                  >
                     Total
                   </DropdownMenuItem>
-                  {metricType !== 'count' && (
-                    <DropdownMenuItem onClick={() => setAmountType('average')}>
-                      Average
-                    </DropdownMenuItem>
-                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
         </div>
         <SleepTrendChart
-          amountType={amountType}
-          data={trendData}
-          metricType={metricType as 'count' | 'hours'}
+          amountType={sessionsAmountType}
+          data={dynamicTrendData}
+          metricType="count"
+          timeRange={trendTimeRange}
         />
       </Card>
 
-      {/* Comparison Stats Section */}
+      {/* Sleep Hours Trend Chart */}
       <Card className="p-4">
-        <div className="mb-3 flex items-start justify-between">
-          <div>
-            <h3 className="text-sm font-medium text-foreground">
-              {comparisonContent.title}
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              {comparisonContent.description}
-            </p>
+        <div className="mb-3 space-y-3">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-foreground">
+                Sleep Hours
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Sleep duration over time
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {/* Time Range Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    {trendTimeRange === '24h' && '24 Hours'}
+                    {trendTimeRange === '7d' && '7 Days'}
+                    {trendTimeRange === '2w' && '2 Weeks'}
+                    {trendTimeRange === '1m' && '1 Month'}
+                    {trendTimeRange === '3m' && '3 Months'}
+                    {trendTimeRange === '6m' && '6 Months'}
+                    <ChevronDown className="ml-1 size-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('24h')}>
+                    24 Hours
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('7d')}>
+                    7 Days
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('2w')}>
+                    2 Weeks
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('1m')}>
+                    1 Month
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('3m')}>
+                    3 Months
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimeRange('6m')}>
+                    6 Months
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Total/Average Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    {hoursAmountType === 'total' ? 'Total' : 'Average'}
+                    <ChevronDown className="ml-1 size-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setHoursAmountType('total')}>
+                    Total
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setHoursAmountType('average')}
+                  >
+                    Average
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline">
-                {
-                  TIME_RANGE_OPTIONS.find((opt) => opt.value === timeRange)
-                    ?.label
-                }
-                <ChevronDown className="ml-1 size-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {TIME_RANGE_OPTIONS.map((option) => (
-                <DropdownMenuItem
-                  key={option.value}
-                  onClick={() => setTimeRange(option.value)}
-                >
-                  {option.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
-        <ComparisonChart
-          colorClass="var(--activity-sleep)"
-          currentLabel={comparisonContent.currentLabel}
-          data={comparisonData}
-          previousLabel={comparisonContent.previousLabel}
+        <SleepTrendChart
+          amountType={hoursAmountType}
+          data={dynamicTrendData}
+          metricType="hours"
+          timeRange={trendTimeRange}
         />
       </Card>
 
       {/* Co-Sleeping Family Members Section */}
       {familyMembersData && (
         <>
-          {/* Co-Sleeper Trend Chart */}
+          {/* Co-Sleeper Sessions Trend Chart */}
           <Card className="p-4">
             <div className="mb-3 space-y-3">
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="text-sm font-medium text-foreground">
-                    Co-Sleeping
+                    Sessions
                   </h3>
-                  <p className="text-xs text-muted-foreground">Last 7 days</p>
+                  <p className="text-xs text-muted-foreground">
+                    Sessions by family member
+                  </p>
                 </div>
                 <div className="flex gap-2">
                   {/* Family Member Filter Dropdown */}
@@ -407,24 +383,49 @@ export function SleepStatsDrawer({
                     </DropdownMenuContent>
                   </DropdownMenu>
 
-                  {/* Metric Type Dropdown */}
+                  {/* Time Range Dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm" variant="outline">
-                        {coSleeperMetricType === 'count' ? 'Sessions' : 'Hours'}
+                        {coSleeperTimeRange === '24h' && '24 Hours'}
+                        {coSleeperTimeRange === '7d' && '7 Days'}
+                        {coSleeperTimeRange === '2w' && '2 Weeks'}
+                        {coSleeperTimeRange === '1m' && '1 Month'}
+                        {coSleeperTimeRange === '3m' && '3 Months'}
+                        {coSleeperTimeRange === '6m' && '6 Months'}
                         <ChevronDown className="ml-1 size-3" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        onClick={() => handleCoSleeperMetricTypeChange('count')}
+                        onClick={() => setCoSleeperTimeRange('24h')}
                       >
-                        Sessions
+                        24 Hours
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => handleCoSleeperMetricTypeChange('hours')}
+                        onClick={() => setCoSleeperTimeRange('7d')}
                       >
-                        Hours
+                        7 Days
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setCoSleeperTimeRange('2w')}
+                      >
+                        2 Weeks
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setCoSleeperTimeRange('1m')}
+                      >
+                        1 Month
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setCoSleeperTimeRange('3m')}
+                      >
+                        3 Months
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setCoSleeperTimeRange('6m')}
+                      >
+                        6 Months
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -433,142 +434,190 @@ export function SleepStatsDrawer({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm" variant="outline">
-                        {coSleeperAmountType === 'total' ? 'Total' : 'Average'}
+                        {coSleeperSessionsAmountType === 'total'
+                          ? 'Total'
+                          : 'Average'}
                         <ChevronDown className="ml-1 size-3" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        onClick={() => setCoSleeperAmountType('total')}
+                        onClick={() => setCoSleeperSessionsAmountType('total')}
                       >
                         Total
                       </DropdownMenuItem>
-                      {coSleeperMetricType !== 'count' && (
-                        <DropdownMenuItem
-                          onClick={() => setCoSleeperAmountType('average')}
-                        >
-                          Average
-                        </DropdownMenuItem>
-                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               </div>
             </div>
             <CoSleeperTrendChart
-              amountType={coSleeperAmountType}
+              amountType={coSleeperSessionsAmountType}
               data={filteredCoSleeperTrendData}
               familyMembers={transformedFamilyMembers || []}
-              metricType={coSleeperMetricType as 'count' | 'hours'}
+              metricType="count"
+              timeRange={coSleeperTimeRange}
             />
           </Card>
 
-          {/* Co-Sleeper Comparison Chart */}
+          {/* Co-Sleeper Hours Trend Chart */}
           <Card className="p-4">
-            <div className="mb-3 flex items-start justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-foreground">
-                  {coSleeperComparisonContent.title}
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  {coSleeperComparisonContent.description}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                {/* Family Member Filter Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button className="gap-1.5" size="sm" variant="outline">
-                      {selectedFamilyMemberId === 'all' ? (
-                        'All'
-                      ) : (
-                        <>
-                          <Avatar className="size-4">
+            <div className="mb-3 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-foreground">Hours</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Duration by family member
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  {/* Family Member Filter Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button className="gap-1.5" size="sm" variant="outline">
+                        {selectedFamilyMemberId === 'all' ? (
+                          'All'
+                        ) : (
+                          <>
+                            <Avatar className="size-4">
+                              <AvatarImage
+                                alt={
+                                  familyMembersData?.find(
+                                    (m) => m.userId === selectedFamilyMemberId,
+                                  )?.user?.firstName || ''
+                                }
+                                src={
+                                  familyMembersData?.find(
+                                    (m) => m.userId === selectedFamilyMemberId,
+                                  )?.user?.avatarUrl || undefined
+                                }
+                              />
+                              <AvatarFallback className="text-[10px]">
+                                {familyMembersData
+                                  ?.find(
+                                    (m) => m.userId === selectedFamilyMemberId,
+                                  )
+                                  ?.user?.firstName?.charAt(0)
+                                  .toUpperCase() || 'M'}
+                              </AvatarFallback>
+                            </Avatar>
+                            {familyMembersData?.find(
+                              (m) => m.userId === selectedFamilyMemberId,
+                            )?.user?.firstName || 'Member'}
+                          </>
+                        )}
+                        <ChevronDown className="ml-0.5 size-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => setSelectedFamilyMemberId('all')}
+                      >
+                        All
+                      </DropdownMenuItem>
+                      {familyMembersData?.map((member) => (
+                        <DropdownMenuItem
+                          key={member.userId}
+                          onClick={() =>
+                            setSelectedFamilyMemberId(member.userId)
+                          }
+                        >
+                          <Avatar className="mr-2 size-4">
                             <AvatarImage
-                              alt={
-                                familyMembersData?.find(
-                                  (m) => m.userId === selectedFamilyMemberId,
-                                )?.user?.firstName || ''
-                              }
-                              src={
-                                familyMembersData?.find(
-                                  (m) => m.userId === selectedFamilyMemberId,
-                                )?.user?.avatarUrl || undefined
-                              }
+                              alt={member.user?.firstName || 'Member'}
+                              src={member.user?.avatarUrl || undefined}
                             />
                             <AvatarFallback className="text-[10px]">
-                              {familyMembersData
-                                ?.find(
-                                  (m) => m.userId === selectedFamilyMemberId,
-                                )
-                                ?.user?.firstName?.charAt(0)
+                              {member.user?.firstName
+                                ?.charAt(0)
                                 .toUpperCase() || 'M'}
                             </AvatarFallback>
                           </Avatar>
-                          {familyMembersData?.find(
-                            (m) => m.userId === selectedFamilyMemberId,
-                          )?.user?.firstName || 'Member'}
-                        </>
-                      )}
-                      <ChevronDown className="ml-0.5 size-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => setSelectedFamilyMemberId('all')}
-                    >
-                      All
-                    </DropdownMenuItem>
-                    {familyMembersData?.map((member) => (
-                      <DropdownMenuItem
-                        key={member.userId}
-                        onClick={() => setSelectedFamilyMemberId(member.userId)}
-                      >
-                        <Avatar className="mr-2 size-4">
-                          <AvatarImage
-                            alt={member.user?.firstName || 'Member'}
-                            src={member.user?.avatarUrl || undefined}
-                          />
-                          <AvatarFallback className="text-[10px]">
-                            {member.user?.firstName?.charAt(0).toUpperCase() ||
-                              'M'}
-                          </AvatarFallback>
-                        </Avatar>
-                        {member.user?.firstName || 'Member'}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                          {member.user?.firstName || 'Member'}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
-                {/* Time Range Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="outline">
-                      {
-                        TIME_RANGE_OPTIONS.find(
-                          (opt) => opt.value === coSleeperTimeRange,
-                        )?.label
-                      }
-                      <ChevronDown className="ml-1 size-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {TIME_RANGE_OPTIONS.map((option) => (
+                  {/* Time Range Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="sm" variant="outline">
+                        {coSleeperTimeRange === '24h' && '24 Hours'}
+                        {coSleeperTimeRange === '7d' && '7 Days'}
+                        {coSleeperTimeRange === '2w' && '2 Weeks'}
+                        {coSleeperTimeRange === '1m' && '1 Month'}
+                        {coSleeperTimeRange === '3m' && '3 Months'}
+                        {coSleeperTimeRange === '6m' && '6 Months'}
+                        <ChevronDown className="ml-1 size-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        key={option.value}
-                        onClick={() => setCoSleeperTimeRange(option.value)}
+                        onClick={() => setCoSleeperTimeRange('24h')}
                       >
-                        {option.label}
+                        24 Hours
                       </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <DropdownMenuItem
+                        onClick={() => setCoSleeperTimeRange('7d')}
+                      >
+                        7 Days
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setCoSleeperTimeRange('2w')}
+                      >
+                        2 Weeks
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setCoSleeperTimeRange('1m')}
+                      >
+                        1 Month
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setCoSleeperTimeRange('3m')}
+                      >
+                        3 Months
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setCoSleeperTimeRange('6m')}
+                      >
+                        6 Months
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Total/Average Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="sm" variant="outline">
+                        {coSleeperHoursAmountType === 'total'
+                          ? 'Total'
+                          : 'Average'}
+                        <ChevronDown className="ml-1 size-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => setCoSleeperHoursAmountType('total')}
+                      >
+                        Total
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setCoSleeperHoursAmountType('average')}
+                      >
+                        Average
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             </div>
-            <CoSleeperComparisonChart
-              data={filteredCoSleeperComparisonData}
+            <CoSleeperTrendChart
+              amountType={coSleeperHoursAmountType}
+              data={filteredCoSleeperTrendData}
               familyMembers={transformedFamilyMembers || []}
-              metricType={coSleeperMetricType as 'count' | 'hours'}
+              metricType="hours"
+              timeRange={coSleeperTimeRange}
             />
           </Card>
         </>

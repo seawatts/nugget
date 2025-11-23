@@ -30,6 +30,7 @@ import {
   getDefaultActivityData,
 } from './shared/activity-utils';
 import { PredictiveSleepCard } from './sleep/predictive-sleep-card';
+import { PredictiveVitaminDCard } from './vitamin-d/predictive-vitamin-d-card';
 
 // All activities for drawer management
 const activities = [
@@ -358,6 +359,9 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
     <>
       {/* All Action Cards Section - Predictive + Quick Actions */}
       <div className="grid grid-cols-2 gap-3 mb-6 min-w-0">
+        <div className="col-span-2">
+          <PredictiveVitaminDCard onActivityLogged={handleActivityLogged} />
+        </div>
         {baby?.showFeedingCard !== false && (
           <PredictiveFeedingCard
             onActivityLogged={handleActivityLogged}

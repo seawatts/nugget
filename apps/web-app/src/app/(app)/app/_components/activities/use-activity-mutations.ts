@@ -13,6 +13,7 @@ import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 
 interface CreateActivityInput {
   activityType: typeof Activities.$inferSelect.type;
+  babyId?: string; // Optional babyId - if not provided, uses most recent baby
   amountMl?: number;
   duration?: number;
   feedingSource?: typeof Activities.$inferSelect.feedingSource;
@@ -52,10 +53,9 @@ export function useActivityMutations() {
       // Also remove any optimistic activities that match this real activity
       const store = useOptimisticActivitiesStore.getState();
       store.removeByMatch(activity.type, new Date(activity.startTime), 1000);
-      // Small delay to ensure state propagation
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      // Invalidate activity and baby queries - React Query handles the rest
-      await utils.activities.invalidate();
+
+      // Invalidate with type: 'all' to force immediate refetch, bypassing staleTime
+      await utils.activities.invalidate(undefined, { type: 'all' });
     },
   });
 
@@ -68,8 +68,9 @@ export function useActivityMutations() {
       toast.success('Activity updated successfully');
       // Clear optimistic state
       useOptimisticActivitiesStore.getState().clear();
-      // Invalidate activity and baby queries - React Query handles the rest
-      await utils.activities.invalidate();
+
+      // Invalidate with type: 'all' to force immediate refetch, bypassing staleTime
+      await utils.activities.invalidate(undefined, { type: 'all' });
     },
   });
 
@@ -82,30 +83,37 @@ export function useActivityMutations() {
       toast.success('Activity deleted successfully');
       // Clear optimistic state
       useOptimisticActivitiesStore.getState().clear();
-      // Invalidate activity and baby queries - React Query handles the rest
-      await utils.activities.invalidate();
-      await utils.babies.invalidate();
+
+      // Invalidate with type: 'all' to force immediate refetch, bypassing staleTime
+      await Promise.all([
+        utils.activities.invalidate(undefined, { type: 'all' }),
+        utils.babies.invalidate(undefined, { type: 'all' }),
+      ]);
     },
   });
 
   /**
-   * Create a new activity with the most recent baby
+   * Create a new activity for a specific baby or the most recent baby
    */
   const createActivity = useCallback(
     async (
       input: CreateActivityInput,
     ): Promise<typeof Activities.$inferSelect> => {
-      // Get the most recent baby
-      const baby = await utils.babies.getMostRecent.fetch();
+      // Use provided babyId or get the most recent baby
+      let babyId = input.babyId;
 
-      if (!baby) {
-        throw new Error('No baby found. Please complete onboarding first.');
+      if (!babyId) {
+        const baby = await utils.babies.getMostRecent.fetch();
+        if (!baby) {
+          throw new Error('No baby found. Please complete onboarding first.');
+        }
+        babyId = baby.id;
       }
 
       // Create the activity
       const activity = await createMutation.mutateAsync({
         amountMl: input.amountMl,
-        babyId: baby.id,
+        babyId,
         details: input.details || null,
         duration: input.duration,
         endTime: input.endTime,

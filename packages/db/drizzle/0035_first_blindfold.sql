@@ -1,0 +1,1 @@
+ALTER TYPE "public"."activityType" ADD VALUE 'vitamin_d';

@@ -12,11 +12,12 @@ import { useActivityMutations } from '../../../../use-activity-mutations';
 
 interface UsePredictiveActionsOptions {
   activityType: 'feeding' | 'diaper' | 'sleep' | 'pumping';
-  skipAction: () => Promise<
-    { data?: unknown; serverError?: string } | undefined
-  >;
+  skipAction: (input: {
+    babyId: string;
+  }) => Promise<{ data?: unknown; serverError?: string } | undefined>;
   onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
   defaultQuickLogData?: Record<string, unknown>;
+  babyId: string;
 }
 
 export function usePredictiveActions({
@@ -24,6 +25,7 @@ export function usePredictiveActions({
   skipAction,
   onActivityLogged,
   defaultQuickLogData = {},
+  babyId,
 }: UsePredictiveActionsOptions) {
   const utils = api.useUtils();
   const [skipping, setSkipping] = useState(false);
@@ -38,23 +40,29 @@ export function usePredictiveActions({
     try {
       const now = new Date();
 
+      // Determine the specific activity type
+      // If defaultQuickLogData has a specific type (e.g., 'bottle', 'nursing'), use it
+      // Otherwise, fall back to the generic activityType
+      const specificType = (defaultQuickLogData.type as string) || activityType;
+
       // Create optimistic activity for immediate UI feedback
+      // Set endTime to mark as completed (not in-progress)
       const optimisticActivity = {
         ...defaultQuickLogData,
         assignedUserId: null,
         babyId: 'temp',
         createdAt: now,
         details: null,
-        duration: null,
-        endTime: null,
+        duration: 0,
+        endTime: now,
         familyId: 'temp',
         familyMemberId: null,
-        id: `activity-optimistic-${activityType}-${Date.now()}`,
+        id: `activity-optimistic-${specificType}-${Date.now()}`,
         isScheduled: false,
         notes: null,
         startTime: now,
         subjectType: 'baby' as const,
-        type: activityType,
+        type: specificType,
         updatedAt: now,
         userId: 'temp',
       } as typeof Activities.$inferSelect;
@@ -62,10 +70,14 @@ export function usePredictiveActions({
       // Add to optimistic store immediately
       addOptimisticActivity(optimisticActivity);
 
-      // Create the actual activity
+      // Create the actual activity with the specific type
+      // Set endTime and duration to mark as completed (not in-progress)
       const activity = await createActivity({
         ...defaultQuickLogData,
-        activityType,
+        activityType: specificType as typeof Activities.$inferSelect.type,
+        babyId,
+        duration: 0,
+        endTime: now,
         startTime: now,
       });
 
@@ -94,7 +106,7 @@ export function usePredictiveActions({
     e.stopPropagation();
     setSkipping(true);
     try {
-      const result = await skipAction();
+      const result = await skipAction({ babyId });
       if (result?.serverError) {
         toast.error(result.serverError);
       } else {
