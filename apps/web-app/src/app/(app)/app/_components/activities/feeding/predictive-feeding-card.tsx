@@ -343,8 +343,6 @@ export function PredictiveFeedingCard({
           !inProgressActivity &&
           (userData?.showActivityGoals ?? true) && (
             <FeedingGoalDisplay
-              amountChange={statsComparison.percentageChange.totalMl}
-              countChange={statsComparison.percentageChange.count}
               currentAmount={todaysStats.totalMl}
               currentCount={todaysStats.count}
               currentVitaminDCount={todaysStats.vitaminDCount}
@@ -352,7 +350,6 @@ export function PredictiveFeedingCard({
               goalAmount={dailyAmountGoal}
               goalCount={dailyFeedingGoal}
               unit={userUnitPref}
-              vitaminDChange={statsComparison.percentageChange.vitaminDCount}
             />
           )}
       </Card>
