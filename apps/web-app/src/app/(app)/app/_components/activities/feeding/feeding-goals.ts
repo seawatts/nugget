@@ -137,16 +137,19 @@ export interface FeedingStatsComparison {
 }
 
 /**
- * Calculate feeding statistics with comparison between current and previous 24-hour periods
- * Current period: 0-24 hours ago
- * Previous period: 24-48 hours ago
+ * Calculate feeding statistics with comparison between current and previous time periods
+ * Current period: 0-{hours} ago
+ * Previous period: {hours}-{hours*2} ago
  */
 export function calculateFeedingStatsWithComparison(
   activities: Array<typeof Activities.$inferSelect>,
+  timeRangeHours = 24, // Default to 24 hours for backward compatibility
 ): FeedingStatsComparison {
   const now = Date.now();
-  const twentyFourHoursAgo = new Date(now - 24 * 60 * 60 * 1000);
-  const fortyEightHoursAgo = new Date(now - 48 * 60 * 60 * 1000);
+  const currentPeriodStart = new Date(now - timeRangeHours * 60 * 60 * 1000);
+  const previousPeriodStart = new Date(
+    now - timeRangeHours * 2 * 60 * 60 * 1000,
+  );
 
   // Helper function to calculate stats for a time period
   const calculateStatsForPeriod = (startTime: Date, endTime: Date) => {
@@ -182,13 +185,13 @@ export function calculateFeedingStatsWithComparison(
     return { avgAmountMl, count, totalMl, vitaminDCount };
   };
 
-  // Calculate current period (last 24 hours)
-  const current = calculateStatsForPeriod(twentyFourHoursAgo, new Date(now));
+  // Calculate current period
+  const current = calculateStatsForPeriod(currentPeriodStart, new Date(now));
 
-  // Calculate previous period (24-48 hours ago)
+  // Calculate previous period
   const previous = calculateStatsForPeriod(
-    fortyEightHoursAgo,
-    twentyFourHoursAgo,
+    previousPeriodStart,
+    currentPeriodStart,
   );
 
   // Calculate percentage changes

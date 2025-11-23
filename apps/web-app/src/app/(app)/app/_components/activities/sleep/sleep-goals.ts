@@ -182,10 +182,13 @@ export interface SleepStatsComparison {
  */
 export function calculateSleepStatsWithComparison(
   activities: Array<typeof Activities.$inferSelect>,
+  timeRangeHours = 24, // Default to 24 hours for backward compatibility
 ): SleepStatsComparison {
   const now = Date.now();
-  const twentyFourHoursAgo = new Date(now - 24 * 60 * 60 * 1000);
-  const fortyEightHoursAgo = new Date(now - 48 * 60 * 60 * 1000);
+  const currentPeriodStart = new Date(now - timeRangeHours * 60 * 60 * 1000);
+  const previousPeriodStart = new Date(
+    now - timeRangeHours * 2 * 60 * 60 * 1000,
+  );
 
   // Helper function to calculate stats for a time period
   const calculateStatsForPeriod = (startTime: Date, endTime: Date) => {
@@ -205,13 +208,13 @@ export function calculateSleepStatsWithComparison(
     return { avgNapDuration, napCount, totalMinutes };
   };
 
-  // Calculate current period (last 24 hours)
-  const current = calculateStatsForPeriod(twentyFourHoursAgo, new Date(now));
+  // Calculate current period
+  const current = calculateStatsForPeriod(currentPeriodStart, new Date(now));
 
-  // Calculate previous period (24-48 hours ago)
+  // Calculate previous period
   const previous = calculateStatsForPeriod(
-    fortyEightHoursAgo,
-    twentyFourHoursAgo,
+    previousPeriodStart,
+    currentPeriodStart,
   );
 
   // Calculate percentage changes

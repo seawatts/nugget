@@ -64,3 +64,29 @@ export interface VitaminDDay {
 export type MetricType = 'count' | 'amount' | 'hours';
 export type AmountType = 'total' | 'average';
 export type ActivityType = 'feeding' | 'diaper' | 'sleep' | 'pumping';
+
+// Time range options for comparison charts
+export type ComparisonTimeRange =
+  | '6h'
+  | '12h'
+  | '24h'
+  | '48h'
+  | '7d'
+  | '2w'
+  | '1m';
+
+export interface TimeRangeOption {
+  value: ComparisonTimeRange;
+  label: string;
+  hours: number; // Total hours for the range
+}
+
+export const TIME_RANGE_OPTIONS: TimeRangeOption[] = [
+  { hours: 6, label: '6 Hours', value: '6h' },
+  { hours: 12, label: '12 Hours', value: '12h' },
+  { hours: 24, label: '24 Hours', value: '24h' },
+  { hours: 48, label: '48 Hours', value: '48h' },
+  { hours: 168, label: '7 Days', value: '7d' },
+  { hours: 336, label: '2 Weeks', value: '2w' },
+  { hours: 720, label: '1 Month', value: '1m' },
+];

@@ -31,10 +31,7 @@ import { skipPumpingAction } from './actions';
 import { PumpingStatsDrawer } from './components';
 import { getPumpingLearningContent } from './learning-content';
 import { predictNextPumping } from './prediction';
-import {
-  calculatePumpingStatsWithComparison,
-  calculatePumpingTrendData,
-} from './pumping-goals';
+import { calculatePumpingTrendData } from './pumping-goals';
 import { getPumpingGuidanceByAge } from './pumping-intervals';
 
 interface PredictivePumpingCardProps {
@@ -222,17 +219,6 @@ export function PredictivePumpingCard({
   const pumpingTrendData = last7DaysActivities
     ? calculatePumpingTrendData(last7DaysActivities)
     : [];
-  const pumpingStatsComparison = last7DaysActivities
-    ? calculatePumpingStatsWithComparison(last7DaysActivities)
-    : {
-        current: { avgAmountMl: null, count: 0, totalMl: 0 },
-        percentageChange: {
-          avgAmountMl: null,
-          count: null,
-          totalMl: null,
-        },
-        previous: { avgAmountMl: null, count: 0, totalMl: 0 },
-      };
 
   return (
     <>
@@ -539,9 +525,9 @@ export function PredictivePumpingCard({
 
       {/* Stats Drawer */}
       <PumpingStatsDrawer
+        activities={last7DaysActivities ?? []}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
-        statsComparison={pumpingStatsComparison}
         trendData={pumpingTrendData}
         unit={userUnitPref}
       />

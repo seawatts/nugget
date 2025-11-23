@@ -6,7 +6,7 @@ import { Card } from '@nugget/ui/card';
 import { Skeleton } from '@nugget/ui/components/skeleton';
 import { Icons } from '@nugget/ui/custom/icons';
 import { cn } from '@nugget/ui/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
 import { BarChart3, Info, Moon, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -23,7 +23,6 @@ import { SleepGoalDisplay } from './components/sleep-goal-display';
 import { getSleepLearningContent } from './learning-content';
 import { predictNextSleep } from './prediction';
 import {
-  calculateSleepStatsWithComparison,
   calculateSleepTrendData,
   calculateTodaysSleepStats,
   getDailyNapGoal,
@@ -46,14 +45,27 @@ export function PredictiveSleepCard({
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
 
-  // Query today's activities for goal tracking
-  const { data: todaysActivitiesData } = api.activities.list.useQuery(
+  // Fetch activities for stats and trend tracking
+  const { data: allActivities } = api.activities.list.useQuery(
     {
       babyId: babyId ?? '',
-      limit: 100,
+      limit: 100, // Maximum allowed by API
     },
     { enabled: Boolean(babyId) },
   );
+
+  // Filter to today's activities for goal display
+  const todaysActivitiesData = allActivities?.filter((activity) => {
+    const activityDate = new Date(activity.startTime);
+    return activityDate >= startOfDay(new Date());
+  });
+
+  // Filter to last 7 days for trend data
+  const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
+  const last7DaysActivities = allActivities?.filter((activity) => {
+    const activityDate = new Date(activity.startTime);
+    return activityDate >= sevenDaysAgo;
+  });
 
   // Use tRPC query for prediction data
   const {
@@ -177,10 +189,6 @@ export function PredictiveSleepCard({
   const todaysStats = calculateTodaysSleepStats(todaysActivitiesData ?? []);
   const dailyNapGoal = getDailyNapGoal(babyAgeDays ?? 0);
   const dailySleepHoursGoal = getDailySleepHoursGoal(babyAgeDays ?? 0);
-  // Calculate stats comparison for stats drawer
-  const statsComparison = calculateSleepStatsWithComparison(
-    todaysActivitiesData ?? [],
-  );
   // Calculate 7-day trend data for stats drawer
   const trendData = calculateSleepTrendData(todaysActivitiesData ?? []);
 
@@ -461,9 +469,9 @@ export function PredictiveSleepCard({
 
       {/* Stats Drawer */}
       <SleepStatsDrawer
+        activities={last7DaysActivities ?? []}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
-        statsComparison={statsComparison}
         trendData={trendData}
       />
     </>

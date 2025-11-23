@@ -4,7 +4,7 @@ import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Card } from '@nugget/ui/card';
 import { cn } from '@nugget/ui/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
@@ -52,13 +52,27 @@ export function PredictiveFeedingCard({
   const userUnitPref = getVolumeUnit(userData?.measurementUnit || 'metric');
 
   // Query today's activities for goal tracking
-  const { data: todaysActivitiesData } = api.activities.list.useQuery(
+  // Fetch activities for stats and vitamin D tracking
+  const { data: allActivities } = api.activities.list.useQuery(
     {
       babyId: babyId ?? '',
-      limit: 100,
+      limit: 100, // Maximum allowed by API
     },
     { enabled: Boolean(babyId) },
   );
+
+  // Filter to today's activities for goal display
+  const todaysActivitiesData = allActivities?.filter((activity) => {
+    const activityDate = new Date(activity.startTime);
+    return activityDate >= startOfDay(new Date());
+  });
+
+  // Filter to last 7 days for trend data and vitamin D tracking
+  const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
+  const last7DaysActivities = allActivities?.filter((activity) => {
+    const activityDate = new Date(activity.startTime);
+    return activityDate >= sevenDaysAgo;
+  });
 
   // Use tRPC query for prediction data
   const {
@@ -176,8 +190,8 @@ export function PredictiveFeedingCard({
   const statsComparison = calculateFeedingStatsWithComparison(
     todaysActivitiesData ?? [],
   );
-  // Calculate 7-day trend data for stats drawer
-  const trendData = calculateFeedingTrendData(todaysActivitiesData ?? []);
+  // Calculate 7-day trend data for stats drawer (needs last 7 days of data)
+  const trendData = calculateFeedingTrendData(last7DaysActivities ?? []);
 
   // Calculate vitamin D tracking for last 7 days
   const vitaminDData = (() => {
@@ -192,12 +206,20 @@ export function PredictiveFeedingCard({
       const monthDay = `${date.getMonth() + 1}/${date.getDate()}`;
 
       // Check if vitamin D was logged on this day
-      const hasVitaminD = (todaysActivitiesData ?? []).some((activity) => {
+      // Vitamin D is stored in feeding activity details as vitaminDGiven boolean
+      const hasVitaminD = (last7DaysActivities ?? []).some((activity) => {
         const activityDate = new Date(activity.startTime);
         const activityDateKey = activityDate.toISOString().split('T')[0] ?? '';
-        return (
-          (activity.type as string) === 'vitamin' && activityDateKey === dateKey
-        );
+
+        const isCorrectDate = activityDateKey === dateKey;
+        const isFeeding =
+          activity.type === 'nursing' || activity.type === 'bottle';
+        const hasVitaminDGiven =
+          activity.details &&
+          'vitaminDGiven' in activity.details &&
+          activity.details.vitaminDGiven === true;
+
+        return isCorrectDate && isFeeding && hasVitaminDGiven;
       });
 
       days.push({
@@ -353,9 +375,9 @@ export function PredictiveFeedingCard({
 
       {/* Stats Drawer */}
       <FeedingStatsDrawer
+        activities={last7DaysActivities ?? []}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
-        statsComparison={statsComparison}
         trendData={trendData}
         unit={userUnitPref}
         vitaminDData={vitaminDData}

@@ -1,5 +1,6 @@
 'use client';
 
+import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
 import {
@@ -9,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@nugget/ui/dropdown-menu';
 import { ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ComparisonChart,
   getComparisonContent,
@@ -19,9 +20,11 @@ import {
 import type {
   AmountType,
   ComparisonData,
-  DiaperStatsComparison,
+  ComparisonTimeRange,
   TrendData,
 } from '../../shared/types';
+import { TIME_RANGE_OPTIONS } from '../../shared/types';
+import { calculateDiaperStatsWithComparison } from '../diaper-goals';
 import { DiaperTrendChart } from './diaper-trend-chart';
 
 type DiaperMetricType = 'total' | 'wet' | 'dirty' | 'both';
@@ -30,25 +33,37 @@ interface DiaperStatsDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   trendData: TrendData[];
-  statsComparison: DiaperStatsComparison;
+  activities: Array<typeof Activities.$inferSelect>; // Raw activities for dynamic stats calculation
 }
 
 export function DiaperStatsDrawer({
   open,
   onOpenChange,
   trendData,
-  statsComparison,
+  activities,
 }: DiaperStatsDrawerProps) {
   const [metricType, setMetricType] = useState<DiaperMetricType>('total');
   const [amountType, setAmountType] = useState<AmountType>('total');
+  const [timeRange, setTimeRange] = useState<ComparisonTimeRange>('24h');
+
+  // Calculate stats based on selected time range
+  const statsComparison = useMemo(() => {
+    const selectedRange = TIME_RANGE_OPTIONS.find(
+      (opt) => opt.value === timeRange,
+    );
+    return calculateDiaperStatsWithComparison(
+      activities,
+      selectedRange?.hours ?? 24,
+    );
+  }, [activities, timeRange]);
 
   const trendContent = getTrendContent('diaper');
-  const comparisonContent = getComparisonContent();
+  const comparisonContent = getComparisonContent(timeRange);
 
   const getMetricLabel = (type: DiaperMetricType) => {
     switch (type) {
       case 'total':
-        return 'Total';
+        return 'All';
       case 'wet':
         return 'Pee';
       case 'dirty':
@@ -61,7 +76,7 @@ export function DiaperStatsDrawer({
   const comparisonData: ComparisonData[] = [
     {
       current: statsComparison.current.total,
-      metric: 'Total',
+      metric: 'All',
       previous: statsComparison.previous.total,
     },
     {
@@ -110,7 +125,7 @@ export function DiaperStatsDrawer({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => setMetricType('total')}>
-                    Total
+                    All
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setMetricType('wet')}>
                     Pee
@@ -153,13 +168,36 @@ export function DiaperStatsDrawer({
 
       {/* Comparison Stats Section */}
       <Card className="p-4">
-        <div className="mb-3">
-          <h3 className="text-sm font-medium text-foreground">
-            {comparisonContent.title}
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            {comparisonContent.description}
-          </p>
+        <div className="mb-3 flex items-start justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-foreground">
+              {comparisonContent.title}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {comparisonContent.description}
+            </p>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                {
+                  TIME_RANGE_OPTIONS.find((opt) => opt.value === timeRange)
+                    ?.label
+                }
+                <ChevronDown className="ml-1 size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {TIME_RANGE_OPTIONS.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  onClick={() => setTimeRange(option.value)}
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <ComparisonChart
           colorClass="var(--activity-diaper)"

@@ -21,7 +21,6 @@ import { skipDiaperAction } from './actions';
 import { DiaperStatsDrawer } from './components';
 import { DiaperGoalDisplay } from './components/diaper-goal-display';
 import {
-  calculateDiaperStatsWithComparison,
   calculateDiaperTrendData,
   calculateTodaysDiaperStats,
   getDailyDiaperGoal,
@@ -228,18 +227,6 @@ export function PredictiveDiaperCard({
   const diaperTrendData = last7DaysActivities
     ? calculateDiaperTrendData(last7DaysActivities)
     : [];
-  const diaperStatsComparison = last7DaysActivities
-    ? calculateDiaperStatsWithComparison(last7DaysActivities)
-    : {
-        current: { both: 0, dirty: 0, total: 0, wet: 0 },
-        percentageChange: {
-          both: null,
-          dirty: null,
-          total: null,
-          wet: null,
-        },
-        previous: { both: 0, dirty: 0, total: 0, wet: 0 },
-      };
 
   return (
     <>
@@ -420,9 +407,9 @@ export function PredictiveDiaperCard({
 
       {/* Stats Drawer */}
       <DiaperStatsDrawer
+        activities={last7DaysActivities ?? []}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
-        statsComparison={diaperStatsComparison}
         trendData={diaperTrendData}
       />
     </>

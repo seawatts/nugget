@@ -1,4 +1,4 @@
-import type { ActivityType } from '../../types';
+import type { ActivityType, ComparisonTimeRange } from '../../types';
 
 export function formatChartDate(date: Date): string {
   const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
@@ -17,23 +17,23 @@ interface TrendContent {
 
 export function getTrendContent(
   activityType: ActivityType,
-  metricType?: 'count' | 'amount' | 'hours',
+  _metricType?: 'count' | 'amount' | 'hours',
 ): TrendContent {
   switch (activityType) {
     case 'feeding':
       return {
         description: 'Last 7 days',
-        title: metricType === 'count' ? 'Daily Feeding Count' : 'Daily Feeding',
+        title: 'Daily Feeding',
       };
     case 'sleep':
       return {
         description: 'Last 7 days',
-        title: metricType === 'count' ? 'Daily Nap Count' : 'Daily Sleep',
+        title: 'Daily Sleep',
       };
     case 'pumping':
       return {
         description: 'Last 7 days',
-        title: metricType === 'count' ? 'Daily Pumping Count' : 'Daily Pumping',
+        title: 'Daily Pumping',
       };
     case 'diaper':
       return {
@@ -48,9 +48,26 @@ export function getTrendContent(
   }
 }
 
-export function getComparisonContent(): TrendContent {
+export function getComparisonContent(
+  timeRange: ComparisonTimeRange,
+): TrendContent {
+  const rangeLabels: Record<
+    ComparisonTimeRange,
+    { short: string; long: string }
+  > = {
+    '1m': { long: '1 Month', short: '1m' },
+    '2w': { long: '2 Weeks', short: '2w' },
+    '6h': { long: '6 Hours', short: '6h' },
+    '7d': { long: '7 Days', short: '7d' },
+    '12h': { long: '12 Hours', short: '12h' },
+    '24h': { long: '24 Hours', short: '24h' },
+    '48h': { long: '48 Hours', short: '48h' },
+  };
+
+  const label = rangeLabels[timeRange];
+
   return {
-    description: 'Last 24h vs previous 24h',
-    title: 'Current vs Previous 24 Hours',
+    description: `Last ${label.short} vs previous ${label.short}`,
+    title: `Current vs Previous ${label.long}`,
   };
 }
