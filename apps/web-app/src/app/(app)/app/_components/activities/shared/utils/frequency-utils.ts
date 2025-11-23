@@ -1,32 +1,11 @@
 import type { Activities } from '@nugget/db/schema';
 import { differenceInHours, getDay, getHours, startOfDay } from 'date-fns';
-
-interface FrequencyHeatmapData {
-  dayOfWeek: number; // 0-6 (Sunday-Saturday)
-  hour: number; // 0-23
-  count: number;
-}
-
-interface TimeBlockActivity {
-  startTime: Date;
-  endTime?: Date;
-  type?: string;
-}
-
-interface TimeBlockData {
-  date: string;
-  blocks: Array<{
-    hour: number;
-    count: number;
-    activities: TimeBlockActivity[];
-  }>;
-}
-
-interface FrequencyInsights {
-  peakHours: Array<{ hour: number; count: number }>;
-  consistencyScore: number; // 0-100
-  longestGap: { hours: number; from: Date | null; to: Date | null };
-}
+import type {
+  FrequencyHeatmapData,
+  FrequencyInsights,
+  TimeBlockActivity,
+  TimeBlockData,
+} from '../types';
 
 /**
  * Calculate hourly frequency distribution of activities

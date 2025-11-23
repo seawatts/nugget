@@ -493,7 +493,10 @@ export function PredictivePumpingCard({
         activities={last7DaysActivities ?? []}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
-        recentActivities={prediction.recentPumpingPattern}
+        recentActivities={prediction.recentPumpingPattern.map((item) => ({
+          ...item,
+          amountMl: item.amountMl ?? undefined,
+        }))}
         timeFormat={timeFormat}
         trendData={pumpingTrendData}
         unit={userUnitPref}

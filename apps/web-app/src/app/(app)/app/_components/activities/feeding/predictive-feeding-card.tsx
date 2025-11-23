@@ -369,7 +369,10 @@ export function PredictiveFeedingCard({
         activities={last7DaysActivities ?? []}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
-        recentActivities={prediction.recentFeedingPattern}
+        recentActivities={prediction.recentFeedingPattern.map((item) => ({
+          ...item,
+          amountMl: item.amountMl ?? undefined,
+        }))}
         timeFormat={timeFormat}
         trendData={trendData}
         unit={userUnitPref}

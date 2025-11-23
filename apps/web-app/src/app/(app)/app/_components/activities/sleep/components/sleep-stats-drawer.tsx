@@ -84,6 +84,14 @@ export function SleepStatsDrawer({
   // Fetch family members for co-sleeper charts
   const { data: familyMembersData } = api.familyMembers.all.useQuery();
 
+  // Transform family members data for chart components
+  const transformedFamilyMembers = familyMembersData?.map((member) => ({
+    firstName: member.user?.firstName || '',
+    id: member.id,
+    lastName: member.user?.lastName || null,
+    userId: member.userId,
+  }));
+
   const handleMetricTypeChange = (newType: MetricType) => {
     setMetricType(newType);
     // Reset to 'total' when switching to 'count' (Sleeps)
@@ -136,13 +144,15 @@ export function SleepStatsDrawer({
   const filteredCoSleeperTrendData = useMemo(() => {
     if (selectedFamilyMemberId === 'all') return coSleeperTrendData;
 
-    return coSleeperTrendData.map((item) => ({
-      byUser:
-        selectedFamilyMemberId in item.byUser
-          ? { [selectedFamilyMemberId]: item.byUser[selectedFamilyMemberId] }
-          : {},
-      date: item.date,
-    }));
+    return coSleeperTrendData.map((item) => {
+      const userData = item.byUser[selectedFamilyMemberId];
+      return {
+        byUser: userData
+          ? { [selectedFamilyMemberId]: userData }
+          : ({} as Record<string, { count: number; totalMinutes: number }>),
+        date: item.date,
+      };
+    });
   }, [coSleeperTrendData, selectedFamilyMemberId]);
 
   const filteredCoSleeperComparisonData = useMemo(() => {
@@ -342,12 +352,12 @@ export function SleepStatsDrawer({
                                 alt={
                                   familyMembersData?.find(
                                     (m) => m.userId === selectedFamilyMemberId,
-                                  )?.firstName || ''
+                                  )?.user?.firstName || ''
                                 }
                                 src={
                                   familyMembersData?.find(
                                     (m) => m.userId === selectedFamilyMemberId,
-                                  )?.avatarUrl || undefined
+                                  )?.user?.avatarUrl || undefined
                                 }
                               />
                               <AvatarFallback className="text-[10px]">
@@ -355,13 +365,13 @@ export function SleepStatsDrawer({
                                   ?.find(
                                     (m) => m.userId === selectedFamilyMemberId,
                                   )
-                                  ?.firstName?.charAt(0)
+                                  ?.user?.firstName?.charAt(0)
                                   .toUpperCase() || 'M'}
                               </AvatarFallback>
                             </Avatar>
                             {familyMembersData?.find(
                               (m) => m.userId === selectedFamilyMemberId,
-                            )?.firstName || 'Member'}
+                            )?.user?.firstName || 'Member'}
                           </>
                         )}
                         <ChevronDown className="ml-0.5 size-3" />
@@ -382,14 +392,16 @@ export function SleepStatsDrawer({
                         >
                           <Avatar className="mr-2 size-4">
                             <AvatarImage
-                              alt={member.firstName || 'Member'}
-                              src={member.avatarUrl || undefined}
+                              alt={member.user?.firstName || 'Member'}
+                              src={member.user?.avatarUrl || undefined}
                             />
                             <AvatarFallback className="text-[10px]">
-                              {member.firstName?.charAt(0).toUpperCase() || 'M'}
+                              {member.user?.firstName
+                                ?.charAt(0)
+                                .toUpperCase() || 'M'}
                             </AvatarFallback>
                           </Avatar>
-                          {member.firstName || 'Member'}
+                          {member.user?.firstName || 'Member'}
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>
@@ -446,7 +458,7 @@ export function SleepStatsDrawer({
             <CoSleeperTrendChart
               amountType={coSleeperAmountType}
               data={filteredCoSleeperTrendData}
-              familyMembers={familyMembersData}
+              familyMembers={transformedFamilyMembers || []}
               metricType={coSleeperMetricType as 'count' | 'hours'}
             />
           </Card>
@@ -476,12 +488,12 @@ export function SleepStatsDrawer({
                               alt={
                                 familyMembersData?.find(
                                   (m) => m.userId === selectedFamilyMemberId,
-                                )?.firstName || ''
+                                )?.user?.firstName || ''
                               }
                               src={
                                 familyMembersData?.find(
                                   (m) => m.userId === selectedFamilyMemberId,
-                                )?.avatarUrl || undefined
+                                )?.user?.avatarUrl || undefined
                               }
                             />
                             <AvatarFallback className="text-[10px]">
@@ -489,13 +501,13 @@ export function SleepStatsDrawer({
                                 ?.find(
                                   (m) => m.userId === selectedFamilyMemberId,
                                 )
-                                ?.firstName?.charAt(0)
+                                ?.user?.firstName?.charAt(0)
                                 .toUpperCase() || 'M'}
                             </AvatarFallback>
                           </Avatar>
                           {familyMembersData?.find(
                             (m) => m.userId === selectedFamilyMemberId,
-                          )?.firstName || 'Member'}
+                          )?.user?.firstName || 'Member'}
                         </>
                       )}
                       <ChevronDown className="ml-0.5 size-3" />
@@ -514,14 +526,15 @@ export function SleepStatsDrawer({
                       >
                         <Avatar className="mr-2 size-4">
                           <AvatarImage
-                            alt={member.firstName || 'Member'}
-                            src={member.avatarUrl || undefined}
+                            alt={member.user?.firstName || 'Member'}
+                            src={member.user?.avatarUrl || undefined}
                           />
                           <AvatarFallback className="text-[10px]">
-                            {member.firstName?.charAt(0).toUpperCase() || 'M'}
+                            {member.user?.firstName?.charAt(0).toUpperCase() ||
+                              'M'}
                           </AvatarFallback>
                         </Avatar>
-                        {member.firstName || 'Member'}
+                        {member.user?.firstName || 'Member'}
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>
@@ -554,7 +567,7 @@ export function SleepStatsDrawer({
             </div>
             <CoSleeperComparisonChart
               data={filteredCoSleeperComparisonData}
-              familyMembers={familyMembersData}
+              familyMembers={transformedFamilyMembers || []}
               metricType={coSleeperMetricType as 'count' | 'hours'}
             />
           </Card>

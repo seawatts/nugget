@@ -31,13 +31,13 @@ interface CoSleeperTrendChartProps {
   }>;
 }
 
-// Color palette for different family members
+// Use activity-sleep color with varying opacity for different family members
 const COLORS = [
-  'hsl(var(--chart-1))',
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
+  'var(--activity-sleep)',
+  'color-mix(in oklch, var(--activity-sleep) 80%, transparent)',
+  'color-mix(in oklch, var(--activity-sleep) 60%, transparent)',
+  'color-mix(in oklch, var(--activity-sleep) 40%, transparent)',
+  'color-mix(in oklch, var(--activity-sleep) 20%, transparent)',
 ];
 
 export function CoSleeperTrendChart({

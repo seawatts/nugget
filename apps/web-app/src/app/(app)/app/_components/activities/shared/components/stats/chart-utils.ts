@@ -92,7 +92,7 @@ function formatDateRange(startDate: Date, endDate: Date): string {
 }
 
 export function getComparisonContent(
-  timeRange: ComparisonTimeRange,
+  _timeRange: ComparisonTimeRange,
   timeRangeHours: number,
 ): TrendContent {
   const now = new Date();
@@ -113,20 +113,10 @@ export function getComparisonContent(
   const currentRange = formatDateRange(currentStart, currentEnd);
   const previousRange = formatDateRange(previousStart, previousEnd);
 
-  const rangeLabels: Record<ComparisonTimeRange, string> = {
-    '1m': '1 Month',
-    '2w': '2 Weeks',
-    '6h': '6 Hours',
-    '7d': '7 Days',
-    '12h': '12 Hours',
-    '24h': '24 Hours',
-    '48h': '48 Hours',
-  };
-
   return {
     currentLabel: currentRange,
     description: `${currentRange} vs ${previousRange}`,
     previousLabel: previousRange,
-    title: `Current vs Previous ${rangeLabels[timeRange]}`,
+    title: 'Current vs Previous',
   };
 }

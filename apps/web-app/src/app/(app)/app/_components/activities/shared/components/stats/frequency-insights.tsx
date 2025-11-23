@@ -44,30 +44,32 @@ export function FrequencyInsightsComponent({
             </h4>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            {insights.peakHours.map((peak, idx) => (
-              <div
-                className="rounded-lg border bg-muted/50 p-3 text-center"
-                key={peak.hour}
-              >
+            {insights.peakHours.map(
+              (peak: { hour: number; count: number }, idx: number) => (
                 <div
-                  className="text-lg font-semibold"
-                  style={{ color: colorVar }}
+                  className="rounded-lg border bg-muted/50 p-3 text-center"
+                  key={peak.hour}
                 >
-                  {formatHour(peak.hour, timeFormat)}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {peak.count} times
-                </div>
-                {idx === 0 && (
                   <div
-                    className="mt-1 text-[10px] font-medium"
+                    className="text-lg font-semibold"
                     style={{ color: colorVar }}
                   >
-                    Peak
+                    {formatHour(peak.hour, timeFormat)}
                   </div>
-                )}
-              </div>
-            ))}
+                  <div className="text-xs text-muted-foreground">
+                    {peak.count} times
+                  </div>
+                  {idx === 0 && (
+                    <div
+                      className="mt-1 text-[10px] font-medium"
+                      style={{ color: colorVar }}
+                    >
+                      Peak
+                    </div>
+                  )}
+                </div>
+              ),
+            )}
           </div>
         </div>
       )}

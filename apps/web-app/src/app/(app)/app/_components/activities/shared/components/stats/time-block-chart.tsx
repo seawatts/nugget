@@ -2,7 +2,7 @@
 
 import { differenceInMinutes, format, getHours, getMinutes } from 'date-fns';
 import { useMemo } from 'react';
-import type { TimeBlockData } from '../../types';
+import type { TimeBlockActivity, TimeBlockData } from '../../types';
 import { formatHour } from '../../utils/frequency-utils';
 import { formatDayAbbreviation } from '../stats/chart-utils';
 
@@ -29,9 +29,11 @@ export function TimeBlockChart({
       }> = [];
 
       // Collect all activities for this day
-      const allActivities = dayData.blocks.flatMap((block) => block.activities);
+      const allActivities = dayData.blocks.flatMap(
+        (block: { activities: TimeBlockActivity[] }) => block.activities,
+      );
 
-      allActivities.forEach((activity) => {
+      allActivities.forEach((activity: TimeBlockActivity) => {
         const startTime = new Date(activity.startTime);
         const startHour = getHours(startTime);
         const startMinute = getMinutes(startTime);
@@ -107,21 +109,30 @@ export function TimeBlockChart({
                   ))}
 
                   {/* Activity blocks with full duration */}
-                  {dayData.activityRanges.map((range, idx) => {
-                    return (
-                      <div
-                        className="absolute left-1 right-1 rounded-full transition-all hover:brightness-110"
-                        key={`activity-${idx}-${range.startPercent}`}
-                        style={{
-                          backgroundColor: colorVar,
-                          height: `${range.heightPercent}%`,
-                          opacity: 0.7,
-                          top: `${range.startPercent}%`,
-                        }}
-                        title={range.tooltip}
-                      />
-                    );
-                  })}
+                  {dayData.activityRanges.map(
+                    (
+                      range: {
+                        startPercent: number;
+                        heightPercent: number;
+                        tooltip: string;
+                      },
+                      idx: number,
+                    ) => {
+                      return (
+                        <div
+                          className="absolute left-1 right-1 rounded-full transition-all hover:brightness-110"
+                          key={`activity-${idx}-${range.startPercent}`}
+                          style={{
+                            backgroundColor: colorVar,
+                            height: `${range.heightPercent}%`,
+                            opacity: 0.7,
+                            top: `${range.startPercent}%`,
+                          }}
+                          title={range.tooltip}
+                        />
+                      );
+                    },
+                  )}
                 </div>
 
                 {/* Date label */}

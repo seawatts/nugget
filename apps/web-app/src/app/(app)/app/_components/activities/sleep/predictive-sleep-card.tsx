@@ -471,7 +471,10 @@ export function PredictiveSleepCard({
         activities={last7DaysActivities ?? []}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
-        recentActivities={prediction.recentSleepPattern}
+        recentActivities={prediction.recentSleepPattern.map((item) => ({
+          ...item,
+          duration: item.duration ?? undefined,
+        }))}
         timeFormat={timeFormat}
         trendData={trendData}
       />

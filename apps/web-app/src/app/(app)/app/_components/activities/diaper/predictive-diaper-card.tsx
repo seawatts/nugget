@@ -409,7 +409,14 @@ export function PredictiveDiaperCard({
         activities={last7DaysActivities ?? []}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
-        recentActivities={prediction.recentDiaperPattern}
+        recentActivities={prediction.recentDiaperPattern.map((item) => ({
+          ...item,
+          type: (item.type ?? undefined) as
+            | 'both'
+            | 'wet'
+            | 'dirty'
+            | undefined,
+        }))}
         timeFormat={timeFormat}
         trendData={diaperTrendData}
       />
