@@ -43,8 +43,8 @@ export function PredictiveFeedingCard({
   onCardClick,
   onActivityLogged,
 }: PredictiveFeedingCardProps) {
-  const params = useParams<{ babyId?: string }>();
-  const babyId = params?.babyId;
+  const params = useParams<{ babyId: string }>();
+  const babyId = params.babyId;
 
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';

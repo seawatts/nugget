@@ -4,7 +4,11 @@ import { Button } from '@nugget/ui/button';
 import { Textarea } from '@nugget/ui/textarea';
 import { useState } from 'react';
 
-export function BathDrawer() {
+interface BathDrawerProps {
+  babyId: string;
+}
+
+export function BathDrawer({ babyId: _babyId }: BathDrawerProps) {
   const [products, setProducts] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
 

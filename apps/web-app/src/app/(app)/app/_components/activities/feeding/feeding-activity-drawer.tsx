@@ -29,7 +29,7 @@ interface FeedingActivityDrawerProps {
   existingActivity?: typeof Activities.$inferSelect | null;
   isOpen: boolean;
   onClose: () => void;
-  babyId?: string;
+  babyId: string;
 }
 
 /**
@@ -49,7 +49,7 @@ export function FeedingActivityDrawer({
 
   // Fetch baby data to get age information (prefetched on server)
   const [baby] = api.babies.getByIdLight.useSuspenseQuery({
-    id: babyId ?? '',
+    id: babyId,
   });
 
   // Calculate baby age in days
@@ -177,6 +177,9 @@ export function FeedingActivityDrawer({
     setIsSaving(true);
 
     try {
+      if (!babyId) {
+        throw new Error('Baby ID is required');
+      }
       // Stop the in-progress sleep
       const result = await autoStopInProgressSleepAction({ babyId });
       if (result?.data?.activity) {
@@ -248,6 +251,7 @@ export function FeedingActivityDrawer({
         <FeedingTypeSelector
           activeActivityId={activeActivityId}
           babyAgeDays={babyAgeDays}
+          babyId={babyId}
           duration={duration}
           endTime={nursingEndTime}
           existingActivityType={

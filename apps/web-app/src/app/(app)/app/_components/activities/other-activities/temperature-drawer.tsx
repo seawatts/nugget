@@ -5,7 +5,11 @@ import { Input } from '@nugget/ui/input';
 import { Textarea } from '@nugget/ui/textarea';
 import { useState } from 'react';
 
-export function TemperatureDrawer() {
+interface TemperatureDrawerProps {
+  babyId: string;
+}
+
+export function TemperatureDrawer({ babyId: _babyId }: TemperatureDrawerProps) {
   const [temperature, setTemperature] = useState('98.6');
   const [unit, setUnit] = useState<'F' | 'C'>('F');
   const [method, setMethod] = useState('oral');

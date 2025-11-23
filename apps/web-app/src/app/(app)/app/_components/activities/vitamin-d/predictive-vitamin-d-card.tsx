@@ -31,7 +31,7 @@ import { getVitaminDLearningContent } from './learning-content';
 import { VitaminDDialog } from './vitamin-d-dialog';
 
 interface PredictiveVitaminDCardProps {
-  onActivityLogged?: () => void;
+  onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
 }
 
 export function PredictiveVitaminDCard({
@@ -115,9 +115,13 @@ export function PredictiveVitaminDCard({
     useActivityMutations();
 
   const handleDeleteActivity = async (activityId: string) => {
+    const activityToNotify = activityToDelete;
     try {
       await deleteActivityMutation(activityId);
-      onActivityLogged?.();
+      // Notify parent of deleted activity if callback provided
+      if (activityToNotify && onActivityLogged) {
+        onActivityLogged(activityToNotify);
+      }
       setActivityToDelete(null);
     } catch (error) {
       // Error handling is done by useActivityMutations hook
@@ -184,7 +188,10 @@ export function PredictiveVitaminDCard({
     } else {
       // Open dialog to log for this date
       // Parse the date string as local date at noon to avoid timezone issues
-      const [year, month, dayNum] = day.date.split('-').map(Number);
+      const parts = day.date.split('-').map(Number);
+      const year = parts[0] ?? 0;
+      const month = parts[1] ?? 1;
+      const dayNum = parts[2] ?? 1;
       const localDate = new Date(year, month - 1, dayNum, 12, 0, 0);
       console.log(
         '[VitaminD Card] Clicked day:',
@@ -200,10 +207,9 @@ export function PredictiveVitaminDCard({
   const handleDialogClose = (wasLogged: boolean) => {
     setShowDialog(false);
     setSelectedDate(null);
-    if (wasLogged) {
-      // No need to manually refetch - useActivityMutations handles cache invalidation
-      onActivityLogged?.();
-    }
+    // Note: useActivityMutations handles cache invalidation automatically
+    // We don't call onActivityLogged here because we don't have the activity reference
+    // The cache invalidation will trigger a refetch which will update the UI
   };
 
   const handleConfirmDelete = () => {

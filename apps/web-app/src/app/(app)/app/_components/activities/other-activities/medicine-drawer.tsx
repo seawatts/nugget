@@ -5,7 +5,11 @@ import { Input } from '@nugget/ui/input';
 import { Textarea } from '@nugget/ui/textarea';
 import { useState } from 'react';
 
-export function MedicineDrawer() {
+interface MedicineDrawerProps {
+  babyId: string;
+}
+
+export function MedicineDrawer({ babyId: _babyId }: MedicineDrawerProps) {
   const [medicineName, setMedicineName] = useState('');
   const [dosage, setDosage] = useState('');
   const [unit, setUnit] = useState('ml');

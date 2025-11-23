@@ -60,6 +60,7 @@ interface FeedingTypeSelectorProps {
   setEndTime?: (date: Date) => void;
   babyAgeDays?: number | null;
   initialData?: Partial<FeedingFormData>;
+  babyId: string;
 }
 
 const feedingTypes = [
@@ -113,6 +114,7 @@ export function FeedingTypeSelector({
   setEndTime,
   babyAgeDays = null,
   initialData,
+  babyId,
 }: FeedingTypeSelectorProps) {
   const [selectedType, setSelectedType] = useState<FeedingType>(null);
   const [bottleData, setBottleData] = useState<BottleFormData | null>(null);
@@ -224,6 +226,7 @@ export function FeedingTypeSelector({
         {selectedType === 'nursing' && (
           <NursingDrawerContent
             activeActivityId={activeActivityId}
+            babyId={babyId}
             duration={duration}
             endTime={endTime}
             initialData={

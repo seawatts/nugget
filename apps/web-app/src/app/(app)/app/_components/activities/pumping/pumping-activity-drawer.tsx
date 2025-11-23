@@ -214,7 +214,7 @@ export function PumpingActivityDrawer({
         await createActivity({
           activityType: 'pumping',
           amountMl: totalAmountMl,
-          babyId,
+          babyId: _babyId,
           details: pumpingDetails,
           duration: durationMinutes ?? undefined,
           feedingSource: 'pumped',

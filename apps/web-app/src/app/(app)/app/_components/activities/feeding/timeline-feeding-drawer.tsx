@@ -284,6 +284,7 @@ export function TimelineFeedingDrawer({
         <FeedingTypeSelector
           activeActivityId={null}
           babyAgeDays={babyAgeDays}
+          babyId={babyId}
           duration={0}
           existingActivityType={formData?.type ?? null}
           initialData={formData ?? undefined}

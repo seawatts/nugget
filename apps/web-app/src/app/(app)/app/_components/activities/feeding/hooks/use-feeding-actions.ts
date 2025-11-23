@@ -27,7 +27,7 @@ interface UseFeedingActionsOptions {
   useLastAmount?: boolean;
   useTypicalDuration?: boolean;
   useLastType?: boolean;
-  babyId?: string;
+  babyId: string;
 }
 
 export function useFeedingActions({
@@ -78,6 +78,7 @@ export function useFeedingActions({
     setClaiming(true);
     try {
       const result = await claimFeedingAction({
+        babyId,
         predictedTime: predictedTime.toISOString(),
       });
 

@@ -106,7 +106,7 @@ export function DiaperActivityDrawer({
         );
 
         const diaperType = detailsHasSpecificType
-          ? details.type
+          ? (details.type as 'wet' | 'dirty' | 'both')
           : activityHasSpecificType
             ? (existingActivity.type as 'wet' | 'dirty' | 'both')
             : null;

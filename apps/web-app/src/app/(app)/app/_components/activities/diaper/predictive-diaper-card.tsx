@@ -41,8 +41,8 @@ export function PredictiveDiaperCard({
   onCardClick,
   onActivityLogged: _onActivityLogged,
 }: PredictiveDiaperCardProps) {
-  const params = useParams<{ babyId?: string }>();
-  const babyId = params?.babyId;
+  const params = useParams<{ babyId: string }>();
+  const babyId = params.babyId;
 
   const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
@@ -54,7 +54,7 @@ export function PredictiveDiaperCard({
   const thirtyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 30)), []);
   const { data: allActivities } = api.activities.list.useQuery(
     {
-      babyId: babyId ?? '',
+      babyId,
       limit: 1000,
       since: thirtyDaysAgo,
     },

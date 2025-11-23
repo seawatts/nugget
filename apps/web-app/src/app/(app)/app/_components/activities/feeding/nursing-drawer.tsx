@@ -35,6 +35,7 @@ interface NursingDrawerContentProps {
   endTime?: Date;
   setEndTime?: (date: Date) => void;
   initialData?: Partial<NursingFormData>;
+  babyId: string;
 }
 
 export function NursingDrawerContent({
@@ -48,6 +49,7 @@ export function NursingDrawerContent({
   endTime: externalEndTime,
   setEndTime,
   initialData,
+  babyId,
 }: NursingDrawerContentProps) {
   const [activeSide, setActiveSide] = useState<'left' | 'right' | null>(null);
   const [leftDuration, setLeftDuration] = useState(

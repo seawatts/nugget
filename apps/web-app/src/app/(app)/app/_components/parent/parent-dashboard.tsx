@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { ActivityTimeline } from '~/app/(app)/app/_components/activities/timeline/activity-timeline';
 import { ParentDailyCheckInCard } from './parent-daily-checkin-card';
 import { ParentLearningCarousel } from './parent-learning-carousel';
 import { ParentSleepCard } from './parent-sleep-card';
@@ -73,9 +72,6 @@ export function ParentDashboard({ userId }: ParentDashboardProps) {
       <div className="mb-6">
         <ParentTipsWidget userId={userId} />
       </div>
-
-      {/* Activity Timeline */}
-      <ActivityTimeline />
     </main>
   );
 }

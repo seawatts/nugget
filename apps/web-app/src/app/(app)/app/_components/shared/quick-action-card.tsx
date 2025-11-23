@@ -25,6 +25,7 @@ interface QuickActionCardProps {
   fullWidth?: boolean;
   onCardClick?: () => void;
   refreshTrigger?: number;
+  babyId: string;
 }
 
 export function QuickActionCard({
@@ -36,6 +37,7 @@ export function QuickActionCard({
   fullWidth = false,
   onCardClick,
   refreshTrigger = 0,
+  babyId,
 }: QuickActionCardProps) {
   const [stats, setStats] = useState<ActivityStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +49,7 @@ export function QuickActionCard({
   const loadStats = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await getActivityStatsAction({ activityType });
+      const result = await getActivityStatsAction({ activityType, babyId });
 
       if (result?.data) {
         setStats(result.data);
@@ -57,7 +59,7 @@ export function QuickActionCard({
     } finally {
       setLoading(false);
     }
-  }, [activityType]);
+  }, [activityType, babyId]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTrigger is intentionally used to trigger reloads from parent
   useEffect(() => {
