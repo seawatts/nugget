@@ -14,8 +14,9 @@ import {
   AlertDialogTitle,
 } from '@nugget/ui/alert-dialog';
 import { Button } from '@nugget/ui/button';
-
+import { cn } from '@nugget/ui/lib/utils';
 import { Moon, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getInProgressSleepActivityAction } from '../activity-cards.actions';
