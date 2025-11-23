@@ -79,9 +79,9 @@ export function calculateTodaysFeedingStats(
   // Calculate count
   const count = todaysFeedings.length;
 
-  // Calculate total amount (only from bottle feedings with recorded amounts)
+  // Calculate total amount (from both bottle AND nursing feedings with recorded amounts)
   const totalMl = todaysFeedings.reduce((sum, activity) => {
-    if (activity.type === 'bottle' && activity.amountMl) {
+    if (activity.amountMl) {
       return sum + activity.amountMl;
     }
     return sum;
@@ -90,7 +90,7 @@ export function calculateTodaysFeedingStats(
   // Calculate average amount per feeding
   let avgAmountMl: number | null = null;
   const feedingsWithAmount = todaysFeedings.filter(
-    (activity) => activity.type === 'bottle' && activity.amountMl,
+    (activity) => activity.amountMl,
   );
 
   if (feedingsWithAmount.length > 0) {
@@ -159,15 +159,13 @@ export function calculateFeedingStatsWithComparison(
 
     const count = feedings.length;
     const totalMl = feedings.reduce((sum, activity) => {
-      if (activity.type === 'bottle' && activity.amountMl) {
+      if (activity.amountMl) {
         return sum + activity.amountMl;
       }
       return sum;
     }, 0);
 
-    const feedingsWithAmount = feedings.filter(
-      (activity) => activity.type === 'bottle' && activity.amountMl,
-    );
+    const feedingsWithAmount = feedings.filter((activity) => activity.amountMl);
     const avgAmountMl =
       feedingsWithAmount.length > 0
         ? totalMl / feedingsWithAmount.length
@@ -259,7 +257,7 @@ export function calculateFeedingTrendData(
 
     stats.count += 1;
 
-    if (activity.type === 'bottle' && activity.amountMl) {
+    if (activity.amountMl) {
       stats.totalMl += activity.amountMl;
     }
   }

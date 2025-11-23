@@ -184,6 +184,7 @@ export const getDoctorVisitSummaryAction = action
         wet: 0,
       };
 
+      // Handle legacy activities where type is directly wet/dirty/both
       if (activity.type === 'wet') {
         current.wet++;
         totalWet++;
@@ -193,6 +194,21 @@ export const getDoctorVisitSummaryAction = action
       } else if (activity.type === 'both') {
         current.both++;
         totalBoth++;
+      } else if (activity.type === 'diaper') {
+        // Handle current activities where subtype is in details
+        const details = activity.details as { type?: string } | null;
+        const diaperType = details?.type;
+
+        if (diaperType === 'wet') {
+          current.wet++;
+          totalWet++;
+        } else if (diaperType === 'dirty') {
+          current.dirty++;
+          totalDirty++;
+        } else if (diaperType === 'both') {
+          current.both++;
+          totalBoth++;
+        }
       }
 
       diaperByDay.set(dateKey, current);
