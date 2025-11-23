@@ -204,7 +204,7 @@ export function PredictiveVitaminDCard({
     }
   };
 
-  const handleDialogClose = (wasLogged: boolean) => {
+  const handleDialogClose = (_wasLogged: boolean) => {
     setShowDialog(false);
     setSelectedDate(null);
     // Note: useActivityMutations handles cache invalidation automatically
