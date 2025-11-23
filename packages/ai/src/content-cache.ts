@@ -601,18 +601,18 @@ export const celebrationQuestionsCache = new Map<string, CelebrationQuestionsOut
 				buttonLabel: 'Add Milestone',
 				icon: 'star',
 			},
-			memory: {
-				question: 'What special moment would you like to remember?',
-				systemPrompt: 'You are helping parents capture precious memories from their baby\'s life.',
-				buttonLabel: 'Save Memory',
-				icon: 'heart',
-			},
-			photo: {
-				question: 'Upload a photo to remember this celebration',
-				systemPrompt: 'You are helping parents add photos to commemorate special moments.',
-				buttonLabel: 'Add Photo',
-				icon: 'camera',
-			},
+		memory: {
+			question: 'What special moment would you like to remember?',
+			systemPrompt: 'You are helping parents capture precious memories from their baby\'s life.',
+			buttonLabel: 'Save Memory',
+			icon: 'heart',
+		},
+		guidance: {
+			question: 'Upload a photo to remember this celebration',
+			systemPrompt: 'You are helping parents add photos to commemorate special moments.',
+			buttonLabel: 'Add Photo',
+			icon: 'camera',
+		},
 		},
 	],
 ]);
