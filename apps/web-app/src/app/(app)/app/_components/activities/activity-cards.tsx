@@ -158,6 +158,11 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
     }
   }, []);
 
+  // Early return if babyId is not available (after all hooks)
+  if (!babyId) {
+    return null;
+  }
+
   const getVisibleActivities = () => {
     if (babyAgeDays === null) {
       // Default to newborn activities
@@ -265,7 +270,13 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
 
     startTransition(async () => {
       try {
-        const result = await createActivityAction({ activityType: activityId });
+        if (!babyId) {
+          throw new Error('Baby ID is required');
+        }
+        const result = await createActivityAction({
+          activityType: activityId,
+          babyId,
+        });
 
         if (result?.data?.activity) {
           const activity = result.data.activity;

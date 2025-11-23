@@ -119,10 +119,8 @@ export const getActivitiesAction = action
         // Filter by activity types if specified
         if (activityTypes && activityTypes.length > 0) {
           activityConditions.push(
-            inArray(
-              ActivitiesTable.type,
-              activityTypes as (typeof ActivitiesTable.type.$inferInsert)[],
-            ),
+            // biome-ignore lint/suspicious/noExplicitAny: drizzle type inference limitation with enum columns
+            inArray(ActivitiesTable.type, activityTypes as any),
           );
         }
 
