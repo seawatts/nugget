@@ -160,14 +160,16 @@ export function QuickActionDiaperCard({
   // Format time displays
   const nextTimeDistance = formatDistanceToNow(prediction.nextDiaperTime, {
     addSuffix: false,
-  });
+  }).replace(/^about /, '');
   const nextExactTime = formatTimeWithPreference(
     prediction.nextDiaperTime,
     timeFormat,
   );
 
   const lastTimeDistance = prediction.lastDiaperTime
-    ? formatDistanceToNow(prediction.lastDiaperTime, { addSuffix: false })
+    ? formatDistanceToNow(prediction.lastDiaperTime, {
+        addSuffix: false,
+      }).replace(/^about /, '')
     : null;
   const lastExactTime = prediction.lastDiaperTime
     ? formatTimeWithPreference(prediction.lastDiaperTime, timeFormat)

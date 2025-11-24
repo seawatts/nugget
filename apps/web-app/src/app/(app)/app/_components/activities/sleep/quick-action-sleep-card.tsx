@@ -202,14 +202,16 @@ export function QuickActionSleepCard({
   // Format time displays
   const nextTimeDistance = formatDistanceToNow(prediction.nextSleepTime, {
     addSuffix: false,
-  });
+  }).replace(/^about /, '');
   const nextExactTime = formatTimeWithPreference(
     prediction.nextSleepTime,
     timeFormat,
   );
 
   const lastTimeDistance = prediction.lastSleepTime
-    ? formatDistanceToNow(prediction.lastSleepTime, { addSuffix: false })
+    ? formatDistanceToNow(prediction.lastSleepTime, {
+        addSuffix: false,
+      }).replace(/^about /, '')
     : null;
   const lastExactTime = prediction.lastSleepTime
     ? formatTimeWithPreference(prediction.lastSleepTime, timeFormat)

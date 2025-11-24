@@ -206,7 +206,7 @@ export function PredictiveFeedingCard({
   // Format countdown
   const timeUntil = formatDistanceToNow(displayNextTime, {
     addSuffix: true,
-  });
+  }).replace(/^in about /, 'in ');
   const exactTime = formatTimeWithPreference(displayNextTime, timeFormat);
 
   // Format amount for display based on user preference

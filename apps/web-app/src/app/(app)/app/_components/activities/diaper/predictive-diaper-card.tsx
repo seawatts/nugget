@@ -197,7 +197,7 @@ export function PredictiveDiaperCard({
   // Format countdown
   const timeUntil = formatDistanceToNow(displayNextTime, {
     addSuffix: true,
-  });
+  }).replace(/^in about /, 'in ');
   const exactTime = formatTimeWithPreference(displayNextTime, timeFormat);
 
   // Format overdue time

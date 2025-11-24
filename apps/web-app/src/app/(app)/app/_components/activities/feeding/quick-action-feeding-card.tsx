@@ -219,14 +219,16 @@ export function QuickActionFeedingCard({
   // Format time displays
   const nextTimeDistance = formatDistanceToNow(prediction.nextFeedingTime, {
     addSuffix: false,
-  });
+  }).replace(/^about /, '');
   const nextExactTime = formatTimeWithPreference(
     prediction.nextFeedingTime,
     timeFormat,
   );
 
   const lastTimeDistance = prediction.lastFeedingTime
-    ? formatDistanceToNow(prediction.lastFeedingTime, { addSuffix: false })
+    ? formatDistanceToNow(prediction.lastFeedingTime, {
+        addSuffix: false,
+      }).replace(/^about /, '')
     : null;
   const lastExactTime = prediction.lastFeedingTime
     ? formatTimeWithPreference(prediction.lastFeedingTime, timeFormat)
@@ -455,9 +457,10 @@ export function QuickActionFeedingCard({
                 <div className="flex items-center gap-1.5 text-sm opacity-70 leading-tight">
                   <span>
                     {lastExactTime}
-                    {lastFeedingActivity.amountMl && (
-                      <> • {formatAmount(lastFeedingActivity.amountMl)}</>
-                    )}
+                    {lastFeedingActivity.type === 'bottle' &&
+                      lastFeedingActivity.amountMl && (
+                        <> • {formatAmount(lastFeedingActivity.amountMl)}</>
+                      )}
                     {lastFeedingActivity.type === 'nursing' &&
                       lastFeedingActivity.duration && (
                         <> • {lastFeedingActivity.duration} min</>

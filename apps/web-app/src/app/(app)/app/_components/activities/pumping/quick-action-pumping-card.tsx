@@ -156,7 +156,7 @@ export function QuickActionPumpingCard({
   // Format time displays
   const nextTimeDistance = formatDistanceToNow(prediction.nextPumpingTime, {
     addSuffix: false,
-  });
+  }).replace(/^about /, '');
 
   // Calculate stats for drawer
   const pumpingTrendData = allActivities
@@ -168,7 +168,9 @@ export function QuickActionPumpingCard({
   );
 
   const lastTimeDistance = prediction.lastPumpingTime
-    ? formatDistanceToNow(prediction.lastPumpingTime, { addSuffix: false })
+    ? formatDistanceToNow(prediction.lastPumpingTime, {
+        addSuffix: false,
+      }).replace(/^about /, '')
     : null;
   const lastExactTime = prediction.lastPumpingTime
     ? formatTimeWithPreference(prediction.lastPumpingTime, timeFormat)
