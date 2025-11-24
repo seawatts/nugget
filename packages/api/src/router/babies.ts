@@ -189,29 +189,21 @@ export const babiesRouter = createTRPCRouter({
           .object({
             feeding: z
               .object({
-                bottleAmountMl: z.number().positive().optional().nullable(),
-                bottleType: z.enum(['formula', 'pumped']).optional().nullable(),
-                nursingDurationMinutes: z
-                  .number()
-                  .positive()
-                  .optional()
-                  .nullable(),
-                preferredType: z
-                  .enum(['bottle', 'nursing'])
-                  .optional()
-                  .nullable(),
+                bottleAmountMl: z.number().positive().optional(),
+                bottleType: z.enum(['formula', 'pumped']).optional(),
+                nursingDurationMinutes: z.number().positive().optional(),
+                preferredType: z.enum(['bottle', 'nursing']).optional(),
               })
               .optional(),
-            preferenceWeight: z.number().min(0).max(1).optional().nullable(),
+            preferenceWeight: z.number().min(0).max(1).optional(),
             pumping: z
               .object({
-                amountMl: z.number().positive().optional().nullable(),
-                durationMinutes: z.number().positive().optional().nullable(),
+                amountMl: z.number().positive().optional(),
+                durationMinutes: z.number().positive().optional(),
               })
               .optional(),
           })
-          .optional()
-          .nullable(),
+          .optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
