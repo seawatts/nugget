@@ -1,10 +1,16 @@
+import type { BabyCustomPreferences } from '@nugget/db';
 import type { Activities } from '@nugget/db/schema';
 import { differenceInMinutes } from 'date-fns';
 import { getOverdueThreshold } from '../../shared/overdue-thresholds';
 import {
+  type BlendResult,
+  blendPredictionValues,
+} from '../shared/prediction-blending';
+import {
   calculateBabyAgeDays,
   getPumpingIntervalByAge,
 } from './pumping-intervals';
+import { getAgeBasedPumpingAmounts } from './pumping-volume-utils';
 
 export interface PumpingPrediction {
   nextPumpingTime: Date;
@@ -25,8 +31,11 @@ export interface PumpingPrediction {
   suggestedRecoveryTime: Date | null;
   recentSkipTime: Date | null;
   // Quick log smart defaults
-  suggestedVolume: number | null; // in ml, from last session
-  suggestedDuration: number | null; // in minutes, age-based typical duration
+  suggestedVolume: number | null; // in ml, blended from custom/recent/age
+  suggestedDuration: number | null; // in minutes, blended from custom/recent/age
+  suggestionSource: string; // Description of where the suggestion came from
+  volumeBlendResult: BlendResult | null; // Detailed blend breakdown for volume
+  durationBlendResult: BlendResult | null; // Detailed blend breakdown for duration
   // Calculation components for displaying how prediction works
   calculationDetails: {
     ageBasedInterval: number; // hours
@@ -87,14 +96,32 @@ function getTypicalPumpingDuration(ageDays: number | null): number {
 }
 
 /**
+ * Calculate average volume from recent pumping sessions
+ */
+function getRecentAverageVolume(
+  pumpingActivities: PumpingActivity[],
+): number | null {
+  const sessionsWithVolume = pumpingActivities.filter(
+    (a) => a.amountMl && a.amountMl > 0,
+  );
+
+  if (sessionsWithVolume.length === 0) return null;
+
+  const sum = sessionsWithVolume.reduce((acc, p) => acc + (p.amountMl || 0), 0);
+  return sum / sessionsWithVolume.length;
+}
+
+/**
  * Hybrid prediction algorithm that combines:
  * - Age-based baseline interval (40%)
  * - Recent average interval (40%)
  * - Last interval (20%)
+ * - Custom user preferences (blended with predictions)
  */
 export function predictNextPumping(
   recentPumpings: Array<typeof Activities.$inferSelect>,
   babyBirthDate: Date | null,
+  customPreferences?: BabyCustomPreferences | null,
 ): PumpingPrediction {
   // Filter to only pumping activities
   // Exclude scheduled activities and skipped activities (dismissals don't count as real pumping)
@@ -133,10 +160,42 @@ export function predictNextPumping(
   const ageBasedInterval =
     ageDays !== null ? getPumpingIntervalByAge(ageDays) : 3;
 
+  // Get preference weight (default 0.4 = 40%)
+  const preferenceWeight = customPreferences?.preferenceWeight ?? 0.4;
+
+  // Calculate adjusted weights based on preference weight
+  // If preferenceWeight is high (e.g., 1.0), most weight goes to custom
+  // Remaining weight is split between recent and age-based
+  const remainingWeight = 1 - preferenceWeight;
+  const recentWeight = remainingWeight * 0.67; // 67% of remaining
+  const ageBasedWeight = remainingWeight * 0.33; // 33% of remaining
+
   // No pumping sessions yet - use age-based interval
   if (pumpingActivities.length === 0) {
     const nextPumpingTime = new Date();
     nextPumpingTime.setHours(nextPumpingTime.getHours() + ageBasedInterval);
+
+    // Blend volume with custom preferences (no recent data)
+    const ageBasedAmounts = getAgeBasedPumpingAmounts(ageDays);
+    const volumeBlend = blendPredictionValues({
+      ageBasedValue: ageBasedAmounts.medium,
+      ageBasedWeight,
+      customValue: customPreferences?.pumping?.amountMl,
+      customWeight: preferenceWeight,
+      recentValue: null,
+      recentWeight,
+    });
+
+    // Blend duration with custom preferences (no recent data)
+    const ageBasedDuration = getTypicalPumpingDuration(ageDays);
+    const durationBlend = blendPredictionValues({
+      ageBasedValue: ageBasedDuration,
+      ageBasedWeight,
+      customValue: customPreferences?.pumping?.durationMinutes,
+      customWeight: preferenceWeight,
+      recentValue: null,
+      recentWeight,
+    });
 
     return {
       averageIntervalHours: null,
@@ -148,6 +207,7 @@ export function predictNextPumping(
         weights: { ageBased: 1.0, lastInterval: 0, recentAverage: 0 },
       },
       confidenceLevel: 'low',
+      durationBlendResult: durationBlend,
       intervalHours: ageBasedInterval,
       isOverdue: false,
       lastPumpingAmount: null,
@@ -156,9 +216,11 @@ export function predictNextPumping(
       overdueMinutes: null,
       recentPumpingPattern: [],
       recentSkipTime,
-      suggestedDuration: getTypicalPumpingDuration(ageDays),
+      suggestedDuration: durationBlend.value,
       suggestedRecoveryTime: null,
-      suggestedVolume: null,
+      suggestedVolume: volumeBlend.value,
+      suggestionSource: `Volume: ${volumeBlend.source}, Duration: ${durationBlend.source}`,
+      volumeBlendResult: volumeBlend,
     };
   }
 
@@ -167,6 +229,27 @@ export function predictNextPumping(
     // Should not happen since we checked length > 0, but satisfy TypeScript
     const nextPumpingTime = new Date();
     nextPumpingTime.setHours(nextPumpingTime.getHours() + ageBasedInterval);
+
+    const ageBasedAmounts = getAgeBasedPumpingAmounts(ageDays);
+    const volumeBlend = blendPredictionValues({
+      ageBasedValue: ageBasedAmounts.medium,
+      ageBasedWeight,
+      customValue: customPreferences?.pumping?.amountMl,
+      customWeight: preferenceWeight,
+      recentValue: null,
+      recentWeight,
+    });
+
+    const ageBasedDuration = getTypicalPumpingDuration(ageDays);
+    const durationBlend = blendPredictionValues({
+      ageBasedValue: ageBasedDuration,
+      ageBasedWeight,
+      customValue: customPreferences?.pumping?.durationMinutes,
+      customWeight: preferenceWeight,
+      recentValue: null,
+      recentWeight,
+    });
+
     return {
       averageIntervalHours: null,
       calculationDetails: {
@@ -177,6 +260,7 @@ export function predictNextPumping(
         weights: { ageBased: 1.0, lastInterval: 0, recentAverage: 0 },
       },
       confidenceLevel: 'low',
+      durationBlendResult: durationBlend,
       intervalHours: ageBasedInterval,
       isOverdue: false,
       lastPumpingAmount: null,
@@ -185,9 +269,11 @@ export function predictNextPumping(
       overdueMinutes: null,
       recentPumpingPattern: [],
       recentSkipTime,
-      suggestedDuration: getTypicalPumpingDuration(ageDays),
+      suggestedDuration: durationBlend.value,
       suggestedRecoveryTime: null,
-      suggestedVolume: null,
+      suggestedVolume: volumeBlend.value,
+      suggestionSource: `Volume: ${volumeBlend.source}, Duration: ${durationBlend.source}`,
+      volumeBlendResult: volumeBlend,
     };
   }
 
@@ -272,6 +358,29 @@ export function predictNextPumping(
     );
   }
 
+  // Blend suggested volume with custom preferences
+  const ageBasedAmounts = getAgeBasedPumpingAmounts(ageDays);
+  const recentAverageVolume = getRecentAverageVolume(pumpingActivities);
+  const volumeBlend = blendPredictionValues({
+    ageBasedValue: ageBasedAmounts.medium,
+    ageBasedWeight,
+    customValue: customPreferences?.pumping?.amountMl,
+    customWeight: preferenceWeight,
+    recentValue: recentAverageVolume,
+    recentWeight,
+  });
+
+  // Blend suggested duration with custom preferences
+  const ageBasedDuration = getTypicalPumpingDuration(ageDays);
+  const durationBlend = blendPredictionValues({
+    ageBasedValue: ageBasedDuration,
+    ageBasedWeight,
+    customValue: customPreferences?.pumping?.durationMinutes,
+    customWeight: preferenceWeight,
+    recentValue: null, // We don't track duration history yet
+    recentWeight,
+  });
+
   return {
     averageIntervalHours: averageInterval,
     calculationDetails: {
@@ -282,6 +391,7 @@ export function predictNextPumping(
       weights,
     },
     confidenceLevel,
+    durationBlendResult: durationBlend,
     intervalHours: predictedInterval,
     isOverdue,
     lastPumpingAmount,
@@ -290,9 +400,11 @@ export function predictNextPumping(
     overdueMinutes,
     recentPumpingPattern: recentPattern,
     recentSkipTime,
-    suggestedDuration: getTypicalPumpingDuration(ageDays),
+    suggestedDuration: durationBlend.value,
     suggestedRecoveryTime,
-    suggestedVolume: lastPumpingAmount,
+    suggestedVolume: volumeBlend.value,
+    suggestionSource: `Volume: ${volumeBlend.source}, Duration: ${durationBlend.source}`,
+    volumeBlendResult: volumeBlend,
   };
 }
 

@@ -1,7 +1,12 @@
+import type { BabyCustomPreferences } from '@nugget/db';
 import type { Activities } from '@nugget/db/schema';
 import { differenceInMinutes } from 'date-fns';
 import { getOverdueThreshold } from '../../shared/overdue-thresholds';
 import { calculateBabyAgeDays } from '../shared/baby-age-utils';
+import {
+  type BlendResult,
+  blendPredictionValues,
+} from '../shared/prediction-blending';
 import { getFeedingIntervalByAge } from './feeding-intervals';
 
 export interface FeedingPrediction {
@@ -24,9 +29,12 @@ export interface FeedingPrediction {
   suggestedRecoveryTime: Date | null;
   recentSkipTime: Date | null;
   // Quick log smart defaults
-  suggestedAmount: number | null; // in ml, from last feeding
-  suggestedDuration: number | null; // in minutes, age-based typical duration
-  suggestedType: 'bottle' | 'nursing' | null; // last feeding type
+  suggestedAmount: number | null; // in ml, blended from custom/recent/age
+  suggestedDuration: number | null; // in minutes, blended from custom/recent/age
+  suggestedType: 'bottle' | 'nursing' | null; // from custom preference or most common type
+  suggestionSource: string; // Description of where the suggestion came from
+  amountBlendResult: BlendResult | null; // Detailed blend breakdown for amount
+  durationBlendResult: BlendResult | null; // Detailed blend breakdown for duration
   // Calculation components for displaying how prediction works
   calculationDetails: {
     ageBasedInterval: number; // hours
@@ -118,15 +126,47 @@ function getMostCommonFeedingType(
 }
 
 /**
+ * Get age-based feeding amount as fallback (in ml)
+ */
+function getAgeBasedAmount(ageDays: number | null): number {
+  if (!ageDays) return 120; // Default to 4oz if age unknown
+
+  if (ageDays <= 2) return 45; // 1.5 oz
+  if (ageDays <= 7) return 75; // 2.5 oz
+  if (ageDays <= 14) return 90; // 3 oz
+  if (ageDays <= 30) return 120; // 4 oz
+  if (ageDays <= 60) return 150; // 5 oz
+  return 180; // 6 oz for 61+ days
+}
+
+/**
+ * Calculate average amount from recent bottle feedings
+ */
+function getRecentAverageAmount(
+  feedingActivities: FeedingActivity[],
+): number | null {
+  const bottleFeedings = feedingActivities.filter(
+    (a) => a.type === 'bottle' && a.amountMl && a.amountMl > 0,
+  );
+
+  if (bottleFeedings.length === 0) return null;
+
+  const sum = bottleFeedings.reduce((acc, f) => acc + (f.amountMl || 0), 0);
+  return sum / bottleFeedings.length;
+}
+
+/**
  * Hybrid prediction algorithm that combines:
  * - Age-based baseline interval (40%)
  * - Recent average interval (40%)
  * - Last interval (20%)
+ * - Custom user preferences (blended with predictions)
  */
 export function predictNextFeeding(
   recentFeedings: Array<typeof Activities.$inferSelect>,
   babyBirthDate: Date | null,
   babyFeedIntervalHours?: number | null,
+  customPreferences?: BabyCustomPreferences | null,
 ): FeedingPrediction {
   // Filter to only feeding activities (bottle, nursing, solids)
   // Exclude scheduled activities and skipped activities (dismissals don't count as real feedings)
@@ -167,12 +207,45 @@ export function predictNextFeeding(
       ? getFeedingIntervalByAge(ageDays)
       : babyFeedIntervalHours || 3;
 
+  // Get preference weight (default 0.4 = 40%)
+  const preferenceWeight = customPreferences?.preferenceWeight ?? 0.4;
+
+  // Calculate adjusted weights based on preference weight
+  // If preferenceWeight is high (e.g., 1.0), most weight goes to custom
+  // Remaining weight is split between recent and age-based
+  const remainingWeight = 1 - preferenceWeight;
+  const recentWeight = remainingWeight * 0.67; // 67% of remaining
+  const ageBasedWeight = remainingWeight * 0.33; // 33% of remaining
+
   // No feedings yet - use age-based interval
   if (feedingActivities.length === 0) {
     const nextFeedingTime = new Date();
     nextFeedingTime.setHours(nextFeedingTime.getHours() + ageBasedInterval);
 
+    // Blend amount with custom preferences (no recent data)
+    const ageBasedAmount = getAgeBasedAmount(ageDays);
+    const amountBlend = blendPredictionValues({
+      ageBasedValue: ageBasedAmount,
+      ageBasedWeight,
+      customValue: customPreferences?.feeding?.bottleAmountMl,
+      customWeight: preferenceWeight,
+      recentValue: null,
+      recentWeight,
+    });
+
+    // Blend duration with custom preferences (no recent data)
+    const ageBasedDuration = getTypicalFeedingDuration(ageDays);
+    const durationBlend = blendPredictionValues({
+      ageBasedValue: ageBasedDuration,
+      ageBasedWeight,
+      customValue: customPreferences?.feeding?.nursingDurationMinutes,
+      customWeight: preferenceWeight,
+      recentValue: null,
+      recentWeight,
+    });
+
     return {
+      amountBlendResult: amountBlend,
       averageIntervalHours: null,
       calculationDetails: {
         ageBasedInterval,
@@ -182,6 +255,7 @@ export function predictNextFeeding(
         weights: { ageBased: 1.0, lastInterval: 0, recentAverage: 0 },
       },
       confidenceLevel: 'low',
+      durationBlendResult: durationBlend,
       intervalHours: ageBasedInterval,
       isOverdue: false,
       lastFeedingAmount: null,
@@ -190,10 +264,11 @@ export function predictNextFeeding(
       overdueMinutes: null,
       recentFeedingPattern: [],
       recentSkipTime,
-      suggestedAmount: null,
-      suggestedDuration: getTypicalFeedingDuration(ageDays),
+      suggestedAmount: amountBlend.value,
+      suggestedDuration: durationBlend.value,
       suggestedRecoveryTime: null,
-      suggestedType: 'nursing', // Default to nursing when no history
+      suggestedType: customPreferences?.feeding?.preferredType || 'nursing', // Use custom preference or default
+      suggestionSource: `Amount: ${amountBlend.source}, Duration: ${durationBlend.source}`,
     };
   }
 
@@ -202,7 +277,29 @@ export function predictNextFeeding(
     // Should not happen since we checked length > 0, but satisfy TypeScript
     const nextFeedingTime = new Date();
     nextFeedingTime.setHours(nextFeedingTime.getHours() + ageBasedInterval);
+
+    const ageBasedAmount = getAgeBasedAmount(ageDays);
+    const amountBlend = blendPredictionValues({
+      ageBasedValue: ageBasedAmount,
+      ageBasedWeight,
+      customValue: customPreferences?.feeding?.bottleAmountMl,
+      customWeight: preferenceWeight,
+      recentValue: null,
+      recentWeight,
+    });
+
+    const ageBasedDuration = getTypicalFeedingDuration(ageDays);
+    const durationBlend = blendPredictionValues({
+      ageBasedValue: ageBasedDuration,
+      ageBasedWeight,
+      customValue: customPreferences?.feeding?.nursingDurationMinutes,
+      customWeight: preferenceWeight,
+      recentValue: null,
+      recentWeight,
+    });
+
     return {
+      amountBlendResult: amountBlend,
       averageIntervalHours: null,
       calculationDetails: {
         ageBasedInterval,
@@ -212,6 +309,7 @@ export function predictNextFeeding(
         weights: { ageBased: 1.0, lastInterval: 0, recentAverage: 0 },
       },
       confidenceLevel: 'low',
+      durationBlendResult: durationBlend,
       intervalHours: ageBasedInterval,
       isOverdue: false,
       lastFeedingAmount: null,
@@ -220,10 +318,11 @@ export function predictNextFeeding(
       overdueMinutes: null,
       recentFeedingPattern: [],
       recentSkipTime,
-      suggestedAmount: null,
-      suggestedDuration: getTypicalFeedingDuration(ageDays),
+      suggestedAmount: amountBlend.value,
+      suggestedDuration: durationBlend.value,
       suggestedRecoveryTime: null,
-      suggestedType: 'nursing', // Default to nursing when no history
+      suggestedType: customPreferences?.feeding?.preferredType || 'nursing',
+      suggestionSource: `Amount: ${amountBlend.source}, Duration: ${durationBlend.source}`,
     };
   }
   const lastFeedingTime = new Date(lastFeeding.startTime);
@@ -311,7 +410,31 @@ export function predictNextFeeding(
     );
   }
 
+  // Blend suggested amount with custom preferences
+  const ageBasedAmount = getAgeBasedAmount(ageDays);
+  const recentAverageAmount = getRecentAverageAmount(feedingActivities);
+  const amountBlend = blendPredictionValues({
+    ageBasedValue: ageBasedAmount,
+    ageBasedWeight,
+    customValue: customPreferences?.feeding?.bottleAmountMl,
+    customWeight: preferenceWeight,
+    recentValue: recentAverageAmount,
+    recentWeight,
+  });
+
+  // Blend suggested duration with custom preferences
+  const ageBasedDuration = getTypicalFeedingDuration(ageDays);
+  const durationBlend = blendPredictionValues({
+    ageBasedValue: ageBasedDuration,
+    ageBasedWeight,
+    customValue: customPreferences?.feeding?.nursingDurationMinutes,
+    customWeight: preferenceWeight,
+    recentValue: null, // We don't track duration history yet
+    recentWeight,
+  });
+
   return {
+    amountBlendResult: amountBlend,
     averageIntervalHours: averageInterval,
     calculationDetails: {
       ageBasedInterval,
@@ -321,6 +444,7 @@ export function predictNextFeeding(
       weights,
     },
     confidenceLevel,
+    durationBlendResult: durationBlend,
     intervalHours: predictedInterval,
     isOverdue,
     lastFeedingAmount,
@@ -329,10 +453,11 @@ export function predictNextFeeding(
     overdueMinutes,
     recentFeedingPattern: recentPattern,
     recentSkipTime,
-    suggestedAmount: lastFeedingAmount,
-    suggestedDuration: getTypicalFeedingDuration(ageDays),
+    suggestedAmount: amountBlend.value,
+    suggestedDuration: durationBlend.value,
     suggestedRecoveryTime,
-    suggestedType: mostCommonType, // Use most common type instead of last feeding type
+    suggestedType: customPreferences?.feeding?.preferredType || mostCommonType, // Use custom preference if set
+    suggestionSource: `Amount: ${amountBlend.source}, Duration: ${durationBlend.source}`,
   };
 }
 

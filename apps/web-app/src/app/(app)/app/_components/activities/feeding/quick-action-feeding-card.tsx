@@ -115,6 +115,7 @@ export function QuickActionFeedingCard({
           [...optimisticActivities, ...queryData.recentActivities],
           queryData.babyBirthDate,
           queryData.feedIntervalHours,
+          queryData.customPreferences,
         ),
         recentActivities: queryData.recentActivities,
       }
@@ -436,8 +437,8 @@ export function QuickActionFeedingCard({
             <div className="w-2.5 h-2.5 rounded-full bg-white/40 shrink-0" />
           </div>
 
-          {/* Two-column content grid */}
-          <div className="grid grid-cols-2 gap-6 pt-6 px-2">
+          {/* Two-column content with justify-between */}
+          <div className="flex items-start justify-between pt-6 px-2">
             {/* Left Column: Last Feeding */}
             {lastTimeDistance && lastExactTime && lastFeedingActivity ? (
               <div className="space-y-1.5">
@@ -486,7 +487,7 @@ export function QuickActionFeedingCard({
             )}
 
             {/* Right Column: Next Feeding */}
-            <div className="space-y-1">
+            <div className="space-y-1 text-right">
               <div className="text-lg font-semibold leading-tight">
                 In {nextTimeDistance}
               </div>

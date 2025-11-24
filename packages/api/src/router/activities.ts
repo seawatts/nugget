@@ -474,6 +474,7 @@ export const activitiesRouter = createTRPCRouter({
       return {
         babyAgeDays,
         babyBirthDate: baby.birthDate,
+        customPreferences: baby.customPreferences,
         familyMemberCount: familyMembers.length,
         familyMembers,
         feedIntervalHours: baby.feedIntervalHours,
@@ -532,6 +533,7 @@ export const activitiesRouter = createTRPCRouter({
       return {
         babyAgeDays,
         babyBirthDate: baby.birthDate,
+        customPreferences: baby.customPreferences,
         recentActivities,
       };
     }),

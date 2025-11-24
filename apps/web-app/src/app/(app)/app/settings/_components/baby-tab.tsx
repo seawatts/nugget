@@ -15,7 +15,8 @@ import {
   SelectValue,
 } from '@nugget/ui/select';
 import { getFullBabyName, parseBabyName } from '@nugget/utils';
-import { Baby, Minus, Plus, Trash2 } from 'lucide-react';
+import { Baby, ChevronRight, Minus, Plus, Trash2, Zap } from 'lucide-react';
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { DeleteBabyDialog } from './delete-baby-dialog';
@@ -272,6 +273,26 @@ export function BabyTab() {
           </Select>
         </Card>
       )}
+
+      {/* Quick Button Preferences Link */}
+      <Link href={'/app/settings/baby/preferences'}>
+        <Card className="p-6 hover:bg-accent/50 transition-colors cursor-pointer">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-primary/10">
+                <Zap className="size-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Quick Button Preferences</h3>
+                <p className="text-sm text-muted-foreground">
+                  Customize default values for feeding, pumping, and more
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="size-5 text-muted-foreground" />
+          </div>
+        </Card>
+      </Link>
 
       {/* Basic Information */}
       <div className="bg-card border border-border rounded-2xl p-6 space-y-4">

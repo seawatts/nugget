@@ -94,6 +94,7 @@ export function PredictivePumpingCard({
           // Merge optimistic activities with recent activities for accurate predictions
           [...optimisticActivities, ...queryData.recentActivities],
           queryData.babyBirthDate,
+          queryData.customPreferences,
         ),
       }
     : null;

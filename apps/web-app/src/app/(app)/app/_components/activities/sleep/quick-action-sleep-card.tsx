@@ -600,8 +600,8 @@ export function QuickActionSleepCard({
             <div className="w-2.5 h-2.5 rounded-full bg-white/40 shrink-0" />
           </div>
 
-          {/* Two-column content grid */}
-          <div className="grid grid-cols-2 gap-6 pt-6 px-2">
+          {/* Two-column content with justify-between */}
+          <div className="flex items-start justify-between pt-6 px-2">
             {/* Left Column: Last Sleep or Currently Sleeping */}
             {inProgressActivity ? (
               <div className="space-y-1.5">
@@ -655,7 +655,7 @@ export function QuickActionSleepCard({
             )}
 
             {/* Right Column: Next Sleep */}
-            <div className="space-y-1">
+            <div className="space-y-1 text-right">
               <div className="text-lg font-semibold leading-tight">
                 In {nextTimeDistance}
               </div>

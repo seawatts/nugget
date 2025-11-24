@@ -42,6 +42,16 @@ function formatDiaperType(type: string | null): string {
   return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
+/**
+ * Get icon component for diaper type
+ */
+function getDiaperTypeIcon(type: string | null) {
+  if (type === 'wet') return Droplet;
+  if (type === 'dirty') return Droplets;
+  if (type === 'both') return Baby;
+  return Baby; // Default fallback
+}
+
 export function QuickActionDiaperCard({
   onActivityLogged,
   onOpenDrawer,
@@ -293,13 +303,20 @@ export function QuickActionDiaperCard({
             <div className="w-2.5 h-2.5 rounded-full bg-white/40 shrink-0" />
           </div>
 
-          {/* Two-column content grid */}
-          <div className="grid grid-cols-2 gap-6 pt-6 px-2">
+          {/* Two-column content with justify-between */}
+          <div className="flex items-start justify-between pt-6 px-2">
             {/* Left Column: Last Diaper */}
             {lastTimeDistance && lastExactTime && lastDiaperActivity ? (
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <Baby className="size-4 shrink-0 opacity-90" />
+                  {(() => {
+                    const DiaperTypeIcon = getDiaperTypeIcon(
+                      lastDiaperActivity.details?.type as string | null,
+                    );
+                    return (
+                      <DiaperTypeIcon className="size-4 shrink-0 opacity-90" />
+                    );
+                  })()}
                   <span className="text-lg font-semibold leading-tight">
                     {lastTimeDistance} ago
                   </span>
@@ -337,7 +354,7 @@ export function QuickActionDiaperCard({
             )}
 
             {/* Right Column: Next Diaper */}
-            <div className="space-y-1">
+            <div className="space-y-1 text-right">
               <div className="text-lg font-semibold leading-tight">
                 In {nextTimeDistance}
               </div>

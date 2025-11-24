@@ -106,6 +106,7 @@ export function PredictiveFeedingCard({
           [...optimisticActivities, ...queryData.recentActivities],
           queryData.babyBirthDate,
           queryData.feedIntervalHours,
+          queryData.customPreferences,
         ),
         scheduledFeeding: queryData.scheduledFeeding,
         suggestedMember: queryData.scheduledFeeding?.assignedUserId

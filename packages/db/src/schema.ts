@@ -678,6 +678,20 @@ export const Babies = pgTable(
       .notNull()
       .defaultNow(),
     currentWeightOz: integer('currentWeightOz'), // Current weight in ounces
+    // Custom preferences for quick action buttons
+    customPreferences: json('customPreferences').$type<{
+      feeding?: {
+        bottleAmountMl?: number;
+        bottleType?: 'formula' | 'pumped';
+        nursingDurationMinutes?: number;
+        preferredType?: 'bottle' | 'nursing';
+      };
+      pumping?: {
+        amountMl?: number;
+        durationMinutes?: number;
+      };
+      preferenceWeight?: number; // 0-1, default 0.4 (40% custom preference weight)
+    }>(),
     dueDate: timestamp('dueDate', { mode: 'date', withTimezone: true }),
     familyId: varchar('familyId', { length: 128 })
       .references(() => Families.id, {

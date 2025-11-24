@@ -180,6 +180,60 @@ export const babiesRouter = createTRPCRouter({
       return updatedBaby;
     }),
 
+  // Update baby custom preferences for quick action buttons
+  updateCustomPreferences: protectedProcedure
+    .input(
+      z.object({
+        babyId: z.string(),
+        customPreferences: z
+          .object({
+            feeding: z
+              .object({
+                bottleAmountMl: z.number().positive().optional().nullable(),
+                bottleType: z.enum(['formula', 'pumped']).optional().nullable(),
+                nursingDurationMinutes: z
+                  .number()
+                  .positive()
+                  .optional()
+                  .nullable(),
+                preferredType: z
+                  .enum(['bottle', 'nursing'])
+                  .optional()
+                  .nullable(),
+              })
+              .optional(),
+            preferenceWeight: z.number().min(0).max(1).optional().nullable(),
+            pumping: z
+              .object({
+                amountMl: z.number().positive().optional().nullable(),
+                durationMinutes: z.number().positive().optional().nullable(),
+              })
+              .optional(),
+          })
+          .optional()
+          .nullable(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.auth.orgId) {
+        throw new Error('Family ID is required');
+      }
+
+      const { babyId, customPreferences } = input;
+
+      const [updatedBaby] = await ctx.db
+        .update(Babies)
+        .set({ customPreferences })
+        .where(and(eq(Babies.id, babyId), eq(Babies.familyId, ctx.auth.orgId)))
+        .returning();
+
+      if (!updatedBaby) {
+        throw new Error('Baby not found or update failed');
+      }
+
+      return updatedBaby;
+    }),
+
   // Update dashboard preferences for a baby
   updateDashboardPreferences: protectedProcedure
     .input(
