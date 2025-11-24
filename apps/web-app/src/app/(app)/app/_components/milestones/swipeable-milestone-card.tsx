@@ -1,6 +1,5 @@
 'use client';
 
-import { useMediaQuery } from '@nugget/ui/hooks/use-media-query';
 import { cn } from '@nugget/ui/lib/utils';
 import { Check, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -21,7 +20,6 @@ export function SwipeableMilestoneCard({
   disabled = false,
   className,
 }: SwipeableMilestoneCardProps) {
-  const isMobile = useMediaQuery({ query: '(max-width: 768px)' });
   const [isEntering, setIsEntering] = useState(true);
 
   const { handlers, swipeState } = useSwipeGesture({
@@ -29,15 +27,6 @@ export function SwipeableMilestoneCard({
     onSwipeRight,
     threshold: 100,
   });
-
-  console.log(
-    '[SwipeableMilestoneCard] Rendered - isMobile:',
-    isMobile,
-    'disabled:',
-    disabled,
-    'handlers:',
-    Object.keys(handlers),
-  );
 
   // Entry animation
   useEffect(() => {

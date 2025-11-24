@@ -203,7 +203,7 @@ export function DoctorVisitActivityDrawer({
         const optimisticActivity = {
           amountMl: null,
           assignedUserId: null,
-          babyId: 'temp',
+          babyId: babyId, // Use real babyId instead of 'temp' for timeline filtering
           createdAt: startTime,
           details: doctorVisitDetails,
           duration: null,

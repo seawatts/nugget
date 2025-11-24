@@ -7,7 +7,6 @@
 
 import { Button } from '@nugget/ui/button';
 import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
-import { Clock, PlayCircle, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface QuickTimeOption {
@@ -124,7 +123,6 @@ export function TimeSelectionMode({
             }}
             variant={timeInputMode === 'now' ? 'default' : 'outline'}
           >
-            <PlayCircle className="mr-0 size-4" />
             Now
           </Button>
           <Button
@@ -136,7 +134,6 @@ export function TimeSelectionMode({
             onClick={() => setTimeInputMode('quick')}
             variant={timeInputMode === 'quick' ? 'default' : 'outline'}
           >
-            <Zap className="mr-0 size-4" />
             Quick Time
           </Button>
           <Button
@@ -148,7 +145,6 @@ export function TimeSelectionMode({
             onClick={() => setTimeInputMode('custom')}
             variant={timeInputMode === 'custom' ? 'default' : 'outline'}
           >
-            <Clock className="mr-0 size-4" />
             Custom Time
           </Button>
         </div>

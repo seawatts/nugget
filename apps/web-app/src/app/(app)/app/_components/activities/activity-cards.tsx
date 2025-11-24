@@ -1,7 +1,6 @@
 'use client';
 
 import { useUser } from '@clerk/nextjs';
-import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { toast } from '@nugget/ui/sonner';
 import {
@@ -18,18 +17,23 @@ import {
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { createActivityAction } from './activity-cards.actions';
 import { ActivityDrawer } from './activity-drawer';
 import { PredictiveDiaperCard } from './diaper/predictive-diaper-card';
+import { QuickActionDiaperCard } from './diaper/quick-action-diaper-card';
 import { PredictiveDoctorVisitCard } from './doctor-visit/predictive-doctor-visit-card';
 import { PredictiveFeedingCard } from './feeding/predictive-feeding-card';
+import { QuickActionFeedingCard } from './feeding/quick-action-feeding-card';
 import { PredictivePumpingCard } from './pumping/predictive-pumping-card';
+import { QuickActionPumpingCard } from './pumping/quick-action-pumping-card';
 import {
   formatActivityForToast,
   getDefaultActivityData,
 } from './shared/activity-utils';
 import { PredictiveSleepCard } from './sleep/predictive-sleep-card';
+import { QuickActionSleepCard } from './sleep/quick-action-sleep-card';
 import { PredictiveVitaminDCard } from './vitamin-d/predictive-vitamin-d-card';
 
 // All activities for drawer management
@@ -133,11 +137,8 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
   const [loadingActivity, setLoadingActivity] = useState<string | null>(null);
   const [_isPending, startTransition] = useTransition();
 
-  // Fetch baby preferences
-  const { data: baby } = api.babies.getByIdLight.useQuery(
-    { id: babyId ?? '' },
-    { enabled: !!babyId },
-  );
+  // Get baby preferences from dashboard store (populated by DashboardContainer)
+  const baby = useDashboardDataStore.use.baby();
 
   // Use Zustand store for optimistic updates
   const addOptimisticActivity = useOptimisticActivitiesStore(
@@ -251,7 +252,7 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
     const optimisticActivity = {
       ...optimisticData,
       amountMl: null,
-      babyId: 'temp',
+      babyId: babyId ?? 'temp', // Use real babyId instead of 'temp' for timeline filtering
       createdAt: new Date(),
       details: null,
       duration: null,
@@ -374,31 +375,63 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
           <PredictiveVitaminDCard onActivityLogged={handleActivityLogged} />
         </div>
         {baby?.showFeedingCard !== false && (
-          <PredictiveFeedingCard
-            onActivityLogged={handleActivityLogged}
-            onCardClick={() => {
-              // Open unified feeding drawer for selection
-              setOpenDrawer('feeding');
-            }}
-          />
+          <>
+            <QuickActionFeedingCard
+              onActivityLogged={handleActivityLogged}
+              onOpenDrawer={() => setOpenDrawer('feeding')}
+            />
+            {false && (
+              <PredictiveFeedingCard
+                onActivityLogged={handleActivityLogged}
+                onCardClick={() => {
+                  // Open unified feeding drawer for selection
+                  setOpenDrawer('feeding');
+                }}
+              />
+            )}
+          </>
         )}
         {baby?.showSleepCard !== false && (
-          <PredictiveSleepCard
-            onActivityLogged={handleActivityLogged}
-            onCardClick={() => setOpenDrawer('sleep')}
-          />
+          <>
+            <QuickActionSleepCard
+              onActivityLogged={handleActivityLogged}
+              onOpenDrawer={() => setOpenDrawer('sleep')}
+            />
+            {false && (
+              <PredictiveSleepCard
+                onActivityLogged={handleActivityLogged}
+                onCardClick={() => setOpenDrawer('sleep')}
+              />
+            )}
+          </>
         )}
         {baby?.showDiaperCard !== false && (
-          <PredictiveDiaperCard
-            onActivityLogged={handleActivityLogged}
-            onCardClick={() => setOpenDrawer('diaper')}
-          />
+          <>
+            <QuickActionDiaperCard
+              onActivityLogged={handleActivityLogged}
+              onOpenDrawer={() => setOpenDrawer('diaper')}
+            />
+            {false && (
+              <PredictiveDiaperCard
+                onActivityLogged={handleActivityLogged}
+                onCardClick={() => setOpenDrawer('diaper')}
+              />
+            )}
+          </>
         )}
         {baby?.showPumpingCard !== false && (
-          <PredictivePumpingCard
-            onActivityLogged={handleActivityLogged}
-            onCardClick={() => setOpenDrawer('pumping')}
-          />
+          <>
+            <QuickActionPumpingCard
+              onActivityLogged={handleActivityLogged}
+              onOpenDrawer={() => setOpenDrawer('pumping')}
+            />
+            {false && (
+              <PredictivePumpingCard
+                onActivityLogged={handleActivityLogged}
+                onCardClick={() => setOpenDrawer('pumping')}
+              />
+            )}
+          </>
         )}
         {baby?.showDoctorVisitCard !== false &&
           babyAgeDays !== null &&

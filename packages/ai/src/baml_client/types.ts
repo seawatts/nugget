@@ -193,7 +193,7 @@ export interface LearningTip {
   subtitle: string
   summary: string
   bulletPoints: string[]
-  followUpQuestion: string
+  followUpQuestion?: string | null
   isYesNoQuestion?: boolean | null
   openChatOnYes?: boolean | null
   openChatOnNo?: boolean | null

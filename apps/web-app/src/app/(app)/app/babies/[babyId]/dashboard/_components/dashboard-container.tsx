@@ -1,8 +1,9 @@
 'use client';
 
 import { api } from '@nugget/api/react';
+import { startOfDay, subDays } from 'date-fns';
 import { useParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { Suspense, useEffect, useMemo } from 'react';
 import { ActivityCards } from '~/app/(app)/app/_components/activities/activity-cards';
 import { ActivityTimeline } from '~/app/(app)/app/_components/activities/timeline/activity-timeline';
 import { CelebrationsCarousel } from '~/app/(app)/app/_components/celebrations/celebrations-carousel';
@@ -17,6 +18,7 @@ import {
   TodaySummarySkeleton,
 } from '~/app/(app)/app/_components/skeletons';
 import { TodaySummaryCard } from '~/app/(app)/app/_components/today-summary-card';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 
 export function DashboardContainer() {
   const params = useParams();
@@ -25,6 +27,43 @@ export function DashboardContainer() {
   // Use suspense queries to leverage prefetched data (lightweight version without nested relations)
   const [baby] = api.babies.getByIdLight.useSuspenseQuery({ id: babyId });
   const [user] = api.user.current.useSuspenseQuery();
+  const [familyMembersData] = api.familyMembers.all.useSuspenseQuery();
+
+  // Fetch last 30 days of activities once for all child components
+  const thirtyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 30)), []);
+  const [activities] = api.activities.list.useSuspenseQuery({
+    babyId,
+    limit: 1000,
+    since: thirtyDaysAgo,
+  });
+
+  // Map family members to simplified format for dashboard store
+  const familyMembers = useMemo(() => {
+    return familyMembersData.map((member) => ({
+      avatarUrl: member.user?.avatarUrl || null,
+      id: member.id,
+      isCurrentUser: member.userId === user?.id,
+      name: member.user?.firstName
+        ? `${member.user.firstName}${member.user.lastName ? ` ${member.user.lastName}` : ''}`
+        : member.user?.email || 'Unknown',
+      userId: member.userId,
+    }));
+  }, [familyMembersData, user?.id]);
+
+  // Populate Zustand store with shared data to avoid duplicate queries in child components
+  useEffect(() => {
+    useDashboardDataStore.getState().setBaby(baby ?? null);
+    useDashboardDataStore.getState().setUser(user ?? null);
+    useDashboardDataStore.getState().setActivities(activities ?? []);
+    useDashboardDataStore.getState().setFamilyMembers(familyMembers);
+  }, [baby, user, activities, familyMembers]);
+
+  // Clear store on unmount
+  useEffect(() => {
+    return () => {
+      useDashboardDataStore.getState().clear();
+    };
+  }, []);
 
   // Check if any activity cards are enabled
   const hasAnyActivityCards =

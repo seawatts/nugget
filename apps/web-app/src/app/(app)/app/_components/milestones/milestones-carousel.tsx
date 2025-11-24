@@ -1,19 +1,20 @@
 'use client';
 
-import { api } from '@nugget/api/react';
+import { api, type MilestoneCarouselCardData } from '@nugget/api/react';
+
+// Alias to match existing code's expectation
+type MilestoneCardData = MilestoneCarouselCardData;
+
 import { H2, P } from '@nugget/ui/custom/typography';
 import { useMediaQuery } from '@nugget/ui/hooks/use-media-query';
 import { Award } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticMilestonesStore } from '~/stores/optimistic-milestones';
 import { MilestoneCard } from './milestone-card';
 import { MilestoneCardCheckBack } from './milestone-card-check-back';
 import { MilestoneCardLoading } from './milestone-card-loading';
 import { MilestoneChatCard } from './milestone-chat-card';
-import {
-  getMilestonesCarouselContent,
-  type MilestoneCardData,
-} from './milestones-carousel.actions';
 import { SwipeableMilestoneCard } from './swipeable-milestone-card';
 import { useMilestoneMutations } from './use-milestone-mutations';
 
@@ -35,10 +36,8 @@ type ChatCardData = {
 type CardData = (MilestoneCardData & { cardType: 'milestone' }) | ChatCardData;
 
 export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
-  const [milestones, setMilestones] = useState<MilestoneCardData[]>([]);
   const [cardStack, setCardStack] = useState<CardData[]>([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [removingCardId, setRemovingCardId] = useState<string | null>(null);
   const [isProcessingSwipe, setIsProcessingSwipe] = useState(false);
   const isMobile = useMediaQuery({ query: '(max-width: 768px)' });
@@ -46,8 +45,8 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
   // TEMP: Force mobile mode for testing (uncomment to test on desktop)
   // const isMobile = true;
 
-  // Fetch baby info using tRPC suspense query (prefetched on server, lightweight version)
-  const [baby] = api.babies.getByIdLight.useSuspenseQuery({ id: babyId });
+  // Get baby info from dashboard store (populated by DashboardContainer)
+  const baby = useDashboardDataStore.use.baby();
 
   // Use milestone mutations hook
   const { markComplete } = useMilestoneMutations();
@@ -63,36 +62,30 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
       )
     : 0;
 
-  // Load milestones content - extracted to useCallback so it can be reused
-  const loadMilestones = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      console.log('[MilestonesCarousel] Loading content for baby:', babyId);
+  // Use tRPC query with prefetched data (from page.tsx)
+  const {
+    data,
+    isLoading: isLoadingQuery,
+    refetch: refetchMilestones,
+  } = api.milestonesCarousel.getCarouselContent.useQuery(
+    { babyId },
+    {
+      staleTime: 86400000, // 1 day cache
+    },
+  );
 
-      const data = await getMilestonesCarouselContent(babyId);
+  const milestones = data?.milestones ?? [];
+  const isLoading = isLoadingQuery;
 
-      console.log(
-        '[MilestonesCarousel] Loaded milestones:',
-        data.milestones.length,
-      );
-
-      setMilestones(data.milestones);
-      // Initialize card stack with milestones
+  // Initialize card stack when milestones load
+  useEffect(() => {
+    if (milestones.length > 0) {
       setCardStack(
-        data.milestones.map((m) => ({ ...m, cardType: 'milestone' as const })),
+        milestones.map((m) => ({ ...m, cardType: 'milestone' as const })),
       );
       setCurrentCardIndex(0);
-    } catch (error) {
-      console.error('[MilestonesCarousel] Failed to load content:', error);
-    } finally {
-      setIsLoading(false);
     }
-  }, [babyId]);
-
-  // Load milestones on mount
-  useEffect(() => {
-    loadMilestones();
-  }, [loadMilestones]);
+  }, [milestones]);
 
   // Handler to mark milestone as complete
   const handleMarkComplete = useCallback(
@@ -102,25 +95,20 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
       try {
         await markComplete({
           babyId: baby.id,
-          description: milestone.description,
-          milestoneId: milestone.id,
-          suggestedDay: milestone.suggestedDay,
+          description: milestone.summary ?? '',
+          milestoneId: milestone.milestoneId ?? `temp-${Date.now()}`,
+          suggestedDay: ageInDays,
           title: milestone.title,
           type: milestone.type,
         });
 
-        console.log(
-          '[MilestonesCarousel] Milestone marked complete:',
-          milestone.title,
-        );
-
         // Reload milestones to update the UI with the new completion status
-        await loadMilestones();
+        await refetchMilestones();
       } catch (error) {
         console.error('[MilestonesCarousel] Failed to mark complete:', error);
       }
     },
-    [baby?.id, markComplete, loadMilestones],
+    [ageInDays, baby?.id, markComplete, refetchMilestones],
   );
 
   // Handle swipe actions on milestone cards (mobile only)
@@ -128,15 +116,9 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
     (milestone: MilestoneCardData, answer: 'yes' | 'no') => {
       // Prevent rapid swipes
       if (isProcessingSwipe) {
-        console.log('[MilestonesCarousel] Swipe already in progress, ignoring');
         return;
       }
 
-      console.log(
-        '[MilestonesCarousel] Milestone swiped:',
-        answer,
-        milestone.title,
-      );
       setIsProcessingSwipe(true);
 
       // Mark card as removing for exit animation
@@ -180,13 +162,9 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
     (chatCardId: string) => {
       // Prevent rapid dismissals
       if (isProcessingSwipe) {
-        console.log(
-          '[MilestonesCarousel] Dismissal already in progress, ignoring',
-        );
         return;
       }
 
-      console.log('[MilestonesCarousel] Chat card dismissed:', chatCardId);
       setIsProcessingSwipe(true);
 
       // Mark card as removing for exit animation
@@ -218,7 +196,6 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
 
   // Show message if no milestones (don't hide completely)
   if (milestones.length === 0) {
-    console.log('[MilestonesCarousel] No milestones to display');
     return (
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-4">
@@ -242,14 +219,6 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
   // Get current card to display
   const currentCard = cardStack[currentCardIndex];
   const hasMoreCards = currentCardIndex < cardStack.length - 1;
-
-  // Debug: Log mobile state
-  console.log(
-    '[MilestonesCarousel] isMobile:',
-    isMobile,
-    'viewport width:',
-    typeof window !== 'undefined' ? window.innerWidth : 'SSR',
-  );
 
   // Mobile: Stack view with current card
   if (isMobile) {

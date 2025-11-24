@@ -27,18 +27,24 @@ export default async function BabyDashboardPage({ params }: PageProps) {
   // Using tRPC RSC pattern with Clerk auth properly wired through createTRPCContext
   const trpc = await api();
 
-  // Prefetch in parallel - void keyword prevents awaiting
+  // Prefetch all queries on server using tRPC - void keyword prevents awaiting
   void trpc.babies.getByIdLight.prefetch({ id: babyId });
   void trpc.user.current.prefetch();
+  void trpc.familyMembers.all.prefetch();
   void trpc.activities.list.prefetch({
     babyId: babyId,
     isScheduled: false,
-    limit: 100,
+    limit: 1000,
   });
   void trpc.milestones.list.prefetch({
     babyId: babyId,
     limit: 100,
   });
+
+  // Prefetch carousel content using tRPC (replaces server action calls!)
+  void trpc.learning.getCarouselContent.prefetch({ babyId });
+  void trpc.milestonesCarousel.getCarouselContent.prefetch({ babyId });
+  void trpc.celebrations.getCarouselContent.prefetch({ babyId });
 
   return (
     <HydrationBoundary>

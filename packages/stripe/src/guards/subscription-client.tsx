@@ -2,14 +2,8 @@
 
 import { useOrganization } from '@clerk/nextjs';
 import { MetricLink } from '@nugget/analytics';
-import {
-  createContext,
-  type ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
-import { getSubscriptionInfoAction } from './subscription-actions';
+import { api } from '@nugget/api/react';
+import { createContext, type ReactNode, useContext } from 'react';
 
 // Subscription context
 interface SubscriptionContextType {
@@ -37,16 +31,16 @@ interface SubscriptionProviderProps {
 
 export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const { organization } = useOrganization();
-  const [subscriptionInfo, setSubscriptionInfo] = useState<{
-    status: string | null;
-    customerId: string | null;
-    isActive: boolean;
-    isPastDue: boolean;
-    isCanceled: boolean;
-    isTrialing: boolean;
-    isPaid: boolean;
-    hasAny: boolean;
-  }>({
+
+  // Use tRPC query for subscription info
+  const { data, isLoading: loading } = api.billing.getSubscriptionInfo.useQuery(
+    undefined,
+    {
+      enabled: !!organization,
+    },
+  );
+
+  const subscriptionInfo = data?.subscriptionInfo || {
     customerId: null,
     hasAny: false,
     isActive: false,
@@ -55,63 +49,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     isPastDue: false,
     isTrialing: false,
     status: null,
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!organization) {
-      setSubscriptionInfo({
-        customerId: null,
-        hasAny: false,
-        isActive: false,
-        isCanceled: false,
-        isPaid: false,
-        isPastDue: false,
-        isTrialing: false,
-        status: null,
-      });
-      setLoading(false);
-      return;
-    }
-
-    // Check subscription status using server action
-    const checkSubscription = async () => {
-      try {
-        const result = await getSubscriptionInfoAction();
-
-        if (result.data?.subscriptionInfo) {
-          setSubscriptionInfo(result.data.subscriptionInfo);
-        } else {
-          setSubscriptionInfo({
-            customerId: null,
-            hasAny: false,
-            isActive: false,
-            isCanceled: false,
-            isPaid: false,
-            isPastDue: false,
-            isTrialing: false,
-            status: null,
-          });
-        }
-      } catch (error) {
-        console.error('Error checking subscription status:', error);
-        setSubscriptionInfo({
-          customerId: null,
-          hasAny: false,
-          isActive: false,
-          isCanceled: false,
-          isPaid: false,
-          isPastDue: false,
-          isTrialing: false,
-          status: null,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkSubscription();
-  }, [organization]);
+  };
 
   return (
     <SubscriptionContext.Provider value={{ loading, subscriptionInfo }}>

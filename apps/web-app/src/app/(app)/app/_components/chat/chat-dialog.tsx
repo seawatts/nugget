@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth, useUser } from '@clerk/nextjs';
+import { api } from '@nugget/api/react';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
 import { NuggetAvatar } from '@nugget/ui/custom/nugget-avatar';
@@ -20,12 +21,8 @@ import { useMediaQuery } from '@nugget/ui/hooks/use-media-query';
 import { cn } from '@nugget/ui/lib/utils';
 import { Markdown } from '@nugget/ui/magicui/markdown';
 import { Send, Sparkles } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  getChatMessagesAction,
-  sendChatMessageStreamingAction,
-} from '../../chat/actions';
+import { sendChatMessageStreamingAction } from '../../chat/actions';
 
 /**
  * UI Message type - extends the basic ChatMessage from @nugget/ai/types
@@ -65,7 +62,28 @@ export function ChatDialogContent({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { executeAsync: loadChatMessages } = useAction(getChatMessagesAction);
+  // Use tRPC query to load chat messages (automatic caching and deduplication)
+  const { data: chatData } = api.chats.getById.useQuery(
+    { id: activeChat ?? '' },
+    {
+      enabled: !!activeChat,
+      staleTime: 30000, // Cache for 30 seconds
+    },
+  );
+
+  // Sync messages from query data
+  useEffect(() => {
+    if (chatData?.messages) {
+      setMessages(
+        chatData.messages.map((msg) => ({
+          content: msg.content,
+          createdAt: new Date(msg.createdAt),
+          id: msg.id,
+          role: msg.role as 'user' | 'assistant',
+        })),
+      );
+    }
+  }, [chatData]);
 
   // Set activeChat when chatId prop changes
   useEffect(() => {
@@ -86,28 +104,6 @@ export function ChatDialogContent({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  // Load messages when active chat changes
-  useEffect(() => {
-    if (activeChat) {
-      void loadChatMessages({ chatId: activeChat }).then(
-        // biome-ignore lint/suspicious/noExplicitAny: result type from action
-        (result: any) => {
-          if (result?.data) {
-            setMessages(
-              // biome-ignore lint/suspicious/noExplicitAny: message type from database
-              result.data.map((msg: any) => ({
-                content: msg.content,
-                createdAt: new Date(msg.createdAt),
-                id: msg.id,
-                role: msg.role as 'user' | 'assistant',
-              })),
-            );
-          }
-        },
-      );
-    }
-  }, [activeChat, loadChatMessages]);
 
   const handleSubmit = useCallback(
     async (e?: React.FormEvent<HTMLFormElement>) => {

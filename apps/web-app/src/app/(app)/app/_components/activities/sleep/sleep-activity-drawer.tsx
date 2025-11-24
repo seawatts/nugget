@@ -18,9 +18,8 @@ import { cn } from '@nugget/ui/lib/utils';
 import { Moon, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
-import { getInProgressSleepActivityAction } from '../activity-cards.actions';
-import { getFamilyMembersAction } from '../timeline/activity-timeline-filters.actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import { SleepModeSelector } from './sleep-mode-selector';
 
@@ -86,43 +85,23 @@ export function SleepActivityDrawer({
   >();
   const [isCoSleeping, setIsCoSleeping] = useState(false);
   const [coSleepingWith, setCoSleepingWith] = useState<string[]>([]);
-  const [familyMembers, setFamilyMembers] = useState<
-    Array<{
-      id: string;
-      name: string;
-      avatarUrl?: string | null;
-      userId: string;
-      isCurrentUser?: boolean;
-    }>
-  >([]);
   const [currentUserId, setCurrentUserId] = useState<string | undefined>();
   const [activeActivityId, setActiveActivityId] = useState<string | null>(null);
   const [isTimerStopped, setIsTimerStopped] = useState(false);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
-  const [isLoadingInProgress, setIsLoadingInProgress] = useState(false);
   const [isManualEndTime, setIsManualEndTime] = useState(false);
   const [selectedMode, setSelectedMode] = useState<SleepMode>(null);
 
   const isPending = isCreating || isUpdating;
   const isEditing = Boolean(existingActivity) || Boolean(activeActivityId);
 
-  // Fetch family members when drawer opens
+  // Get family members from dashboard store (already fetched in DashboardContainer)
+  const familyMembers = useDashboardDataStore.use.familyMembers();
+
+  // Set current user ID when drawer opens
   useEffect(() => {
     if (isOpen) {
-      // Set current user ID
       setCurrentUserId(userId || undefined);
-
-      // Fetch family members
-      void (async () => {
-        try {
-          const result = await getFamilyMembersAction();
-          if (result?.data) {
-            setFamilyMembers(result.data);
-          }
-        } catch (error) {
-          console.error('Failed to fetch family members:', error);
-        }
-      })();
     }
   }, [isOpen, userId]);
 
@@ -195,54 +174,48 @@ export function SleepActivityDrawer({
     }
   }, [duration, startTime]);
 
-  // Load in-progress sleep activity when drawer opens
+  // Load in-progress sleep activity when drawer opens using tRPC
+  const { data: inProgressActivity, isLoading: isLoadingInProgress } =
+    api.activities.getInProgressActivity.useQuery(
+      { activityType: 'sleep', babyId },
+      {
+        enabled: isOpen && !existingActivity && Boolean(babyId),
+        staleTime: 0, // Always fetch fresh data when drawer opens
+      },
+    );
+
+  // Process in-progress activity data
   useEffect(() => {
-    if (isOpen && !existingActivity && babyId) {
-      setIsLoadingInProgress(true);
-      void (async () => {
-        try {
-          const result = await getInProgressSleepActivityAction({ babyId });
-          if (result?.data?.activity) {
-            const inProgressActivity = result.data.activity;
-            setActiveActivityId(inProgressActivity.id);
-            setStartTime(new Date(inProgressActivity.startTime));
+    if (inProgressActivity) {
+      setActiveActivityId(inProgressActivity.id);
+      setStartTime(new Date(inProgressActivity.startTime));
 
-            if (inProgressActivity.notes) {
-              setNotes(inProgressActivity.notes);
-            }
-            if (
-              inProgressActivity.details &&
-              inProgressActivity.details.type === 'sleep'
-            ) {
-              setSleepType(inProgressActivity.details.sleepType);
-              setSleepQuality(inProgressActivity.details.quality);
-              setSleepLocation(inProgressActivity.details.location);
-              setWakeReason(inProgressActivity.details.wakeReason);
-              setIsCoSleeping(inProgressActivity.details.isCoSleeping || false);
-              setCoSleepingWith(
-                inProgressActivity.details.coSleepingWith || [],
-              );
-            }
-            // Set mode to timer since we loaded an in-progress activity
-            setSelectedMode('timer');
-          } else {
-            setActiveActivityId(null);
-          }
-        } catch (error) {
-          console.error('Failed to load in-progress sleep:', error);
-        } finally {
-          setIsLoadingInProgress(false);
-        }
-      })();
+      if (inProgressActivity.notes) {
+        setNotes(inProgressActivity.notes);
+      }
+      if (
+        inProgressActivity.details &&
+        inProgressActivity.details.type === 'sleep'
+      ) {
+        setSleepType(inProgressActivity.details.sleepType);
+        setSleepQuality(inProgressActivity.details.quality);
+        setSleepLocation(inProgressActivity.details.location);
+        setWakeReason(inProgressActivity.details.wakeReason);
+        setIsCoSleeping(inProgressActivity.details.isCoSleeping || false);
+        setCoSleepingWith(inProgressActivity.details.coSleepingWith || []);
+      }
+      // Set mode to timer since we loaded an in-progress activity
+      setSelectedMode('timer');
     }
+  }, [inProgressActivity]);
 
-    // Reset state when drawer closes - delay to allow closing animation to complete
+  // Reset state when drawer closes - delay to allow closing animation to complete
+  useEffect(() => {
     if (!isOpen) {
       // Delay state reset to prevent flash during drawer closing animation
       const timeoutId = setTimeout(() => {
         setActiveActivityId(null);
         setIsTimerStopped(false);
-        setIsLoadingInProgress(false);
         setDuration(0);
         setNotes('');
         setSleepQuality(undefined);
@@ -256,7 +229,7 @@ export function SleepActivityDrawer({
 
       return () => clearTimeout(timeoutId);
     }
-  }, [isOpen, existingActivity, babyId]);
+  }, [isOpen]);
 
   const handleTimerStart = async () => {
     try {
@@ -344,7 +317,7 @@ export function SleepActivityDrawer({
         const optimisticActivity = {
           amountMl: null,
           assignedUserId: null,
-          babyId: 'temp',
+          babyId: babyId, // Use real babyId instead of 'temp' for timeline filtering
           createdAt: new Date(),
           details: sleepDetails,
           duration: durationMinutes,
@@ -399,6 +372,7 @@ export function SleepActivityDrawer({
           babyId,
           details: sleepDetails,
           duration: durationMinutes,
+          endTime,
           notes: notes || undefined,
           startTime,
         });

@@ -2,9 +2,10 @@ import { Button } from '@nugget/ui/button';
 import { Zap } from 'lucide-react';
 import Link from 'next/link';
 import { InfoCard } from '../../../shared/info-card';
+import type { QuickLogActivityType } from '../activity-theme-config';
 
 interface QuickLogInfoSectionProps {
-  activityType: 'feeding' | 'diaper' | 'sleep' | 'pumping' | 'vitamin_d';
+  activityType: QuickLogActivityType;
   enabledSettings: string[];
   isQuickLogEnabled: boolean;
   color: string;

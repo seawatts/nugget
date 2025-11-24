@@ -2,15 +2,9 @@
 
 import { useOrganization } from '@clerk/nextjs';
 import { MetricLink } from '@nugget/analytics';
-import {
-  createContext,
-  type ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import { api } from '@nugget/api/react';
+import { createContext, type ReactNode, useContext } from 'react';
 import type { EntitlementKey, EntitlementsRecord } from './entitlement-types';
-import { getEntitlementsAction } from './entitlements-actions';
 
 // Entitlement context
 interface EntitlementContextType {
@@ -30,38 +24,17 @@ interface EntitlementProviderProps {
 
 export function EntitlementProvider({ children }: EntitlementProviderProps) {
   const { organization } = useOrganization();
-  const [entitlements, setEntitlements] = useState<EntitlementsRecord>(
-    {} as EntitlementsRecord,
+
+  // Use tRPC query for entitlements
+  const { data, isLoading: loading } = api.billing.getEntitlements.useQuery(
+    undefined,
+    {
+      enabled: !!organization,
+    },
   );
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!organization) {
-      setEntitlements({} as EntitlementsRecord);
-      setLoading(false);
-      return;
-    }
-
-    // Check entitlements using server action
-    const checkEntitlements = async () => {
-      try {
-        const result = await getEntitlementsAction();
-
-        if (result.data?.entitlements) {
-          setEntitlements(result.data.entitlements);
-        } else {
-          setEntitlements({} as EntitlementsRecord);
-        }
-      } catch (error) {
-        console.error('Error checking entitlements:', error);
-        setEntitlements({} as EntitlementsRecord);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkEntitlements();
-  }, [organization]);
+  const entitlements: EntitlementsRecord = (data?.entitlements ||
+    {}) as EntitlementsRecord;
 
   const checkEntitlement = (entitlement: EntitlementKey): boolean => {
     return entitlements[entitlement] || false;

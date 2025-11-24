@@ -21,7 +21,9 @@ import {
   UtensilsCrossed,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { memo, useEffect, useMemo, useState } from 'react';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { formatVolumeDisplay } from './activities/shared/volume-utils';
 
@@ -183,22 +185,20 @@ export function TodaySummaryCard({
   babyAvatarBackgroundColor,
   measurementUnit = 'metric',
 }: TodaySummaryCardProps) {
+  // Get babyId from params (TodaySummaryCard is only used on dashboard which has babyId in URL)
+  const params = useParams();
+  const babyId = params.babyId as string;
+
   // Determine volume unit based on measurement preference
   const userUnitPref = measurementUnit === 'imperial' ? 'OZ' : 'ML';
 
-  // Get the most recent baby using tRPC suspense query (prefetched on server)
-  const [baby] = api.babies.getMostRecent.useSuspenseQuery();
-
-  // Fetch activities from today using tRPC suspense query (prefetched on server)
-  const [activitiesData = []] = api.activities.list.useSuspenseQuery({
-    babyId: baby?.id ?? '',
-    isScheduled: false,
-    limit: 100,
-  });
+  // Get shared data from dashboard store (populated by DashboardContainer)
+  const activitiesData = useDashboardDataStore.use.activities();
 
   // Fetch milestones achieved today using tRPC suspense query (prefetched on server)
+  // Use babyId from params to avoid race condition with store population
   const [allMilestones = []] = api.milestones.list.useSuspenseQuery({
-    babyId: baby?.id ?? '',
+    babyId: babyId ?? '',
     limit: 100,
   });
 

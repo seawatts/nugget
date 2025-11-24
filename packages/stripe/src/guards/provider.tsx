@@ -1,16 +1,9 @@
 'use client';
 
 import { useOrganization } from '@clerk/nextjs';
-import {
-  createContext,
-  type ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import { api } from '@nugget/api/react';
+import { createContext, type ReactNode, useContext } from 'react';
 import type { EntitlementKey, EntitlementsRecord } from './entitlement-types';
-import { getEntitlementsAction } from './entitlements-actions';
-import { getSubscriptionInfoAction } from './subscription-actions';
 
 // Combined context type
 interface StripeContextType {
@@ -42,9 +35,21 @@ interface StripeProviderProps {
 
 export function StripeProvider({ children }: StripeProviderProps) {
   const { organization } = useOrganization();
-  const [subscriptionInfo, setSubscriptionInfo] = useState<
-    StripeContextType['subscriptionInfo']
-  >({
+
+  // Use tRPC queries for subscription info and entitlements
+  const { data: subscriptionData, isLoading: subscriptionLoading } =
+    api.billing.getSubscriptionInfo.useQuery(undefined, {
+      enabled: !!organization,
+    });
+
+  const { data: entitlementsData, isLoading: entitlementsLoading } =
+    api.billing.getEntitlements.useQuery(undefined, {
+      enabled: !!organization,
+    });
+
+  const loading = subscriptionLoading || entitlementsLoading;
+
+  const subscriptionInfo = subscriptionData?.subscriptionInfo || {
     customerId: null,
     hasAny: false,
     isActive: false,
@@ -53,81 +58,10 @@ export function StripeProvider({ children }: StripeProviderProps) {
     isPastDue: false,
     isTrialing: false,
     status: null,
-  });
-  const [entitlements, setEntitlements] = useState<EntitlementsRecord>(
-    {} as EntitlementsRecord,
-  );
-  const [loading, setLoading] = useState(true);
+  };
 
-  useEffect(() => {
-    if (!organization) {
-      setSubscriptionInfo({
-        customerId: null,
-        hasAny: false,
-        isActive: false,
-        isCanceled: false,
-        isPaid: false,
-        isPastDue: false,
-        isTrialing: false,
-        status: null,
-      });
-      setEntitlements({} as EntitlementsRecord);
-      setLoading(false);
-      return;
-    }
-
-    // Check both subscription and entitlements
-    const checkStripeData = async () => {
-      try {
-        const [subscriptionResult, entitlementsResult] = await Promise.all([
-          getSubscriptionInfoAction(),
-          getEntitlementsAction(),
-        ]);
-
-        // Update subscription info
-        if (subscriptionResult.data?.subscriptionInfo) {
-          setSubscriptionInfo(subscriptionResult.data.subscriptionInfo);
-        } else {
-          setSubscriptionInfo({
-            customerId: null,
-            hasAny: false,
-            isActive: false,
-            isCanceled: false,
-            isPaid: false,
-            isPastDue: false,
-            isTrialing: false,
-            status: null,
-          });
-        }
-
-        // Update entitlements
-        if (entitlementsResult.data?.entitlements) {
-          setEntitlements(
-            entitlementsResult.data.entitlements as EntitlementsRecord,
-          );
-        } else {
-          setEntitlements({} as EntitlementsRecord);
-        }
-      } catch (error) {
-        console.error('Error checking Stripe data:', error);
-        setSubscriptionInfo({
-          customerId: null,
-          hasAny: false,
-          isActive: false,
-          isCanceled: false,
-          isPaid: false,
-          isPastDue: false,
-          isTrialing: false,
-          status: null,
-        });
-        setEntitlements({} as EntitlementsRecord);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkStripeData();
-  }, [organization]);
+  const entitlements: EntitlementsRecord = (entitlementsData?.entitlements ||
+    {}) as EntitlementsRecord;
 
   const checkEntitlement = (entitlement: EntitlementKey): boolean => {
     return entitlements[entitlement] || false;

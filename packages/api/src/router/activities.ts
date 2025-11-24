@@ -339,6 +339,9 @@ export const activitiesRouter = createTRPCRouter({
           eq(Activities.babyId, baby.id),
           gte(Activities.startTime, seventyTwoHoursAgo),
         ),
+        with: {
+          user: true,
+        },
       });
 
       return {
@@ -521,6 +524,9 @@ export const activitiesRouter = createTRPCRouter({
           eq(Activities.type, 'pumping'),
           gte(Activities.startTime, fortyEightHoursAgo),
         ),
+        with: {
+          user: true,
+        },
       });
 
       return {
@@ -571,6 +577,9 @@ export const activitiesRouter = createTRPCRouter({
           eq(Activities.type, 'sleep'),
           gte(Activities.startTime, seventyTwoHoursAgo),
         ),
+        with: {
+          user: true,
+        },
       });
 
       return {

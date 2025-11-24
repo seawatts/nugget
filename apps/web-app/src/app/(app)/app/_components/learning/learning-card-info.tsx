@@ -1,5 +1,6 @@
 'use client';
 
+import { api, type LearningTip } from '@nugget/api/react';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
 import { P } from '@nugget/ui/custom/typography';
@@ -9,23 +10,15 @@ import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useState } from 'react';
 import { FeatureCard } from '~/components/feature-card';
 import type { ColorConfig } from '~/components/feature-card.types';
-import { getContextChatReplyAction } from '../../chat/actions';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { QuickChatDialog } from '../chat/quick-chat-dialog';
 import { saveMilestoneQuestionResponseAction } from '../milestones/milestone-question.actions';
 import { getCategoryConfig } from './learning-card-categories';
-import type { LearningTip } from './learning-carousel.actions';
 
 interface LearningCardInfoProps {
   tip?: LearningTip;
   ageInDays?: number;
   babyId?: string;
-}
-
-interface ChatReplier {
-  userId: string;
-  firstName: string | null;
-  lastName: string | null;
-  avatarUrl: string | null;
 }
 
 export function LearningCardInfo({
@@ -34,92 +27,81 @@ export function LearningCardInfo({
   babyId,
 }: LearningCardInfoProps) {
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [repliers, setRepliers] = useState<ChatReplier[]>([]);
-  const [yesRepliers, setYesRepliers] = useState<ChatReplier[]>([]);
-  const [noRepliers, setNoRepliers] = useState<ChatReplier[]>([]);
   const [prefillMessage, setPrefillMessage] = useState<string | undefined>();
-  const [hasUserAnswered, setHasUserAnswered] = useState(false);
-  const [userAnswer, setUserAnswer] = useState<'yes' | 'no' | null>(null);
-  const { executeAsync: fetchRepliers } = useAction(getContextChatReplyAction);
+
+  // Local state for optimistic updates (overridden by query data when available)
+  const [localHasUserAnswered, setLocalHasUserAnswered] = useState(false);
+  const [localUserAnswer, setLocalUserAnswer] = useState<'yes' | 'no' | null>(
+    null,
+  );
+
   const { executeAsync: saveResponse } = useAction(
     saveMilestoneQuestionResponseAction,
   );
 
-  // Function to fetch repliers
-  const loadRepliers = useCallback(() => {
-    if (tip && babyId) {
-      fetchRepliers({
-        babyId,
-        contextId: `${tip.category}-${tip.subtitle}`,
+  // Get babyId from dashboard store
+  const baby = useDashboardDataStore.use.baby();
+  const storeBabyId = baby?.id ?? babyId ?? '';
+
+  // Lazy-load repliers data only when needed (when user clicks to see them)
+  const { data: repliersData, refetch: refetchRepliers } =
+    api.chats.getContextRepliers.useQuery(
+      {
+        babyId: storeBabyId,
+        contextId: `${tip?.category}-${tip?.subtitle}`,
         contextType: 'learning_tip',
-      })
-        // biome-ignore lint/suspicious/noExplicitAny: action result type
-        .then((result: any) => {
-          if (result?.data) {
-            // Update user answer state
-            if (result.data.hasCurrentUserAnswered) {
-              setHasUserAnswered(true);
-              setUserAnswer(result.data.currentUserAnswer);
-            }
+      },
+      {
+        enabled: false, // Don't fetch on mount - only when explicitly requested
+        staleTime: 30000, // Cache for 30 seconds to avoid refetching unnecessarily
+      },
+    );
 
-            // For yes/no questions, use split repliers
-            if (result.data.yesRepliers !== undefined) {
-              setYesRepliers(result.data.yesRepliers || []);
-              setNoRepliers(result.data.noRepliers || []);
-            }
+  // Derive state from query data (or use local optimistic state if query hasn't run)
+  const repliers = repliersData?.allRepliers ?? [];
+  const yesRepliers = repliersData?.yesRepliers ?? [];
+  const noRepliers = repliersData?.noRepliers ?? [];
+  const hasUserAnswered =
+    repliersData?.hasCurrentUserAnswered ?? localHasUserAnswered;
+  const userAnswer = repliersData?.currentUserAnswer ?? localUserAnswer;
 
-            // Use allRepliers for the Answer button (includes yes/no + chat message users)
-            if (result.data.allRepliers !== undefined) {
-              setRepliers(result.data.allRepliers || []);
-            } else {
-              // Fallback: combine yes/no repliers if allRepliers not available
-              setRepliers([
-                ...(result.data.yesRepliers || []),
-                ...(result.data.noRepliers || []),
-              ]);
-            }
-          }
-        })
-        .catch((error) => {
-          console.error('Error fetching repliers:', error);
-        });
-    }
-  }, [tip, babyId, fetchRepliers]);
-
-  // Fetch repliers when tip and babyId are available
+  // Sync local state with query data when it changes
   useEffect(() => {
-    loadRepliers();
-  }, [loadRepliers]);
+    if (repliersData) {
+      setLocalHasUserAnswered(repliersData.hasCurrentUserAnswered);
+      setLocalUserAnswer(repliersData.currentUserAnswer);
+    }
+  }, [repliersData]);
 
   // Refetch repliers when chat dialog closes
   useEffect(() => {
     if (!isChatOpen) {
       // Add a small delay to ensure the message has been saved
       const timer = setTimeout(() => {
-        loadRepliers();
+        void refetchRepliers();
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isChatOpen, loadRepliers]);
+  }, [isChatOpen, refetchRepliers]);
 
   // Handler for yes/no button clicks
   const handleYesNoClick = useCallback(
     (answer: 'yes' | 'no') => {
-      if (!babyId || !tip) return;
+      if (!storeBabyId || !tip) return;
 
       // If clicking the same answer, do nothing
       if (hasUserAnswered && userAnswer === answer) return;
 
-      // Update local state immediately for instant feedback
-      setHasUserAnswered(true);
-      setUserAnswer(answer);
+      // Update local state immediately for instant feedback (optimistic update)
+      setLocalHasUserAnswered(true);
+      setLocalUserAnswer(answer);
       setPrefillMessage(answer);
       setIsChatOpen(true);
 
       // Save the response asynchronously in the background
       saveResponse({
         answer,
-        babyId,
+        babyId: storeBabyId,
         contextId: `${tip.category}-${tip.subtitle}`,
         contextType: 'learning_tip',
         question: tip.followUpQuestion,
@@ -127,7 +109,7 @@ export function LearningCardInfo({
         console.error('Error saving response:', error);
       });
     },
-    [babyId, tip, saveResponse, hasUserAnswered, userAnswer],
+    [storeBabyId, tip, saveResponse, hasUserAnswered, userAnswer],
   );
 
   // Handler for discuss button - opens chat without re-submitting answer
@@ -367,10 +349,10 @@ export function LearningCardInfo({
       </FeatureCard.Footer>
 
       {/* Chat Dialog */}
-      {babyId && tip && (
+      {storeBabyId && tip && (
         <QuickChatDialog
           autoSendPrefill={!!prefillMessage}
-          babyId={babyId}
+          babyId={storeBabyId}
           contextId={`${tip.category}-${tip.subtitle}`}
           contextType="learning_tip"
           initialMessages={[

@@ -238,6 +238,13 @@
       "tag": "0035_first_blindfold",
       "version": "7",
       "when": 1763882866049
+    },
+    {
+      "breakpoints": true,
+      "idx": 36,
+      "tag": "0036_lonely_the_twelve",
+      "version": "7",
+      "when": 1763959332316
     }
   ],
   "version": "7"

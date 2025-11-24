@@ -171,7 +171,6 @@ export function useSwipeGesture({
   // Mouse event handlers
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      console.log('[SwipeGesture] Mouse down at:', e.clientX, e.clientY);
       handleStart(e.clientX, e.clientY, e.target as HTMLElement);
     },
     [handleStart],
@@ -180,7 +179,6 @@ export function useSwipeGesture({
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       if (!isSwiping.current) return;
-      console.log('[SwipeGesture] Mouse move:', e.clientX, e.clientY);
       handleMove(e.clientX, e.clientY);
     },
     [handleMove],
@@ -194,19 +192,6 @@ export function useSwipeGesture({
     const deltaY = currentY.current - startY.current;
     const absDeltaX = Math.abs(deltaX);
     const absDeltaY = Math.abs(deltaY);
-
-    console.log(
-      '[SwipeGesture] End - deltaX:',
-      deltaX,
-      'deltaY:',
-      deltaY,
-      'threshold:',
-      threshold,
-      'intent:',
-      swipeIntent.current,
-      'inScrollable:',
-      isInScrollableArea.current,
-    );
 
     // If we were in a scrollable area with vertical intent, don't trigger any action
     if (isInScrollableArea.current && swipeIntent.current === 'vertical') {

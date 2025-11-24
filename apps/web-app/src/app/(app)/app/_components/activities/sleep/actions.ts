@@ -121,20 +121,46 @@ export const quickLogSleepAction = action
 
       // Determine sleep type based on time of day
       const hour = startTime.getHours();
-      const sleepType = hour >= 6 && hour < 18 ? 'nap' : 'night';
+      const sleepType: 'nap' | 'night' =
+        hour >= 6 && hour < 18 ? 'nap' : 'night';
+
+      console.log('[quickLogSleepAction] Creating activity with:', {
+        babyId,
+        duration: parsedInput.duration,
+        endTime: endTime.toISOString(),
+        parsedInputRaw: JSON.stringify(parsedInput),
+        sleepType,
+        startTime: startTime.toISOString(),
+      });
 
       // Create the sleep activity as a completed entry
-      const activity = await api.activities.create({
+      const createInput = {
         babyId,
         details: {
           sleepType,
-          type: 'sleep',
+          type: 'sleep' as const,
         },
         duration: parsedInput.duration,
         endTime,
         isScheduled: false,
         startTime,
-        type: 'sleep',
+        type: 'sleep' as const,
+      };
+
+      console.log(
+        '[quickLogSleepAction] About to call api.activities.create with:',
+        JSON.stringify(createInput, null, 2),
+      );
+
+      const activity = await api.activities.create(createInput);
+
+      console.log('[quickLogSleepAction] Created activity RESPONSE:', {
+        duration: activity.duration,
+        durationType: typeof activity.duration,
+        endTime: activity.endTime,
+        fullActivity: JSON.stringify(activity, null, 2),
+        id: activity.id,
+        startTime: activity.startTime,
       });
 
       // Revalidate pages

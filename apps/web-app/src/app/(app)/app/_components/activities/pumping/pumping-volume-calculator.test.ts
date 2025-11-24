@@ -26,8 +26,8 @@ describe('pumping-volume-calculator', () => {
     it('should calculate transitional volumes for day 7', () => {
       const result = calculatePumpingVolumes(7, 20);
       expect(result.isColostrum).toBe(false);
-      expect(result.totalMl).toBeGreaterThan(30);
-      expect(result.totalMl).toBeLessThan(70);
+      expect(result.totalMl).toBeGreaterThan(60); // 2+ oz
+      expect(result.totalMl).toBeLessThan(100); // < 3.5 oz
     });
 
     it('should calculate mature milk volumes for 2 weeks', () => {
@@ -81,9 +81,24 @@ describe('pumping-volume-calculator', () => {
       expect(mlToOz(90)).toBeCloseTo(3, 0);
     });
 
-    it('should round to nearest 0.5 oz', () => {
+    it('should use 0.1 oz precision for small volumes (< 15ml)', () => {
+      // Very small volume should not round to 0
+      expect(mlToOz(5)).toBeGreaterThan(0);
+      expect(mlToOz(5)).toBeCloseTo(0.2, 1);
+
+      // 10ml should be ~0.3 oz
+      expect(mlToOz(10)).toBeGreaterThan(0);
+      expect(mlToOz(10)).toBeCloseTo(0.3, 1);
+    });
+
+    it('should use 0.5 oz precision for larger volumes (>= 15ml)', () => {
       const result = mlToOz(45);
       expect(result % 0.5).toBe(0);
+    });
+
+    it('should never return 0 for non-zero input', () => {
+      // Even 1ml should show something in oz
+      expect(mlToOz(1)).toBeGreaterThan(0);
     });
   });
 
@@ -143,6 +158,54 @@ describe('pumping-volume-calculator', () => {
           volumes[i - 1]?.totalMl ?? 0,
         );
       }
+    });
+  });
+
+  describe('10-minute pumping session scenarios (bug fix verification)', () => {
+    it('should show non-zero oz values for 10-minute sessions at all ages', () => {
+      const ages = [1, 3, 7, 14, 21, 30];
+
+      ages.forEach((ageDays) => {
+        const volumes = calculatePumpingVolumes(ageDays, 10);
+        const leftOz = mlToOz(volumes.leftMl);
+        const rightOz = mlToOz(volumes.rightMl);
+
+        // Should never show 0 oz (the bug we're fixing)
+        expect(leftOz).toBeGreaterThan(0);
+        expect(rightOz).toBeGreaterThan(0);
+
+        console.log(
+          `Age ${ageDays} days, 10 min: ${leftOz} oz / ${rightOz} oz (${volumes.leftMl} ml / ${volumes.rightMl} ml)`,
+        );
+      });
+    });
+
+    it('should calculate reasonable values for 1-2 week old baby with 10-min session', () => {
+      // This is the reported scenario - user gets ~3 oz total for 10 min
+      const result = calculatePumpingVolumes(10, 10); // 10 days old, 10 minutes
+      const leftOz = mlToOz(result.leftMl);
+      const rightOz = mlToOz(result.rightMl);
+      const totalOz = leftOz + rightOz;
+
+      // Should show realistic values matching user's actual output
+      expect(leftOz).toBeGreaterThan(0);
+      expect(totalOz).toBeGreaterThan(2.5); // At least 2.5 oz total
+      expect(totalOz).toBeLessThan(4); // Less than 4 oz total
+    });
+
+    it('should show appropriate values for all standard duration options', () => {
+      const durations = [10, 15, 20]; // Standard options in UI
+      const ageDays = 14; // 2 weeks old
+
+      durations.forEach((duration) => {
+        const volumes = calculatePumpingVolumes(ageDays, duration);
+        const totalOz = mlToOz(volumes.totalMl);
+
+        expect(totalOz).toBeGreaterThan(0);
+        console.log(
+          `${duration} min session: ${totalOz} oz (${volumes.totalMl} ml)`,
+        );
+      });
     });
   });
 });

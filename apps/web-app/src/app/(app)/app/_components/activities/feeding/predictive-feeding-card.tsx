@@ -6,8 +6,9 @@ import { Card } from '@nugget/ui/card';
 import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
 import { useParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getActivityTheme } from '../shared/activity-theme-config';
 import {
@@ -46,23 +47,16 @@ export function PredictiveFeedingCard({
   const params = useParams<{ babyId: string }>();
   const babyId = params.babyId;
 
-  const { data: userData } = api.user.current.useQuery();
+  // Get shared data from dashboard store (populated by DashboardContainer)
+  const userData = useDashboardDataStore.use.user();
+  const allActivities = useDashboardDataStore.use.activities();
+  const baby = useDashboardDataStore.use.baby();
+
   const timeFormat = userData?.timeFormat || '12h';
   const userUnitPref = getVolumeUnit(userData?.measurementUnit || 'metric');
 
   // Get optimistic activities from store
   const optimisticActivities = useOptimisticActivitiesStore.use.activities();
-
-  // Fetch last 30 days of activities for stats and vitamin D tracking
-  const thirtyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 30)), []);
-  const { data: allActivities } = api.activities.list.useQuery(
-    {
-      babyId: babyId ?? '',
-      limit: 1000,
-      since: thirtyDaysAgo,
-    },
-    { enabled: Boolean(babyId) },
-  );
 
   // Filter to today's activities for goal display
   const todaysActivitiesData = allActivities?.filter((activity) => {
@@ -173,7 +167,9 @@ export function PredictiveFeedingCard({
 
   // Get learning content for the baby's age
   const learningContent =
-    babyAgeDays !== null ? getFeedingLearningContent(babyAgeDays) : null;
+    babyAgeDays !== null
+      ? getFeedingLearningContent(babyAgeDays, baby?.name || undefined)
+      : null;
 
   // Build quick log settings for info drawer
   const quickLogSettings = {

@@ -50,7 +50,7 @@ export function usePredictiveActions({
       const optimisticActivity = {
         ...defaultQuickLogData,
         assignedUserId: null,
-        babyId: 'temp',
+        babyId: babyId, // Use real babyId instead of 'temp' for timeline filtering
         createdAt: now,
         details: null,
         duration: 0,

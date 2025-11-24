@@ -42,10 +42,6 @@ import Link from 'next/link';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import type { KeyboardEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  type FamilyTabMember,
-  getFamilyTabsDataAction,
-} from './family-tabs.actions';
 import { useScroll } from './scroll-provider';
 
 function getUserJourneyStage() {
@@ -369,7 +365,7 @@ export function BottomNav() {
   const { scrollY } = useScroll();
   const [showDrawer, setShowDrawer] = useState(false);
   const [showFamilyMenu, setShowFamilyMenu] = useState(false);
-  const [familyMembers, setFamilyMembers] = useState<FamilyTabMember[]>([]);
+  const { data: familyMembers = [] } = api.familyTabs.getTabsData.useQuery();
   const [journeyStage, setJourneyStage] = useState<string | null>(null);
   const familyMenuRef = useRef<HTMLDivElement>(null);
   const avatarButtonRef = useRef<HTMLButtonElement>(null);
@@ -414,22 +410,6 @@ export function BottomNav() {
   useEffect(() => {
     const userData = getUserJourneyStage();
     setJourneyStage(userData?.journeyStage || 'born'); // Default to "born" if not set
-  }, []);
-
-  // Fetch family members data
-  useEffect(() => {
-    async function loadFamilyMembers() {
-      try {
-        const result = await getFamilyTabsDataAction();
-        if (result?.data) {
-          setFamilyMembers(result.data);
-        }
-      } catch (error) {
-        console.error('Failed to load family members:', error);
-      }
-    }
-
-    loadFamilyMembers();
   }, []);
 
   // Handle click outside to close family menu

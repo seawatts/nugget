@@ -1,6 +1,5 @@
 'use client';
 
-import { api } from '@nugget/api/react';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
 import { Checkbox } from '@nugget/ui/checkbox';
@@ -29,6 +28,7 @@ import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { siteConfig } from '~/app/(marketing)/_lib/config';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { shareCelebrationAction } from './celebration-card.actions';
 
 interface CelebrationShareDialogProps {
@@ -55,8 +55,11 @@ export function CelebrationShareDialog({
   const [isSharing, setIsSharing] = useState(false);
   const isDesktop = useMediaQuery({ query: '(min-width: 768px)' });
 
-  // Get family members
-  const { data: familyMembers = [] } = api.familyMembers.all.useQuery();
+  // Get family members from dashboard store (already fetched in DashboardContainer)
+  const familyMembersData = useDashboardDataStore.use.familyMembers();
+
+  // Map to format expected by tRPC (for compatibility)
+  const familyMembers = familyMembersData;
 
   const { execute: share, isExecuting } = useAction(shareCelebrationAction, {
     onSuccess: () => {
@@ -172,15 +175,15 @@ export function CelebrationShareDialog({
                   onCheckedChange={() => toggleUser(member.userId)}
                 />
                 <Avatar className="size-8">
-                  <AvatarImage src={member.user?.avatarUrl || ''} />
+                  <AvatarImage src={member.avatarUrl || ''} />
                   <AvatarFallback>
-                    {member.user?.firstName?.[0]}
-                    {member.user?.lastName?.[0]}
+                    {member.firstName?.[0]}
+                    {member.lastName?.[0]}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <Text className="font-medium" size="sm">
-                    {member.user?.firstName} {member.user?.lastName}
+                    {member.name}
                   </Text>
                   <Text size="xs" variant="muted">
                     {member.role}

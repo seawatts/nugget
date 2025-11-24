@@ -61,10 +61,10 @@ export function PumpingActivityDrawer({
   ];
 
   // Update selectedDuration when duration changes
+  // Duration comes from TimeSelectionMode in seconds, convert to minutes
   useEffect(() => {
-    if (duration > 0) {
-      setSelectedDuration(Math.floor(duration / 60)); // Convert seconds to minutes
-    }
+    const durationMinutes = duration > 0 ? Math.floor(duration / 60) : null;
+    setSelectedDuration(durationMinutes);
   }, [duration]);
 
   const isPending = isCreating || isUpdating;
@@ -117,6 +117,7 @@ export function PumpingActivityDrawer({
     // Reset fields when drawer is opened for new activity
     if (!existingActivity) {
       setStartTime(new Date());
+      // Set default amounts - these will be overridden by auto-calculation when duration is selected
       setLeftAmount(userUnitPref === 'OZ' ? 2 : 60);
       setRightAmount(userUnitPref === 'OZ' ? 2 : 60);
       setSelectedDuration(null);
@@ -176,7 +177,7 @@ export function PumpingActivityDrawer({
         const optimisticActivity = {
           amountMl: totalAmountMl,
           assignedUserId: null,
-          babyId: 'temp',
+          babyId: _babyId, // Use real babyId instead of 'temp' for timeline filtering
           createdAt: startTime,
           details: pumpingDetails,
           duration: durationMinutes,

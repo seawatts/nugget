@@ -9,8 +9,9 @@ import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
 import { BarChart3, Info, Moon, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import {
   PredictiveCardSkeleton,
@@ -43,22 +44,15 @@ export function PredictiveSleepCard({
   const params = useParams<{ babyId: string }>();
   const babyId = params.babyId;
 
-  const { data: userData } = api.user.current.useQuery();
+  // Get shared data from dashboard store (populated by DashboardContainer)
+  const userData = useDashboardDataStore.use.user();
+  const allActivities = useDashboardDataStore.use.activities();
+  const baby = useDashboardDataStore.use.baby();
+
   const timeFormat = userData?.timeFormat || '12h';
 
   // Get optimistic activities from store
   const optimisticActivities = useOptimisticActivitiesStore.use.activities();
-
-  // Fetch last 30 days of activities for stats and trend tracking
-  const thirtyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 30)), []);
-  const { data: allActivities } = api.activities.list.useQuery(
-    {
-      babyId,
-      limit: 1000,
-      since: thirtyDaysAgo,
-    },
-    { enabled: Boolean(babyId) },
-  );
 
   // Filter to today's activities for goal display
   const todaysActivitiesData = allActivities?.filter((activity) => {
@@ -225,7 +219,9 @@ export function PredictiveSleepCard({
 
   // Get learning content for the baby's age
   const learningContent =
-    babyAgeDays !== null ? getSleepLearningContent(babyAgeDays) : null;
+    babyAgeDays !== null
+      ? getSleepLearningContent(babyAgeDays, baby?.name || undefined)
+      : null;
 
   // Build quick log settings for info drawer
   const quickLogSettings = {

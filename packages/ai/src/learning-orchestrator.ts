@@ -11,6 +11,55 @@ import type { DailyLearningPlan, LearningPlanItem, LearningTip } from './baml_cl
 import { determineStage, LEARNING_STAGES, type LearningStage } from './learning-stages';
 
 /**
+ * Retry a BAML call with exponential backoff on validation errors
+ *
+ * @param fn - The BAML function to call
+ * @param maxRetries - Maximum number of retry attempts (default: 3)
+ * @returns The result or null if all retries fail
+ */
+async function retryBamlCall<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3
+): Promise<T | null> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+
+      // Check if it's a BAML validation error
+      const isBamlValidationError =
+        error instanceof Error &&
+        (error.message.includes('BamlValidationError') ||
+         error.message.includes('Failed to parse LLM response') ||
+         error.message.includes('Missing required field'));
+
+      if (!isBamlValidationError || attempt === maxRetries) {
+        // Not a validation error or out of retries
+        console.error(`BAML call failed after ${attempt + 1} attempts:`, {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        return null;
+      }
+
+      // Calculate exponential backoff delay
+      const delayMs = 100 * Math.pow(2, attempt); // 100ms, 200ms, 400ms
+      console.warn(`BAML validation error (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delayMs}ms:`, {
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+
+  return null;
+}
+
+/**
  * Context required for generating daily learning content
  */
 export interface DailyLearningContext {
@@ -98,12 +147,13 @@ export async function generateDailyLearning(
   const stage = determineStage(context.ageInDays);
 
   // Step 3: Execute stage-specific prompts in parallel
-  const tips = await Promise.all(
+  const tipsOrNull = await Promise.all(
     plan.items.map((planItem) => executeStagePrompt(stage, planItem, context))
   );
 
-  // Step 4: Validate and deduplicate (basic validation)
-  const validTips = validateTips(tips);
+  // Step 4: Filter out null results and validate
+  const tips = tipsOrNull.filter((tip): tip is LearningTip => tip !== null);
+  const validTips = validateTips(tips, context.babyName);
 
   const executionTimeMs = Date.now() - startTime;
 
@@ -127,217 +177,239 @@ async function executeStagePrompt(
   stage: LearningStage,
   planItem: LearningPlanItem,
   context: DailyLearningContext
-): Promise<LearningTip> {
+): Promise<LearningTip | null> {
   // Route to appropriate stage function with individual parameters
   switch (stage) {
     case LEARNING_STAGES.IMMEDIATE_POSTBIRTH:
-      return b.GenerateLearningTip_ImmediatePostbirth(
-        planItem.category,
-        planItem.title,
-        planItem.subtitle,
-        planItem.relevance,
-        planItem.recommendYesNo,
-        context.babyName,
-        context.babySex,
-        context.ageInDays,
-        context.currentWeightOz,
-        context.birthWeightOz,
-        context.feedingCount24h,
-        context.avgFeedingInterval,
-        context.sleepCount24h,
-        context.diaperCount24h,
-        context.recentChatTopics,
-        context.achievedMilestones,
-        context.medicalContext
+      return retryBamlCall(() =>
+        b.GenerateLearningTip_ImmediatePostbirth(
+          planItem.category,
+          planItem.title,
+          planItem.subtitle,
+          planItem.relevance,
+          planItem.recommendYesNo,
+          context.babyName,
+          context.babySex,
+          context.ageInDays,
+          context.currentWeightOz,
+          context.birthWeightOz,
+          context.feedingCount24h,
+          context.avgFeedingInterval,
+          context.sleepCount24h,
+          context.diaperCount24h,
+          context.recentChatTopics,
+          context.achievedMilestones,
+          context.medicalContext
+        )
       );
 
     case LEARNING_STAGES.FIRST_WEEK:
-      return b.GenerateLearningTip_FirstWeek(
-        planItem.category,
-        planItem.title,
-        planItem.subtitle,
-        planItem.relevance,
-        planItem.recommendYesNo,
-        context.babyName,
-        context.babySex,
-        context.ageInDays,
-        context.currentWeightOz,
-        context.birthWeightOz,
-        context.feedingCount24h,
-        context.avgFeedingInterval,
-        context.sleepCount24h,
-        context.diaperCount24h,
-        context.recentChatTopics,
-        context.achievedMilestones,
-        context.medicalContext
+      return retryBamlCall(() =>
+        b.GenerateLearningTip_FirstWeek(
+          planItem.category,
+          planItem.title,
+          planItem.subtitle,
+          planItem.relevance,
+          planItem.recommendYesNo,
+          context.babyName,
+          context.babySex,
+          context.ageInDays,
+          context.currentWeightOz,
+          context.birthWeightOz,
+          context.feedingCount24h,
+          context.avgFeedingInterval,
+          context.sleepCount24h,
+          context.diaperCount24h,
+          context.recentChatTopics,
+          context.achievedMilestones,
+          context.medicalContext
+        )
       );
 
     case LEARNING_STAGES.SECOND_WEEK:
-      return b.GenerateLearningTip_SecondWeek(
-        planItem.category,
-        planItem.title,
-        planItem.subtitle,
-        planItem.relevance,
-        planItem.recommendYesNo,
-        context.babyName,
-        context.babySex,
-        context.ageInDays,
-        context.currentWeightOz,
-        context.birthWeightOz,
-        context.feedingCount24h,
-        context.avgFeedingInterval,
-        context.sleepCount24h,
-        context.diaperCount24h,
-        context.recentChatTopics,
-        context.achievedMilestones,
-        context.medicalContext
+      return retryBamlCall(() =>
+        b.GenerateLearningTip_SecondWeek(
+          planItem.category,
+          planItem.title,
+          planItem.subtitle,
+          planItem.relevance,
+          planItem.recommendYesNo,
+          context.babyName,
+          context.babySex,
+          context.ageInDays,
+          context.currentWeightOz,
+          context.birthWeightOz,
+          context.feedingCount24h,
+          context.avgFeedingInterval,
+          context.sleepCount24h,
+          context.diaperCount24h,
+          context.recentChatTopics,
+          context.achievedMilestones,
+          context.medicalContext
+        )
       );
 
     case LEARNING_STAGES.THIRD_WEEK:
-      return b.GenerateLearningTip_ThirdWeek(
-        planItem.category,
-        planItem.title,
-        planItem.subtitle,
-        planItem.relevance,
-        planItem.recommendYesNo,
-        context.babyName,
-        context.babySex,
-        context.ageInDays,
-        context.currentWeightOz,
-        context.birthWeightOz,
-        context.feedingCount24h,
-        context.avgFeedingInterval,
-        context.sleepCount24h,
-        context.diaperCount24h,
-        context.recentChatTopics,
-        context.achievedMilestones,
-        context.medicalContext
+      return retryBamlCall(() =>
+        b.GenerateLearningTip_ThirdWeek(
+          planItem.category,
+          planItem.title,
+          planItem.subtitle,
+          planItem.relevance,
+          planItem.recommendYesNo,
+          context.babyName,
+          context.babySex,
+          context.ageInDays,
+          context.currentWeightOz,
+          context.birthWeightOz,
+          context.feedingCount24h,
+          context.avgFeedingInterval,
+          context.sleepCount24h,
+          context.diaperCount24h,
+          context.recentChatTopics,
+          context.achievedMilestones,
+          context.medicalContext
+        )
       );
 
     case LEARNING_STAGES.MONTH_ONE:
-      return b.GenerateLearningTip_MonthOne(
-        planItem.category,
-        planItem.title,
-        planItem.subtitle,
-        planItem.relevance,
-        planItem.recommendYesNo,
-        context.babyName,
-        context.babySex,
-        context.ageInDays,
-        context.currentWeightOz,
-        context.birthWeightOz,
-        context.feedingCount24h,
-        context.avgFeedingInterval,
-        context.sleepCount24h,
-        context.diaperCount24h,
-        context.recentChatTopics,
-        context.achievedMilestones,
-        context.medicalContext
+      return retryBamlCall(() =>
+        b.GenerateLearningTip_MonthOne(
+          planItem.category,
+          planItem.title,
+          planItem.subtitle,
+          planItem.relevance,
+          planItem.recommendYesNo,
+          context.babyName,
+          context.babySex,
+          context.ageInDays,
+          context.currentWeightOz,
+          context.birthWeightOz,
+          context.feedingCount24h,
+          context.avgFeedingInterval,
+          context.sleepCount24h,
+          context.diaperCount24h,
+          context.recentChatTopics,
+          context.achievedMilestones,
+          context.medicalContext
+        )
       );
 
     case LEARNING_STAGES.MONTH_TWO:
-      return b.GenerateLearningTip_MonthTwo(
-        planItem.category,
-        planItem.title,
-        planItem.subtitle,
-        planItem.relevance,
-        planItem.recommendYesNo,
-        context.babyName,
-        context.babySex,
-        context.ageInDays,
-        context.currentWeightOz,
-        context.birthWeightOz,
-        context.feedingCount24h,
-        context.avgFeedingInterval,
-        context.sleepCount24h,
-        context.diaperCount24h,
-        context.recentChatTopics,
-        context.achievedMilestones,
-        context.medicalContext
+      return retryBamlCall(() =>
+        b.GenerateLearningTip_MonthTwo(
+          planItem.category,
+          planItem.title,
+          planItem.subtitle,
+          planItem.relevance,
+          planItem.recommendYesNo,
+          context.babyName,
+          context.babySex,
+          context.ageInDays,
+          context.currentWeightOz,
+          context.birthWeightOz,
+          context.feedingCount24h,
+          context.avgFeedingInterval,
+          context.sleepCount24h,
+          context.diaperCount24h,
+          context.recentChatTopics,
+          context.achievedMilestones,
+          context.medicalContext
+        )
       );
 
     case LEARNING_STAGES.MONTH_THREE_FOUR:
-      return b.GenerateLearningTip_MonthThreeFour(
-        planItem.category,
-        planItem.title,
-        planItem.subtitle,
-        planItem.relevance,
-        planItem.recommendYesNo,
-        context.babyName,
-        context.babySex,
-        context.ageInDays,
-        context.currentWeightOz,
-        context.birthWeightOz,
-        context.feedingCount24h,
-        context.avgFeedingInterval,
-        context.sleepCount24h,
-        context.diaperCount24h,
-        context.recentChatTopics,
-        context.achievedMilestones,
-        context.medicalContext
+      return retryBamlCall(() =>
+        b.GenerateLearningTip_MonthThreeFour(
+          planItem.category,
+          planItem.title,
+          planItem.subtitle,
+          planItem.relevance,
+          planItem.recommendYesNo,
+          context.babyName,
+          context.babySex,
+          context.ageInDays,
+          context.currentWeightOz,
+          context.birthWeightOz,
+          context.feedingCount24h,
+          context.avgFeedingInterval,
+          context.sleepCount24h,
+          context.diaperCount24h,
+          context.recentChatTopics,
+          context.achievedMilestones,
+          context.medicalContext
+        )
       );
 
     default:
       // Fallback to immediate postbirth if unknown stage
-      return b.GenerateLearningTip_ImmediatePostbirth(
-        planItem.category,
-        planItem.title,
-        planItem.subtitle,
-        planItem.relevance,
-        planItem.recommendYesNo,
-        context.babyName,
-        context.babySex,
-        context.ageInDays,
-        context.currentWeightOz,
-        context.birthWeightOz,
-        context.feedingCount24h,
-        context.avgFeedingInterval,
-        context.sleepCount24h,
-        context.diaperCount24h,
-        context.recentChatTopics,
-        context.achievedMilestones,
-        context.medicalContext
+      return retryBamlCall(() =>
+        b.GenerateLearningTip_ImmediatePostbirth(
+          planItem.category,
+          planItem.title,
+          planItem.subtitle,
+          planItem.relevance,
+          planItem.recommendYesNo,
+          context.babyName,
+          context.babySex,
+          context.ageInDays,
+          context.currentWeightOz,
+          context.birthWeightOz,
+          context.feedingCount24h,
+          context.avgFeedingInterval,
+          context.sleepCount24h,
+          context.diaperCount24h,
+          context.recentChatTopics,
+          context.achievedMilestones,
+          context.medicalContext
+        )
       );
   }
 }
 
 /**
- * Validates generated tips
+ * Validates generated tips and adds default followUpQuestion if missing
  *
  * @param tips - Tips to validate
- * @returns Valid tips only
+ * @param babyName - Baby's name for default question
+ * @returns Valid tips with defaults applied
  */
-function validateTips(tips: LearningTip[]): LearningTip[] {
-  return tips.filter((tip) => {
-    // Basic validation: must have required fields
-    if (!tip.category || !tip.subtitle || !tip.summary) {
-      console.warn('Invalid tip missing required fields:', tip);
-      return false;
-    }
-
-    // Must have at least one bullet point
-    if (!tip.bulletPoints || tip.bulletPoints.length === 0) {
-      console.warn('Invalid tip missing bullet points:', tip);
-      return false;
-    }
-
-    // Must have follow-up question
-    if (!tip.followUpQuestion) {
-      console.warn('Invalid tip missing follow-up question:', tip);
-      return false;
-    }
-
-    // If yes/no question, must have proper fields
-    if (tip.isYesNoQuestion) {
-      if (!tip.openChatOnYes && !tip.openChatOnNo) {
-        console.warn('Yes/no question missing openChatOn fields:', tip);
-        return false;
+function validateTips(tips: LearningTip[], babyName: string): LearningTip[] {
+  return tips
+    .map((tip) => {
+      // Basic validation: must have required fields
+      if (!tip.category || !tip.subtitle || !tip.summary) {
+        console.warn('Invalid tip missing required fields:', tip);
+        return null;
       }
 
-    }
+      // Must have at least one bullet point
+      if (!tip.bulletPoints || tip.bulletPoints.length === 0) {
+        console.warn('Invalid tip missing bullet points:', tip);
+        return null;
+      }
 
-    return true;
-  });
+      // Add default followUpQuestion if missing (handles optional field)
+      if (!tip.followUpQuestion) {
+        console.warn('Tip missing followUpQuestion, adding default:', {
+          category: tip.category,
+          subtitle: tip.subtitle,
+        });
+        tip.followUpQuestion = `How is ${babyName} doing with this?`;
+      }
+
+      // If yes/no question, must have proper fields
+      if (tip.isYesNoQuestion) {
+        if (!tip.openChatOnYes && !tip.openChatOnNo) {
+          console.warn('Yes/no question missing openChatOn fields, setting defaults:', tip);
+          // Default to opening chat on "no" for health/safety questions
+          tip.openChatOnNo = true;
+        }
+      }
+
+      return tip;
+    })
+    .filter((tip): tip is LearningTip => tip !== null);
 }
 
 /**

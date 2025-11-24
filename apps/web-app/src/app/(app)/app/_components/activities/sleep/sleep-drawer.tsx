@@ -95,7 +95,7 @@ export function SleepDrawerContent({
   sleepType,
   setSleepType,
   activeActivityId,
-  onTimerStart,
+  onTimerStart: _onTimerStart,
   isTimerStopped = false,
   mode = 'manual',
   onBack,

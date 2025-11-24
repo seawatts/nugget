@@ -371,3 +371,6 @@ export {
   type PriceLookupKey,
   type ProductId,
 };
+
+// Export guards and helpers
+export * from './guards/server';

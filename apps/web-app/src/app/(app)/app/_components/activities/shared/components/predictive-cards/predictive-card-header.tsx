@@ -2,7 +2,7 @@
 
 import { Icons } from '@nugget/ui/custom/icons';
 import type { LucideIcon } from 'lucide-react';
-import { BarChart3, Info, Zap } from 'lucide-react';
+import { BarChart3, Info, Plus, Zap } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 interface PredictiveCardHeaderProps {
@@ -12,9 +12,11 @@ interface PredictiveCardHeaderProps {
   onInfoClick: (e: React.MouseEvent) => void;
   onStatsClick?: (e: React.MouseEvent) => void;
   onQuickLog?: (e: React.MouseEvent) => void;
+  onAddClick?: (e: React.MouseEvent) => void;
   isCreatingQuickLog?: boolean;
   quickLogEnabled?: boolean;
   showStatsIcon?: boolean;
+  showAddIcon?: boolean;
   children?: ReactNode;
 }
 
@@ -25,9 +27,11 @@ export function PredictiveCardHeader({
   onInfoClick,
   onStatsClick,
   onQuickLog,
+  onAddClick,
   isCreatingQuickLog,
   quickLogEnabled = true,
   showStatsIcon = false,
+  showAddIcon = false,
   children,
 }: PredictiveCardHeaderProps) {
   return (
@@ -41,6 +45,16 @@ export function PredictiveCardHeader({
           <div className="flex items-center gap-1 shrink-0">
             {isFetching && (
               <Icons.Spinner className="animate-spin opacity-70" size="xs" />
+            )}
+            {showAddIcon && onAddClick && (
+              <button
+                className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                onClick={onAddClick}
+                title="Open detailed form"
+                type="button"
+              >
+                <Plus className="size-5 opacity-70" />
+              </button>
             )}
             {quickLogEnabled && onQuickLog && (
               <button

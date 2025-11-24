@@ -16,8 +16,9 @@ import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
 import { BarChart3, Droplets, Info, Zap } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { LearningSection } from '../../learning/learning-section';
 import { InfoCard } from '../../shared/info-card';
@@ -49,8 +50,11 @@ export function PredictivePumpingCard({
 
   const router = useRouter();
 
-  // Fetch user preferences for volume display and time format
-  const { data: user } = api.user.current.useQuery();
+  // Get shared data from dashboard store (populated by DashboardContainer)
+  const user = useDashboardDataStore.use.user();
+  const allActivities = useDashboardDataStore.use.activities();
+  const baby = useDashboardDataStore.use.baby();
+
   const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
   const timeFormat = user?.timeFormat || '12h';
 
@@ -65,17 +69,6 @@ export function PredictivePumpingCard({
     error: queryError,
   } = api.activities.getUpcomingPumping.useQuery(
     { babyId: babyId ?? '' },
-    { enabled: Boolean(babyId) },
-  );
-
-  // Fetch last 30 days of activities for stats and trend chart
-  const thirtyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 30)), []);
-  const { data: allActivities } = api.activities.list.useQuery(
-    {
-      babyId: babyId ?? '',
-      limit: 1000,
-      since: thirtyDaysAgo,
-    },
     { enabled: Boolean(babyId) },
   );
 
@@ -170,7 +163,9 @@ export function PredictivePumpingCard({
 
   // Get learning content for the baby's age
   const learningContent =
-    babyAgeDays !== null ? getPumpingLearningContent(babyAgeDays) : null;
+    babyAgeDays !== null
+      ? getPumpingLearningContent(babyAgeDays, baby?.name || undefined)
+      : null;
 
   // Build quick log settings for info drawer
   const quickLogSettings = {

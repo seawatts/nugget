@@ -7,8 +7,6 @@ import { Dialog, DialogContent, DialogTitle } from '@nugget/ui/dialog';
 import { Drawer, DrawerContent, DrawerTitle } from '@nugget/ui/drawer';
 import { useIsDesktop } from '@nugget/ui/hooks/use-media-query';
 import { cn } from '@nugget/ui/lib/utils';
-import { format } from 'date-fns';
-import { Pill, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getActivityTheme } from '../shared/activity-theme-config';
@@ -53,27 +51,12 @@ export function VitaminDDialog({
     }
   }, [isOpen, initialDate]);
 
-  const quickTimeOptions = [
-    { label: 'Just now', minutes: 0 },
-    { label: '1 hour ago', minutes: 60 },
-    { label: 'Earlier today', minutes: 180 },
-  ];
-
   const handleSave = async () => {
     try {
       // Normalize date to noon (12:00) local time on the selected day
       // This ensures consistent date matching regardless of exact time selected
       const normalizedDate = new Date(startTime);
       normalizedDate.setHours(12, 0, 0, 0);
-
-      console.log('[VitaminD] Starting save with babyId:', babyId);
-      console.log('[VitaminD] Original startTime:', startTime);
-      console.log(
-        '[VitaminD] Normalized to:',
-        normalizedDate,
-        format(normalizedDate, 'yyyy-MM-dd HH:mm:ss'),
-      );
-      console.log('[VitaminD] method:', method);
 
       // Vitamin D details - only include method if selected
       // Schema expects: { method?: 'drops' | 'spray' }
@@ -84,13 +67,11 @@ export function VitaminDDialog({
           }
         : { type: 'vitamin_d' as const };
 
-      console.log('[VitaminD] Details:', vitaminDDetails);
-
       // Create optimistic activity for immediate UI feedback
       const optimisticActivity = {
         amountMl: null,
         assignedUserId: null,
-        babyId: 'temp',
+        babyId: babyId, // Use real babyId instead of 'temp' for timeline filtering
         createdAt: normalizedDate,
         details: vitaminDDetails,
         duration: null,
@@ -109,10 +90,6 @@ export function VitaminDDialog({
       } as typeof Activities.$inferSelect;
 
       // Add to optimistic store immediately
-      console.log(
-        '[VitaminD] Adding optimistic activity:',
-        optimisticActivity.id,
-      );
       addOptimisticActivity(optimisticActivity);
 
       // Close dialog immediately for better UX
@@ -126,21 +103,12 @@ export function VitaminDDialog({
 
       // Create actual activity in the background
       // details should match the vitamin D schema: { method?: 'drops' | 'spray', type: 'vitamin_d' }
-      console.log('[VitaminD] Creating activity with params:', {
+      await createActivity({
         activityType: 'vitamin_d',
         babyId,
         details: vitaminDDetails,
         startTime: normalizedDate,
       });
-
-      const result = await createActivity({
-        activityType: 'vitamin_d',
-        babyId,
-        details: vitaminDDetails,
-        startTime: normalizedDate,
-      });
-
-      console.log('[VitaminD] Activity created successfully:', result);
     } catch (error) {
       // Error handling is done by useActivityMutations hook
       console.error('[VitaminD] Failed to save vitamin D activity:', error);
@@ -167,27 +135,11 @@ export function VitaminDDialog({
           {/* Header */}
           <div className={cn('p-6 pb-4', `bg-${vitaminDTheme.color}`)}>
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Pill
-                  className={cn('size-8', vitaminDTheme.textColor)}
-                  strokeWidth={1.5}
-                />
-                <DialogTitle
-                  className={cn('text-2xl font-bold', vitaminDTheme.textColor)}
-                >
-                  Log Vitamin D
-                </DialogTitle>
-              </div>
-              <button
-                className={cn(
-                  'p-2 rounded-full hover:bg-black/10 transition-colors',
-                  vitaminDTheme.textColor,
-                )}
-                onClick={handleClose}
-                type="button"
+              <DialogTitle
+                className={cn('text-2xl font-bold', vitaminDTheme.textColor)}
               >
-                <X className="size-6" />
-              </button>
+                Log Vitamin D
+              </DialogTitle>
             </div>
           </div>
 
@@ -199,7 +151,6 @@ export function VitaminDDialog({
               activityTextColor="text-activity-vitamin-d-foreground"
               duration={duration}
               endTime={endTime}
-              quickTimeOptions={quickTimeOptions}
               setDuration={setDuration}
               setEndTime={setEndTime}
               setStartTime={setStartTime}
@@ -277,27 +228,11 @@ export function VitaminDDialog({
         {/* Header */}
         <div className={cn('p-6 pb-4', `bg-${vitaminDTheme.color}`)}>
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Pill
-                className={cn('size-8', vitaminDTheme.textColor)}
-                strokeWidth={1.5}
-              />
-              <DrawerTitle
-                className={cn('text-2xl font-bold', vitaminDTheme.textColor)}
-              >
-                Log Vitamin D
-              </DrawerTitle>
-            </div>
-            <button
-              className={cn(
-                'p-2 rounded-full hover:bg-black/10 transition-colors',
-                vitaminDTheme.textColor,
-              )}
-              onClick={handleClose}
-              type="button"
+            <DrawerTitle
+              className={cn('text-2xl font-bold', vitaminDTheme.textColor)}
             >
-              <X className="size-6" />
-            </button>
+              Log Vitamin D
+            </DrawerTitle>
           </div>
         </div>
 
@@ -309,7 +244,6 @@ export function VitaminDDialog({
             activityTextColor="text-activity-vitamin-d-foreground"
             duration={duration}
             endTime={endTime}
-            quickTimeOptions={quickTimeOptions}
             setDuration={setDuration}
             setEndTime={setEndTime}
             setStartTime={setStartTime}

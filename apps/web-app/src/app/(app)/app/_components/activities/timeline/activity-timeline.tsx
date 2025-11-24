@@ -1,7 +1,8 @@
 'use client';
 
-import { api } from '@nugget/api/react';
+import { api, type TimelineItem } from '@nugget/api/react';
 import type { Activities, Milestones } from '@nugget/db/schema';
+import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Icons } from '@nugget/ui/custom/icons';
 import { Dialog, DialogContent, DialogTitle } from '@nugget/ui/dialog';
 import { Drawer, DrawerContent, DrawerTitle } from '@nugget/ui/drawer';
@@ -12,7 +13,6 @@ import {
   formatDistanceToNow,
   isToday,
   isYesterday,
-  startOfDay,
 } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -34,7 +34,6 @@ import {
   Tablet as Toilet,
   UtensilsCrossed,
 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
@@ -52,8 +51,7 @@ import {
 import { formatMinutesToHoursMinutes } from '../shared/time-formatting-utils';
 import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
 import { TimelineSleepDrawer } from '../sleep/timeline-sleep-drawer';
-import type { TimelineItem } from './activity-timeline.actions';
-import { getActivitiesAction } from './activity-timeline.actions';
+import { TimelineVitaminDDrawer } from '../vitamin-d/timeline-vitamin-d-drawer';
 import { ActivityTimelineFilters } from './activity-timeline-filters';
 
 const activities = [
@@ -243,45 +241,32 @@ const activityIconColors: Record<string, string> = {
   vitamin_d: 'text-activity-vitamin-d',
 };
 
+// Activity type to label mapping for proper display names
+const activityLabels: Record<string, string> = {
+  activity: 'Activity',
+  bath: 'Bath',
+  bottle: 'Bottle',
+  chat: 'Chat',
+  diaper: 'Diaper',
+  doctor_visit: 'Doctor Visit',
+  growth: 'Growth',
+  medicine: 'Medicine',
+  milestone: 'Milestone',
+  nursing: 'Nursing',
+  potty: 'Potty',
+  pumping: 'Pumping',
+  sleep: 'Sleep',
+  solids: 'Solids',
+  temperature: 'Temperature',
+  tummy_time: 'Tummy Time',
+  'tummy-time': 'Tummy Time',
+  vitamin_d: 'Vitamin D',
+};
+
 function groupTimelineItemsByDay(
   items: TimelineItem[],
 ): Map<string, TimelineItem[]> {
   const grouped = new Map<string, TimelineItem[]>();
-
-  const now = new Date();
-  const todayStart = startOfDay(now);
-
-  // Debug: log first few items to see date handling
-  if (items.length > 0) {
-    const firstTimestamp = items[0]?.timestamp;
-    const isValidFirstDate =
-      firstTimestamp &&
-      firstTimestamp instanceof Date &&
-      !Number.isNaN(firstTimestamp.getTime());
-
-    console.log('Timeline grouping - sample dates:', {
-      firstItem: {
-        iso: isValidFirstDate ? firstTimestamp.toISOString() : 'Invalid date',
-        isToday: isValidFirstDate ? isToday(firstTimestamp) : false,
-        isValid: isValidFirstDate,
-        isYesterday: isValidFirstDate ? isYesterday(firstTimestamp) : false,
-        local: isValidFirstDate
-          ? firstTimestamp.toLocaleString()
-          : 'Invalid date',
-        startOfDay: isValidFirstDate
-          ? startOfDay(firstTimestamp).toISOString()
-          : null,
-        timestamp: firstTimestamp,
-      },
-      now: {
-        current: now,
-        iso: now.toISOString(),
-        local: now.toLocaleString(),
-      },
-      todayStart: todayStart.toISOString(),
-      totalItems: items.length,
-    });
-  }
 
   for (const item of items) {
     const itemDate = item.timestamp;
@@ -292,7 +277,6 @@ function groupTimelineItemsByDay(
       !(itemDate instanceof Date) ||
       Number.isNaN(itemDate.getTime())
     ) {
-      console.warn('Skipping timeline item with invalid date:', item);
       continue;
     }
 
@@ -313,8 +297,6 @@ function groupTimelineItemsByDay(
     }
     grouped.get(dayLabel)?.push(item);
   }
-
-  console.log('Timeline grouped by day:', Array.from(grouped.keys()));
 
   return grouped;
 }
@@ -447,149 +429,44 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
     };
   }, [babyId, selectedActivityTypes, selectedUserIds]);
 
-  // Use server action for infinite query
-  const { execute, result, isPending, hasSucceeded } =
-    useAction(getActivitiesAction);
-
-  // State for managing pages
-  const [pages, setPages] = useState<
-    Array<{ items: TimelineItem[]; nextCursor: string | null }>
-  >([]);
-  const [currentCursor, setCurrentCursor] = useState<string | null>(null);
-  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
-
-  // Track if we're in initial load to prevent scroll jumps
-  const isInitialLoadRef = useRef(true);
-
-  // Track previous filters to detect changes
-  const prevFiltersRef = useRef<string | null>(null);
-
-  // Track tRPC query key changes to detect when data is invalidated
-  const utils = api.useUtils();
-
-  // Track when queries are invalidated by checking their updatedAt timestamps
-  // This is more reliable than checking the actual data
-  const activitiesQueryState = utils.activities.list.getInfiniteData();
-  const milestonesQueryState = utils.milestones.list.getInfiniteData();
-  const chatsQueryState = utils.chats.list.getInfiniteData();
-
-  // Create a simple invalidation counter based on query state changes
-  // Only track meaningful changes, not undefined states during initial load
-  const dataQueryKey = useMemo(() => {
-    // Use a timestamp-based approach to detect invalidations
-    // This prevents false positives from undefined states during initial load
-    const timestamp = Date.now();
-    return JSON.stringify({
-      activities: activitiesQueryState ? timestamp : null,
-      chats: chatsQueryState ? timestamp : null,
-      milestones: milestonesQueryState ? timestamp : null,
-    });
-  }, [activitiesQueryState, milestonesQueryState, chatsQueryState]);
-
-  // Load data when filters are ready or change
-  useEffect(() => {
-    if (!timelineFilters) return;
-
-    const currentFilterKey = JSON.stringify(timelineFilters);
-
-    // Check if this is initial load or filters changed
-    if (prevFiltersRef.current !== currentFilterKey) {
-      // Reset state for new query
-      setPages([]);
-      setCurrentCursor(null);
-      setIsFetchingNextPage(false);
-      isInitialLoadRef.current = true;
-
-      // Execute the query
-      execute(timelineFilters);
-
-      // Update prev filters
-      prevFiltersRef.current = currentFilterKey;
-    }
-  }, [timelineFilters, execute]);
-
-  // Refetch when tRPC data is invalidated (e.g., after create/update/delete)
-  const prevDataKeyRef = useRef<string | null>(null);
-  const hasCompletedInitialLoadRef = useRef(false);
-
-  useEffect(() => {
-    // Skip until we've completed at least one successful load
-    if (
-      hasCompletedInitialLoadRef.current &&
-      prevDataKeyRef.current &&
-      prevDataKeyRef.current !== dataQueryKey &&
-      timelineFilters &&
-      !isPending &&
-      !isFetchingNextPage &&
-      pages.length > 0 // Only refetch if we already have data
-    ) {
-      console.log(
-        '[Invalidation] Refetching first page without cursor to get newest items',
-      );
-      // Silently refetch first page when data changes
-      // IMPORTANT: Pass filters WITHOUT cursor to get the NEWEST items
-      // Reset pages to force fresh fetch
-      setPages([]);
-      setCurrentCursor(null);
-      isInitialLoadRef.current = true;
-      execute(timelineFilters);
-    }
-    prevDataKeyRef.current = dataQueryKey;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    dataQueryKey,
-    pages.length,
-    isFetchingNextPage,
-    timelineFilters,
-    isPending, // Silently refetch first page when data changes
-    execute,
-  ]);
-
-  // Handle result updates
-  useEffect(() => {
-    if (hasSucceeded && result.data) {
-      const resultData = result.data; // Capture data to ensure TypeScript understands it's defined
-      setPages((prev) => {
-        if (isInitialLoadRef.current) {
-          // Initial load or filter change - replace all pages
-          isInitialLoadRef.current = false;
-          hasCompletedInitialLoadRef.current = true;
-          return [resultData];
-        }
-        if (isFetchingNextPage) {
-          // Append new page to existing pages
-          return [...prev, resultData];
-        }
-        // No change if not loading
-        return prev;
-      });
-      setCurrentCursor(resultData.nextCursor);
-      setIsFetchingNextPage(false);
-    }
-  }, [hasSucceeded, result.data, isFetchingNextPage]);
+  // Use tRPC infinite query for timeline data
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+    api.timeline.getItems.useInfiniteQuery(
+      timelineFilters ?? {
+        babyId: '',
+        limit: 30,
+      },
+      {
+        enabled: !!timelineFilters,
+        getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+        staleTime: 10000, // Consider data fresh for 10 seconds
+      },
+    );
 
   // Flatten all pages into a single list
   const serverTimelineItems = useMemo(() => {
-    return pages.flatMap((page) =>
+    if (!data?.pages) return [];
+
+    const flattened = data.pages.flatMap((page) =>
       page.items.filter((item) => {
         // Filter out items with invalid timestamps
         const isValid =
           item.timestamp instanceof Date &&
           !Number.isNaN(item.timestamp.getTime());
-        if (!isValid) {
-          console.warn(
-            'Filtered out server timeline item with invalid timestamp:',
-            item,
-          );
-        }
         return isValid;
       }),
     );
-  }, [pages]);
+    return flattened;
+  }, [data?.pages]);
 
   // Merge optimistic activities with timeline items
   const optimisticTimelineItems = useMemo(() => {
     return optimisticActivities
+      .filter((activity) => {
+        // Filter by babyId to ensure only activities for this baby are shown
+        // This is a defensive measure to prevent cross-baby activity display
+        return activity.babyId === babyId;
+      })
       .map(
         (activity): TimelineItem => ({
           data: activity,
@@ -602,15 +479,9 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
         const isValid =
           item.timestamp instanceof Date &&
           !Number.isNaN(item.timestamp.getTime());
-        if (!isValid) {
-          console.warn(
-            'Filtered out timeline item with invalid timestamp:',
-            item,
-          );
-        }
         return isValid;
       });
-  }, [optimisticActivities]);
+  }, [optimisticActivities, babyId]);
 
   // Merge all timeline items and sort by timestamp
   const allTimelineItems = useMemo(() => {
@@ -665,47 +536,20 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
       return true;
     });
 
-    return filtered.sort(
+    const sorted = filtered.sort(
       (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
     );
+
+    return sorted;
   }, [optimisticTimelineItems, serverTimelineItems, selectedActivityTypes]);
-
-  // Fetch next page with ref to prevent multiple simultaneous fetches
-  const isFetchingRef = useRef(false);
-
-  const fetchNextPage = useMemo(() => {
-    return () => {
-      if (
-        currentCursor &&
-        !isFetchingRef.current &&
-        !isFetchingNextPage &&
-        !isPending &&
-        timelineFilters
-      ) {
-        isFetchingRef.current = true;
-        setIsFetchingNextPage(true);
-        execute({
-          ...timelineFilters,
-          cursor: currentCursor,
-        });
-      }
-    };
-  }, [currentCursor, isFetchingNextPage, isPending, timelineFilters, execute]);
-
-  // Reset fetching ref when fetch completes
-  useEffect(() => {
-    if (!isFetchingNextPage) {
-      isFetchingRef.current = false;
-    }
-  }, [isFetchingNextPage]);
 
   // Setup intersection observer for infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         const target = entries[0];
-        if (target?.isIntersecting && currentCursor && !isFetchingRef.current) {
-          fetchNextPage();
+        if (target?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          void fetchNextPage();
         }
       },
       {
@@ -715,7 +559,7 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
     );
 
     const currentRef = loadMoreRef.current;
-    if (currentRef && currentCursor) {
+    if (currentRef && hasNextPage) {
       observer.observe(currentRef);
     }
 
@@ -724,7 +568,7 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
         observer.unobserve(currentRef);
       }
     };
-  }, [currentCursor, fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handleItemClick = (item: TimelineItem) => {
     if (item.type === 'activity') {
@@ -763,7 +607,7 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
   const groupedItems = groupTimelineItemsByDay(allTimelineItems);
 
   // Show loading state on initial load
-  if (isPending && pages.length === 0 && !isFetchingNextPage) {
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4">
         <Icons.Spinner className="size-8 text-muted-foreground mb-4" />
@@ -772,7 +616,7 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
     );
   }
 
-  if (allTimelineItems.length === 0 && !isPending && pages.length > 0) {
+  if (allTimelineItems.length === 0 && !isLoading && data?.pages) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4">
         <div className="rounded-full bg-muted/30 p-4 mb-4">
@@ -837,12 +681,30 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
                   let itemNotes = '';
                   let itemId = '';
                   let isSkipped = false;
+                  let userName = '';
+                  let userAvatar: string | null = null;
+                  let userInitials = '';
 
                   if (item.type === 'activity') {
                     const activity = item.data;
-                    itemTitle = activity.type.replace('-', ' ');
+                    itemTitle =
+                      activityLabels[activity.type] ||
+                      activity.type.replace('_', ' ').replace('-', ' ');
                     itemNotes = activity.notes || '';
                     itemId = activity.id;
+
+                    // Extract user information
+                    if (activity.user) {
+                      const firstName = activity.user.firstName || '';
+                      const lastName = activity.user.lastName || '';
+                      userName = firstName
+                        ? `${firstName}${lastName ? ` ${lastName}` : ''}`
+                        : activity.user.email;
+                      userAvatar = activity.user.avatarUrl;
+                      userInitials = firstName
+                        ? `${firstName[0]}${lastName?.[0] || ''}`
+                        : activity.user.email[0]?.toUpperCase() || '?';
+                    }
 
                     // Check if activity is skipped
                     isSkipped = Boolean(
@@ -1032,13 +894,26 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
                                 </span>
                               )}
                             </div>
-                            <div className="flex flex-col items-end gap-0.5 shrink-0">
-                              <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                {isOptimistic ? 'Just now' : relativeTime}
-                              </span>
-                              <span className="text-xs text-muted-foreground/70 font-mono whitespace-nowrap">
-                                {absoluteTime}
-                              </span>
+                            <div className="flex items-start gap-2 shrink-0">
+                              <div className="flex flex-col items-end gap-0.5">
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                  {absoluteTime}
+                                </span>
+                                <span className="text-xs text-muted-foreground/70 font-mono whitespace-nowrap">
+                                  {isOptimistic ? 'Just now' : relativeTime}
+                                </span>
+                              </div>
+                              {item.type === 'activity' && userName && (
+                                <Avatar className="size-6 -mt-1">
+                                  <AvatarImage
+                                    alt={userName}
+                                    src={userAvatar || ''}
+                                  />
+                                  <AvatarFallback className="text-[10px]">
+                                    {userInitials}
+                                  </AvatarFallback>
+                                </Avatar>
+                              )}
                             </div>
                           </div>
                           {getDisplayNotes(itemNotes) && (
@@ -1072,13 +947,16 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
             </span>
           </div>
         )}
-        {!currentCursor && !isFetchingNextPage && pages.length > 0 && (
-          <div className="text-center py-4">
-            <p className="text-sm text-muted-foreground">
-              No more items to load
-            </p>
-          </div>
-        )}
+        {!hasNextPage &&
+          !isFetchingNextPage &&
+          data?.pages &&
+          data.pages.length > 0 && (
+            <div className="text-center py-4">
+              <p className="text-sm text-muted-foreground">
+                No more items to load
+              </p>
+            </div>
+          )}
       </div>
 
       {/* Timeline Activity Drawers - For editing activities from timeline */}
@@ -1162,6 +1040,22 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
           title="Edit Doctor Visit"
         >
           <TimelineDoctorVisitDrawer
+            babyId={babyId}
+            existingActivity={editingActivity}
+            isOpen={true}
+            onClose={handleDrawerClose}
+          />
+        </TimelineDrawerWrapper>
+      )}
+
+      {/* Vitamin D Drawer */}
+      {editingActivity && openDrawer === 'vitamin_d' && (
+        <TimelineDrawerWrapper
+          isOpen={true}
+          onClose={handleDrawerClose}
+          title="Edit Vitamin D"
+        >
+          <TimelineVitaminDDrawer
             babyId={babyId}
             existingActivity={editingActivity}
             isOpen={true}

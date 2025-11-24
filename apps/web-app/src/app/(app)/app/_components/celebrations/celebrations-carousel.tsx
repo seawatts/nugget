@@ -1,13 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { api } from '@nugget/api/react';
 import { CelebrationsSkeleton } from '../skeletons';
 import { CelebrationCard } from './celebration-card';
-import type { CelebrationCardData } from './celebration-card.actions';
-import {
-  getCelebrationAIContent,
-  getCelebrationContent,
-} from './celebration-card.actions';
 import { CelebrationCardComingSoon } from './celebration-card-coming-soon';
 
 interface CelebrationsCarouselProps {
@@ -15,70 +10,22 @@ interface CelebrationsCarouselProps {
 }
 
 export function CelebrationsCarousel({ babyId }: CelebrationsCarouselProps) {
-  const [celebration, setCelebration] = useState<CelebrationCardData | null>(
-    null,
+  // Use tRPC query with prefetched data (from page.tsx)
+  const { data, isLoading } = api.celebrations.getCarouselContent.useQuery(
+    { babyId },
+    {
+      staleTime: 86400000, // 1 day cache
+    },
   );
-  const [babyName, setBabyName] = useState<string>('Baby');
-  const [isLoadingAI, setIsLoadingAI] = useState(false);
-  const [hasCelebration, setHasCelebration] = useState<boolean | null>(null);
-  const [nextCelebration, setNextCelebration] = useState<{
-    day: number;
-    title: string;
-    shouldShow: boolean;
-  } | null>(null);
-  const [currentAgeInDays, setCurrentAgeInDays] = useState<number>(0);
 
-  useEffect(() => {
-    async function loadCelebration() {
-      try {
-        // First, get the celebration with static content
-        const data = await getCelebrationContent(babyId);
+  const celebration = data?.celebration ?? null;
+  const babyName = data?.babyName ?? 'Baby';
+  const currentAgeInDays = data?.ageInDays ?? 0;
+  const nextCelebration = data?.nextCelebration ?? null;
+  const hasCelebration = !!celebration;
 
-        // Store age and baby name
-        setCurrentAgeInDays(data.ageInDays);
-        setBabyName(data.babyName);
-
-        // Check if there's a celebration today
-        if (!data.celebration) {
-          setHasCelebration(false);
-          // Check for upcoming celebration
-          if (data.nextCelebration) {
-            setNextCelebration(data.nextCelebration);
-          }
-          return;
-        }
-
-        // We have a celebration! Show it
-        setHasCelebration(true);
-        setCelebration(data.celebration);
-
-        // Then fetch AI content in the background if needed
-        if (data.aiContext) {
-          setIsLoadingAI(true);
-          const aiContent = await getCelebrationAIContent(data.aiContext);
-
-          // Update the celebration with AI content
-          setCelebration((prev) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              aiQuestions: aiContent.aiQuestions,
-              aiSummary: aiContent.aiSummary,
-            };
-          });
-          setIsLoadingAI(false);
-        }
-      } catch (err) {
-        console.error('Error loading celebration:', err);
-        setHasCelebration(false);
-      }
-    }
-
-    loadCelebration();
-  }, [babyId]);
-
-  // Don't render anything if we haven't checked yet
-  if (hasCelebration === null) {
+  // Don't render anything while loading or if no data yet
+  if (isLoading || !data) {
     return null;
   }
 
@@ -110,7 +57,7 @@ export function CelebrationsCarousel({ babyId }: CelebrationsCarouselProps) {
         babyId={babyId}
         babyName={babyName}
         celebration={celebration}
-        isLoadingAI={isLoadingAI}
+        isLoadingAI={false}
       />
     </div>
   );

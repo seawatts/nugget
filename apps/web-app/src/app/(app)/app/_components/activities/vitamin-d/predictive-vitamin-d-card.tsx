@@ -1,6 +1,5 @@
 'use client';
 
-import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import {
   AlertDialog,
@@ -18,6 +17,7 @@ import { format, startOfDay, subDays } from 'date-fns';
 import { Check, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getActivityTheme } from '../shared/activity-theme-config';
 import {
@@ -47,16 +47,15 @@ export function PredictiveVitaminDCard({
   const [activityToDelete, setActivityToDelete] = useState<
     typeof Activities.$inferSelect | null
   >(null);
+  const [isLogging, setIsLogging] = useState(false);
 
   const vitaminDTheme = getActivityTheme('vitamin_d');
 
-  // Get baby data for age-based learning content
-  const { data: baby } = api.babies.getByIdLight.useQuery(
-    { id: babyId },
-    { enabled: !!babyId },
-  );
+  // Get shared data from dashboard store (populated by DashboardContainer)
+  const baby = useDashboardDataStore.use.baby();
+  const userData = useDashboardDataStore.use.user();
+  const allActivities = useDashboardDataStore.use.activities();
 
-  const { data: userData } = api.user.current.useQuery();
   const timeFormat = userData?.timeFormat || '12h';
 
   const babyAgeDays = baby?.birthDate
@@ -68,16 +67,16 @@ export function PredictiveVitaminDCard({
 
   // Get optimistic activities from store
   const optimisticActivities = useOptimisticActivitiesStore.use.activities();
+  const addOptimisticActivity = useOptimisticActivitiesStore(
+    (state) => state.addActivity,
+  );
 
-  // Fetch last 30 days of vitamin D activities
-  const thirtyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 30)), []);
-  const { data: serverVitaminDActivities = [], isFetching } =
-    api.activities.list.useQuery({
-      babyId,
-      limit: 1000,
-      since: thirtyDaysAgo,
-      type: 'vitamin_d',
-    });
+  // Filter activities to only vitamin D from the shared data (already fetched 30 days)
+  const serverVitaminDActivities = useMemo(() => {
+    return (
+      allActivities?.filter((activity) => activity.type === 'vitamin_d') ?? []
+    );
+  }, [allActivities]);
 
   // Merge optimistic and server activities, then deduplicate
   const vitaminDActivities = useMemo(() => {
@@ -111,8 +110,11 @@ export function PredictiveVitaminDCard({
   }, [optimisticActivities, serverVitaminDActivities]);
 
   // Use centralized mutations hook for automatic cache invalidation
-  const { deleteActivity: deleteActivityMutation, isDeleting } =
-    useActivityMutations();
+  const {
+    deleteActivity: deleteActivityMutation,
+    createActivity,
+    isDeleting,
+  } = useActivityMutations();
 
   const handleDeleteActivity = async (activityId: string) => {
     const activityToNotify = activityToDelete;
@@ -131,21 +133,17 @@ export function PredictiveVitaminDCard({
 
   // Calculate 7-day tracking data
   const vitaminDData = (() => {
-    const now = new Date();
+    const startOfDayNow = startOfDay(new Date());
     const days: Array<{
       date: string;
+      dateObj: Date;
       displayDate: string;
       hasVitaminD: boolean;
       activity?: typeof Activities.$inferSelect;
     }> = [];
 
-    console.log(
-      '[VitaminD Card] Calculating 7-day data, total activities:',
-      vitaminDActivities.length,
-    );
-
     for (let i = 6; i >= 0; i--) {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const date = subDays(startOfDayNow, i);
       const dateKey = format(date, 'yyyy-MM-dd');
       const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
       const monthDay = `${date.getMonth() + 1}/${date.getDate()}`;
@@ -155,52 +153,77 @@ export function PredictiveVitaminDCard({
         const activityDate = new Date(act.startTime);
         const activityDateKey = format(activityDate, 'yyyy-MM-dd');
         const matches = activityDateKey === dateKey;
-        if (matches) {
-          console.log('[VitaminD Card] Match found:', {
-            activityDateKey,
-            activityId: act.id,
-            dateKey,
-          });
-        }
         return matches;
       });
 
       days.push({
         activity,
         date: dateKey,
+        dateObj: date,
         displayDate: `${dayName} ${monthDay}`,
         hasVitaminD: !!activity,
       });
     }
 
-    console.log(
-      '[VitaminD Card] Days data:',
-      days.map((d) => ({ date: d.date, hasVitaminD: d.hasVitaminD })),
-    );
-
     return days;
   })();
 
-  const handleDayClick = (day: (typeof vitaminDData)[0]) => {
+  const handleDayClick = async (day: (typeof vitaminDData)[0]) => {
     if (day.hasVitaminD && day.activity) {
       // Show delete confirmation
       setActivityToDelete(day.activity);
     } else {
-      // Open dialog to log for this date
+      // Auto-log vitamin D for this date
       // Parse the date string as local date at noon to avoid timezone issues
       const parts = day.date.split('-').map(Number);
       const year = parts[0] ?? 0;
       const month = parts[1] ?? 1;
       const dayNum = parts[2] ?? 1;
-      const localDate = new Date(year, month - 1, dayNum, 12, 0, 0);
-      console.log(
-        '[VitaminD Card] Clicked day:',
-        day.date,
-        '→ Local date:',
-        localDate,
-      );
-      setSelectedDate(localDate);
-      setShowDialog(true);
+      const normalizedDate = new Date(year, month - 1, dayNum, 12, 0, 0);
+
+      try {
+        setIsLogging(true);
+
+        // Vitamin D details without method (quick log)
+        const vitaminDDetails = { type: 'vitamin_d' as const };
+
+        // Create optimistic activity for immediate UI feedback
+        const optimisticActivity = {
+          amountMl: null,
+          assignedUserId: null,
+          babyId: babyId,
+          createdAt: normalizedDate,
+          details: vitaminDDetails,
+          duration: null,
+          endTime: normalizedDate,
+          familyId: 'temp',
+          familyMemberId: null,
+          feedingSource: null,
+          id: `optimistic-vitamin-d-${Date.now()}`,
+          isScheduled: false,
+          notes: null,
+          startTime: normalizedDate,
+          subjectType: 'baby' as const,
+          type: 'vitamin_d' as const,
+          updatedAt: normalizedDate,
+          userId: 'temp',
+        } as typeof Activities.$inferSelect;
+
+        // Add to optimistic store immediately
+        addOptimisticActivity(optimisticActivity);
+
+        // Create actual activity in the background
+        await createActivity({
+          activityType: 'vitamin_d',
+          babyId,
+          details: vitaminDDetails,
+          startTime: normalizedDate,
+        });
+      } catch (error) {
+        console.error('[VitaminD] Failed to auto-log vitamin D:', error);
+      } finally {
+        setIsLogging(false);
+      }
     }
   };
 
@@ -247,21 +270,18 @@ export function PredictiveVitaminDCard({
       >
         <PredictiveCardHeader
           icon={vitaminDTheme.icon}
-          isFetching={isFetching}
+          isFetching={false}
           onInfoClick={handleInfoClick}
           onStatsClick={handleStatsClick}
           showStatsIcon={true}
           title="Vitamin D"
-        >
-          <div className="text-sm opacity-60">Daily supplement tracking</div>
-        </PredictiveCardHeader>
+        />
 
         {/* 7-Day Tracking Grid */}
         <div className="mt-6">
           <div className="grid grid-cols-7 gap-2">
             {vitaminDData.map((day) => {
-              const date = new Date(day.date);
-              const dayAbbr = formatDayAbbreviation(date);
+              const dayAbbr = formatDayAbbreviation(day.dateObj);
 
               return (
                 <button
@@ -269,11 +289,13 @@ export function PredictiveVitaminDCard({
                     'flex flex-col items-center gap-1.5 p-2 rounded-lg transition-all',
                     'hover:bg-black/10',
                     day.hasVitaminD ? 'bg-black/10' : 'bg-black/5',
+                    isLogging && 'opacity-50 cursor-wait',
                   )}
+                  disabled={isLogging}
                   key={day.date}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDayClick(day);
+                    void handleDayClick(day);
                   }}
                   type="button"
                 >

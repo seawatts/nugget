@@ -1,16 +1,12 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { NuggetAvatar } from '@nugget/ui/custom/nugget-avatar';
 import { cn } from '@nugget/ui/lib/utils';
 import { Skeleton } from '@nugget/ui/skeleton';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import {
-  type FamilyTabMember,
-  getFamilyTabsDataAction,
-} from './family-tabs.actions';
 
 export function FamilyTabs() {
   const params = useParams();
@@ -18,25 +14,9 @@ export function FamilyTabs() {
   const activeUserId =
     (params.babyId as string | undefined) ||
     (params.userId as string | undefined);
-  const [tabs, setTabs] = useState<FamilyTabMember[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadTabs() {
-      try {
-        const result = await getFamilyTabsDataAction();
-        if (result?.data) {
-          setTabs(result.data);
-        }
-      } catch (error) {
-        console.error('Failed to load family tabs:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadTabs();
-  }, []);
+  const { data: tabs = [], isLoading: loading } =
+    api.familyTabs.getTabsData.useQuery();
 
   if (loading) {
     return (

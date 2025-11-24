@@ -1,20 +1,24 @@
 'use client';
 
-import { api } from '@nugget/api/react';
+import type { Activities } from '@nugget/db/schema';
 import { Card } from '@nugget/ui/card';
 import { Icons } from '@nugget/ui/custom/icons';
 import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
-import {
-  type ActivityStats,
-  getActivityStatsAction,
-} from '../activities/activity-stats.actions';
+import { useMemo } from 'react';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import {
   formatVolumeDisplay,
   getVolumeUnit,
 } from '../activities/shared/volume-utils';
+
+interface ActivityStats {
+  lastActivity: typeof Activities.$inferSelect | null;
+  todayCount: number;
+  lastAmount: number | null;
+  lastDuration: number | null;
+}
 
 interface QuickActionCardProps {
   activityType: 'pumping' | 'solids' | 'potty' | 'tummy_time';
@@ -36,35 +40,49 @@ export function QuickActionCard({
   textColor,
   fullWidth = false,
   onCardClick,
-  refreshTrigger = 0,
-  babyId,
+  refreshTrigger: _refreshTrigger = 0,
+  babyId: _babyId,
 }: QuickActionCardProps) {
-  const [stats, setStats] = useState<ActivityStats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch user preferences for volume display
-  const { data: user } = api.user.current.useQuery();
+  // Get data from dashboard store (already fetched in DashboardContainer)
+  const activitiesData = useDashboardDataStore.use.activities();
+  const user = useDashboardDataStore.use.user();
   const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
 
-  const loadStats = useCallback(async () => {
-    try {
-      setLoading(true);
-      const result = await getActivityStatsAction({ activityType, babyId });
-
-      if (result?.data) {
-        setStats(result.data);
-      }
-    } catch (err) {
-      console.error('Failed to load activity stats:', err);
-    } finally {
-      setLoading(false);
+  // Compute stats from store data (no API call needed!)
+  // Recalculates when activities data changes
+  const stats = useMemo<ActivityStats | null>(() => {
+    if (!activitiesData || activitiesData.length === 0) {
+      return null;
     }
-  }, [activityType, babyId]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTrigger is intentionally used to trigger reloads from parent
-  useEffect(() => {
-    loadStats();
-  }, [loadStats, refreshTrigger]);
+    // Filter to the specific activity type
+    const activities = activitiesData.filter((a) => a.type === activityType);
+
+    // Get last activity
+    const lastActivity =
+      activities.length > 0 && activities[0] ? activities[0] : null;
+
+    // Count today's activities
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayCount = activities.filter((a) => {
+      const activityDate = new Date(a.startTime);
+      return activityDate >= today;
+    }).length;
+
+    // Extract metrics from last activity
+    const lastAmount = lastActivity?.amountMl || null;
+    const lastDuration = lastActivity?.duration || null;
+
+    return {
+      lastActivity,
+      lastAmount,
+      lastDuration,
+      todayCount,
+    };
+  }, [activitiesData, activityType]);
+
+  const loading = !activitiesData;
 
   const handleCardClick = () => {
     if (onCardClick) {

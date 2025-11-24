@@ -7,14 +7,16 @@ import {
   DrawerTitle,
 } from '@nugget/ui/drawer';
 import type { LucideIcon } from 'lucide-react';
+import { convertLearningContentUnits } from '../../../../learning/learning-content-utils';
 import { LearningSection } from '../../../../learning/learning-section';
-import { getActivityTheme } from '../../activity-theme-config';
+import { WhatsNextSection } from '../../../../learning/whats-next-section';
+import type { LearningContent } from '../../../feeding/learning-content';
+import {
+  type ActivityType,
+  getActivityTheme,
+  type QuickLogActivityType,
+} from '../../activity-theme-config';
 import { QuickLogInfoSection } from '../quick-log-info-section';
-
-interface LearningContent {
-  message: string;
-  tips: string[];
-}
 
 interface QuickLogSettings {
   enabled: boolean;
@@ -37,7 +39,7 @@ interface PredictiveInfoDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  activityType: 'feeding' | 'diaper' | 'sleep' | 'pumping' | 'vitamin_d';
+  activityType: ActivityType;
   learningContent: LearningContent | null;
   babyAgeDays: number | null;
   averageInterval?: number | null;
@@ -49,13 +51,15 @@ interface PredictiveInfoDrawerProps {
 }
 
 // Map activity types to their color classes for Tailwind
-const ACTIVITY_COLOR_CLASSES: Record<
-  'feeding' | 'diaper' | 'sleep' | 'pumping' | 'vitamin_d',
-  {
-    bgColor: string;
-    borderColor: string;
-    color: string;
-  }
+const ACTIVITY_COLOR_CLASSES: Partial<
+  Record<
+    ActivityType,
+    {
+      bgColor: string;
+      borderColor: string;
+      color: string;
+    }
+  >
 > = {
   diaper: {
     bgColor: 'bg-activity-diaper/5',
@@ -95,10 +99,24 @@ export function PredictiveInfoDrawer({
   icon,
   quickLogSettings,
   calculationDetails,
+  unit = 'OZ',
 }: PredictiveInfoDrawerProps) {
   const theme = getActivityTheme(activityType);
-  const Icon = icon || theme.icon;
+  const Icon = icon || theme?.icon;
   const colorClasses = ACTIVITY_COLOR_CLASSES[activityType];
+
+  // Convert learning content units based on user preference
+  const convertedLearningContent = learningContent
+    ? convertLearningContentUnits(learningContent, unit)
+    : null;
+
+  // Defensive check: if theme or colorClasses are undefined, log an error and return null
+  if (!theme || !colorClasses) {
+    console.error(
+      `[PredictiveInfoDrawer] Invalid activityType: "${activityType}". Theme or color classes not found.`,
+    );
+    return null;
+  }
 
   return (
     <Drawer onOpenChange={onOpenChange} open={open}>
@@ -108,20 +126,34 @@ export function PredictiveInfoDrawer({
         </DrawerHeader>
         <div className="px-4 pb-6 space-y-4 overflow-y-auto">
           {/* Learning Section */}
-          {learningContent && (
+          {convertedLearningContent && (
             <LearningSection
               babyAgeDays={babyAgeDays}
               bgColor={colorClasses.bgColor}
               borderColor={colorClasses.borderColor}
               color={colorClasses.color}
-              educationalContent={learningContent.message}
+              educationalContent={convertedLearningContent.message}
               icon={Icon}
-              tips={learningContent.tips}
+              quickButtons={convertedLearningContent.quickButtons}
+              tips={convertedLearningContent.tips}
             />
           )}
 
+          {/* What's Next Section */}
+          {convertedLearningContent?.whatsNext &&
+            convertedLearningContent.whatsNext.length > 0 && (
+              <WhatsNextSection
+                babyAgeDays={babyAgeDays}
+                bgColor={colorClasses.bgColor}
+                borderColor={colorClasses.borderColor}
+                color={colorClasses.color}
+                icon={Icon}
+                items={convertedLearningContent.whatsNext}
+              />
+            )}
+
           {/* Quick Log Info Section with Calculation Details */}
-          {quickLogSettings && (
+          {quickLogSettings && isQuickLogActivity(activityType) && (
             <QuickLogInfoSection
               activityType={activityType}
               bgColor={colorClasses.bgColor}
@@ -145,5 +177,14 @@ export function PredictiveInfoDrawer({
         </div>
       </DrawerContent>
     </Drawer>
+  );
+}
+
+// Type guard to check if activity type supports quick logging
+function isQuickLogActivity(
+  activityType: ActivityType,
+): activityType is QuickLogActivityType {
+  return ['feeding', 'diaper', 'sleep', 'pumping', 'vitamin_d'].includes(
+    activityType,
   );
 }

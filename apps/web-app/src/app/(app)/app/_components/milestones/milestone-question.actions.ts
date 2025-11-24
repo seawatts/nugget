@@ -8,7 +8,6 @@ import {
   MilestoneQuestionResponses,
   selectMilestoneQuestionResponseSchema,
 } from '@nugget/db/schema';
-import { and, desc, eq } from 'drizzle-orm';
 import { createSafeActionClient } from 'next-safe-action';
 import { z } from 'zod';
 
@@ -69,56 +68,4 @@ export const saveMilestoneQuestionResponseAction = action
       response: selectMilestoneQuestionResponseSchema.parse(response),
       success: true,
     };
-  });
-
-/**
- * Get previous answer for a specific milestone question
- */
-export const getMilestoneQuestionResponseAction = action
-  .schema(
-    z.object({
-      babyId: z.string(),
-      contextId: z.string(),
-      contextType: z.string(),
-      question: z.string(),
-    }),
-  )
-  .action(async ({ parsedInput }) => {
-    const response = await db.query.MilestoneQuestionResponses.findFirst({
-      orderBy: [desc(MilestoneQuestionResponses.createdAt)],
-      where: and(
-        eq(MilestoneQuestionResponses.babyId, parsedInput.babyId),
-        eq(MilestoneQuestionResponses.contextType, parsedInput.contextType),
-        eq(MilestoneQuestionResponses.contextId, parsedInput.contextId),
-        eq(MilestoneQuestionResponses.question, parsedInput.question),
-      ),
-    });
-
-    return response
-      ? selectMilestoneQuestionResponseSchema.parse(response)
-      : null;
-  });
-
-/**
- * Get all responses for a specific context (e.g., all responses for a milestone)
- */
-export const getMilestoneContextResponsesAction = action
-  .schema(
-    z.object({
-      babyId: z.string(),
-      contextId: z.string(),
-      contextType: z.string(),
-    }),
-  )
-  .action(async ({ parsedInput }) => {
-    const responses = await db.query.MilestoneQuestionResponses.findMany({
-      orderBy: [desc(MilestoneQuestionResponses.createdAt)],
-      where: and(
-        eq(MilestoneQuestionResponses.babyId, parsedInput.babyId),
-        eq(MilestoneQuestionResponses.contextType, parsedInput.contextType),
-        eq(MilestoneQuestionResponses.contextId, parsedInput.contextId),
-      ),
-    });
-
-    return responses.map((r) => selectMilestoneQuestionResponseSchema.parse(r));
   });

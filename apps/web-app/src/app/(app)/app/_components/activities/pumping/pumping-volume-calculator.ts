@@ -17,6 +17,10 @@ interface VolumeCalculation {
 /**
  * Get base volume per session based on baby's age in days
  * Returns total expected volume in ml for a standard 20-minute session
+ *
+ * Based on typical pumping output (not nursing intake):
+ * - Pumping typically yields 2-5 oz per session once supply is established
+ * - Early days yield much less during colostrum phase
  */
 function getBaseVolumeByAge(
   ageDays: number,
@@ -32,24 +36,24 @@ function getBaseVolumeByAge(
     return 15; // Average of 10-20ml
   }
 
-  // Days 4-7: Transitional milk coming in - 30-60ml total
+  // Days 4-7: Transitional milk coming in - 60-90ml total (2-3 oz)
   if (ageDays <= 7) {
-    return 45; // Average of 30-60ml
+    return 75; // Average of 60-90ml
   }
 
-  // Days 8-14: Early mature milk - 60-90ml total
+  // Days 8-14: Early mature milk - 120-180ml total (4-6 oz)
   if (ageDays <= 14) {
-    return 75; // Average of 60-90ml
+    return 150; // Average of 120-180ml
   }
 
-  // Week 2-4: Establishing supply - 60-90ml total
+  // Week 2-4: Establishing supply - 150-210ml total (5-7 oz)
   if (ageDays <= 28) {
-    return 75; // Average of 60-90ml
+    return 180; // Average of 150-210ml
   }
 
   // Month 1+: Use baby's configured mlPerPump if available
-  // Otherwise default to 90ml (typical for established supply)
-  return babyMlPerPump ?? 90;
+  // Otherwise default to 180ml (6 oz - typical for established supply)
+  return babyMlPerPump ?? 180;
 }
 
 /**
@@ -95,9 +99,21 @@ export function calculatePumpingVolumes(
 
 /**
  * Convert ml to oz (1 oz = ~29.5735 ml)
+ * Uses finer precision (0.1 oz) for small volumes to avoid showing 0 oz
  */
 export function mlToOz(ml: number): number {
-  return Math.round((ml / 29.5735) * 2) / 2; // Round to nearest 0.5oz
+  if (ml === 0) return 0;
+
+  const oz = ml / 29.5735;
+
+  // For very small volumes (< 15ml / ~0.5oz), use 0.1 oz precision
+  // Ensure minimum of 0.1 oz for any non-zero value
+  if (oz < 0.5) {
+    const rounded = Math.round(oz * 10) / 10;
+    return Math.max(0.1, rounded); // Minimum 0.1 oz for non-zero values
+  }
+
+  return Math.round(oz * 2) / 2; // Round to nearest 0.5oz
 }
 
 /**

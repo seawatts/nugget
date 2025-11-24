@@ -17,8 +17,8 @@ import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
 import { Moon, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { ClickableTimeDisplay } from '../shared/components/clickable-time-display';
-import { getFamilyMembersAction } from '../timeline/activity-timeline-filters.actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import { SleepDrawerContent } from './sleep-drawer';
 
@@ -77,17 +77,11 @@ export function TimelineSleepDrawer({
   >();
   const [isCoSleeping, setIsCoSleeping] = useState(false);
   const [coSleepingWith, setCoSleepingWith] = useState<string[]>([]);
-  const [familyMembers, setFamilyMembers] = useState<
-    Array<{
-      id: string;
-      name: string;
-      avatarUrl?: string | null;
-      userId: string;
-      isCurrentUser?: boolean;
-    }>
-  >([]);
   const [currentUserId, setCurrentUserId] = useState<string | undefined>();
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+
+  // Get family members from dashboard store (already fetched in DashboardContainer)
+  const familyMembers = useDashboardDataStore.use.familyMembers();
 
   const isPending = isUpdating || isDeleting;
 
@@ -96,21 +90,10 @@ export function TimelineSleepDrawer({
     (endTime.getTime() - startTime.getTime()) / 1000 / 60,
   );
 
-  // Fetch family members when drawer opens
+  // Set current user ID when drawer opens
   useEffect(() => {
     if (isOpen) {
       setCurrentUserId(userId || undefined);
-
-      void (async () => {
-        try {
-          const result = await getFamilyMembersAction();
-          if (result?.data) {
-            setFamilyMembers(result.data);
-          }
-        } catch (error) {
-          console.error('Failed to fetch family members:', error);
-        }
-      })();
     }
   }, [isOpen, userId]);
 

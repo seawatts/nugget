@@ -4,6 +4,8 @@ import {
   createBillingPortalSession,
   createCheckoutSession,
   getOrCreateCustomer,
+  getOrgEntitlements,
+  getSubscriptionInfo,
   PLAN_TYPES,
   stripe,
 } from '@nugget/stripe';
@@ -50,6 +52,32 @@ export const billingRouter = createTRPCRouter({
       throw new Error('Failed to cancel subscription');
     }
   }),
+
+  // Check a specific entitlement
+  checkEntitlement: protectedProcedure
+    .input(z.object({ entitlement: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        const entitlements = await getOrgEntitlements();
+        const entitled =
+          entitlements[input.entitlement as keyof typeof entitlements] || false;
+
+        return {
+          entitled,
+          entitlements,
+          reason: entitled
+            ? 'Entitled'
+            : 'Feature not included in subscription',
+        };
+      } catch (error) {
+        console.error('Error checking entitlement:', error);
+        return {
+          entitled: false,
+          entitlements: {},
+          reason: 'Error checking entitlement',
+        };
+      }
+    }),
 
   // Create a billing portal session for managing existing subscription
   createBillingPortalSession: protectedProcedure
@@ -177,6 +205,17 @@ export const billingRouter = createTRPCRouter({
     };
   }),
 
+  // Get organization entitlements
+  getEntitlements: protectedProcedure.query(async () => {
+    try {
+      const entitlements = await getOrgEntitlements();
+      return { entitlements };
+    } catch (error) {
+      console.error('Error getting entitlements:', error);
+      return { entitlements: {} };
+    }
+  }),
+
   // Get invoices for the current organization
   getInvoices: protectedProcedure
     .input(
@@ -263,6 +302,28 @@ export const billingRouter = createTRPCRouter({
     } catch (error) {
       console.error('Error retrieving subscription:', error);
       return null;
+    }
+  }),
+
+  // Get subscription info for current organization
+  getSubscriptionInfo: protectedProcedure.query(async () => {
+    try {
+      const subscriptionInfo = await getSubscriptionInfo();
+      return { subscriptionInfo };
+    } catch (error) {
+      console.error('Error getting subscription info:', error);
+      return {
+        subscriptionInfo: {
+          customerId: null,
+          hasAny: false,
+          isActive: false,
+          isCanceled: false,
+          isPaid: false,
+          isPastDue: false,
+          isTrialing: false,
+          status: null,
+        },
+      };
     }
   }),
   // Get subscription status for the current organization

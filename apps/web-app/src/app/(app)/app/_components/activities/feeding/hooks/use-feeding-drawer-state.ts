@@ -1,8 +1,8 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { useCallback, useEffect, useState } from 'react';
-import { getInProgressFeedingActivityAction } from '../../activity-cards.actions';
 import type { FeedingFormData } from '../feeding-type-selector';
 
 interface UseFeedingDrawerStateProps {
@@ -30,7 +30,6 @@ export function useFeedingDrawerState({
 
   // UI state
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
-  const [isLoadingInProgress, setIsLoadingInProgress] = useState(false);
 
   // Computed values
   const isEditing = Boolean(existingActivity) || Boolean(activeActivityId);
@@ -40,7 +39,6 @@ export function useFeedingDrawerState({
   const resetState = useCallback(() => {
     setActiveActivityId(null);
     setIsTimerStopped(false);
-    setIsLoadingInProgress(false);
     setDuration(0);
     const now = new Date();
     setStartTime(now);
@@ -131,57 +129,52 @@ export function useFeedingDrawerState({
     }
   }, [existingActivity]);
 
-  // Load in-progress activity when drawer opens
+  // Load in-progress activity when drawer opens using tRPC
+  const { data: inProgressData, isLoading: isLoadingInProgress } =
+    api.activities.getInProgressActivity.useQuery(
+      { activityType: 'feeding', babyId: babyId || '' },
+      {
+        enabled: isOpen && !existingActivity && Boolean(babyId),
+        staleTime: 0, // Always fetch fresh data when drawer opens
+      },
+    );
+
+  // Process in-progress activity data
   useEffect(() => {
-    if (isOpen && !existingActivity && babyId) {
-      setIsLoadingInProgress(true);
-      void (async () => {
-        try {
-          const result = await getInProgressFeedingActivityAction({
-            babyId,
-          });
-          if (result?.data?.activity) {
-            const inProgressActivity = result.data.activity;
-            setActiveActivityId(inProgressActivity.id);
-            setStartTime(new Date(inProgressActivity.startTime));
-            setEndTime(new Date());
+    if (inProgressData) {
+      const inProgressActivity = inProgressData;
+      setActiveActivityId(inProgressActivity.id);
+      setStartTime(new Date(inProgressActivity.startTime));
+      setEndTime(new Date());
 
-            // Calculate duration from start time
-            const elapsedSeconds = Math.floor(
-              (Date.now() - new Date(inProgressActivity.startTime).getTime()) /
-                1000,
-            );
-            setDuration(elapsedSeconds);
+      // Calculate duration from start time
+      const elapsedSeconds = Math.floor(
+        (Date.now() - new Date(inProgressActivity.startTime).getTime()) / 1000,
+      );
+      setDuration(elapsedSeconds);
 
-            // Set form data type based on activity type
-            if (inProgressActivity.type === 'bottle') {
-              setFormData({
-                amountMl: inProgressActivity.amountMl || undefined,
-                bottleType:
-                  inProgressActivity.feedingSource === 'formula'
-                    ? 'formula'
-                    : 'breast_milk',
-                notes: inProgressActivity.notes || undefined,
-                type: 'bottle',
-              });
-            } else if (inProgressActivity.type === 'nursing') {
-              setFormData({
-                notes: inProgressActivity.notes || undefined,
-                type: 'nursing',
-              });
-            }
-          } else {
-            setActiveActivityId(null);
-          }
-        } catch (error) {
-          console.error('Failed to load in-progress feeding:', error);
-        } finally {
-          setIsLoadingInProgress(false);
-        }
-      })();
+      // Set form data type based on activity type
+      if (inProgressActivity.type === 'bottle') {
+        setFormData({
+          amountMl: inProgressActivity.amountMl || undefined,
+          bottleType:
+            inProgressActivity.feedingSource === 'formula'
+              ? 'formula'
+              : 'breast_milk',
+          notes: inProgressActivity.notes || undefined,
+          type: 'bottle',
+        });
+      } else if (inProgressActivity.type === 'nursing') {
+        setFormData({
+          notes: inProgressActivity.notes || undefined,
+          type: 'nursing',
+        });
+      }
     }
+  }, [inProgressData]);
 
-    // Reset state when drawer closes - delay to allow closing animation to complete
+  // Reset state when drawer closes - delay to allow closing animation to complete
+  useEffect(() => {
     if (!isOpen) {
       // Delay state reset to prevent flash during drawer closing animation
       const timeoutId = setTimeout(() => {
@@ -190,7 +183,7 @@ export function useFeedingDrawerState({
 
       return () => clearTimeout(timeoutId);
     }
-  }, [isOpen, existingActivity, babyId, resetState]);
+  }, [isOpen, resetState]);
 
   // Handle stopping the timer
   const handleStop = useCallback(() => {

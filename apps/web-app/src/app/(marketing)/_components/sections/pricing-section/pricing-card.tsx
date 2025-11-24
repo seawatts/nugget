@@ -2,6 +2,7 @@
 
 import { SignedIn, SignedOut, useOrganization } from '@clerk/nextjs';
 import { MetricLink } from '@nugget/analytics/components';
+import { api } from '@nugget/api/react';
 import {
   SubscriptionActive,
   SubscriptionPastDue,
@@ -11,12 +12,10 @@ import {
 import { cn } from '@nugget/ui/lib/utils';
 import { IconCheck } from '@tabler/icons-react';
 import { motion } from 'motion/react';
-import { useAction } from 'next-safe-action/hooks';
 import posthog from 'posthog-js';
 import { memo, useMemo, useState } from 'react';
 import type { siteConfig } from '~/app/(marketing)/_lib/config';
 import { TEAM_PRICING } from '~/app/(marketing)/_lib/config';
-import { createCheckoutSessionAction } from './actions';
 import { TeamPriceDisplay } from './team-price-display';
 import { TeamSeatsSlider } from './team-seats-slider';
 
@@ -95,15 +94,24 @@ export const PricingCard = memo(function PricingCard({
 
   const { organization } = useOrganization();
 
-  // Safe action for checkout
-  const { executeAsync: executeCreateCheckout, status: checkoutStatus } =
-    useAction(createCheckoutSessionAction);
+  // tRPC mutation for checkout
+  const createCheckoutMutation = api.billing.createCheckoutSession.useMutation({
+    onError: (error) => {
+      console.error('Failed to create checkout session:', error);
+    },
+    onSuccess: (data) => {
+      // Redirect to Stripe Checkout
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+  });
 
   // Subscription status hooks - must be called at top level
   const hasActiveSubscription = useHasActiveSubscription();
   const hasPastDueSubscription = useHasPastDueSubscription();
 
-  const isSubscribing = checkoutStatus === 'executing';
+  const isSubscribing = createCheckoutMutation.isPending;
 
   // Track pricing card view
   useState(() => {
@@ -145,11 +153,15 @@ export const PricingCard = memo(function PricingCard({
       team_seats: tier.name === 'Team' ? teamSeats : undefined,
     });
 
+    // Get current URL for success/cancel URLs
+    const origin = window.location.origin;
+
     try {
-      await executeCreateCheckout({
+      await createCheckoutMutation.mutateAsync({
         billingInterval: billingCycle,
-        orgId: organization.id,
+        cancelUrl: `${origin}/pricing?canceled=true`,
         planType: tier.name === 'Team' ? 'team' : 'free',
+        successUrl: `${origin}/app/settings/billing?success=true`,
       });
 
       // Track successful checkout creation

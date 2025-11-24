@@ -262,6 +262,18 @@ export function NursingDrawerContent({
     }
   }, [activeActivityId, externalDuration]);
 
+  // Sync duration from TimeSelectionMode to left/right durations
+  useEffect(() => {
+    // Only sync if duration is set via TimeSelectionMode (not from timer)
+    // and we're not actively timing
+    if (duration > 0 && !isTimerRunning && !activeActivityId) {
+      // Split duration evenly between left and right
+      const durationPerSide = Math.floor(duration / 2);
+      setLeftDuration(durationPerSide);
+      setRightDuration(durationPerSide);
+    }
+  }, [duration, isTimerRunning, activeActivityId]);
+
   // Handle amount change from AmountAdjuster
   const handleAmountChange = (value: number) => {
     // Mark as manually adjusted to stop auto-calculation

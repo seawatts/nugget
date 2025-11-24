@@ -6,9 +6,27 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { createTRPCReact } from '@trpc/react-query';
 import { useState } from 'react';
 
-import type { AppRouter } from '../root';
+import type {
+  AppRouter,
+  CelebrationCardData,
+  CelebrationCarouselData,
+  FamilyTabMember,
+  LearningTip,
+  MilestoneCarouselCardData,
+  TimelineItem,
+} from '../root';
 import { type ClientConfig, createDefaultLinks } from './config';
 import { createQueryClient } from './query-client';
+
+// Re-export types for use in components
+export type {
+  CelebrationCardData,
+  CelebrationCarouselData,
+  FamilyTabMember,
+  LearningTip,
+  MilestoneCarouselCardData,
+  TimelineItem,
+};
 
 let clientQueryClientSingleton: QueryClient | undefined;
 const getQueryClient = () => {

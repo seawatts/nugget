@@ -262,7 +262,12 @@ export const Users = pgTable('users', {
   alarmSleepThreshold: integer('alarmSleepThreshold'),
   avatarUrl: text('avatarUrl'),
   clerkId: text('clerkId').unique().notNull(),
-  createdAt: timestamp('createdAt').defaultNow().notNull(),
+  createdAt: timestamp('createdAt', {
+    mode: 'date',
+    withTimezone: true,
+  })
+    .defaultNow()
+    .notNull(),
   defaultHomeScreenId: varchar('defaultHomeScreenId', { length: 128 }),
   // Default home screen preference
   defaultHomeScreenType: text('defaultHomeScreenType')
@@ -664,11 +669,16 @@ export const Babies = pgTable(
   'babies',
   {
     avatarBackgroundColor: text('avatarBackgroundColor'), // Background color when photo is hidden
-    birthDate: timestamp('birthDate', { mode: 'date' }),
+    birthDate: timestamp('birthDate', { mode: 'date', withTimezone: true }),
     birthWeightOz: integer('birthWeightOz'), // Birth weight in ounces
-    createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+    createdAt: timestamp('createdAt', {
+      mode: 'date',
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
     currentWeightOz: integer('currentWeightOz'), // Current weight in ounces
-    dueDate: timestamp('dueDate', { mode: 'date' }),
+    dueDate: timestamp('dueDate', { mode: 'date', withTimezone: true }),
     familyId: varchar('familyId', { length: 128 })
       .references(() => Families.id, {
         onDelete: 'cascade',
@@ -698,10 +708,10 @@ export const Babies = pgTable(
     showPumpingCard: boolean('showPumpingCard').default(true).notNull(),
     showSleepCard: boolean('showSleepCard').default(true).notNull(),
     ttcMethod: ttcMethodEnum('ttcMethod'),
-    updatedAt: timestamp('updatedAt', { mode: 'date' })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
+    updatedAt: timestamp('updatedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }).$onUpdateFn(() => new Date()),
     userId: varchar('userId', { length: 128 })
       .notNull()
       .default(requestingUserId()),
@@ -723,10 +733,15 @@ export const Activities = pgTable(
     babyId: varchar('babyId', { length: 128 }).references(() => Babies.id, {
       onDelete: 'cascade',
     }), // Baby the activity is about (when subjectType = 'baby')
-    createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+    createdAt: timestamp('createdAt', {
+      mode: 'date',
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
     details: json('details').$type<ActivityDetails>(),
     duration: integer('duration'), // in minutes
-    endTime: timestamp('endTime', { mode: 'date' }),
+    endTime: timestamp('endTime', { mode: 'date', withTimezone: true }),
     familyId: varchar('familyId', { length: 128 })
       .notNull()
       .references(() => Families.id, { onDelete: 'cascade' })
@@ -741,15 +756,18 @@ export const Activities = pgTable(
       .$defaultFn(() => createId({ prefix: 'activity' })),
     isScheduled: boolean('isScheduled').default(false).notNull(), // Whether this is a scheduled/future feed
     notes: text('notes'),
-    startTime: timestamp('startTime', { mode: 'date' }).notNull(),
+    startTime: timestamp('startTime', {
+      mode: 'date',
+      withTimezone: true,
+    }).notNull(),
     subjectType: activitySubjectTypeEnum('subjectType')
       .notNull()
       .default('baby'), // What/who the activity is about
     type: activityTypeEnum('type').notNull(),
-    updatedAt: timestamp('updatedAt', { mode: 'date' })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
+    updatedAt: timestamp('updatedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }).$onUpdateFn(() => new Date()),
     userId: varchar('userId', { length: 128 })
       .notNull()
       .default(requestingUserId()),
@@ -778,8 +796,13 @@ export const MedicalRecords = pgTable('medicalRecords', {
   babyId: varchar('babyId', { length: 128 })
     .notNull()
     .references(() => Babies.id, { onDelete: 'cascade' }),
-  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
-  date: timestamp('date', { mode: 'date' }).notNull(),
+  createdAt: timestamp('createdAt', {
+    mode: 'date',
+    withTimezone: true,
+  })
+    .notNull()
+    .defaultNow(),
+  date: timestamp('date', { mode: 'date', withTimezone: true }).notNull(),
   description: text('description'),
   doctorName: text('doctorName'), // Doctor's name
   familyId: varchar('familyId', { length: 128 })
@@ -796,10 +819,10 @@ export const MedicalRecords = pgTable('medicalRecords', {
   provider: text('provider'),
   title: text('title').notNull(),
   type: text('type').notNull(), // 'vaccination', 'appointment', 'medication', 'illness', 'doctor_visit'
-  updatedAt: timestamp('updatedAt', { mode: 'date' })
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
+  updatedAt: timestamp('updatedAt', {
+    mode: 'date',
+    withTimezone: true,
+  }).$onUpdateFn(() => new Date()),
   userId: varchar('userId', { length: 128 })
     .notNull()
     .default(requestingUserId()),
@@ -811,11 +834,19 @@ export const MedicalRecords = pgTable('medicalRecords', {
 export const Milestones = pgTable(
   'milestones',
   {
-    achievedDate: timestamp('achievedDate', { mode: 'date' }), // Nullable - null means not yet completed
+    achievedDate: timestamp('achievedDate', {
+      mode: 'date',
+      withTimezone: true,
+    }), // Nullable - null means not yet completed
     babyId: varchar('babyId', { length: 128 })
       .notNull()
       .references(() => Babies.id, { onDelete: 'cascade' }),
-    createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+    createdAt: timestamp('createdAt', {
+      mode: 'date',
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
     description: text('description'),
     familyId: varchar('familyId', { length: 128 })
       .notNull()
@@ -830,10 +861,10 @@ export const Milestones = pgTable(
     suggestedDay: integer('suggestedDay'), // Which postpartum day this milestone is suggested for (null for user-created)
     title: text('title').notNull(),
     type: milestoneTypeEnum('type').notNull(),
-    updatedAt: timestamp('updatedAt', { mode: 'date' })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
+    updatedAt: timestamp('updatedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }).$onUpdateFn(() => new Date()),
     userId: varchar('userId', { length: 128 })
       .notNull()
       .default(requestingUserId()),
@@ -861,7 +892,10 @@ export const Milestones = pgTable(
 export const CelebrationMemories = pgTable(
   'celebrationMemories',
   {
-    aiGeneratedAt: timestamp('aiGeneratedAt', { mode: 'date' }),
+    aiGeneratedAt: timestamp('aiGeneratedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }),
     aiQuestions: json('aiQuestions').$type<{
       milestone: { question: string; systemPrompt: string };
       memory: { question: string; systemPrompt: string };
@@ -872,11 +906,19 @@ export const CelebrationMemories = pgTable(
     babyId: varchar('babyId', { length: 128 })
       .notNull()
       .references(() => Babies.id, { onDelete: 'cascade' }),
-    celebrationDate: timestamp('celebrationDate', { mode: 'date' })
+    celebrationDate: timestamp('celebrationDate', {
+      mode: 'date',
+      withTimezone: true,
+    })
       .notNull()
       .defaultNow(),
     celebrationType: celebrationTypeEnum('celebrationType').notNull(),
-    createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+    createdAt: timestamp('createdAt', {
+      mode: 'date',
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
     familyId: varchar('familyId', { length: 128 })
       .notNull()
       .references(() => Families.id, { onDelete: 'cascade' })
@@ -888,10 +930,10 @@ export const CelebrationMemories = pgTable(
     note: text('note'),
     photoUrls: json('photoUrls').$type<string[]>().default([]),
     sharedWith: json('sharedWith').$type<string[]>().default([]), // Array of user IDs
-    updatedAt: timestamp('updatedAt', { mode: 'date' })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
+    updatedAt: timestamp('updatedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }).$onUpdateFn(() => new Date()),
     userId: varchar('userId', { length: 128 })
       .notNull()
       .default(requestingUserId()),
@@ -909,8 +951,13 @@ export const GrowthRecords = pgTable('growthRecords', {
   babyId: varchar('babyId', { length: 128 })
     .notNull()
     .references(() => Babies.id, { onDelete: 'cascade' }),
-  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
-  date: timestamp('date', { mode: 'date' }).notNull(),
+  createdAt: timestamp('createdAt', {
+    mode: 'date',
+    withTimezone: true,
+  })
+    .notNull()
+    .defaultNow(),
+  date: timestamp('date', { mode: 'date', withTimezone: true }).notNull(),
   familyId: varchar('familyId', { length: 128 })
     .notNull()
     .references(() => Families.id, { onDelete: 'cascade' })
@@ -922,10 +969,10 @@ export const GrowthRecords = pgTable('growthRecords', {
     .$defaultFn(() => createId({ prefix: 'growth' })),
   metadata: json('metadata').$type<Record<string, unknown>>(),
   notes: text('notes'),
-  updatedAt: timestamp('updatedAt', { mode: 'date' })
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
+  updatedAt: timestamp('updatedAt', {
+    mode: 'date',
+    withTimezone: true,
+  }).$onUpdateFn(() => new Date()),
   userId: varchar('userId', { length: 128 })
     .notNull()
     .default(requestingUserId()),
@@ -940,7 +987,12 @@ export const SupplyInventory = pgTable('supplyInventory', {
   babyId: varchar('babyId', { length: 128 })
     .notNull()
     .references(() => Babies.id, { onDelete: 'cascade' }),
-  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+  createdAt: timestamp('createdAt', {
+    mode: 'date',
+    withTimezone: true,
+  })
+    .notNull()
+    .defaultNow(),
   donorMl: real('donorMl').default(0).notNull(), // Donor milk in ml
   familyId: varchar('familyId', { length: 128 })
     .notNull()
@@ -951,10 +1003,10 @@ export const SupplyInventory = pgTable('supplyInventory', {
     .primaryKey()
     .$defaultFn(() => createId({ prefix: 'inventory' })),
   pumpedMl: real('pumpedMl').default(0).notNull(), // Pumped milk in ml
-  updatedAt: timestamp('updatedAt', { mode: 'date' })
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
+  updatedAt: timestamp('updatedAt', {
+    mode: 'date',
+    withTimezone: true,
+  }).$onUpdateFn(() => new Date()),
   userId: varchar('userId', { length: 128 })
     .notNull()
     .default(requestingUserId()),
@@ -965,7 +1017,12 @@ export const SupplyTransactions = pgTable('supplyTransactions', {
   babyId: varchar('babyId', { length: 128 })
     .notNull()
     .references(() => Babies.id, { onDelete: 'cascade' }),
-  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+  createdAt: timestamp('createdAt', {
+    mode: 'date',
+    withTimezone: true,
+  })
+    .notNull()
+    .defaultNow(),
   familyId: varchar('familyId', { length: 128 })
     .notNull()
     .references(() => Families.id, { onDelete: 'cascade' })
@@ -975,12 +1032,17 @@ export const SupplyTransactions = pgTable('supplyTransactions', {
     .$defaultFn(() => createId({ prefix: 'transaction' })),
   notes: text('notes'),
   source: feedingSourceEnum('source').notNull(), // pumped, donor, or formula
-  timestamp: timestamp('timestamp', { mode: 'date' }).notNull().defaultNow(),
-  type: supplyTransactionTypeEnum('type').notNull(), // add or deduct
-  updatedAt: timestamp('updatedAt', { mode: 'date' })
+  timestamp: timestamp('timestamp', {
+    mode: 'date',
+    withTimezone: true,
+  })
     .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
+    .defaultNow(),
+  type: supplyTransactionTypeEnum('type').notNull(), // add or deduct
+  updatedAt: timestamp('updatedAt', {
+    mode: 'date',
+    withTimezone: true,
+  }).$onUpdateFn(() => new Date()),
   userId: varchar('userId', { length: 128 })
     .notNull()
     .default(requestingUserId()),
@@ -1628,8 +1690,15 @@ export const ParentCheckIns = pgTable(
   {
     aiGeneratedQuestions: boolean('aiGeneratedQuestions').default(true),
     concernsRaised: json('concernsRaised').$type<string[]>().default([]),
-    createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
-    date: timestamp('date', { mode: 'date' }).notNull().defaultNow(),
+    createdAt: timestamp('createdAt', {
+      mode: 'date',
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+    date: timestamp('date', { mode: 'date', withTimezone: true })
+      .notNull()
+      .defaultNow(),
     familyId: varchar('familyId', { length: 128 })
       .notNull()
       .references(() => Families.id, { onDelete: 'cascade' })
@@ -1660,10 +1729,10 @@ export const ParentCheckIns = pgTable(
         }>
       >()
       .notNull(),
-    updatedAt: timestamp('updatedAt', { mode: 'date' })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
+    updatedAt: timestamp('updatedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }).$onUpdateFn(() => new Date()),
     userId: varchar('userId', { length: 128 })
       .notNull()
       .references(() => Users.id, { onDelete: 'cascade' }),
@@ -1681,20 +1750,31 @@ export const ParentTasks = pgTable(
   {
     category: taskCategoryEnum('category').notNull(),
     completed: boolean('completed').default(false).notNull(),
-    completedAt: timestamp('completedAt', { mode: 'date' }),
+    completedAt: timestamp('completedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }),
     context: json('context').$type<{
       babyAgeInDays?: number;
       ppWeek?: number;
       timeOfDay?: string;
       feedingMethod?: string;
     }>(),
-    createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+    createdAt: timestamp('createdAt', {
+      mode: 'date',
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
     estimatedMinutes: integer('estimatedMinutes'),
     familyId: varchar('familyId', { length: 128 })
       .notNull()
       .references(() => Families.id, { onDelete: 'cascade' })
       .default(requestingFamilyId()),
-    generatedDate: timestamp('generatedDate', { mode: 'date' })
+    generatedDate: timestamp('generatedDate', {
+      mode: 'date',
+      withTimezone: true,
+    })
       .notNull()
       .defaultNow(),
     id: varchar('id', { length: 128 })
@@ -1703,10 +1783,10 @@ export const ParentTasks = pgTable(
     priority: taskPriorityEnum('priority').notNull().default('medium'),
     suggestedTime: varchar('suggestedTime', { length: 64 }), // morning, afternoon, evening, anytime
     taskText: text('taskText').notNull(),
-    updatedAt: timestamp('updatedAt', { mode: 'date' })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
+    updatedAt: timestamp('updatedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }).$onUpdateFn(() => new Date()),
     userId: varchar('userId', { length: 128 })
       .notNull()
       .references(() => Users.id, { onDelete: 'cascade' }),
@@ -1727,13 +1807,23 @@ export const WellnessAssessments = pgTable(
   'wellnessAssessments',
   {
     assessmentType: varchar('assessmentType', { length: 64 }).notNull(), // routine, triggered, self_initiated
-    createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
-    date: timestamp('date', { mode: 'date' }).notNull().defaultNow(),
+    createdAt: timestamp('createdAt', {
+      mode: 'date',
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+    date: timestamp('date', { mode: 'date', withTimezone: true })
+      .notNull()
+      .defaultNow(),
     familyId: varchar('familyId', { length: 128 })
       .notNull()
       .references(() => Families.id, { onDelete: 'cascade' })
       .default(requestingFamilyId()),
-    followUpScheduled: timestamp('followUpScheduled', { mode: 'date' }),
+    followUpScheduled: timestamp('followUpScheduled', {
+      mode: 'date',
+      withTimezone: true,
+    }),
     id: varchar('id', { length: 128 })
       .primaryKey()
       .$defaultFn(() => createId({ prefix: 'wellness' })),
@@ -1759,10 +1849,10 @@ export const WellnessAssessments = pgTable(
       >()
       .notNull(),
     riskScore: integer('riskScore'), // Calculated score (e.g., EPDS score)
-    updatedAt: timestamp('updatedAt', { mode: 'date' })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
+    updatedAt: timestamp('updatedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }).$onUpdateFn(() => new Date()),
     userId: varchar('userId', { length: 128 })
       .notNull()
       .references(() => Users.id, { onDelete: 'cascade' }),

@@ -47,15 +47,10 @@ export function useActivityMutations() {
     onError: (error) => {
       toast.error(error.message || 'Failed to create activity');
     },
-    onSuccess: async (activity) => {
+    onSuccess: (_activity) => {
       toast.success('Activity created successfully');
-      // Clear optimistic state BEFORE invalidating queries to prevent race condition
-      // Also remove any optimistic activities that match this real activity
-      const store = useOptimisticActivitiesStore.getState();
-      store.removeByMatch(activity.type, new Date(activity.startTime), 1000);
-
-      // Invalidate with type: 'all' to force immediate refetch, bypassing staleTime
-      await utils.activities.invalidate(undefined, { type: 'all' });
+      // Invalidate queries in background - don't await to avoid blocking mutateAsync
+      utils.activities.invalidate(undefined, { type: 'all' });
     },
   });
 

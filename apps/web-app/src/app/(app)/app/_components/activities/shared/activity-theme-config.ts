@@ -32,6 +32,14 @@ export type ActivityType =
   | 'doctor_visit'
   | 'vitamin_d';
 
+// Activity types that support quick logging
+export type QuickLogActivityType =
+  | 'feeding'
+  | 'diaper'
+  | 'sleep'
+  | 'pumping'
+  | 'vitamin_d';
+
 export interface ActivityTheme {
   /** OKLCH color value for the activity */
   color: string;

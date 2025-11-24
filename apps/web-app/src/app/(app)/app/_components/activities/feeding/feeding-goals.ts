@@ -89,6 +89,11 @@ export function calculateTodaysFeedingStats(
   totalMl: number;
   avgAmountMl: number | null;
 } {
+  // Guard against undefined activities
+  if (!activities || !Array.isArray(activities)) {
+    return { avgAmountMl: null, count: 0, totalMl: 0 };
+  }
+
   // Filter to feeding activities only (caller is responsible for time filtering)
   const todaysFeedings = activities.filter((activity) => {
     const isFeeding = activity.type === 'bottle' || activity.type === 'nursing';
@@ -150,6 +155,16 @@ export function calculateFeedingStatsWithComparison(
   activities: Array<typeof Activities.$inferSelect>,
   timeRangeHours = 24, // Default to 24 hours for backward compatibility
 ): FeedingStatsComparison {
+  // Guard against undefined activities
+  if (!activities || !Array.isArray(activities)) {
+    const emptyStats = { avgAmountMl: null, count: 0, totalMl: 0 };
+    return {
+      current: emptyStats,
+      percentageChange: { avgAmountMl: null, count: null, totalMl: null },
+      previous: emptyStats,
+    };
+  }
+
   const now = Date.now();
   const currentPeriodStart = new Date(now - timeRangeHours * 60 * 60 * 1000);
   const previousPeriodStart = new Date(
@@ -231,6 +246,11 @@ export function calculateFeedingTrendData(
   activities: Array<typeof Activities.$inferSelect>,
   timeRange: '24h' | '7d' | '2w' | '1m' | '3m' | '6m' = '7d',
 ): Array<{ date: string; count: number; totalMl: number }> {
+  // Guard against undefined activities
+  if (!activities || !Array.isArray(activities)) {
+    return [];
+  }
+
   const now = new Date();
 
   if (timeRange === '24h') {

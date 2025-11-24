@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@clerk/nextjs": "catalog:",
+    "@nugget/ai": "workspace:*",
     "@nugget/db": "workspace:*",
     "@nugget/id": "workspace:*",
     "@nugget/logger": "workspace:*",

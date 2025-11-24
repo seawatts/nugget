@@ -3,27 +3,18 @@
 import { api } from '@nugget/api/react';
 import { H2, P } from '@nugget/ui/custom/typography';
 import { Sparkles } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { LearningCardCheckBack } from './learning-card-check-back';
 import { LearningCardInfo } from './learning-card-info';
 import { LearningCardLoading } from './learning-card-loading';
-import {
-  getLearningCarouselContent,
-  type LearningTip,
-} from './learning-carousel.actions';
 
 interface LearningCarouselProps {
   babyId: string;
 }
 
 export function LearningCarousel({ babyId }: LearningCarouselProps) {
-  const [tips, setTips] = useState<LearningTip[]>([]);
-  const [status, setStatus] = useState<
-    'loading' | 'pending' | 'ready' | 'empty'
-  >('loading');
-
-  // Fetch baby info using tRPC suspense query (prefetched on server, lightweight version)
-  const [baby] = api.babies.getByIdLight.useSuspenseQuery({ id: babyId });
+  // Get baby info from dashboard store (populated by DashboardContainer)
+  const baby = useDashboardDataStore.use.baby();
 
   const babyName = baby?.firstName ?? 'Baby';
   const ageInDays = baby?.birthDate
@@ -32,37 +23,16 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
       )
     : 0;
 
-  useEffect(() => {
-    async function loadContent() {
-      try {
-        setStatus('loading');
-        console.log('[LearningCarousel] Loading content for baby:', babyId);
+  // Use tRPC query with prefetched data (from page.tsx)
+  const { data, isLoading } = api.learning.getCarouselContent.useQuery(
+    { babyId },
+    {
+      staleTime: 86400000, // 1 day cache
+    },
+  );
 
-        const result = await getLearningCarouselContent(babyId);
-
-        console.log('[LearningCarousel] Result:', {
-          status: result.status,
-          tipsCount: result.tips.length,
-        });
-
-        setTips(result.tips);
-        setStatus(result.status);
-
-        // If pending, poll again after a short delay
-        if (result.status === 'pending') {
-          console.log('[LearningCarousel] Content is pending, will retry...');
-          setTimeout(() => {
-            loadContent();
-          }, 3000); // Retry after 3 seconds
-        }
-      } catch (error) {
-        console.error('[LearningCarousel] Failed to load content:', error);
-        setStatus('empty');
-      }
-    }
-
-    loadContent();
-  }, [babyId]);
+  const tips = data?.tips ?? [];
+  const status = isLoading ? 'loading' : (data?.status ?? 'empty');
 
   // Show loading state for both initial loading and pending generation
   if (status === 'loading' || status === 'pending') {
@@ -82,7 +52,6 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
 
   // Show message if no tips (don't hide completely)
   if (status === 'empty' || tips.length === 0) {
-    console.log('[LearningCarousel] No tips to display');
     return (
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-4">

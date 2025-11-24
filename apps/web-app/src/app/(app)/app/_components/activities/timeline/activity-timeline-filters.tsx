@@ -25,21 +25,13 @@ import { Separator } from '@nugget/ui/separator';
 import type { LucideIcon } from 'lucide-react';
 import { Filter } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getFamilyMembersAction } from './activity-timeline-filters.actions';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 
 interface ActivityType {
   color: string;
   icon: LucideIcon;
   id: string;
   label: string;
-}
-
-interface FamilyMember {
-  avatarUrl: string | null;
-  id: string;
-  isCurrentUser: boolean;
-  name: string;
-  userId: string;
 }
 
 interface ActivityTimelineFiltersProps {
@@ -55,8 +47,6 @@ export function ActivityTimelineFilters({
   selectedActivityTypes,
   selectedUserIds,
 }: ActivityTimelineFiltersProps) {
-  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
-  const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
   // Initialize with all items selected if parent passes empty arrays
@@ -66,24 +56,9 @@ export function ActivityTimelineFilters({
   );
   const [isOpen, setIsOpen] = useState(false);
 
-  // Load family members
-  useEffect(() => {
-    async function loadFamilyMembers() {
-      try {
-        const result = await getFamilyMembersAction();
-
-        if (result?.data) {
-          setFamilyMembers(result.data);
-        }
-      } catch (error) {
-        console.error('Failed to load family members:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadFamilyMembers();
-  }, []);
+  // Get family members from dashboard store (already fetched in DashboardContainer)
+  const familyMembers = useDashboardDataStore.use.familyMembers();
+  const loading = familyMembers.length === 0;
 
   // Initialize local state with all items selected if parent provides empty arrays
   useEffect(() => {
@@ -362,14 +337,12 @@ export function ActivityTimelineFilters({
   return (
     <Drawer onOpenChange={setIsOpen} open={isOpen}>
       <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
-      <DrawerContent className="max-h-[85vh] overflow-x-hidden">
+      <DrawerContent className="max-h-[85vh]">
         <DrawerHeader>
           <DrawerTitle>Filter Timeline</DrawerTitle>
         </DrawerHeader>
-        <div className="px-4 flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="flex flex-col gap-4 pb-4">
-            {filterScrollableContent}
-          </div>
+        <div className="space-y-4 overflow-y-auto px-4 pb-4">
+          {filterScrollableContent}
         </div>
         <DrawerFooter className="pt-2 border-t">{filterActions}</DrawerFooter>
       </DrawerContent>

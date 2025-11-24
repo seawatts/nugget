@@ -23,6 +23,7 @@ function buildOptimisticActivity(
   startTime: Date,
   endTime: Date,
   durationMinutes: number,
+  babyId?: string,
 ): typeof Activities.$inferSelect {
   // Determine feedingSource and details based on type
   let feedingSource: 'pumped' | 'donor' | 'direct' | 'formula' | null = null;
@@ -66,7 +67,7 @@ function buildOptimisticActivity(
   return {
     amountMl: formData.amountMl ?? null,
     assignedUserId: null,
-    babyId: 'temp',
+    babyId: babyId || 'temp', // Use real babyId instead of 'temp' for timeline filtering
     createdAt: new Date(),
     details,
     duration: durationMinutes,
@@ -251,6 +252,7 @@ export function useFeedingSave({
             startTime,
             endTime,
             durationMinutes,
+            babyId,
           );
           addOptimisticActivity(optimisticActivity);
         }

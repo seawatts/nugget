@@ -41,7 +41,7 @@ export function PumpingDrawerContent({
   notes: _controlledNotes,
   setLeftAmount: setControlledLeftAmount,
   setRightAmount: setControlledRightAmount,
-  setSelectedDuration: setControlledSelectedDuration,
+  setSelectedDuration: _setControlledSelectedDuration,
   setSelectedMethod: setControlledSelectedMethod,
   setNotes: _setControlledNotes,
   isEditing = false,
@@ -56,7 +56,7 @@ export function PumpingDrawerContent({
   // Internal state - use default values that will be updated based on user preference
   const [internalLeftAmount, setInternalLeftAmount] = useState(2);
   const [internalRightAmount, setInternalRightAmount] = useState(2);
-  const [internalSelectedDuration, setInternalSelectedDuration] = useState<
+  const [internalSelectedDuration, _setInternalSelectedDuration] = useState<
     number | null
   >(null);
   const [internalSelectedMethod, setInternalSelectedMethod] = useState<
@@ -121,24 +121,33 @@ export function PumpingDrawerContent({
   // Skip auto-calculation when editing existing activity (to preserve manual edits)
   // Allow auto-calculation for new activities even in controlled mode
   useEffect(() => {
-    if (
-      (!isControlled || !isEditing) &&
-      selectedDuration !== null &&
-      babyAgeDays !== null
-    ) {
-      const volumes = calculatePumpingVolumes(
-        babyAgeDays,
-        selectedDuration,
-        baby?.mlPerPump,
-      );
+    if ((!isControlled || !isEditing) && selectedDuration !== null) {
+      let volumes: { leftMl: number; rightMl: number };
+
+      if (babyAgeDays !== null) {
+        // Use age-based calculation
+        volumes = calculatePumpingVolumes(
+          babyAgeDays,
+          selectedDuration,
+          baby?.mlPerPump,
+        );
+      } else {
+        // Fallback: Use default values for unknown age
+        // Assume 30-day-old baby (established supply, ~6 oz / 180ml per 20-min session)
+        volumes = calculatePumpingVolumes(30, selectedDuration, 180);
+      }
 
       // Convert to user's preferred unit
       if (userUnitPref === 'OZ') {
-        setLeftAmount(mlToOz(volumes.leftMl));
-        setRightAmount(mlToOz(volumes.rightMl));
+        const leftOz = mlToOz(volumes.leftMl);
+        const rightOz = mlToOz(volumes.rightMl);
+        setLeftAmount(leftOz);
+        setRightAmount(rightOz);
       } else {
-        setLeftAmount(Math.round(volumes.leftMl));
-        setRightAmount(Math.round(volumes.rightMl));
+        const leftMl = Math.round(volumes.leftMl);
+        const rightMl = Math.round(volumes.rightMl);
+        setLeftAmount(leftMl);
+        setRightAmount(rightMl);
       }
     }
   }, [
@@ -153,12 +162,31 @@ export function PumpingDrawerContent({
   ]);
 
   // Get step size and min value based on user preference
-  const step = userUnitPref === 'OZ' ? 0.5 : 30;
+  // Use smaller steps for OZ to accommodate small volumes
+  const step = userUnitPref === 'OZ' ? 0.1 : 10;
   const minAmount = 0; // Allow going down to 0
   const unit = userUnitPref === 'OZ' ? 'oz' : 'ml';
 
   return (
     <div className="space-y-6">
+      {/* Missing Baby Data Warning */}
+      {babyAgeDays === null && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <Info className="size-5 text-amber-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-amber-900">
+                Baby Birthdate Not Set
+              </p>
+              <p className="text-xs text-amber-700 mt-1">
+                Set your baby&apos;s birthdate to get age-appropriate volume
+                recommendations. Using default values for now.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Amount Selectors */}
       <div className="space-y-3">
         {babyAgeDays !== null && (
@@ -184,7 +212,9 @@ export function PumpingDrawerContent({
                 <Minus className="h-4 w-4" />
               </Button>
               <div className="text-center min-w-[60px]">
-                <div className="text-3xl font-bold">{leftAmount}</div>
+                <div className="text-3xl font-bold">
+                  {userUnitPref === 'OZ' ? leftAmount.toFixed(1) : leftAmount}
+                </div>
                 <p className="text-xs text-muted-foreground">{unit}</p>
               </div>
               <Button
@@ -215,7 +245,9 @@ export function PumpingDrawerContent({
                 <Minus className="h-4 w-4" />
               </Button>
               <div className="text-center min-w-[60px]">
-                <div className="text-3xl font-bold">{rightAmount}</div>
+                <div className="text-3xl font-bold">
+                  {userUnitPref === 'OZ' ? rightAmount.toFixed(1) : rightAmount}
+                </div>
                 <p className="text-xs text-muted-foreground">{unit}</p>
               </div>
               <Button
@@ -239,7 +271,10 @@ export function PumpingDrawerContent({
             <p className="font-semibold">Total Amount</p>
           </div>
           <p className="text-2xl font-bold">
-            {leftAmount + rightAmount} {unit}
+            {userUnitPref === 'OZ'
+              ? (leftAmount + rightAmount).toFixed(1)
+              : leftAmount + rightAmount}{' '}
+            {unit}
           </p>
         </div>
       </div>
