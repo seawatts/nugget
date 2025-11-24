@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "@next/bundle-analyzer": "16.0.3",
-    "@posthog/nextjs-config": "1.5.1",
+    "@posthog/nextjs-config": "1.6.0",
     "next": "catalog:"
   },
   "devDependencies": {
