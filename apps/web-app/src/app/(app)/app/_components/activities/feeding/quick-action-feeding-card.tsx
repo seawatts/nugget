@@ -559,7 +559,7 @@ export function QuickActionFeedingCard({
         babyAgeDays={data.babyAgeDays}
         learningContent={getFeedingLearningContent(
           data.babyAgeDays ?? 0,
-          baby?.name || undefined,
+          baby?.firstName || undefined,
         )}
         onOpenChange={setShowInfoDrawer}
         open={showInfoDrawer}

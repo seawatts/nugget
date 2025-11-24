@@ -181,7 +181,7 @@ export function PredictiveDiaperCard({
   // Get learning content for the baby's age
   const learningContent =
     babyAgeDays !== null
-      ? getDiaperLearningContent(babyAgeDays, baby?.name || undefined)
+      ? getDiaperLearningContent(babyAgeDays, baby?.firstName || undefined)
       : null;
 
   // Build quick log settings for info drawer

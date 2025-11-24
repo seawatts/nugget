@@ -164,7 +164,7 @@ export function PredictivePumpingCard({
   // Get learning content for the baby's age
   const learningContent =
     babyAgeDays !== null
-      ? getPumpingLearningContent(babyAgeDays, baby?.name || undefined)
+      ? getPumpingLearningContent(babyAgeDays, baby?.firstName || undefined)
       : null;
 
   // Build quick log settings for info drawer

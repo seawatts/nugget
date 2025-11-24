@@ -104,7 +104,7 @@ export function LearningCardInfo({
         babyId: storeBabyId,
         contextId: `${tip.category}-${tip.subtitle}`,
         contextType: 'learning_tip',
-        question: tip.followUpQuestion,
+        question: tip.followUpQuestion ?? '',
       }).catch((error) => {
         console.error('Error saving response:', error);
       });
@@ -357,7 +357,7 @@ export function LearningCardInfo({
           contextType="learning_tip"
           initialMessages={[
             {
-              content: tip.followUpQuestion,
+              content: tip.followUpQuestion ?? '',
               createdAt: new Date(),
               id: 'follow-up-question',
               role: 'assistant',

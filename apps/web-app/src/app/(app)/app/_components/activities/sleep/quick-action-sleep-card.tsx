@@ -268,6 +268,7 @@ export function QuickActionSleepCard({
         endTime: now,
         familyId: 'temp',
         familyMemberId: null,
+        feedingSource: null,
         id: `activity-optimistic-sleep-${Date.now()}`,
         isScheduled: false,
         notes: null,
@@ -345,6 +346,7 @@ export function QuickActionSleepCard({
         endTime: now,
         familyId: 'temp',
         familyMemberId: null,
+        feedingSource: null,
         id: `activity-optimistic-sleep-${Date.now()}`,
         isScheduled: false,
         notes: null,
@@ -425,6 +427,7 @@ export function QuickActionSleepCard({
         endTime: null, // No end time = in progress
         familyId: 'temp',
         familyMemberId: null,
+        feedingSource: null,
         id: `activity-optimistic-sleep-timer-${Date.now()}`,
         isScheduled: false,
         notes: null,
@@ -738,7 +741,7 @@ export function QuickActionSleepCard({
         icon={Moon}
         learningContent={
           babyAgeDays !== null
-            ? getSleepLearningContent(babyAgeDays, baby?.name || undefined)
+            ? getSleepLearningContent(babyAgeDays, baby?.firstName || undefined)
             : null
         }
         onOpenChange={setShowInfoDrawer}

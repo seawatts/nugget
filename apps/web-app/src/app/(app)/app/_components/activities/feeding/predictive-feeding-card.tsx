@@ -168,7 +168,7 @@ export function PredictiveFeedingCard({
   // Get learning content for the baby's age
   const learningContent =
     babyAgeDays !== null
-      ? getFeedingLearningContent(babyAgeDays, baby?.name || undefined)
+      ? getFeedingLearningContent(babyAgeDays, baby?.firstName || undefined)
       : null;
 
   // Build quick log settings for info drawer

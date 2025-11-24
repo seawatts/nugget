@@ -26,6 +26,7 @@ import { useActivityMutations } from '../use-activity-mutations';
 import { PumpingStatsDrawer } from './components';
 import { getPumpingLearningContent } from './learning-content';
 import { predictNextPumping } from './prediction';
+import { calculatePumpingTrendData } from './pumping-goals';
 import { getAgeBasedPumpingAmounts } from './pumping-volume-utils';
 
 interface QuickActionPumpingCardProps {
@@ -156,6 +157,11 @@ export function QuickActionPumpingCard({
   const nextTimeDistance = formatDistanceToNow(prediction.nextPumpingTime, {
     addSuffix: false,
   });
+
+  // Calculate stats for drawer
+  const pumpingTrendData = allActivities
+    ? calculatePumpingTrendData(allActivities)
+    : [];
   const nextExactTime = formatTimeWithPreference(
     prediction.nextPumpingTime,
     timeFormat,
@@ -187,36 +193,29 @@ export function QuickActionPumpingCard({
       const leftAmountMl = Math.round(totalAmountMl / 2);
       const rightAmountMl = Math.round(totalAmountMl / 2);
 
-      // Build pumping activity data
-      const pumpingData = {
-        leftAmountMl,
-        pumpingMethod: 'electric' as const,
-        rightAmountMl,
-        type: 'pumping' as const,
-      };
-
       // Create optimistic activity for immediate UI feedback
       const optimisticActivity = {
-        ...pumpingData,
         amountMl: totalAmountMl,
         assignedUserId: null,
         babyId: babyId,
         createdAt: now,
         details: {
-          leftAmountMl,
-          pumpingMethod: 'electric' as const,
-          rightAmountMl,
+          leftBreastMl: leftAmountMl,
+          method: 'electric' as const,
+          rightBreastMl: rightAmountMl,
           type: 'pumping' as const,
         },
         duration: 0,
         endTime: now,
         familyId: 'temp',
         familyMemberId: null,
+        feedingSource: null,
         id: `activity-optimistic-pumping-${Date.now()}`,
         isScheduled: false,
         notes: null,
         startTime: now,
         subjectType: 'baby' as const,
+        type: 'pumping' as const,
         updatedAt: now,
         userId: 'temp',
       } as typeof Activities.$inferSelect;
@@ -230,16 +229,16 @@ export function QuickActionPumpingCard({
         amountMl: totalAmountMl,
         babyId,
         details: {
-          leftAmountMl,
-          pumpingMethod: 'electric',
-          rightAmountMl,
+          leftBreastMl: leftAmountMl,
+          method: 'electric',
+          rightBreastMl: rightAmountMl,
           type: 'pumping',
         },
         duration: 0,
         endTime: now,
-        leftAmountMl,
-        pumpingMethod: 'electric',
-        rightAmountMl,
+        leftBreastMl: leftAmountMl,
+        method: 'electric',
+        rightBreastMl: rightAmountMl,
         startTime: now,
       });
 
@@ -425,7 +424,7 @@ export function QuickActionPumpingCard({
         babyAgeDays={data.babyAgeDays}
         learningContent={getPumpingLearningContent(
           data.babyAgeDays ?? 0,
-          baby?.name || undefined,
+          baby?.firstName || undefined,
         )}
         onOpenChange={setShowInfoDrawer}
         open={showInfoDrawer}
@@ -446,6 +445,7 @@ export function QuickActionPumpingCard({
           })) ?? []
         }
         timeFormat={timeFormat}
+        trendData={pumpingTrendData}
         unit={userUnitPref}
       />
     </>

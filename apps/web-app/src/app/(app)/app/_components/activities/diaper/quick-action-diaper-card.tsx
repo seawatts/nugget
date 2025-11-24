@@ -416,7 +416,7 @@ export function QuickActionDiaperCard({
         babyAgeDays={data.babyAgeDays}
         learningContent={getDiaperLearningContent(
           data.babyAgeDays ?? 0,
-          baby?.name || undefined,
+          baby?.firstName || undefined,
         )}
         onOpenChange={setShowInfoDrawer}
         open={showInfoDrawer}

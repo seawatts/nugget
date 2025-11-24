@@ -42,7 +42,7 @@ function convertQuickButtonUnits(
   // Check if this is a volume value
   const volumeMatch = value.match(/(\d+(?:\.\d+)?)oz\s*\((\d+)ml\)/);
 
-  if (volumeMatch) {
+  if (volumeMatch?.[1] && volumeMatch[2]) {
     const ozValue = Number.parseFloat(volumeMatch[1]);
     const mlValue = Number.parseInt(volumeMatch[2], 10);
 

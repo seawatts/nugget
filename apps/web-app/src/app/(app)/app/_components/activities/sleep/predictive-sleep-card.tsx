@@ -220,7 +220,7 @@ export function PredictiveSleepCard({
   // Get learning content for the baby's age
   const learningContent =
     babyAgeDays !== null
-      ? getSleepLearningContent(babyAgeDays, baby?.name || undefined)
+      ? getSleepLearningContent(babyAgeDays, baby?.firstName || undefined)
       : null;
 
   // Build quick log settings for info drawer
