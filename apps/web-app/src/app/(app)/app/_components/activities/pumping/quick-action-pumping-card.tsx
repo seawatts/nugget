@@ -201,7 +201,6 @@ export function QuickActionPumpingCard({
         createdAt: now,
         details: {
           leftBreastMl: leftAmountMl,
-          method: 'electric' as const,
           rightBreastMl: rightAmountMl,
           type: 'pumping' as const,
         },
@@ -230,15 +229,11 @@ export function QuickActionPumpingCard({
         babyId,
         details: {
           leftBreastMl: leftAmountMl,
-          method: 'electric',
           rightBreastMl: rightAmountMl,
           type: 'pumping',
         },
         duration: 0,
         endTime: now,
-        leftBreastMl: leftAmountMl,
-        method: 'electric',
-        rightBreastMl: rightAmountMl,
         startTime: now,
       });
 
