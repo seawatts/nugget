@@ -360,7 +360,10 @@ export function predictNextDiaper(
   if (allActivities && allActivities.length > 0) {
     // Get recent feedings
     const recentFeedings = allActivities
-      .filter((a) => a.type === 'bottle' || a.type === 'nursing')
+      .filter(
+        (a) =>
+          a.type === 'bottle' || a.type === 'nursing' || a.type === 'solids',
+      )
       .sort(
         (a, b) =>
           new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),

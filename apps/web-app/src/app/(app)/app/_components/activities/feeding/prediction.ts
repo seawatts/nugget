@@ -128,12 +128,12 @@ export function predictNextFeeding(
   babyBirthDate: Date | null,
   babyFeedIntervalHours?: number | null,
 ): FeedingPrediction {
-  // Filter to only feeding activities (bottle, nursing)
+  // Filter to only feeding activities (bottle, nursing, solids)
   // Exclude scheduled activities and skipped activities (dismissals don't count as real feedings)
   const feedingActivities = recentFeedings
     .filter(
       (a) =>
-        (a.type === 'bottle' || a.type === 'nursing') &&
+        (a.type === 'bottle' || a.type === 'nursing' || a.type === 'solids') &&
         !a.isScheduled &&
         !(a.details && 'skipped' in a.details && a.details.skipped === true),
     )
@@ -147,7 +147,7 @@ export function predictNextFeeding(
   const skipActivities = recentFeedings
     .filter(
       (a) =>
-        (a.type === 'bottle' || a.type === 'nursing') &&
+        (a.type === 'bottle' || a.type === 'nursing' || a.type === 'solids') &&
         a.details &&
         'skipped' in a.details &&
         a.details.skipped === true,

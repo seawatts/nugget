@@ -451,14 +451,18 @@ export const activitiesRouter = createTRPCRouter({
       const scheduledFeeding = recentActivities.find(
         (a) =>
           a.isScheduled &&
-          (a.type === 'bottle' || a.type === 'nursing') &&
+          (a.type === 'bottle' ||
+            a.type === 'nursing' ||
+            a.type === 'solids') &&
           new Date(a.startTime) > new Date(),
       );
 
       // Check for in-progress feeding activity (has startTime but no endTime)
       const inProgressActivity = recentActivities.find(
         (a) =>
-          (a.type === 'bottle' || a.type === 'nursing') &&
+          (a.type === 'bottle' ||
+            a.type === 'nursing' ||
+            a.type === 'solids') &&
           a.startTime &&
           !a.endTime,
       );

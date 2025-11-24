@@ -83,7 +83,7 @@ export const getUpcomingFeedingAction = action
     const scheduledFeeding = recentActivities.find(
       (a) =>
         a.isScheduled &&
-        (a.type === 'bottle' || a.type === 'nursing') &&
+        (a.type === 'bottle' || a.type === 'nursing' || a.type === 'solids') &&
         new Date(a.startTime) > new Date(),
     );
 
@@ -152,7 +152,9 @@ export const claimFeedingAction = action
       const existingScheduled = recentActivities.find(
         (a) =>
           a.isScheduled &&
-          (a.type === 'bottle' || a.type === 'nursing') &&
+          (a.type === 'bottle' ||
+            a.type === 'nursing' ||
+            a.type === 'solids') &&
           new Date(a.startTime) > new Date(),
       );
 

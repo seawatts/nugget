@@ -30,7 +30,7 @@ function calculateMemberScore(
   const userFeedings = recentActivities.filter(
     (a) =>
       a.userId === userId &&
-      (a.type === 'bottle' || a.type === 'nursing') &&
+      (a.type === 'bottle' || a.type === 'nursing' || a.type === 'solids') &&
       !a.isScheduled &&
       new Date(a.startTime) >= twentyFourHoursAgo,
   );
