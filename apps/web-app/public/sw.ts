@@ -12,17 +12,36 @@ self.addEventListener('install', (_event: ExtendableEvent) => {
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up old caches and clear HTML cache on update
 self.addEventListener('activate', (event: ExtendableEvent) => {
   console.log('[Service Worker] Activate');
   event.waitUntil(
     (async () => {
       const cacheNames = await caches.keys();
+
+      // Delete old caches
       await Promise.all(
         cacheNames
           .filter((name) => name !== CACHE_NAME)
           .map((name) => caches.delete(name)),
       );
+
+      // Clear HTML pages from current cache to ensure fresh content after update
+      // This ensures users see updated HTML after service worker updates
+      const cache = await caches.open(CACHE_NAME);
+      const cachedRequests = await cache.keys();
+      const htmlRequests = cachedRequests.filter((request) => {
+        const url = new URL(request.url);
+        return (
+          url.pathname.startsWith('/app') &&
+          !url.pathname.startsWith('/api') &&
+          !url.pathname.startsWith('/trpc')
+        );
+      });
+
+      // Delete HTML pages so they're fetched fresh
+      await Promise.all(htmlRequests.map((request) => cache.delete(request)));
+
       await self.clients.claim();
     })(),
   );
@@ -38,36 +57,67 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   const url = new URL(event.request.url);
   const pathname = url.pathname;
 
-  // Strategy 1: CacheFirst for baby dashboard routes - instant load from cache
+  // Strategy 1: NetworkFirst with short timeout for baby dashboard routes
+  // Tries fresh content first, falls back to cache if network is slow
+  // This ensures HTML updates are visible while still being fast
   if (/^\/app\/babies\/[^/]+\/dashboard/.test(pathname)) {
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_NAME);
-        const cachedResponse = await cache.match(event.request);
+        const timeoutPromise = new Promise<Response | null>((resolve) => {
+          setTimeout(() => resolve(null), 800); // 800ms timeout for instant feel
+        });
 
-        // Serve from cache immediately if available
-        if (cachedResponse) {
-          // Update cache in background (StaleWhileRevalidate pattern)
-          fetch(event.request)
-            .then((networkResponse) => {
-              if (networkResponse.ok) {
-                cache.put(event.request, networkResponse.clone());
-              }
-            })
-            .catch(() => {
-              // Ignore network errors in background update
-            });
-          return cachedResponse;
-        }
-
-        // If not in cache, fetch from network and cache it
         try {
-          const networkResponse = await fetch(event.request);
-          if (networkResponse.ok) {
+          // Try network first with timeout
+          const networkResponse = await Promise.race([
+            fetch(event.request),
+            timeoutPromise,
+          ]);
+
+          if (networkResponse?.ok) {
+            // Cache successful responses
             cache.put(event.request, networkResponse.clone());
+            return networkResponse;
           }
-          return networkResponse;
+
+          // Network failed or timed out, try cache
+          const cachedResponse = await cache.match(event.request);
+          if (cachedResponse) {
+            // Update cache in background if we have cached response
+            // Use AbortController to prevent hanging on slow networks
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+            fetch(event.request, { signal: controller.signal })
+              .then((freshResponse) => {
+                clearTimeout(timeoutId);
+                if (freshResponse.ok) {
+                  cache.put(event.request, freshResponse.clone());
+                }
+              })
+              .catch(() => {
+                clearTimeout(timeoutId);
+                // Ignore network errors in background update
+              });
+            return cachedResponse;
+          }
+
+          // Both failed, return error
+          return (
+            networkResponse ||
+            new Response('Offline', {
+              status: 503,
+              statusText: 'Service Unavailable',
+            })
+          );
         } catch (_error) {
+          // Network error, try cache
+          const cachedResponse = await cache.match(event.request);
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+
           return new Response('Offline', {
             status: 503,
             statusText: 'Service Unavailable',
@@ -78,34 +128,42 @@ self.addEventListener('fetch', (event: FetchEvent) => {
     return;
   }
 
-  // Strategy 2: StaleWhileRevalidate for /app route - instant redirect from cache
+  // Strategy 2: StaleWhileRevalidate for /app route - instant redirect, update in background
+  // The redirect is just HTML, so we can serve from cache instantly
+  // Updates happen in background so redirect logic changes are picked up
   if (pathname === '/app' || pathname === '/app/') {
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_NAME);
         const cachedResponse = await cache.match(event.request);
 
-        // Fetch fresh content in background
-        const fetchPromise = fetch(event.request)
+        // Fetch fresh content in background (don't block)
+        // Use AbortController to prevent hanging on slow networks
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+        const fetchPromise = fetch(event.request, { signal: controller.signal })
           .then((networkResponse) => {
+            clearTimeout(timeoutId);
             if (networkResponse.ok) {
               cache.put(event.request, networkResponse.clone());
             }
             return networkResponse;
           })
           .catch(() => {
-            // Ignore network errors
+            clearTimeout(timeoutId);
+            // Ignore network errors in background
             return null;
           });
 
-        // Return cached response immediately if available, otherwise wait for network
+        // Return cached response immediately if available (instant redirect)
         if (cachedResponse) {
-          // Don't await fetchPromise - let it update cache in background
+          // Update cache in background without blocking
           void fetchPromise;
           return cachedResponse;
         }
 
-        // No cache, wait for network
+        // No cache, wait for network (first load)
         const networkResponse = await fetchPromise;
         if (networkResponse) {
           return networkResponse;

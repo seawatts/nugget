@@ -360,6 +360,10 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
   // Ref for intersection observer
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
+  // Track active day header (the one currently stuck at top)
+  const [activeDayIndex, setActiveDayIndex] = useState<number | null>(0);
+  const dayHeaderRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+
   // Build filters for timeline query
   const timelineFilters = useMemo(() => {
     if (!babyId) return null;
@@ -584,6 +588,114 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
   };
 
   const groupedItems = groupTimelineItemsByDay(allTimelineItems);
+  const groupedItemsArray = Array.from(groupedItems.entries());
+
+  // Setup intersection observer for day headers to track which one is active
+  useEffect(() => {
+    const headers = Array.from(dayHeaderRefs.current.values());
+    if (headers.length === 0) {
+      // Set initial active day to first one if headers aren't ready yet
+      if (groupedItemsArray.length > 0 && activeDayIndex === null) {
+        setActiveDayIndex(0);
+      }
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find the header that is currently stuck at the top
+        // A sticky header that's "stuck" will have boundingClientRect.top close to 0
+        const stuckHeaders: Array<{
+          entry: IntersectionObserverEntry;
+          index: number;
+        }> = [];
+
+        entries.forEach((entry) => {
+          const top = entry.boundingClientRect.top;
+          // A header is considered "stuck" if it's at the top (within 5px of 0)
+          // and is intersecting
+          if (entry.isIntersecting && top >= -5 && top <= 5) {
+            // Find the index of this header
+            for (const [index, element] of dayHeaderRefs.current.entries()) {
+              if (element === entry.target) {
+                stuckHeaders.push({ entry, index });
+                break;
+              }
+            }
+          }
+        });
+
+        if (stuckHeaders.length > 0) {
+          // If multiple headers are stuck (shouldn't happen, but handle it),
+          // prefer the one with the smallest top value (closest to 0)
+          const activeHeader = stuckHeaders.reduce((prev, curr) => {
+            const prevTop = Math.abs(prev.entry.boundingClientRect.top);
+            const currTop = Math.abs(curr.entry.boundingClientRect.top);
+            return currTop < prevTop ? curr : prev;
+          });
+          setActiveDayIndex(activeHeader.index);
+        } else {
+          // If no header is stuck, find the one closest to the top
+          let closestEntry: {
+            entry: IntersectionObserverEntry;
+            index: number;
+          } | null = null;
+          let closestDistance = Number.POSITIVE_INFINITY;
+
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const top = entry.boundingClientRect.top;
+              // Only consider headers that are above or at the viewport top
+              if (top <= 10) {
+                const distance = Math.abs(top);
+                if (distance < closestDistance) {
+                  for (const [
+                    index,
+                    element,
+                  ] of dayHeaderRefs.current.entries()) {
+                    if (element === entry.target) {
+                      closestEntry = { entry, index };
+                      closestDistance = distance;
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+          });
+
+          if (closestEntry) {
+            setActiveDayIndex(closestEntry.index);
+          }
+        }
+      },
+      {
+        root: null, // Use viewport as root
+        rootMargin: '0px', // No margin adjustment
+        threshold: [0, 0.1, 0.5, 1], // Multiple thresholds for better detection
+      },
+    );
+
+    // Observe all day headers
+    headers.forEach((header) => {
+      if (header) {
+        observer.observe(header);
+      }
+    });
+
+    // Set initial active day to first one if not set
+    if (headers.length > 0 && activeDayIndex === null) {
+      setActiveDayIndex(0);
+    }
+
+    return () => {
+      headers.forEach((header) => {
+        if (header) {
+          observer.unobserve(header);
+        }
+      });
+    };
+  }, [groupedItemsArray.length, activeDayIndex]);
 
   // Show loading state on initial load
   if (isLoading) {
@@ -611,331 +723,337 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      {Array.from(groupedItems.entries()).map(
-        ([dayLabel, dayItems], groupIndex) => {
-          // Create a stable key for each day section
-          const dayKey = `${dayLabel}-${dayItems[0]?.timestamp.getTime() || groupIndex}`;
-          return (
-            <div key={dayKey}>
-              <div className="sticky top-0 bg-background/95 backdrop-blur-sm py-2 mb-3 z-10 border-b border-border/50 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide">
-                  {dayLabel}
-                </h3>
-                {groupIndex === 0 && (
-                  <ActivityTimelineFilters
-                    activityTypes={activities}
-                    onFilterChange={handleFilterChange}
-                    selectedActivityTypes={selectedActivityTypes}
-                    selectedUserIds={selectedUserIds}
-                  />
-                )}
-              </div>
-              <div className="flex flex-col gap-2.5">
-                {dayItems.map((item, index) => {
-                  // Determine item type and extract data
-                  // For activities, use the activity type (nursing, sleep, etc.)
-                  // For milestones and chats, use the item type
-                  const iconKey =
-                    item.type === 'activity' ? item.data.type : item.type;
-                  const Icon = activityIcons[iconKey] || Baby;
-                  const colorClass =
-                    activityColors[iconKey] || 'border-l-primary';
-                  const iconColorClass =
-                    activityIconColors[iconKey] || 'text-primary';
-                  const itemDate = item.timestamp;
-                  const absoluteTime = formatTimeWithPreference(
-                    itemDate,
-                    timeFormat,
-                  );
-                  const relativeTime = formatDistanceToNow(itemDate, {
-                    addSuffix: true,
-                  });
-                  const isOptimistic =
-                    item.type === 'activity' &&
-                    item.data.id.startsWith('activity-optimistic');
+      {groupedItemsArray.map(([dayLabel, dayItems], groupIndex) => {
+        // Create a stable key for each day section
+        const dayKey = `${dayLabel}-${dayItems[0]?.timestamp.getTime() || groupIndex}`;
+        const isActive = activeDayIndex === groupIndex;
+        return (
+          <div key={dayKey}>
+            <div
+              className="sticky top-0 bg-background/95 backdrop-blur-sm py-2 mb-3 z-10 border-b border-border/50 flex items-center justify-between"
+              ref={(el) => {
+                if (el) {
+                  dayHeaderRefs.current.set(groupIndex, el);
+                } else {
+                  dayHeaderRefs.current.delete(groupIndex);
+                }
+              }}
+            >
+              <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide">
+                {dayLabel}
+              </h3>
+              {isActive && (
+                <ActivityTimelineFilters
+                  activityTypes={activities}
+                  onFilterChange={handleFilterChange}
+                  selectedActivityTypes={selectedActivityTypes}
+                  selectedUserIds={selectedUserIds}
+                />
+              )}
+            </div>
+            <div className="flex flex-col gap-2.5">
+              {dayItems.map((item, index) => {
+                // Determine item type and extract data
+                // For activities, use the activity type (nursing, sleep, etc.)
+                // For milestones and chats, use the item type
+                const iconKey =
+                  item.type === 'activity' ? item.data.type : item.type;
+                const Icon = activityIcons[iconKey] || Baby;
+                const colorClass =
+                  activityColors[iconKey] || 'border-l-primary';
+                const iconColorClass =
+                  activityIconColors[iconKey] || 'text-primary';
+                const itemDate = item.timestamp;
+                const absoluteTime = formatTimeWithPreference(
+                  itemDate,
+                  timeFormat,
+                );
+                const relativeTime = formatDistanceToNow(itemDate, {
+                  addSuffix: true,
+                });
+                const isOptimistic =
+                  item.type === 'activity' &&
+                  item.data.id.startsWith('activity-optimistic');
 
-                  // Build item details string based on type
-                  const details: string[] = [];
-                  let itemTitle = '';
-                  let itemNotes = '';
-                  let itemId = '';
-                  let isSkipped = false;
-                  let userName = '';
-                  let userAvatar: string | null = null;
-                  let userInitials = '';
+                // Build item details string based on type
+                const details: string[] = [];
+                let itemTitle = '';
+                let itemNotes = '';
+                let itemId = '';
+                let isSkipped = false;
+                let userName = '';
+                let userAvatar: string | null = null;
+                let userInitials = '';
 
-                  if (item.type === 'activity') {
-                    const activity = item.data;
-                    itemTitle =
-                      activityLabels[activity.type] ||
-                      activity.type.replace('_', ' ').replace('-', ' ');
-                    itemNotes = activity.notes || '';
-                    itemId = activity.id;
+                if (item.type === 'activity') {
+                  const activity = item.data;
+                  itemTitle =
+                    activityLabels[activity.type] ||
+                    activity.type.replace('_', ' ').replace('-', ' ');
+                  itemNotes = activity.notes || '';
+                  itemId = activity.id;
 
-                    // Extract user information
-                    if (activity.user) {
-                      const firstName = activity.user.firstName || '';
-                      const lastName = activity.user.lastName || '';
-                      userName = firstName
-                        ? `${firstName}${lastName ? ` ${lastName}` : ''}`
-                        : activity.user.email;
-                      userAvatar = activity.user.avatarUrl;
-                      userInitials = firstName
-                        ? `${firstName[0]}${lastName?.[0] || ''}`
-                        : activity.user.email[0]?.toUpperCase() || '?';
-                    }
-
-                    // Check if activity is skipped
-                    isSkipped = Boolean(
-                      activity.details &&
-                        'skipped' in activity.details &&
-                        activity.details.skipped === true,
-                    );
-
-                    if (activity.duration) {
-                      // Format sleep duration as hours and minutes, others as minutes
-                      if (activity.type === 'sleep') {
-                        details.push(
-                          formatMinutesToHoursMinutes(activity.duration),
-                        );
-                      } else {
-                        let durationText = `${activity.duration} min`;
-                        // Add (L) or (R) indicator for nursing activities
-                        if (
-                          activity.type === 'nursing' &&
-                          activity.details &&
-                          'side' in activity.details
-                        ) {
-                          const side = (
-                            activity.details as {
-                              side?: 'left' | 'right' | 'both';
-                            }
-                          ).side;
-                          if (side && side !== 'both') {
-                            durationText += ` (${side === 'left' ? 'L' : 'R'})`;
-                          }
-                        }
-                        details.push(durationText);
-                      }
-                    }
-                    if (activity.amountMl) {
-                      details.push(
-                        formatVolumeDisplay(
-                          activity.amountMl,
-                          userUnitPref,
-                          true,
-                        ),
-                      );
-                    }
-
-                    // Add diaper type details
-                    if (activity.type === 'diaper' && activity.details) {
-                      const diaperDetails = activity.details as {
-                        type?: string;
-                        wet?: boolean;
-                        dirty?: boolean;
-                        hasRash?: boolean;
-                        isGassy?: boolean;
-                      };
-                      if (diaperDetails.type === 'wet') {
-                        details.push('Pee');
-                      } else if (diaperDetails.type === 'dirty') {
-                        details.push('Poop');
-                      } else if (diaperDetails.type === 'both') {
-                        details.push('Both');
-                      } else if (diaperDetails.wet && diaperDetails.dirty) {
-                        details.push('Both');
-                      } else if (diaperDetails.wet) {
-                        details.push('Pee');
-                      } else if (diaperDetails.dirty) {
-                        details.push('Poop');
-                      }
-
-                      // Add gassy indicator
-                      if (diaperDetails.isGassy) {
-                        details.push('Gassy');
-                      }
-
-                      // Add rash indicator
-                      if (diaperDetails.hasRash) {
-                        details.push('Rash');
-                      }
-                    }
-
-                    // Add doctor visit details
-                    if (activity.type === 'doctor_visit' && activity.details) {
-                      const visitDetails = activity.details as {
-                        visitType?: string;
-                        doctorName?: string;
-                        weightKg?: string;
-                        lengthCm?: string;
-                        vaccinations?: string[];
-                      };
-                      if (visitDetails.visitType) {
-                        const typeMap: Record<string, string> = {
-                          'follow-up': 'Follow-up',
-                          other: 'Visit',
-                          sick: 'Sick visit',
-                          'well-baby': 'Well-baby checkup',
-                        };
-                        details.push(
-                          typeMap[visitDetails.visitType] ||
-                            visitDetails.visitType,
-                        );
-                      }
-                      if (visitDetails.doctorName) {
-                        details.push(`Dr. ${visitDetails.doctorName}`);
-                      }
-                      if (visitDetails.weightKg) {
-                        const weightNum = Number.parseFloat(
-                          visitDetails.weightKg,
-                        );
-                        if (!Number.isNaN(weightNum)) {
-                          details.push(
-                            formatWeightDisplay(weightNum, measurementUnit),
-                          );
-                        }
-                      }
-                      if (visitDetails.lengthCm) {
-                        const lengthNum = Number.parseFloat(
-                          visitDetails.lengthCm,
-                        );
-                        if (!Number.isNaN(lengthNum)) {
-                          details.push(
-                            formatLengthDisplay(lengthNum, measurementUnit),
-                          );
-                        }
-                      }
-                      if (
-                        visitDetails.vaccinations &&
-                        visitDetails.vaccinations.length > 0
-                      ) {
-                        details.push(
-                          `${visitDetails.vaccinations.length} vaccine${visitDetails.vaccinations.length > 1 ? 's' : ''}`,
-                        );
-                      }
-                    }
-                  } else if (item.type === 'milestone') {
-                    const milestone = item.data;
-                    itemTitle = milestone.title;
-                    itemNotes = milestone.description || '';
-                    itemId = milestone.id;
-                  } else if (item.type === 'chat') {
-                    const chat = item.data;
-                    itemTitle = 'Chat';
-                    itemNotes =
-                      chat.content.length > 100
-                        ? `${chat.content.slice(0, 100)}...`
-                        : chat.content;
-                    itemId = chat.id;
+                  // Extract user information
+                  if (activity.user) {
+                    const firstName = activity.user.firstName || '';
+                    const lastName = activity.user.lastName || '';
+                    userName = firstName
+                      ? `${firstName}${lastName ? ` ${lastName}` : ''}`
+                      : activity.user.email;
+                    userAvatar = activity.user.avatarUrl;
+                    userInitials = firstName
+                      ? `${firstName[0]}${lastName?.[0] || ''}`
+                      : activity.user.email[0]?.toUpperCase() || '?';
                   }
 
-                  const detailsText =
-                    details.length > 0 ? ` / ${details.join(', ')}` : '';
-
-                  // Calculate time gap from previous item
-                  const previousItem = index > 0 ? dayItems[index - 1] : null;
-                  const timeGapMinutes = previousItem
-                    ? differenceInMinutes(previousItem.timestamp, itemDate)
-                    : 0;
-                  const showTimeGap = timeGapMinutes >= 15;
-
-                  const timelineItemKey =
-                    itemId && itemId.length > 0
-                      ? `${itemId}-${item.timestamp.getTime()}`
-                      : `${item.type}-${item.timestamp.getTime()}-${index}`;
-
-                  return (
-                    <div key={timelineItemKey}>
-                      {showTimeGap && (
-                        <div className="flex items-center gap-3 py-2">
-                          <div className="h-px bg-border/50 flex-1" />
-                          <span className="text-xs text-muted-foreground/60 font-medium">
-                            {formatTimeGap(timeGapMinutes)}
-                          </span>
-                          <div className="h-px bg-border/50 flex-1" />
-                        </div>
-                      )}
-                      <button
-                        className={`flex items-start gap-3 p-3.5 rounded-xl bg-card/50 border-l-4 ${colorClass} ${
-                          isOptimistic
-                            ? 'opacity-100 animate-pulse cursor-not-allowed'
-                            : 'opacity-60 hover:opacity-90 cursor-pointer'
-                        } transition-all duration-200 hover:scale-[1.01] hover:shadow-sm w-full text-left`}
-                        disabled={isOptimistic}
-                        onClick={() => !isOptimistic && handleItemClick(item)}
-                        type="button"
-                      >
-                        <div
-                          className={`shrink-0 p-2 rounded-lg ${isOptimistic ? 'bg-primary/20' : 'bg-muted/40'}`}
-                        >
-                          {isOptimistic ? (
-                            <Icons.Spinner className="size-4 text-primary" />
-                          ) : (
-                            <Icon className={`size-4 ${iconColorClass}`} />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0 flex items-center gap-2">
-                              <h4
-                                className={`text-sm font-medium ${item.type === 'activity' ? 'capitalize' : ''} ${isOptimistic ? 'text-foreground' : ''}`}
-                              >
-                                {itemTitle}
-                                {detailsText && (
-                                  <span className="text-muted-foreground font-normal">
-                                    {detailsText}
-                                  </span>
-                                )}
-                              </h4>
-                              {isSkipped && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground shrink-0">
-                                  Skipped
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-start gap-2 shrink-0">
-                              <div className="flex flex-col items-end gap-0.5">
-                                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                  {absoluteTime}
-                                </span>
-                                <span className="text-xs text-muted-foreground/70 font-mono whitespace-nowrap">
-                                  {isOptimistic ? 'Just now' : relativeTime}
-                                </span>
-                              </div>
-                              {item.type === 'activity' && userName && (
-                                <Avatar className="size-6 -mt-1">
-                                  <AvatarImage
-                                    alt={userName}
-                                    src={userAvatar || ''}
-                                  />
-                                  <AvatarFallback className="text-[10px]">
-                                    {userInitials}
-                                  </AvatarFallback>
-                                </Avatar>
-                              )}
-                            </div>
-                          </div>
-                          {getDisplayNotes(itemNotes) && (
-                            <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-                              {getDisplayNotes(itemNotes)}
-                            </p>
-                          )}
-                          {isOptimistic && (
-                            <p className="text-xs text-primary mt-1">
-                              Saving...
-                            </p>
-                          )}
-                        </div>
-                      </button>
-                    </div>
+                  // Check if activity is skipped
+                  isSkipped = Boolean(
+                    activity.details &&
+                      'skipped' in activity.details &&
+                      activity.details.skipped === true,
                   );
-                })}
-              </div>
+
+                  if (activity.duration) {
+                    // Format sleep duration as hours and minutes, others as minutes
+                    if (activity.type === 'sleep') {
+                      details.push(
+                        formatMinutesToHoursMinutes(activity.duration),
+                      );
+                    } else {
+                      let durationText = `${activity.duration} min`;
+                      // Add (L) or (R) indicator for nursing activities
+                      if (
+                        activity.type === 'nursing' &&
+                        activity.details &&
+                        'side' in activity.details
+                      ) {
+                        const side = (
+                          activity.details as {
+                            side?: 'left' | 'right' | 'both';
+                          }
+                        ).side;
+                        if (side && side !== 'both') {
+                          durationText += ` (${side === 'left' ? 'L' : 'R'})`;
+                        }
+                      }
+                      details.push(durationText);
+                    }
+                  }
+                  if (activity.amountMl) {
+                    details.push(
+                      formatVolumeDisplay(
+                        activity.amountMl,
+                        userUnitPref,
+                        true,
+                      ),
+                    );
+                  }
+
+                  // Add diaper type details
+                  if (activity.type === 'diaper' && activity.details) {
+                    const diaperDetails = activity.details as {
+                      type?: string;
+                      wet?: boolean;
+                      dirty?: boolean;
+                      hasRash?: boolean;
+                      isGassy?: boolean;
+                    };
+                    if (diaperDetails.type === 'wet') {
+                      details.push('Pee');
+                    } else if (diaperDetails.type === 'dirty') {
+                      details.push('Poop');
+                    } else if (diaperDetails.type === 'both') {
+                      details.push('Both');
+                    } else if (diaperDetails.wet && diaperDetails.dirty) {
+                      details.push('Both');
+                    } else if (diaperDetails.wet) {
+                      details.push('Pee');
+                    } else if (diaperDetails.dirty) {
+                      details.push('Poop');
+                    }
+
+                    // Add gassy indicator
+                    if (diaperDetails.isGassy) {
+                      details.push('Gassy');
+                    }
+
+                    // Add rash indicator
+                    if (diaperDetails.hasRash) {
+                      details.push('Rash');
+                    }
+                  }
+
+                  // Add doctor visit details
+                  if (activity.type === 'doctor_visit' && activity.details) {
+                    const visitDetails = activity.details as {
+                      visitType?: string;
+                      doctorName?: string;
+                      weightKg?: string;
+                      lengthCm?: string;
+                      vaccinations?: string[];
+                    };
+                    if (visitDetails.visitType) {
+                      const typeMap: Record<string, string> = {
+                        'follow-up': 'Follow-up',
+                        other: 'Visit',
+                        sick: 'Sick visit',
+                        'well-baby': 'Well-baby checkup',
+                      };
+                      details.push(
+                        typeMap[visitDetails.visitType] ||
+                          visitDetails.visitType,
+                      );
+                    }
+                    if (visitDetails.doctorName) {
+                      details.push(`Dr. ${visitDetails.doctorName}`);
+                    }
+                    if (visitDetails.weightKg) {
+                      const weightNum = Number.parseFloat(
+                        visitDetails.weightKg,
+                      );
+                      if (!Number.isNaN(weightNum)) {
+                        details.push(
+                          formatWeightDisplay(weightNum, measurementUnit),
+                        );
+                      }
+                    }
+                    if (visitDetails.lengthCm) {
+                      const lengthNum = Number.parseFloat(
+                        visitDetails.lengthCm,
+                      );
+                      if (!Number.isNaN(lengthNum)) {
+                        details.push(
+                          formatLengthDisplay(lengthNum, measurementUnit),
+                        );
+                      }
+                    }
+                    if (
+                      visitDetails.vaccinations &&
+                      visitDetails.vaccinations.length > 0
+                    ) {
+                      details.push(
+                        `${visitDetails.vaccinations.length} vaccine${visitDetails.vaccinations.length > 1 ? 's' : ''}`,
+                      );
+                    }
+                  }
+                } else if (item.type === 'milestone') {
+                  const milestone = item.data;
+                  itemTitle = milestone.title;
+                  itemNotes = milestone.description || '';
+                  itemId = milestone.id;
+                } else if (item.type === 'chat') {
+                  const chat = item.data;
+                  itemTitle = 'Chat';
+                  itemNotes =
+                    chat.content.length > 100
+                      ? `${chat.content.slice(0, 100)}...`
+                      : chat.content;
+                  itemId = chat.id;
+                }
+
+                const detailsText =
+                  details.length > 0 ? ` / ${details.join(', ')}` : '';
+
+                // Calculate time gap from previous item
+                const previousItem = index > 0 ? dayItems[index - 1] : null;
+                const timeGapMinutes = previousItem
+                  ? differenceInMinutes(previousItem.timestamp, itemDate)
+                  : 0;
+                const showTimeGap = timeGapMinutes >= 15;
+
+                const timelineItemKey =
+                  itemId && itemId.length > 0
+                    ? `${itemId}-${item.timestamp.getTime()}`
+                    : `${item.type}-${item.timestamp.getTime()}-${index}`;
+
+                return (
+                  <div key={timelineItemKey}>
+                    {showTimeGap && (
+                      <div className="flex items-center gap-3 py-2">
+                        <div className="h-px bg-border/50 flex-1" />
+                        <span className="text-xs text-muted-foreground/60 font-medium">
+                          {formatTimeGap(timeGapMinutes)}
+                        </span>
+                        <div className="h-px bg-border/50 flex-1" />
+                      </div>
+                    )}
+                    <button
+                      className={`flex items-start gap-3 p-3.5 rounded-xl bg-card/50 border-l-4 ${colorClass} ${
+                        isOptimistic
+                          ? 'opacity-100 animate-pulse cursor-not-allowed'
+                          : 'opacity-60 hover:opacity-90 cursor-pointer'
+                      } transition-all duration-200 hover:scale-[1.01] hover:shadow-sm w-full text-left`}
+                      disabled={isOptimistic}
+                      onClick={() => !isOptimistic && handleItemClick(item)}
+                      type="button"
+                    >
+                      <div
+                        className={`shrink-0 p-2 rounded-lg ${isOptimistic ? 'bg-primary/20' : 'bg-muted/40'}`}
+                      >
+                        {isOptimistic ? (
+                          <Icons.Spinner className="size-4 text-primary" />
+                        ) : (
+                          <Icon className={`size-4 ${iconColorClass}`} />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0 flex items-center gap-2">
+                            <h4
+                              className={`text-sm font-medium ${item.type === 'activity' ? 'capitalize' : ''} ${isOptimistic ? 'text-foreground' : ''}`}
+                            >
+                              {itemTitle}
+                              {detailsText && (
+                                <span className="text-muted-foreground font-normal">
+                                  {detailsText}
+                                </span>
+                              )}
+                            </h4>
+                            {isSkipped && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground shrink-0">
+                                Skipped
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-start gap-2 shrink-0">
+                            <div className="flex flex-col items-end gap-0.5">
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                {absoluteTime}
+                              </span>
+                              <span className="text-xs text-muted-foreground/70 font-mono whitespace-nowrap">
+                                {isOptimistic ? 'Just now' : relativeTime}
+                              </span>
+                            </div>
+                            {item.type === 'activity' && userName && (
+                              <Avatar className="size-6 -mt-1">
+                                <AvatarImage
+                                  alt={userName}
+                                  src={userAvatar || ''}
+                                />
+                                <AvatarFallback className="text-[10px]">
+                                  {userInitials}
+                                </AvatarFallback>
+                              </Avatar>
+                            )}
+                          </div>
+                        </div>
+                        {getDisplayNotes(itemNotes) && (
+                          <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+                            {getDisplayNotes(itemNotes)}
+                          </p>
+                        )}
+                        {isOptimistic && (
+                          <p className="text-xs text-primary mt-1">Saving...</p>
+                        )}
+                      </div>
+                    </button>
+                  </div>
+                );
+              })}
             </div>
-          );
-        },
-      )}
+          </div>
+        );
+      })}
 
       {/* Infinite scroll trigger */}
       <div className="py-4" ref={loadMoreRef}>
