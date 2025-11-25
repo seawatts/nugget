@@ -21,7 +21,9 @@ import {
   PredictiveCardSkeleton,
   PredictiveInfoDrawer,
 } from '../shared/components/predictive-cards';
+import { PredictiveProgressTrack } from '../shared/components/predictive-progress-track';
 import { TimelineDrawerWrapper } from '../shared/components/timeline-drawer-wrapper';
+import { getSleepDailyProgress } from '../shared/daily-progress';
 import { formatMinutesToHoursMinutes } from '../shared/time-formatting-utils';
 import { useActivityMutations } from '../use-activity-mutations';
 import { quickLogSleepAction } from './actions';
@@ -53,15 +55,26 @@ export function QuickActionSleepCard({
   // Get optimistic activities from store
   const optimisticActivities = useOptimisticActivitiesStore.use.activities();
 
-  // Filter to today's activities for goal display
-  const todaysActivitiesData = allActivities?.filter((activity) => {
+  const mergedActivities = useMemo(() => {
+    const map = new Map<string, typeof Activities.$inferSelect>();
+    (allActivities ?? []).forEach((activity) => {
+      map.set(activity.id, activity);
+    });
+    optimisticActivities.forEach((activity) => {
+      map.set(activity.id, activity);
+    });
+    return Array.from(map.values());
+  }, [allActivities, optimisticActivities]);
+
+  // Filter to today's activities for trend display
+  const todaysActivitiesData = mergedActivities.filter((activity) => {
     const activityDate = new Date(activity.startTime);
     return activityDate >= startOfDay(new Date());
   });
 
   // Filter to last 7 days for trend data
   const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
-  const last7DaysActivities = allActivities?.filter((activity) => {
+  const last7DaysActivities = mergedActivities.filter((activity) => {
     const activityDate = new Date(activity.startTime);
     return activityDate >= sevenDaysAgo;
   });
@@ -120,6 +133,44 @@ export function QuickActionSleepCard({
         recentActivities: queryData.recentActivities,
       }
     : null;
+
+  const babyAgeDays = data?.babyAgeDays ?? null;
+
+  const activitiesForProgress = useMemo(() => {
+    if (inProgressActivity) {
+      return [...mergedActivities, inProgressActivity];
+    }
+    return mergedActivities;
+  }, [inProgressActivity, mergedActivities]);
+
+  const sleepProgress = useMemo(
+    () =>
+      getSleepDailyProgress({
+        activities: activitiesForProgress,
+        babyAgeDays,
+      }),
+    [activitiesForProgress, babyAgeDays],
+  );
+
+  const formatSleepGoalLabel = (minutes: number | null | undefined) => {
+    if (!minutes || minutes <= 0) return null;
+    if (minutes >= 60) {
+      const hours = minutes / 60;
+      return Number.isInteger(hours) ? `${hours}h` : `${hours.toFixed(1)}h`;
+    }
+    return `${minutes}m`;
+  };
+
+  const sleepStartLabel =
+    typeof sleepProgress?.currentValue === 'number'
+      ? `${formatSleepGoalLabel(sleepProgress.currentValue) ?? '0h'} Today`
+      : typeof sleepProgress?.goalValue === 'number'
+        ? '0h Today'
+        : null;
+  const sleepEndLabel =
+    typeof sleepProgress?.goalValue === 'number'
+      ? `Goal ${formatSleepGoalLabel(sleepProgress.goalValue)}`
+      : null;
 
   // Find the most recent sleep activity with user info
   const lastSleepActivity = useMemo(() => {
@@ -203,7 +254,7 @@ export function QuickActionSleepCard({
 
   if (!data) return null;
 
-  const { prediction, babyAgeDays } = data;
+  const { prediction } = data;
 
   // Format time displays
   const nextTimeDistance = formatDistanceToNow(prediction.nextSleepTime, {
@@ -492,9 +543,8 @@ export function QuickActionSleepCard({
 
     const now = new Date();
     const startTime = new Date(inProgressActivity.startTime);
-    const durationMinutes = Math.floor(
-      (now.getTime() - startTime.getTime()) / (1000 * 60),
-    );
+    const elapsedMinutes = (now.getTime() - startTime.getTime()) / (1000 * 60);
+    const durationMinutes = Math.max(1, Math.ceil(elapsedMinutes));
 
     // Create optimistic completed activity for immediate UI feedback
     const completedActivity = {
@@ -579,6 +629,12 @@ export function QuickActionSleepCard({
 
   const sleepTheme = getActivityTheme('sleep');
   const SleepIcon = sleepTheme.icon;
+  const currentSleepStartTime = inProgressActivity
+    ? formatTimeWithPreference(
+        new Date(inProgressActivity.startTime),
+        timeFormat,
+      )
+    : null;
 
   // Calculate today's sleep statistics for goal display (for stats drawer)
   // const todaysStats = calculateTodaysSleepStats(todaysActivitiesData ?? []);
@@ -598,30 +654,27 @@ export function QuickActionSleepCard({
           `bg-${sleepTheme.color} ${sleepTheme.textColor}`,
         )}
       >
-        <PredictiveCardHeader
-          icon={SleepIcon}
-          isFetching={isFetching && !isLoading}
-          onAddClick={handleAddClick}
-          onInfoClick={handleInfoClick}
-          onStatsClick={handleStatsClick}
-          quickLogEnabled={false}
-          showAddIcon={true}
-          showStatsIcon={userData?.showActivityGoals ?? true}
-          title="Sleep"
-        />
+        <div className="flex flex-col gap-6">
+          <PredictiveCardHeader
+            icon={SleepIcon}
+            isFetching={isFetching && !isLoading}
+            onAddClick={handleAddClick}
+            onInfoClick={handleInfoClick}
+            onStatsClick={handleStatsClick}
+            quickLogEnabled={false}
+            showAddIcon={true}
+            showStatsIcon={userData?.showActivityGoals ?? true}
+            title="Sleep"
+          />
 
-        {/* Timeline Layout - Full Width */}
-        <div className="relative py-4 mt-4">
-          {/* Timeline dots and connecting line */}
-          <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-4">
-            <div className="w-2.5 h-2.5 rounded-full bg-white/40 shrink-0" />
-            <div className="flex-1 border-t border-white/20 mx-2" />
-            <div className="w-2.5 h-2.5 rounded-full bg-white/40 shrink-0" />
-          </div>
+          <PredictiveProgressTrack
+            endLabel={sleepEndLabel ?? undefined}
+            progressPercent={sleepProgress?.percentage}
+            srLabel={sleepProgress?.srLabel}
+            startLabel={sleepStartLabel ?? undefined}
+          />
 
-          {/* Two-column content with justify-between */}
-          <div className="flex items-start justify-between pt-6 px-2">
-            {/* Left Column: Last Sleep or Currently Sleeping */}
+          <div className="flex items-start justify-between px-2">
             {inProgressActivity ? (
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
@@ -630,8 +683,14 @@ export function QuickActionSleepCard({
                     Sleeping
                   </span>
                 </div>
-                <div className="text-sm opacity-70 leading-tight tabular-nums">
-                  {formatElapsedTime(elapsedTime)}
+                <div className="flex flex-wrap items-center gap-1 text-sm opacity-70 leading-tight tabular-nums">
+                  <span>{formatElapsedTime(elapsedTime)}</span>
+                  {currentSleepStartTime && (
+                    <>
+                      <span>•</span>
+                      <span>{currentSleepStartTime}</span>
+                    </>
+                  )}
                 </div>
               </div>
             ) : lastTimeDistance && lastExactTime && lastSleepActivity ? (
@@ -659,7 +718,7 @@ export function QuickActionSleepCard({
                       </>
                     )}
                   {lastSleepUser && (
-                    <Avatar className="size-4 shrink-0 ml-1">
+                    <Avatar className="ml-1 size-4 shrink-0">
                       <AvatarImage
                         alt={lastSleepUser.name}
                         src={lastSleepUser.avatar || ''}
@@ -677,7 +736,6 @@ export function QuickActionSleepCard({
               </div>
             )}
 
-            {/* Right Column: Next Sleep */}
             <button
               className="space-y-1 text-right cursor-pointer hover:opacity-80 transition-opacity"
               onClick={handleInfoClick}
@@ -697,69 +755,68 @@ export function QuickActionSleepCard({
               </div>
             </button>
           </div>
-        </div>
 
-        {/* Quick Action Buttons - 3 buttons in a grid */}
-        <div className="grid grid-cols-3 gap-2 mt-4">
-          <Button
-            className={cn(
-              'flex flex-col items-center justify-center h-auto py-3 gap-1',
-              'bg-white/20 hover:bg-white/30 active:bg-white/40',
-              sleepTheme.textColor,
-            )}
-            disabled={creatingType !== null}
-            onClick={handleQuick1Hour}
-            variant="ghost"
-          >
-            {creatingType === '1hr' ? (
-              <Icons.Spinner className="size-5" />
-            ) : (
-              <Clock className="size-5" />
-            )}
-            <span className="text-xs font-medium">1 Hour</span>
-          </Button>
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              className={cn(
+                'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                sleepTheme.textColor,
+              )}
+              disabled={creatingType !== null}
+              onClick={handleQuick1Hour}
+              variant="ghost"
+            >
+              {creatingType === '1hr' ? (
+                <Icons.Spinner className="size-5" />
+              ) : (
+                <Clock className="size-5" />
+              )}
+              <span className="text-xs font-medium">1 Hour</span>
+            </Button>
 
-          <Button
-            className={cn(
-              'flex flex-col items-center justify-center h-auto py-3 gap-1',
-              'bg-white/20 hover:bg-white/30 active:bg-white/40',
-              sleepTheme.textColor,
-            )}
-            disabled={creatingType !== null}
-            onClick={handleQuick2Hours}
-            variant="ghost"
-          >
-            {creatingType === '2hr' ? (
-              <Icons.Spinner className="size-5" />
-            ) : (
-              <Clock className="size-5" />
-            )}
-            <span className="text-xs font-medium">2 Hours</span>
-          </Button>
+            <Button
+              className={cn(
+                'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                sleepTheme.textColor,
+              )}
+              disabled={creatingType !== null}
+              onClick={handleQuick2Hours}
+              variant="ghost"
+            >
+              {creatingType === '2hr' ? (
+                <Icons.Spinner className="size-5" />
+              ) : (
+                <Clock className="size-5" />
+              )}
+              <span className="text-xs font-medium">2 Hours</span>
+            </Button>
 
-          <Button
-            className={cn(
-              'flex flex-col items-center justify-center h-auto py-3 gap-1',
-              inProgressActivity
-                ? 'bg-destructive/90 hover:bg-destructive active:bg-destructive text-destructive-foreground'
-                : 'bg-white/20 hover:bg-white/30 active:bg-white/40',
-              inProgressActivity ? '' : sleepTheme.textColor,
-            )}
-            disabled={creatingType !== null}
-            onClick={handleStartTimer}
-            variant="ghost"
-          >
-            {creatingType === 'timer' ? (
-              <Icons.Spinner className="size-5" />
-            ) : inProgressActivity ? (
-              <StopCircle className="size-5" />
-            ) : (
-              <Timer className="size-5" />
-            )}
-            <span className="text-xs font-medium">
-              {inProgressActivity ? 'Stop Timer' : 'Start Timer'}
-            </span>
-          </Button>
+            <Button
+              className={cn(
+                'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                inProgressActivity
+                  ? 'bg-destructive/90 hover:bg-destructive active:bg-destructive text-destructive-foreground'
+                  : 'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                inProgressActivity ? '' : sleepTheme.textColor,
+              )}
+              disabled={creatingType !== null}
+              onClick={handleStartTimer}
+              variant="ghost"
+            >
+              {creatingType === 'timer' ? (
+                <Icons.Spinner className="size-5" />
+              ) : inProgressActivity ? (
+                <StopCircle className="size-5" />
+              ) : (
+                <Timer className="size-5" />
+              )}
+              <span className="text-xs font-medium">
+                {inProgressActivity ? 'Stop Timer' : 'Start Timer'}
+              </span>
+            </Button>
+          </div>
         </div>
       </Card>
 

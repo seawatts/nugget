@@ -6,11 +6,13 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   Baby,
+  Bath,
   Droplet,
   Droplets,
   Milk,
   Moon,
   Pill,
+  Scissors,
   Stethoscope,
   Thermometer,
 } from 'lucide-react';
@@ -30,7 +32,8 @@ export type ActivityType =
   | 'growth'
   | 'potty'
   | 'doctor_visit'
-  | 'vitamin_d';
+  | 'vitamin_d'
+  | 'nail_trimming';
 
 // Activity types that support quick logging
 export type QuickLogActivityType =
@@ -61,7 +64,7 @@ export const ACTIVITY_THEMES: Record<ActivityType, ActivityTheme> = {
   bath: {
     color: 'activity-bath',
     description: 'Bath time',
-    icon: Droplets,
+    icon: Bath,
     label: 'Bath',
     textColor: 'text-activity-bath-foreground',
   },
@@ -106,6 +109,13 @@ export const ACTIVITY_THEMES: Record<ActivityType, ActivityTheme> = {
     icon: Milk,
     label: 'Medicine',
     textColor: 'text-activity-medicine-foreground',
+  },
+  nail_trimming: {
+    color: 'activity-nail-trimming',
+    description: 'Nail trimming',
+    icon: Scissors,
+    label: 'Nail Trimming',
+    textColor: 'text-activity-nail-trimming-foreground',
   },
   nursing: {
     color: 'activity-feeding',

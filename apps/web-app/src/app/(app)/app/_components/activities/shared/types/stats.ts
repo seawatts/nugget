@@ -63,12 +63,17 @@ export interface VitaminDDay {
 
 export type MetricType = 'count' | 'amount' | 'hours';
 export type AmountType = 'total' | 'average';
+export type TrendTimeRange = '24h' | '7d' | '2w' | '1m' | '3m' | '6m';
+export type TimelineWeekRange = 'this_week' | 'last_week' | 'two_weeks_ago';
+export type HeatmapRangeValue = '7d' | '14d' | '30d' | '60d' | '90d';
 export type ActivityType =
   | 'feeding'
   | 'diaper'
   | 'sleep'
   | 'pumping'
-  | 'vitamin_d';
+  | 'vitamin_d'
+  | 'nail_trimming'
+  | 'bath';
 
 // Time range options for comparison charts
 export type ComparisonTimeRange =
@@ -94,6 +99,28 @@ export const TIME_RANGE_OPTIONS: TimeRangeOption[] = [
   { hours: 168, label: '7 Days', value: '7d' },
   { hours: 336, label: '2 Weeks', value: '2w' },
   { hours: 720, label: '1 Month', value: '1m' },
+];
+
+export const TIMELINE_WEEK_OPTIONS: Array<{
+  label: string;
+  offsetDays: number;
+  value: TimelineWeekRange;
+}> = [
+  { label: 'This Week', offsetDays: 0, value: 'this_week' },
+  { label: 'Last Week', offsetDays: 7, value: 'last_week' },
+  { label: 'Two Weeks Ago', offsetDays: 14, value: 'two_weeks_ago' },
+];
+
+export const HEATMAP_RANGE_OPTIONS: Array<{
+  days: number;
+  label: string;
+  value: HeatmapRangeValue;
+}> = [
+  { days: 7, label: '7 Days', value: '7d' },
+  { days: 14, label: '14 Days', value: '14d' },
+  { days: 30, label: '30 Days', value: '30d' },
+  { days: 60, label: '60 Days', value: '60d' },
+  { days: 90, label: '90 Days', value: '90d' },
 ];
 
 // Frequency visualization types

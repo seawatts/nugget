@@ -1,5 +1,5 @@
 import type { Activities } from '@nugget/db/schema';
-import { format } from 'date-fns';
+import { startOfDay, startOfHour, startOfWeek } from 'date-fns';
 import { calculateWeightedInterval } from '../shared/adaptive-weighting';
 import { getFeedingIntervalByAge } from './feeding-intervals';
 
@@ -253,6 +253,11 @@ export function calculateFeedingTrendData(
 
   const now = new Date();
 
+  const isFeedingActivity = (activityType: string | null | undefined) =>
+    activityType === 'feeding' ||
+    activityType === 'bottle' ||
+    activityType === 'nursing';
+
   if (timeRange === '24h') {
     // For 24h view, group by hour
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -261,9 +266,7 @@ export function calculateFeedingTrendData(
     const recentFeedings = activities.filter((activity) => {
       const activityDate = new Date(activity.startTime);
       const isRecent = activityDate >= twentyFourHoursAgo;
-      const isFeeding =
-        activity.type === 'bottle' || activity.type === 'nursing';
-      return isRecent && isFeeding;
+      return isRecent && isFeedingActivity(activity.type);
     });
 
     // Group by hour
@@ -271,8 +274,9 @@ export function calculateFeedingTrendData(
 
     for (const activity of recentFeedings) {
       const date = new Date(activity.startTime);
-      // Format as "yyyy-MM-dd HH:00" for hourly grouping
-      const hourKey = format(date, 'yyyy-MM-dd HH:00');
+      // Normalize to the start of the hour in the user's local timezone
+      const hourStart = startOfHour(date);
+      const hourKey = hourStart.toISOString();
 
       if (!statsByHour.has(hourKey)) {
         statsByHour.set(hourKey, { count: 0, totalMl: 0 });
@@ -292,7 +296,8 @@ export function calculateFeedingTrendData(
     const result: Array<{ date: string; count: number; totalMl: number }> = [];
     for (let i = 23; i >= 0; i -= 1) {
       const date = new Date(now.getTime() - i * 60 * 60 * 1000);
-      const hourKey = format(date, 'yyyy-MM-dd HH:00');
+      const hourStart = startOfHour(date);
+      const hourKey = hourStart.toISOString();
       const stats = statsByHour.get(hourKey) || { count: 0, totalMl: 0 };
       result.push({
         count: stats.count,
@@ -324,8 +329,7 @@ export function calculateFeedingTrendData(
   const recentFeedings = activities.filter((activity) => {
     const activityDate = new Date(activity.startTime);
     const isRecent = activityDate >= startDate;
-    const isFeeding = activity.type === 'bottle' || activity.type === 'nursing';
-    return isRecent && isFeeding;
+    return isRecent && isFeedingActivity(activity.type);
   });
 
   if (useWeeklyGrouping) {
@@ -334,13 +338,10 @@ export function calculateFeedingTrendData(
 
     for (const activity of recentFeedings) {
       const date = new Date(activity.startTime);
-      // Get the Monday of the week for this date
-      const dayOfWeek = date.getDay();
-      const diff = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek; // Adjust so Monday is first day
-      const weekStart = new Date(date);
-      weekStart.setDate(date.getDate() + diff);
+      // Get the Monday of the week for this date in the user's local timezone
+      const weekStart = startOfWeek(date, { weekStartsOn: 1 });
       weekStart.setHours(0, 0, 0, 0);
-      const weekKey = format(weekStart, 'yyyy-MM-dd');
+      const weekKey = weekStart.toISOString();
 
       if (!statsByWeek.has(weekKey)) {
         statsByWeek.set(weekKey, { count: 0, totalMl: 0 });
@@ -361,12 +362,9 @@ export function calculateFeedingTrendData(
     const numWeeks = Math.ceil((days ?? 7) / 7);
     for (let i = numWeeks - 1; i >= 0; i -= 1) {
       const date = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
-      const dayOfWeek = date.getDay();
-      const diff = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
-      const weekStart = new Date(date);
-      weekStart.setDate(date.getDate() + diff);
+      const weekStart = startOfWeek(date, { weekStartsOn: 1 });
       weekStart.setHours(0, 0, 0, 0);
-      const weekKey = format(weekStart, 'yyyy-MM-dd');
+      const weekKey = weekStart.toISOString();
       const stats = statsByWeek.get(weekKey) || { count: 0, totalMl: 0 };
       result.push({
         count: stats.count,
@@ -383,7 +381,8 @@ export function calculateFeedingTrendData(
 
   for (const activity of recentFeedings) {
     const date = new Date(activity.startTime);
-    const dateKey = format(date, 'yyyy-MM-dd');
+    const dateStart = startOfDay(date);
+    const dateKey = dateStart.toISOString();
 
     if (!statsByDate.has(dateKey)) {
       statsByDate.set(dateKey, { count: 0, totalMl: 0 });
@@ -403,7 +402,8 @@ export function calculateFeedingTrendData(
   const result: Array<{ date: string; count: number; totalMl: number }> = [];
   for (let i = (days ?? 7) - 1; i >= 0; i -= 1) {
     const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-    const dateKey = format(date, 'yyyy-MM-dd');
+    const dateStart = startOfDay(date);
+    const dateKey = dateStart.toISOString();
     const stats = statsByDate.get(dateKey) || { count: 0, totalMl: 0 };
     result.push({
       count: stats.count,

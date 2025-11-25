@@ -1,5 +1,11 @@
 import type { Activities } from '@nugget/db/schema';
-import { differenceInHours, getDay, getHours, startOfDay } from 'date-fns';
+import {
+  differenceInHours,
+  getDay,
+  getHours,
+  startOfDay,
+  subDays,
+} from 'date-fns';
 import type {
   FrequencyHeatmapData,
   FrequencyInsights,
@@ -59,14 +65,15 @@ export function calculateHourlyFrequency(
 export function calculateTimeBlockData(
   activities: Array<typeof Activities.$inferSelect>,
   days = 7,
+  startOffsetDays = 0,
 ): TimeBlockData[] {
   const timeBlocks: TimeBlockData[] = [];
-  const today = startOfDay(new Date());
+  const referenceDay = startOfDay(subDays(new Date(), startOffsetDays));
 
   // Process last N days
   for (let i = days - 1; i >= 0; i--) {
-    const currentDay = new Date(today);
-    currentDay.setDate(today.getDate() - i);
+    const currentDay = new Date(referenceDay);
+    currentDay.setDate(referenceDay.getDate() - i);
     const nextDay = new Date(currentDay);
     nextDay.setDate(currentDay.getDate() + 1);
 

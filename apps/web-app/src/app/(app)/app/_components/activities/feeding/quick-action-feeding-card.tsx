@@ -3,9 +3,7 @@
 import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
-import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
-import { Icons } from '@nugget/ui/custom/icons';
 import { cn } from '@nugget/ui/lib/utils';
 import { toast } from '@nugget/ui/sonner';
 import { formatDistanceToNow } from 'date-fns';
@@ -21,13 +19,20 @@ import {
   PredictiveCardSkeleton,
   PredictiveInfoDrawer,
 } from '../shared/components/predictive-cards';
+import { PredictiveProgressTrack } from '../shared/components/predictive-progress-track';
 import { StopSleepConfirmationDialog } from '../shared/components/stop-sleep-confirmation-dialog';
 import { TimelineDrawerWrapper } from '../shared/components/timeline-drawer-wrapper';
+import { getFeedingDailyProgress } from '../shared/daily-progress';
 import { useInProgressSleep } from '../shared/hooks/use-in-progress-sleep';
-import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
+import {
+  formatVolumeDisplay,
+  getVolumeUnit,
+  mlToOz,
+} from '../shared/volume-utils';
 import { autoStopInProgressSleepAction } from '../sleep/actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import { FeedingStatsDrawer } from './components';
+import { FeedingActionButtons } from './feeding-action-buttons';
 import { getFeedingLearningContent } from './learning-content';
 import { predictNextFeeding } from './prediction';
 import { TimelineFeedingDrawer } from './timeline-feeding-drawer';
@@ -84,6 +89,17 @@ export function QuickActionFeedingCard({
 
   // Get optimistic activities from store
   const optimisticActivities = useOptimisticActivitiesStore.use.activities();
+
+  const mergedActivities = useMemo(() => {
+    const map = new Map<string, typeof Activities.$inferSelect>();
+    (allActivities ?? []).forEach((activity) => {
+      map.set(activity.id, activity);
+    });
+    optimisticActivities.forEach((activity) => {
+      map.set(activity.id, activity);
+    });
+    return Array.from(map.values());
+  }, [allActivities, optimisticActivities]);
 
   // Use tRPC query for prediction data
   const {
@@ -145,6 +161,31 @@ export function QuickActionFeedingCard({
         recentActivities: queryData.recentActivities,
       }
     : null;
+
+  const feedingProgress = useMemo(
+    () =>
+      getFeedingDailyProgress({
+        activities: mergedActivities,
+        babyAgeDays: data?.babyAgeDays ?? null,
+        unitPreference: userUnitPref.toUpperCase() as 'ML' | 'OZ',
+      }),
+    [data?.babyAgeDays, mergedActivities, userUnitPref],
+  );
+
+  const feedingStartLabel =
+    typeof feedingProgress?.currentValue === 'number'
+      ? `${formatVolumeDisplay(feedingProgress.currentValue, userUnitPref)} ${userUnitPref} Today`
+      : `0 ${userUnitPref} Today`;
+  const feedingEndLabel =
+    typeof feedingProgress?.goalValue === 'number'
+      ? (() => {
+          const goalValue =
+            userUnitPref === 'OZ'
+              ? Math.floor(mlToOz(feedingProgress.goalValue))
+              : Math.round(feedingProgress.goalValue);
+          return `Goal ${goalValue} ${userUnitPref}`;
+        })()
+      : null;
 
   // Find the most recent feeding activity with user info
   const lastFeedingActivity = useMemo(() => {
@@ -864,29 +905,27 @@ export function QuickActionFeedingCard({
           `bg-${feedingTheme.color} ${feedingTheme.textColor}`,
         )}
       >
-        <PredictiveCardHeader
-          icon={FeedingIcon}
-          isFetching={isFetching && !isLoading}
-          onAddClick={handleAddClick}
-          onInfoClick={handleInfoClick}
-          onStatsClick={handleStatsClick}
-          quickLogEnabled={false}
-          showAddIcon={true}
-          showStatsIcon={userData?.showActivityGoals ?? true}
-          title="Feeding"
-        />
+        <div className="flex flex-col gap-6">
+          <PredictiveCardHeader
+            icon={FeedingIcon}
+            isFetching={isFetching && !isLoading}
+            onAddClick={handleAddClick}
+            onInfoClick={handleInfoClick}
+            onStatsClick={handleStatsClick}
+            quickLogEnabled={false}
+            showAddIcon={true}
+            showStatsIcon={userData?.showActivityGoals ?? true}
+            title="Feeding"
+          />
 
-        {/* Timeline Layout - Full Width */}
-        <div className="relative py-4 mt-4">
-          {/* Timeline dots and connecting line */}
-          <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-4">
-            <div className="w-2.5 h-2.5 rounded-full bg-white/40 shrink-0" />
-            <div className="flex-1 border-t border-white/20 mx-2" />
-            <div className="w-2.5 h-2.5 rounded-full bg-white/40 shrink-0" />
-          </div>
+          <PredictiveProgressTrack
+            endLabel={feedingEndLabel ?? undefined}
+            progressPercent={feedingProgress?.percentage}
+            srLabel={feedingProgress?.srLabel}
+            startLabel={feedingStartLabel ?? undefined}
+          />
 
-          {/* Two-column content with justify-between */}
-          <div className="flex items-start justify-between pt-6 px-2">
+          <div className="flex items-start justify-between px-2">
             {/* Left Column: Last Feeding */}
             {lastTimeDistance && lastExactTime && lastFeedingActivity ? (
               <button
@@ -915,9 +954,23 @@ export function QuickActionFeedingCard({
                         <> • {formatAmount(lastFeedingActivity.amountMl)}</>
                       )}
                     {lastFeedingActivity.type === 'nursing' &&
-                      lastFeedingActivity.duration && (
-                        <> • {lastFeedingActivity.duration} min</>
-                      )}
+                      lastFeedingActivity.duration &&
+                      (() => {
+                        const details = lastFeedingActivity.details as
+                          | { side?: 'left' | 'right' | 'both' }
+                          | null
+                          | undefined;
+                        const side = details?.side;
+                        return (
+                          <>
+                            {' • '}
+                            {lastFeedingActivity.duration} min
+                            {side && side !== 'both' && (
+                              <> ({side === 'left' ? 'L' : 'R'})</>
+                            )}
+                          </>
+                        );
+                      })()}
                   </span>
                   {lastFeedingUser && (
                     <Avatar className="size-4 shrink-0">
@@ -957,83 +1010,24 @@ export function QuickActionFeedingCard({
               </div>
             </button>
           </div>
-        </div>
 
-        {/* Quick Action Buttons */}
-        <div className="grid grid-cols-3 gap-2 mt-4">
-          <Button
-            className={cn(
-              'flex flex-col items-center justify-center h-auto py-3 gap-1',
-              'bg-white/20 hover:bg-white/30 active:bg-white/40',
-              feedingTheme.textColor,
-            )}
-            disabled={creatingType !== null}
-            onClick={handleQuickBottle}
-            variant="ghost"
-          >
-            {creatingType === 'bottle' ? (
-              <Icons.Spinner className="size-5" />
-            ) : (
-              <Milk className="size-5" />
-            )}
-            <span className="text-xs font-medium">Bottle</span>
-            <span className="text-xs opacity-80">
-              (
-              {formatAmount(
+          <FeedingActionButtons
+            creatingType={creatingType}
+            feedingTheme={feedingTheme}
+            onBottleClick={handleQuickBottle}
+            onNursingLeftClick={handleQuickNursingLeft}
+            onNursingRightClick={handleQuickNursingRight}
+            suggestedAmount={
+              formatAmount(
                 prediction.suggestedAmount ||
                   getAgeBasedAmount(data?.babyAgeDays || null),
-              )}
-              )
-            </span>
-          </Button>
-
-          <Button
-            className={cn(
-              'flex flex-col items-center justify-center h-auto py-3 gap-1',
-              'bg-white/20 hover:bg-white/30 active:bg-white/40',
-              feedingTheme.textColor,
-            )}
-            disabled={creatingType !== null}
-            onClick={handleQuickNursingLeft}
-            variant="ghost"
-          >
-            {creatingType === 'nursing-left' ? (
-              <Icons.Spinner className="size-5" />
-            ) : (
-              <Droplet className="size-5" />
-            )}
-            <span className="text-xs font-medium">Nursing Left</span>
-            <span className="text-xs opacity-80">
-              (
-              {prediction.suggestedDuration ||
-                getAgeBasedDuration(data?.babyAgeDays || null)}{' '}
-              min)
-            </span>
-          </Button>
-
-          <Button
-            className={cn(
-              'flex flex-col items-center justify-center h-auto py-3 gap-1',
-              'bg-white/20 hover:bg-white/30 active:bg-white/40',
-              feedingTheme.textColor,
-            )}
-            disabled={creatingType !== null}
-            onClick={handleQuickNursingRight}
-            variant="ghost"
-          >
-            {creatingType === 'nursing-right' ? (
-              <Icons.Spinner className="size-5" />
-            ) : (
-              <Droplet className="size-5" />
-            )}
-            <span className="text-xs font-medium">Nursing Right</span>
-            <span className="text-xs opacity-80">
-              (
-              {prediction.suggestedDuration ||
-                getAgeBasedDuration(data?.babyAgeDays || null)}{' '}
-              min)
-            </span>
-          </Button>
+              ) || '4oz'
+            }
+            suggestedDuration={
+              prediction.suggestedDuration ||
+              getAgeBasedDuration(data?.babyAgeDays || null)
+            }
+          />
         </div>
       </Card>
 

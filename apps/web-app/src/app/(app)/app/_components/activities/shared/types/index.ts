@@ -7,14 +7,21 @@ export type {
   FrequencyHeatmapData,
   FrequencyInsights,
   FrequencyViewType,
+  HeatmapRangeValue,
   MetricType,
   SleepStatsComparison,
   StatsComparison,
   TimeBlockActivity,
   TimeBlockData,
+  TimelineWeekRange,
   TimeRangeOption,
   TrendData,
+  TrendTimeRange,
   VitaminDDay,
 } from './stats';
 
-export { TIME_RANGE_OPTIONS } from './stats';
+export {
+  HEATMAP_RANGE_OPTIONS,
+  TIME_RANGE_OPTIONS,
+  TIMELINE_WEEK_OPTIONS,
+} from './stats';

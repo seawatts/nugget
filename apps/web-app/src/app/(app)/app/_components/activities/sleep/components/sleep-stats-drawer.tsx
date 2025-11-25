@@ -21,7 +21,20 @@ import {
   StatsDrawerWrapper,
   TimeBlockChart,
 } from '../../shared/components/stats';
-import type { AmountType, TrendData } from '../../shared/types';
+import type {
+  AmountType,
+  HeatmapRangeValue,
+  TimelineWeekRange,
+  TrendData,
+} from '../../shared/types';
+import {
+  HEATMAP_RANGE_OPTIONS,
+  TIMELINE_WEEK_OPTIONS,
+} from '../../shared/types';
+import {
+  getCustomDateRangeLabel,
+  getDateRangeLabel,
+} from '../../shared/utils/date-range-utils';
 import {
   calculateHourlyFrequency,
   calculateTimeBlockData,
@@ -72,6 +85,29 @@ export function SleepStatsDrawer({
   const [selectedFamilyMemberId, setSelectedFamilyMemberId] = useState<
     string | 'all'
   >('all');
+  const [timelineRange, setTimelineRange] =
+    useState<TimelineWeekRange>('this_week');
+  const [heatmapRange, setHeatmapRange] = useState<HeatmapRangeValue>('30d');
+  const fallbackTimelineOption = TIMELINE_WEEK_OPTIONS[0] ?? {
+    label: 'This Week',
+    offsetDays: 0,
+    value: 'this_week',
+  };
+  const selectedTimelineOption =
+    TIMELINE_WEEK_OPTIONS.find((option) => option.value === timelineRange) ??
+    fallbackTimelineOption;
+  const fallbackHeatmapOption = HEATMAP_RANGE_OPTIONS.find(
+    (option) => option.value === '30d',
+  ) ??
+    HEATMAP_RANGE_OPTIONS[0] ?? {
+      days: 30,
+      label: '30 Days',
+      value: '30d',
+    };
+  const selectedHeatmapOption =
+    HEATMAP_RANGE_OPTIONS.find((option) => option.value === heatmapRange) ??
+    fallbackHeatmapOption;
+  const timelineOffsetDays = selectedTimelineOption.offsetDays;
 
   // Fetch family members for co-sleeper charts
   const { data: familyMembersData } = api.familyMembers.all.useQuery();
@@ -117,27 +153,45 @@ export function SleepStatsDrawer({
     [activities],
   );
 
-  // Filter to last 30 days for heatmap
-  const last30DaysSleepActivities = useMemo(() => {
-    const thirtyDaysAgo = subDays(new Date(), 30);
+  // Filter to selected range for heatmap
+  const heatmapSleepActivities = useMemo(() => {
+    const cutoff = subDays(new Date(), selectedHeatmapOption.days);
     return sleepActivities.filter(
-      (activity) => new Date(activity.startTime) >= thirtyDaysAgo,
+      (activity) => new Date(activity.startTime) >= cutoff,
     );
-  }, [sleepActivities]);
+  }, [selectedHeatmapOption, sleepActivities]);
 
   const frequencyHeatmapData = useMemo(
-    () => calculateHourlyFrequency(last30DaysSleepActivities),
-    [last30DaysSleepActivities],
+    () => calculateHourlyFrequency(heatmapSleepActivities),
+    [heatmapSleepActivities],
+  );
+  const heatmapDateRangeLabel = useMemo(
+    () => getCustomDateRangeLabel(selectedHeatmapOption.days),
+    [selectedHeatmapOption.days],
   );
 
   const timeBlockData = useMemo(
-    () => calculateTimeBlockData(sleepActivities, 7),
-    [sleepActivities],
+    () => calculateTimeBlockData(sleepActivities, 7, timelineOffsetDays),
+    [sleepActivities, timelineOffsetDays],
   );
 
   const frequencyInsights = useMemo(
     () => detectPatterns(sleepActivities),
     [sleepActivities],
+  );
+
+  const trendDateRangeLabel = useMemo(
+    () => getDateRangeLabel(trendTimeRange),
+    [trendTimeRange],
+  );
+
+  const coSleeperDateRangeLabel = useMemo(
+    () => getDateRangeLabel(coSleeperTimeRange),
+    [coSleeperTimeRange],
+  );
+  const timelineDateRangeLabel = useMemo(
+    () => getDateRangeLabel('7d', new Date(), timelineOffsetDays),
+    [timelineOffsetDays],
   );
 
   return (
@@ -155,7 +209,7 @@ export function SleepStatsDrawer({
                 Sleep Sessions
               </h3>
               <p className="text-xs text-muted-foreground">
-                Number of sleep sessions over time
+                {trendDateRangeLabel}
               </p>
             </div>
             <div className="flex gap-2">
@@ -230,7 +284,7 @@ export function SleepStatsDrawer({
                 Sleep Hours
               </h3>
               <p className="text-xs text-muted-foreground">
-                Sleep duration over time
+                {trendDateRangeLabel}
               </p>
             </div>
             <div className="flex gap-2">
@@ -311,7 +365,7 @@ export function SleepStatsDrawer({
                     Sessions
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Sessions by family member
+                    {coSleeperDateRangeLabel}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -467,7 +521,7 @@ export function SleepStatsDrawer({
                 <div>
                   <h3 className="text-sm font-medium text-foreground">Hours</h3>
                   <p className="text-xs text-muted-foreground">
-                    Duration by family member
+                    {coSleeperDateRangeLabel}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -629,10 +683,27 @@ export function SleepStatsDrawer({
           <div>
             <h3 className="text-sm font-medium text-foreground">Timeline</h3>
             <p className="text-xs text-muted-foreground">
-              When sleep occurs throughout the day
+              {timelineDateRangeLabel}
             </p>
           </div>
-          {/* Future: Add dropdown filters here */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                {selectedTimelineOption.label}
+                <ChevronDown className="ml-1 size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {TIMELINE_WEEK_OPTIONS.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  onClick={() => setTimelineRange(option.value)}
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <TimeBlockChart
           colorVar="var(--activity-sleep)"
@@ -647,10 +718,27 @@ export function SleepStatsDrawer({
           <div>
             <h3 className="text-sm font-medium text-foreground">Heatmap</h3>
             <p className="text-xs text-muted-foreground">
-              Frequency patterns by day and time
+              {heatmapDateRangeLabel}
             </p>
           </div>
-          {/* Future: Add dropdown filters here */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                {selectedHeatmapOption.label}
+                <ChevronDown className="ml-1 size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {HEATMAP_RANGE_OPTIONS.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  onClick={() => setHeatmapRange(option.value)}
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <FrequencyHeatmap
           colorVar="var(--activity-sleep)"

@@ -33,7 +33,6 @@ import { skipPumpingAction } from './actions';
 import { PumpingStatsDrawer } from './components';
 import { getPumpingLearningContent } from './learning-content';
 import { predictNextPumping } from './prediction';
-import { calculatePumpingTrendData } from './pumping-goals';
 import { getPumpingGuidanceByAge } from './pumping-intervals';
 
 interface PredictivePumpingCardProps {
@@ -218,11 +217,6 @@ export function PredictivePumpingCard({
     if (!ml) return null;
     return formatVolumeDisplay(ml, userUnitPref, true);
   };
-
-  // Calculate stats for drawer
-  const pumpingTrendData = last7DaysActivities
-    ? calculatePumpingTrendData(last7DaysActivities)
-    : [];
 
   return (
     <>
@@ -502,7 +496,6 @@ export function PredictivePumpingCard({
           amountMl: item.amountMl ?? undefined,
         }))}
         timeFormat={timeFormat}
-        trendData={pumpingTrendData}
         unit={userUnitPref}
       />
     </>

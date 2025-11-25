@@ -134,7 +134,7 @@ export function predictNextSleep(
   recentSleeps: Array<typeof Activities.$inferSelect>,
   babyBirthDate: Date | null,
 ): SleepPrediction {
-  // Filter to only sleep activities
+  // Filter to only relevant sleep activities for display purposes
   // Exclude scheduled activities and skipped activities (dismissals don't count as real sleep)
   const sleepActivities = recentSleeps
     .filter(
@@ -148,6 +148,12 @@ export function predictNextSleep(
         new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
     ) // Most recent first
     .slice(0, 10); // Consider last 10 sleep sessions
+
+  // Only use completed sleeps (has endTime) for prediction math so
+  // an in-progress timer doesn't masquerade as the "last sleep"
+  const completedSleepActivities = sleepActivities.filter(
+    (activity) => activity.endTime,
+  );
 
   // Find most recent skip activity
   const skipActivities = recentSleeps
@@ -171,8 +177,8 @@ export function predictNextSleep(
   const ageBasedInterval =
     ageDays !== null ? getSleepIntervalByAge(ageDays) : 3;
 
-  // No sleep sessions yet - use age-based interval
-  if (sleepActivities.length === 0) {
+  // No completed sleep sessions yet - use age-based interval
+  if (completedSleepActivities.length === 0) {
     const nextSleepTime = new Date();
     nextSleepTime.setHours(nextSleepTime.getHours() + ageBasedInterval);
     const suggestedDuration = calculateSuggestedDuration(ageDays, []);
@@ -194,13 +200,20 @@ export function predictNextSleep(
       nextSleepTime,
       overdueMinutes: null,
       recentSkipTime,
-      recentSleepPattern: [],
+      recentSleepPattern: sleepActivities.slice(0, 5).map((sleep) => ({
+        duration: sleep.duration || null,
+        intervalFromPrevious: null,
+        notes: sleep.notes,
+        time: sleep.endTime
+          ? new Date(sleep.endTime)
+          : new Date(sleep.startTime),
+      })),
       suggestedDuration,
       suggestedRecoveryTime: null,
     };
   }
 
-  const lastSleep = sleepActivities[0];
+  const lastSleep = completedSleepActivities[0];
   if (!lastSleep) {
     // Should not happen since we checked length > 0, but satisfy TypeScript
     const nextSleepTime = new Date();
@@ -237,7 +250,11 @@ export function predictNextSleep(
   const lastSleepDuration = lastSleep.duration || null;
 
   // Calculate intervals between consecutive sleep sessions
-  const intervals = calculateIntervals(sleepActivities);
+  const intervals = calculateIntervals(completedSleepActivities);
+  const intervalByActivityId = new Map<string, number | null>();
+  completedSleepActivities.forEach((sleep, idx) => {
+    intervalByActivityId.set(sleep.id, intervals[idx] ?? null);
+  });
   const validIntervals = intervals.filter(
     (i): i is number => i !== null && i !== undefined && i > 0 && i < 24,
   ); // Filter out null, undefined, and unrealistic intervals
@@ -287,9 +304,9 @@ export function predictNextSleep(
 
   // Build recent pattern for display
   // Use endTime (when baby woke up) if available, otherwise startTime
-  const recentPattern = sleepActivities.slice(0, 5).map((sleep, idx) => ({
+  const recentPattern = sleepActivities.slice(0, 5).map((sleep) => ({
     duration: sleep.duration || null,
-    intervalFromPrevious: intervals[idx] ?? null,
+    intervalFromPrevious: intervalByActivityId.get(sleep.id) ?? null,
     notes: sleep.notes,
     time: sleep.endTime ? new Date(sleep.endTime) : new Date(sleep.startTime),
   }));
@@ -315,14 +332,14 @@ export function predictNextSleep(
   // Calculate suggested duration for quick log
   const suggestedDuration = calculateSuggestedDuration(
     ageDays,
-    sleepActivities,
+    completedSleepActivities,
   );
 
   return {
     averageIntervalHours: averageInterval,
     calculationDetails: {
       ageBasedInterval,
-      dataPoints: sleepActivities.length,
+      dataPoints: completedSleepActivities.length,
       lastInterval,
       recentAverageInterval: averageInterval,
       weights,

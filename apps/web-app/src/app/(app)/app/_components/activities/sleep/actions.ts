@@ -261,9 +261,9 @@ export const autoStopInProgressSleepAction = action
       // Stop the sleep by setting endTime to now
       const now = new Date();
       const startTime = new Date(inProgressSleep.startTime);
-      const durationMinutes = Math.floor(
-        (now.getTime() - startTime.getTime()) / (1000 * 60),
-      );
+      const elapsedMinutes =
+        (now.getTime() - startTime.getTime()) / (1000 * 60);
+      const durationMinutes = Math.max(1, Math.ceil(elapsedMinutes));
 
       const stoppedActivity = await api.activities.update({
         duration: durationMinutes,

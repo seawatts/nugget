@@ -72,6 +72,7 @@ export const activityTypeEnum = pgEnum('activityType', [
   'potty',
   'doctor_visit',
   'vitamin_d',
+  'nail_trimming',
 ]);
 export const activitySubjectTypeEnum = pgEnum('activitySubjectType', [
   'baby',
@@ -619,6 +620,16 @@ export const vitaminDDetailsSchema = z.object({
   method: z.enum(['drops', 'spray']).optional(),
 });
 
+// Nail trimming details
+export const nailTrimmingDetailsSchema = z.object({
+  location: z.enum(['hands', 'feet', 'both']).optional(),
+});
+
+// Bath details
+export const bathDetailsSchema = z.object({
+  waterTemp: z.enum(['warm', 'lukewarm', 'cool']).optional(),
+});
+
 // Discriminated union for all activity details
 export const activityDetailsSchema = z
   .discriminatedUnion('type', [
@@ -644,6 +655,14 @@ export const activityDetailsSchema = z
       type: z.literal('vitamin_d'),
       ...vitaminDDetailsSchema.shape,
     }),
+    z.object({
+      type: z.literal('nail_trimming'),
+      ...nailTrimmingDetailsSchema.shape,
+    }),
+    z.object({
+      type: z.literal('bath'),
+      ...bathDetailsSchema.shape,
+    }),
   ])
   .nullable();
 
@@ -660,6 +679,8 @@ export type TemperatureDetails = z.infer<typeof temperatureDetailsSchema>;
 export type SleepDetails = z.infer<typeof sleepDetailsSchema>;
 export type DoctorVisitDetails = z.infer<typeof doctorVisitDetailsSchema>;
 export type VitaminDDetails = z.infer<typeof vitaminDDetailsSchema>;
+export type NailTrimmingDetails = z.infer<typeof nailTrimmingDetailsSchema>;
+export type BathDetails = z.infer<typeof bathDetailsSchema>;
 
 // ============================================================================
 // Tables - Baby Tracking
@@ -717,10 +738,14 @@ export const Babies = pgTable(
     showActivityTimeline: boolean('showActivityTimeline')
       .default(true)
       .notNull(),
+    showBathCard: boolean('showBathCard').default(true).notNull(),
     showDiaperCard: boolean('showDiaperCard').default(true).notNull(),
     showDoctorVisitCard: boolean('showDoctorVisitCard').default(true).notNull(),
     // Dashboard visibility preferences
     showFeedingCard: boolean('showFeedingCard').default(true).notNull(),
+    showNailTrimmingCard: boolean('showNailTrimmingCard')
+      .default(true)
+      .notNull(),
     showPumpingCard: boolean('showPumpingCard').default(true).notNull(),
     showSleepCard: boolean('showSleepCard').default(true).notNull(),
     ttcMethod: ttcMethodEnum('ttcMethod'),

@@ -252,6 +252,13 @@
       "tag": "0037_curly_mantis",
       "version": "7",
       "when": 1764013636904
+    },
+    {
+      "breakpoints": true,
+      "idx": 38,
+      "tag": "0038_legal_microchip",
+      "version": "7",
+      "when": 1764103367134
     }
   ],
   "version": "7"

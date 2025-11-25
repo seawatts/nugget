@@ -1,6 +1,7 @@
 import type { Activities } from '@nugget/db/schema';
-import { differenceInHours, format } from 'date-fns';
+import { differenceInHours, format, startOfDay } from 'date-fns';
 import { calculateWeightedInterval } from '../shared/adaptive-weighting';
+import type { TrendTimeRange } from '../shared/types';
 import { getDiaperIntervalByAge } from './diaper-intervals';
 
 /**
@@ -254,29 +255,40 @@ export function calculateDiaperStatsWithComparison(
  * Calculate diaper statistics grouped by day for trend charts
  * Returns data for the last 7 days
  */
+const TREND_RANGE_DAYS: Record<TrendTimeRange, number> = {
+  '1m': 30,
+  '2w': 14,
+  '3m': 90,
+  '6m': 180,
+  '7d': 7,
+  '24h': 1,
+};
+
 export function calculateDiaperTrendData(
   activities: Array<typeof Activities.$inferSelect>,
+  timeRange: TrendTimeRange = '7d',
 ): Array<{ date: string; wet: number; dirty: number; both: number }> {
+  if (!activities || !Array.isArray(activities)) {
+    return [];
+  }
+
   const now = new Date();
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const days = TREND_RANGE_DAYS[timeRange] ?? 7;
+  const rangeStart = startOfDay(
+    new Date(now.getTime() - (days - 1) * 24 * 60 * 60 * 1000),
+  );
 
-  // Filter to diapers from the last 7 days
-  const recentDiapers = activities.filter((activity) => {
-    const activityDate = new Date(activity.startTime);
-    const isRecent = activityDate >= sevenDaysAgo;
-    const isDiaper = activity.type === 'diaper';
-    return isRecent && isDiaper;
-  });
-
-  // Group by date
   const statsByDate = new Map<
     string,
     { wet: number; dirty: number; both: number }
   >();
 
-  for (const activity of recentDiapers) {
+  for (const activity of activities) {
+    if (activity.type !== 'diaper') continue;
     const date = new Date(activity.startTime);
-    const dateKey = format(date, 'yyyy-MM-dd');
+    if (date < rangeStart) continue;
+    const dayStart = startOfDay(date);
+    const dateKey = format(dayStart, 'yyyy-MM-dd');
 
     if (!statsByDate.has(dateKey)) {
       statsByDate.set(dateKey, { both: 0, dirty: 0, wet: 0 });
@@ -284,7 +296,6 @@ export function calculateDiaperTrendData(
 
     const stats = statsByDate.get(dateKey);
     if (!stats) continue;
-
     const details = activity.details as { type?: string } | null;
     const type = details?.type;
 
@@ -297,15 +308,15 @@ export function calculateDiaperTrendData(
     }
   }
 
-  // Convert to array and fill in missing dates
   const result: Array<{
     date: string;
     wet: number;
     dirty: number;
     both: number;
   }> = [];
-  for (let i = 6; i >= 0; i -= 1) {
-    const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const date = startOfDay(new Date(now.getTime() - i * 24 * 60 * 60 * 1000));
     const dateKey = format(date, 'yyyy-MM-dd');
     const stats = statsByDate.get(dateKey) || { both: 0, dirty: 0, wet: 0 };
     result.push({

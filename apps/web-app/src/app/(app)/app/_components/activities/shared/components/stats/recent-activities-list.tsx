@@ -2,7 +2,16 @@
 
 import { differenceInMinutes, formatDistanceToNow } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
-import { Baby, Droplet, Droplets, Milk, Moon, SunDim } from 'lucide-react';
+import {
+  Baby,
+  Bath,
+  Droplet,
+  Droplets,
+  Milk,
+  Moon,
+  Scissors,
+  SunDim,
+} from 'lucide-react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { getDisplayNotes } from '../../activity-utils';
 import { formatVolumeDisplay } from '../../volume-utils';
@@ -18,7 +27,14 @@ interface RecentActivity {
 
 interface RecentActivitiesListProps {
   activities: RecentActivity[];
-  activityType: 'feeding' | 'diaper' | 'sleep' | 'pumping' | 'vitamin_d';
+  activityType:
+    | 'feeding'
+    | 'diaper'
+    | 'sleep'
+    | 'pumping'
+    | 'vitamin_d'
+    | 'nail_trimming'
+    | 'bath';
   timeFormat: '12h' | '24h';
   unit?: 'ML' | 'OZ';
   icon?: LucideIcon;
@@ -27,9 +43,11 @@ interface RecentActivitiesListProps {
 
 // Timeline-style activity colors
 const activityColors: Record<string, string> = {
+  bath: 'border-l-activity-bath',
   bottle: 'border-l-activity-feeding',
   diaper: 'border-l-activity-diaper',
   feeding: 'border-l-activity-feeding',
+  nail_trimming: 'border-l-activity-nail-trimming',
   nursing: 'border-l-activity-feeding',
   pumping: 'border-l-activity-pumping',
   sleep: 'border-l-activity-sleep',
@@ -38,9 +56,11 @@ const activityColors: Record<string, string> = {
 };
 
 const activityIconColors: Record<string, string> = {
+  bath: 'text-activity-bath',
   bottle: 'text-activity-feeding',
   diaper: 'text-activity-diaper',
   feeding: 'text-activity-feeding',
+  nail_trimming: 'text-activity-nail-trimming',
   nursing: 'text-activity-feeding',
   pumping: 'text-activity-pumping',
   sleep: 'text-activity-sleep',
@@ -49,9 +69,11 @@ const activityIconColors: Record<string, string> = {
 };
 
 const activityIcons: Record<string, LucideIcon> = {
+  bath: Bath,
   bottle: Milk,
   diaper: Baby,
   feeding: Milk,
+  nail_trimming: Scissors,
   nursing: Droplet,
   pumping: Droplets,
   sleep: Moon,
@@ -106,7 +128,27 @@ export function RecentActivitiesList({
             typeof item.duration === 'number' &&
             item.duration
           ) {
-            details.push(`${item.duration} min`);
+            let durationText = `${item.duration} min`;
+            // Add (L) or (R) indicator for nursing activities
+            if (activityType === 'feeding') {
+              // Check for side in details object or directly on item
+              let side: 'left' | 'right' | 'both' | undefined;
+              if (
+                'details' in item &&
+                item.details &&
+                typeof item.details === 'object' &&
+                'side' in item.details
+              ) {
+                side = (item.details as { side?: 'left' | 'right' | 'both' })
+                  .side;
+              } else if ('side' in item) {
+                side = item.side as 'left' | 'right' | 'both' | undefined;
+              }
+              if (side && side !== 'both') {
+                durationText += ` (${side === 'left' ? 'L' : 'R'})`;
+              }
+            }
+            details.push(durationText);
           }
           if (
             'amountMl' in item &&

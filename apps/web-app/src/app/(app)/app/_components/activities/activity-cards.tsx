@@ -21,11 +21,13 @@ import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { createActivityAction } from './activity-cards.actions';
 import { ActivityDrawer } from './activity-drawer';
+import { PredictiveBathCard } from './bath/predictive-bath-card';
 import { PredictiveDiaperCard } from './diaper/predictive-diaper-card';
 import { QuickActionDiaperCard } from './diaper/quick-action-diaper-card';
 import { PredictiveDoctorVisitCard } from './doctor-visit/predictive-doctor-visit-card';
 import { PredictiveFeedingCard } from './feeding/predictive-feeding-card';
 import { QuickActionFeedingCard } from './feeding/quick-action-feeding-card';
+import { PredictiveNailTrimmingCard } from './nail-trimming/predictive-nail-trimming-card';
 import { PredictivePumpingCard } from './pumping/predictive-pumping-card';
 import { QuickActionPumpingCard } from './pumping/quick-action-pumping-card';
 import {
@@ -371,9 +373,6 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
     <>
       {/* All Action Cards Section - Predictive + Quick Actions */}
       <div className="grid grid-cols-2 gap-3 mb-6 min-w-0">
-        <div className="col-span-2">
-          <PredictiveVitaminDCard onActivityLogged={handleActivityLogged} />
-        </div>
         {baby?.showFeedingCard !== false && (
           <>
             <QuickActionFeedingCard
@@ -441,6 +440,21 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
               onCardClick={() => setOpenDrawer('doctor_visit')}
             />
           )}
+        <div className="col-span-2">
+          <PredictiveVitaminDCard onActivityLogged={handleActivityLogged} />
+        </div>
+        {baby?.showNailTrimmingCard !== false && (
+          <div className="col-span-2">
+            <PredictiveNailTrimmingCard
+              onActivityLogged={handleActivityLogged}
+            />
+          </div>
+        )}
+        {baby?.showBathCard !== false && (
+          <div className="col-span-2">
+            <PredictiveBathCard onActivityLogged={handleActivityLogged} />
+          </div>
+        )}
       </div>
 
       {/* Activity Drawers */}

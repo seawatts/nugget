@@ -19,6 +19,15 @@ import {
   StatsDrawerWrapper,
   TimeBlockChart,
 } from '../../shared/components/stats';
+import type { HeatmapRangeValue, TimelineWeekRange } from '../../shared/types';
+import {
+  HEATMAP_RANGE_OPTIONS,
+  TIMELINE_WEEK_OPTIONS,
+} from '../../shared/types';
+import {
+  getCustomDateRangeLabel,
+  getDateRangeLabel,
+} from '../../shared/utils/date-range-utils';
 import {
   calculateHourlyFrequency,
   calculateTimeBlockData,
@@ -43,6 +52,30 @@ export function VitaminDStatsDrawer({
   const [trendTimeRange, setTrendTimeRange] = useState<
     '24h' | '7d' | '2w' | '1m' | '3m' | '6m'
   >('7d');
+  const [timelineRange, setTimelineRange] =
+    useState<TimelineWeekRange>('this_week');
+  const [heatmapRange, setHeatmapRange] = useState<HeatmapRangeValue>('30d');
+
+  const selectedTimelineOption = TIMELINE_WEEK_OPTIONS.find(
+    (option) => option.value === timelineRange,
+  ) ??
+    TIMELINE_WEEK_OPTIONS[0] ?? {
+      label: 'This Week',
+      offsetDays: 0,
+      value: 'this_week',
+    };
+  const timelineOffsetDays = selectedTimelineOption.offsetDays;
+  const fallbackHeatmapOption = HEATMAP_RANGE_OPTIONS.find(
+    (option) => option.value === '30d',
+  ) ??
+    HEATMAP_RANGE_OPTIONS[0] ?? {
+      days: 30,
+      label: '30 Days',
+      value: '30d',
+    };
+  const selectedHeatmapOption =
+    HEATMAP_RANGE_OPTIONS.find((option) => option.value === heatmapRange) ??
+    fallbackHeatmapOption;
 
   // Calculate trend data based on selected time range
   const dynamicTrendData = useMemo(
@@ -56,22 +89,26 @@ export function VitaminDStatsDrawer({
     [activities],
   );
 
-  // Filter to last 30 days for heatmap
-  const last30DaysVitaminDActivities = useMemo(() => {
-    const thirtyDaysAgo = subDays(new Date(), 30);
+  // Filter to selected range for heatmap
+  const heatmapVitaminDActivities = useMemo(() => {
+    const cutoff = subDays(new Date(), selectedHeatmapOption.days);
     return vitaminDActivities.filter(
-      (activity) => new Date(activity.startTime) >= thirtyDaysAgo,
+      (activity) => new Date(activity.startTime) >= cutoff,
     );
-  }, [vitaminDActivities]);
+  }, [selectedHeatmapOption, vitaminDActivities]);
 
   const frequencyHeatmapData = useMemo(
-    () => calculateHourlyFrequency(last30DaysVitaminDActivities),
-    [last30DaysVitaminDActivities],
+    () => calculateHourlyFrequency(heatmapVitaminDActivities),
+    [heatmapVitaminDActivities],
+  );
+  const heatmapDateRangeLabel = useMemo(
+    () => getCustomDateRangeLabel(selectedHeatmapOption.days),
+    [selectedHeatmapOption.days],
   );
 
   const timeBlockData = useMemo(
-    () => calculateTimeBlockData(vitaminDActivities, 7),
-    [vitaminDActivities],
+    () => calculateTimeBlockData(vitaminDActivities, 7, timelineOffsetDays),
+    [vitaminDActivities, timelineOffsetDays],
   );
 
   const frequencyInsights = useMemo(
@@ -88,6 +125,15 @@ export function VitaminDStatsDrawer({
     type: undefined, // vitamin_d doesn't have subtypes like wet/dirty
   }));
 
+  const dateRangeLabel = useMemo(
+    () => getDateRangeLabel(trendTimeRange),
+    [trendTimeRange],
+  );
+  const timelineDateRangeLabel = useMemo(
+    () => getDateRangeLabel('7d', new Date(), timelineOffsetDays),
+    [timelineOffsetDays],
+  );
+
   return (
     <StatsDrawerWrapper
       onOpenChange={onOpenChange}
@@ -102,9 +148,7 @@ export function VitaminDStatsDrawer({
               <h3 className="text-sm font-medium text-foreground">
                 Vitamin D Doses
               </h3>
-              <p className="text-xs text-muted-foreground">
-                Number of doses logged over time
-              </p>
+              <p className="text-xs text-muted-foreground">{dateRangeLabel}</p>
             </div>
             <div className="flex gap-2">
               {/* Time Range Dropdown */}
@@ -156,9 +200,27 @@ export function VitaminDStatsDrawer({
           <div>
             <h3 className="text-sm font-medium text-foreground">Timeline</h3>
             <p className="text-xs text-muted-foreground">
-              When vitamin D is taken throughout the day
+              {timelineDateRangeLabel}
             </p>
           </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                {selectedTimelineOption.label}
+                <ChevronDown className="ml-1 size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {TIMELINE_WEEK_OPTIONS.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  onClick={() => setTimelineRange(option.value)}
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <TimeBlockChart
           colorVar="var(--activity-vitamin-d)"
@@ -173,9 +235,27 @@ export function VitaminDStatsDrawer({
           <div>
             <h3 className="text-sm font-medium text-foreground">Heatmap</h3>
             <p className="text-xs text-muted-foreground">
-              Frequency patterns by day and time
+              {heatmapDateRangeLabel}
             </p>
           </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                {selectedHeatmapOption.label}
+                <ChevronDown className="ml-1 size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {HEATMAP_RANGE_OPTIONS.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  onClick={() => setHeatmapRange(option.value)}
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <FrequencyHeatmap
           colorVar="var(--activity-vitamin-d)"

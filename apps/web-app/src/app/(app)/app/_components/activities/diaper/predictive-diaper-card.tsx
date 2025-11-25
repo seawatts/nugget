@@ -23,7 +23,6 @@ import { skipDiaperAction } from './actions';
 import { DiaperStatsDrawer } from './components';
 import { DiaperGoalDisplay } from './components/diaper-goal-display';
 import {
-  calculateDiaperTrendData,
   calculateTodaysDiaperStats,
   getDailyDiaperGoal,
   getDailyDirtyDiaperGoal,
@@ -237,11 +236,6 @@ export function PredictiveDiaperCard({
     setShowStatsDrawer(true);
   };
 
-  // Calculate stats for drawer
-  const diaperTrendData = last7DaysActivities
-    ? calculateDiaperTrendData(last7DaysActivities)
-    : [];
-
   return (
     <>
       <Card
@@ -432,7 +426,6 @@ export function PredictiveDiaperCard({
             | undefined,
         }))}
         timeFormat={timeFormat}
-        trendData={diaperTrendData}
       />
     </>
   );

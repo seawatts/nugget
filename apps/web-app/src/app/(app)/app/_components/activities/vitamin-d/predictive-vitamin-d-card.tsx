@@ -11,20 +11,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@nugget/ui/alert-dialog';
-import { Card } from '@nugget/ui/card';
-import { cn } from '@nugget/ui/lib/utils';
-import { format, startOfDay, subDays } from 'date-fns';
-import { Check, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getActivityTheme } from '../shared/activity-theme-config';
 import {
-  PredictiveCardHeader,
+  BasePredictiveCard,
   PredictiveInfoDrawer,
 } from '../shared/components/predictive-cards';
-import { formatDayAbbreviation } from '../shared/components/stats';
+import { getVitaminDDailyProgress } from '../shared/daily-progress';
+import { useSevenDayActivities } from '../shared/hooks/use-seven-day-activities';
 import { useActivityMutations } from '../use-activity-mutations';
 import { VitaminDStatsDrawer } from './components';
 import { getVitaminDLearningContent } from './learning-content';
@@ -131,59 +128,39 @@ export function PredictiveVitaminDCard({
     }
   };
 
-  // Calculate 7-day tracking data
-  const vitaminDData = (() => {
-    const startOfDayNow = startOfDay(new Date());
-    const days: Array<{
-      date: string;
-      dateObj: Date;
-      displayDate: string;
-      hasVitaminD: boolean;
-      activity?: typeof Activities.$inferSelect;
-    }> = [];
+  // Calculate 7-day tracking data using shared hook
+  const vitaminDData = useSevenDayActivities(vitaminDActivities, 'vitamin_d');
 
-    for (let i = 6; i >= 0; i--) {
-      const date = subDays(startOfDayNow, i);
-      const dateKey = format(date, 'yyyy-MM-dd');
-      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-      const monthDay = `${date.getMonth() + 1}/${date.getDate()}`;
+  // Calculate daily progress
+  const vitaminDDailyProgress = useMemo(
+    () =>
+      getVitaminDDailyProgress({
+        activities: vitaminDActivities,
+        babyAgeDays,
+      }),
+    [vitaminDActivities, babyAgeDays],
+  );
 
-      // Check if vitamin D was logged on this day
-      const activity = vitaminDActivities.find((act) => {
-        const activityDate = new Date(act.startTime);
-        const activityDateKey = format(activityDate, 'yyyy-MM-dd');
-        const matches = activityDateKey === dateKey;
-        return matches;
-      });
-
-      days.push({
-        activity,
-        date: dateKey,
-        dateObj: date,
-        displayDate: `${dayName} ${monthDay}`,
-        hasVitaminD: !!activity,
-      });
-    }
-
-    return days;
-  })();
+  const dailyStats = vitaminDDailyProgress
+    ? {
+        count: vitaminDDailyProgress.currentValue,
+        goal: vitaminDDailyProgress.goalValue ?? 1,
+        percentage: vitaminDDailyProgress.percentage,
+      }
+    : undefined;
 
   const handleDayClick = async (day: (typeof vitaminDData)[0]) => {
-    if (day.hasVitaminD && day.activity) {
+    if (day.hasActivity && day.activity) {
       // Show delete confirmation
       setActivityToDelete(day.activity);
     } else {
       // Auto-log vitamin D for this date
-      // Parse the date string and apply current time to the selected day
-      const parts = day.date.split('-').map(Number);
-      const year = parts[0] ?? 0;
-      const month = parts[1] ?? 1;
-      const dayNum = parts[2] ?? 1;
+      // Use the dateObj from the day and apply current time
       const now = new Date();
       const normalizedDate = new Date(
-        year,
-        month - 1,
-        dayNum,
+        day.dateObj.getFullYear(),
+        day.dateObj.getMonth(),
+        day.dateObj.getDate(),
         now.getHours(),
         now.getMinutes(),
         now.getSeconds(),
@@ -250,92 +227,34 @@ export function PredictiveVitaminDCard({
     }
   };
 
-  const handleAddClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShowDialog(true);
-  };
-
-  const handleInfoClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShowInfoDrawer(true);
-  };
-
-  const handleStatsClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShowStatsDrawer(true);
-  };
-
   // Get learning content for the baby's age
   const learningContent =
     babyAgeDays !== null ? getVitaminDLearningContent(babyAgeDays) : null;
 
   return (
     <>
-      <Card
-        className={cn(
-          'relative overflow-hidden p-6',
-          `bg-${vitaminDTheme.color} ${vitaminDTheme.textColor}`,
-        )}
-      >
-        <PredictiveCardHeader
-          icon={vitaminDTheme.icon}
-          isFetching={false}
-          onAddClick={handleAddClick}
-          onInfoClick={handleInfoClick}
-          onStatsClick={handleStatsClick}
-          showAddIcon={true}
-          showStatsIcon={true}
-          title="Vitamin D"
-        />
-
-        {/* 7-Day Tracking Grid */}
-        <div className="mt-6">
-          <div className="grid grid-cols-7 gap-2">
-            {vitaminDData.map((day) => {
-              const dayAbbr = formatDayAbbreviation(day.dateObj);
-
-              return (
-                <button
-                  className={cn(
-                    'flex flex-col items-center gap-1.5 p-2 rounded-lg transition-all',
-                    'hover:bg-black/10',
-                    day.hasVitaminD ? 'bg-black/10' : 'bg-black/5',
-                    isLogging && 'opacity-50 cursor-wait',
-                  )}
-                  disabled={isLogging}
-                  key={day.date}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void handleDayClick(day);
-                  }}
-                  type="button"
-                >
-                  <span className="text-xs font-semibold opacity-90">
-                    {dayAbbr}
-                  </span>
-                  <div
-                    className={cn(
-                      'flex size-10 items-center justify-center rounded-full transition-all',
-                      day.hasVitaminD
-                        ? 'bg-primary shadow-md'
-                        : 'bg-white/60 shadow-sm',
-                    )}
-                  >
-                    {day.hasVitaminD ? (
-                      <Check
-                        className="size-5 text-primary-foreground"
-                        strokeWidth={3}
-                      />
-                    ) : (
-                      <X className="size-5 text-red-600" strokeWidth={3} />
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </Card>
+      <BasePredictiveCard
+        activityType="vitamin_d"
+        dailyStats={dailyStats}
+        icon={vitaminDTheme.icon}
+        isLogging={isLogging}
+        onAddClick={() => {
+          setShowDialog(true);
+        }}
+        onDayClick={(day) => {
+          void handleDayClick(day);
+        }}
+        onInfoClick={() => {
+          setShowInfoDrawer(true);
+        }}
+        onStatsClick={() => {
+          setShowStatsDrawer(true);
+        }}
+        sevenDayData={vitaminDData}
+        theme={vitaminDTheme}
+        title="Vitamin D"
+        weeklyStats={undefined}
+      />
 
       {/* Info Drawer */}
       <PredictiveInfoDrawer

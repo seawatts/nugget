@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@nugget/ui/dropdown-menu';
-import { format, subDays } from 'date-fns';
+import { subDays } from 'date-fns';
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
@@ -19,7 +19,19 @@ import {
   StatsDrawerWrapper,
   TimeBlockChart,
 } from '../../shared/components/stats';
-import type { AmountType } from '../../shared/types';
+import type {
+  AmountType,
+  HeatmapRangeValue,
+  TimelineWeekRange,
+} from '../../shared/types';
+import {
+  HEATMAP_RANGE_OPTIONS,
+  TIMELINE_WEEK_OPTIONS,
+} from '../../shared/types';
+import {
+  getCustomDateRangeLabel,
+  getDateRangeLabel,
+} from '../../shared/utils/date-range-utils';
 import {
   calculateHourlyFrequency,
   calculateTimeBlockData,
@@ -41,6 +53,12 @@ interface FeedingStatsDrawerProps {
   timeFormat: '12h' | '24h';
 }
 
+const FEEDING_ACTIVITY_TYPES = new Set(['feeding', 'bottle', 'nursing']);
+
+function isFeedingActivity(activity: typeof Activities.$inferSelect) {
+  return FEEDING_ACTIVITY_TYPES.has(activity.type);
+}
+
 export function FeedingStatsDrawer({
   open,
   onOpenChange,
@@ -54,12 +72,33 @@ export function FeedingStatsDrawer({
   >('7d');
   const [countAmountType, setCountAmountType] = useState<AmountType>('total');
   const [amountAmountType, setAmountAmountType] = useState<AmountType>('total');
-  const [timelineMetric, setTimelineMetric] = useState<'count' | 'amount'>(
-    'count',
-  );
   const [heatmapMetric, setHeatmapMetric] = useState<'count' | 'amount'>(
     'count',
   );
+  const [heatmapRange, setHeatmapRange] = useState<HeatmapRangeValue>('30d');
+  const [timelineRange, setTimelineRange] =
+    useState<TimelineWeekRange>('this_week');
+
+  const fallbackTimelineOption = TIMELINE_WEEK_OPTIONS[0] ?? {
+    label: 'This Week',
+    offsetDays: 0,
+    value: 'this_week',
+  };
+  const selectedTimelineOption =
+    TIMELINE_WEEK_OPTIONS.find((option) => option.value === timelineRange) ??
+    fallbackTimelineOption;
+  const fallbackHeatmapOption = HEATMAP_RANGE_OPTIONS.find(
+    (option) => option.value === '30d',
+  ) ??
+    HEATMAP_RANGE_OPTIONS[0] ?? {
+      days: 30,
+      label: '30 Days',
+      value: '30d',
+    };
+  const selectedHeatmapOption =
+    HEATMAP_RANGE_OPTIONS.find((option) => option.value === heatmapRange) ??
+    fallbackHeatmapOption;
+  const timelineOffsetDays = selectedTimelineOption.offsetDays;
 
   // Calculate trend data based on selected time range
   const dynamicTrendData = useMemo(
@@ -69,26 +108,68 @@ export function FeedingStatsDrawer({
 
   // Calculate frequency data
   const feedingActivities = useMemo(
-    () => activities.filter((a) => a.type === 'feeding'),
+    () => activities.filter((activity) => isFeedingActivity(activity)),
     [activities],
   );
 
-  // Filter to last 30 days for heatmap
-  const last30DaysFeedingActivities = useMemo(() => {
-    const thirtyDaysAgo = subDays(new Date(), 30);
+  // Filter for heatmap range
+  const heatmapFeedingActivities = useMemo(() => {
+    const cutoff = subDays(new Date(), selectedHeatmapOption.days);
     return feedingActivities.filter(
-      (activity) => new Date(activity.startTime) >= thirtyDaysAgo,
+      (activity) => new Date(activity.startTime) >= cutoff,
     );
-  }, [feedingActivities]);
+  }, [feedingActivities, selectedHeatmapOption]);
 
   const frequencyHeatmapData = useMemo(
-    () => calculateHourlyFrequency(last30DaysFeedingActivities),
-    [last30DaysFeedingActivities],
+    () => calculateHourlyFrequency(heatmapFeedingActivities),
+    [heatmapFeedingActivities],
+  );
+
+  // Build recent activities with side information from activities array
+  const recentActivitiesWithSide = useMemo(() => {
+    // Get the most recent feeding activities
+    const recent = feedingActivities
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
+      )
+      .slice(0, 5)
+      .map((activity) => {
+        const base = {
+          amountMl: activity.amountMl ?? undefined,
+          duration: activity.duration ?? undefined,
+          notes: activity.notes ?? undefined,
+          time: new Date(activity.startTime),
+        };
+
+        // Add side information if it's a nursing activity
+        if (activity.type === 'nursing' && activity.details) {
+          const details = activity.details as {
+            side?: 'left' | 'right' | 'both';
+          };
+          if (details.side) {
+            return {
+              ...base,
+              details: { side: details.side },
+            };
+          }
+        }
+
+        return base;
+      });
+
+    // If we have activities with side info, use those; otherwise fall back to prop
+    return recent.length > 0 ? recent : recentActivities;
+  }, [feedingActivities, recentActivities]);
+  const heatmapDateRangeLabel = useMemo(
+    () => getCustomDateRangeLabel(selectedHeatmapOption.days),
+    [selectedHeatmapOption.days],
   );
 
   const timeBlockData = useMemo(
-    () => calculateTimeBlockData(feedingActivities, 7),
-    [feedingActivities],
+    () => calculateTimeBlockData(feedingActivities, 7, timelineOffsetDays),
+    [feedingActivities, timelineOffsetDays],
   );
 
   const frequencyInsights = useMemo(
@@ -96,23 +177,14 @@ export function FeedingStatsDrawer({
     [feedingActivities],
   );
 
-  // Calculate the date range for display based on selected time range
-  const dateRangeText = useMemo(() => {
-    const now = new Date();
-    const daysMap: Record<string, number> = {
-      '1m': 30,
-      '2w': 14,
-      '3m': 90,
-      '6m': 180,
-      '7d': 7,
-      '24h': 1,
-    };
-    const days = daysMap[trendTimeRange] ?? 7;
-    const startDate = subDays(now, days);
-    const endDate = now;
-
-    return `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d')}`;
-  }, [trendTimeRange]);
+  const dateRangeLabel = useMemo(
+    () => getDateRangeLabel(trendTimeRange),
+    [trendTimeRange],
+  );
+  const timelineDateRangeLabel = useMemo(
+    () => getDateRangeLabel('7d', new Date(), timelineOffsetDays),
+    [timelineOffsetDays],
+  );
 
   return (
     <StatsDrawerWrapper
@@ -128,7 +200,7 @@ export function FeedingStatsDrawer({
               <h3 className="text-sm font-medium text-foreground">
                 Feeding Count
               </h3>
-              <p className="text-xs text-muted-foreground">{dateRangeText}</p>
+              <p className="text-xs text-muted-foreground">{dateRangeLabel}</p>
             </div>
             <div className="flex gap-2">
               {/* Time Range Dropdown */}
@@ -200,9 +272,7 @@ export function FeedingStatsDrawer({
               <h3 className="text-sm font-medium text-foreground">
                 Feeding Amount
               </h3>
-              <p className="text-xs text-muted-foreground">
-                Volume consumed over time
-              </p>
+              <p className="text-xs text-muted-foreground">{dateRangeLabel}</p>
             </div>
             <div className="flex gap-2">
               {/* Time Range Dropdown */}
@@ -277,27 +347,33 @@ export function FeedingStatsDrawer({
       <Card className="p-4">
         <div className="mb-3 flex items-start justify-between">
           <div>
-            <h3 className="text-sm font-medium text-foreground">Timeline</h3>
+            <h3 className="text-sm font-medium text-foreground">
+              When feedings happen
+            </h3>
             <p className="text-xs text-muted-foreground">
-              When feedings occur throughout the day
+              {timelineDateRangeLabel}
             </p>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline">
-                {timelineMetric === 'count' ? 'Count' : 'Amount'}
-                <ChevronDown className="ml-1 size-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setTimelineMetric('count')}>
-                Count
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTimelineMetric('amount')}>
-                Amount
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  {selectedTimelineOption.label}
+                  <ChevronDown className="ml-1 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {TIMELINE_WEEK_OPTIONS.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => setTimelineRange(option.value)}
+                  >
+                    {option.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         <TimeBlockChart
           colorVar="var(--activity-feeding)"
@@ -312,25 +388,45 @@ export function FeedingStatsDrawer({
           <div>
             <h3 className="text-sm font-medium text-foreground">Heatmap</h3>
             <p className="text-xs text-muted-foreground">
-              Frequency patterns by day and time
+              {heatmapDateRangeLabel}
             </p>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline">
-                {heatmapMetric === 'count' ? 'Count' : 'Amount'}
-                <ChevronDown className="ml-1 size-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setHeatmapMetric('count')}>
-                Count
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setHeatmapMetric('amount')}>
-                Amount
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  {selectedHeatmapOption.label}
+                  <ChevronDown className="ml-1 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {HEATMAP_RANGE_OPTIONS.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => setHeatmapRange(option.value)}
+                  >
+                    {option.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  {heatmapMetric === 'count' ? 'Count' : 'Amount'}
+                  <ChevronDown className="ml-1 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setHeatmapMetric('count')}>
+                  Count
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setHeatmapMetric('amount')}>
+                  Amount
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         <FrequencyHeatmap
           colorVar="var(--activity-feeding)"
@@ -358,10 +454,10 @@ export function FeedingStatsDrawer({
       </Card>
 
       {/* Recent Activities Section */}
-      {recentActivities.length > 0 && (
+      {recentActivitiesWithSide.length > 0 && (
         <Card className="p-4">
           <RecentActivitiesList
-            activities={recentActivities}
+            activities={recentActivitiesWithSide}
             activityType="feeding"
             timeFormat={timeFormat}
             title="Feeding"

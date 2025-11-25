@@ -25,6 +25,7 @@ import {
   Moon,
   Pill,
   Scale,
+  Scissors,
   Stethoscope,
   Thermometer,
   Timer,
@@ -36,9 +37,11 @@ import { formatTimeWithPreference } from '~/lib/format-time';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { ChatDialog } from '../../chat/chat-dialog';
 import { MilestoneViewDrawer } from '../../milestones/milestone-view-drawer';
+import { TimelineBathDrawer } from '../bath/timeline-bath-drawer';
 import { TimelineDiaperDrawer } from '../diaper/timeline-diaper-drawer';
 import { TimelineDoctorVisitDrawer } from '../doctor-visit/timeline-doctor-visit-drawer';
 import { TimelineFeedingDrawer } from '../feeding/timeline-feeding-drawer';
+import { TimelineNailTrimmingDrawer } from '../nail-trimming/timeline-nail-trimming-drawer';
 import { TimelinePumpingDrawer } from '../pumping/timeline-pumping-drawer';
 import { getDisplayNotes } from '../shared/activity-utils';
 import { TimelineDrawerWrapper } from '../shared/components/timeline-drawer-wrapper';
@@ -131,6 +134,13 @@ const activities = [
     textColor: 'text-activity-vitamin-d-foreground',
   },
   {
+    color: 'bg-activity-nail-trimming',
+    icon: Scissors,
+    id: 'nail_trimming',
+    label: 'Nail Trimming',
+    textColor: 'text-activity-nail-trimming-foreground',
+  },
+  {
     color: 'bg-activity-temperature',
     icon: Thermometer,
     id: 'temperature',
@@ -190,6 +200,7 @@ const activityIcons: Record<string, typeof Moon> = {
   growth: Scale,
   medicine: Pill,
   milestone: Award,
+  nail_trimming: Scissors,
   nursing: Droplet,
   potty: Toilet,
   pumping: Droplets,
@@ -210,6 +221,7 @@ const activityColors: Record<string, string> = {
   growth: 'border-l-activity-growth',
   medicine: 'border-l-activity-medicine',
   milestone: 'border-l-activity-milestone',
+  nail_trimming: 'border-l-activity-nail-trimming',
   nursing: 'border-l-activity-feeding',
   potty: 'border-l-activity-potty',
   pumping: 'border-l-activity-pumping',
@@ -229,6 +241,7 @@ const activityIconColors: Record<string, string> = {
   growth: 'text-activity-growth',
   medicine: 'text-activity-medicine',
   milestone: 'text-activity-milestone',
+  nail_trimming: 'text-activity-nail-trimming',
   nursing: 'text-activity-feeding',
   potty: 'text-activity-potty',
   pumping: 'text-activity-pumping',
@@ -250,6 +263,7 @@ const activityLabels: Record<string, string> = {
   growth: 'Growth',
   medicine: 'Medicine',
   milestone: 'Milestone',
+  nail_trimming: 'Nail Trimming',
   nursing: 'Nursing',
   potty: 'Potty',
   pumping: 'Pumping',
@@ -427,13 +441,18 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
         // This is a defensive measure to prevent cross-baby activity display
         return activity.babyId === babyId;
       })
-      .map(
-        (activity): TimelineItem => ({
+      .map((activity): TimelineItem => {
+        const timestamp =
+          activity.type === 'sleep' && activity.endTime
+            ? new Date(activity.endTime)
+            : new Date(activity.startTime);
+
+        return {
           data: activity,
-          timestamp: new Date(activity.startTime),
+          timestamp,
           type: 'activity' as const,
-        }),
-      )
+        };
+      })
       .filter((item) => {
         // Filter out items with invalid timestamps
         const isValid =
@@ -680,7 +699,23 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
                           formatMinutesToHoursMinutes(activity.duration),
                         );
                       } else {
-                        details.push(`${activity.duration} min`);
+                        let durationText = `${activity.duration} min`;
+                        // Add (L) or (R) indicator for nursing activities
+                        if (
+                          activity.type === 'nursing' &&
+                          activity.details &&
+                          'side' in activity.details
+                        ) {
+                          const side = (
+                            activity.details as {
+                              side?: 'left' | 'right' | 'both';
+                            }
+                          ).side;
+                          if (side && side !== 'both') {
+                            durationText += ` (${side === 'left' ? 'L' : 'R'})`;
+                          }
+                        }
+                        details.push(durationText);
                       }
                     }
                     if (activity.amountMl) {
@@ -805,8 +840,13 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
                     : 0;
                   const showTimeGap = timeGapMinutes >= 15;
 
+                  const timelineItemKey =
+                    itemId && itemId.length > 0
+                      ? `${itemId}-${item.timestamp.getTime()}`
+                      : `${item.type}-${item.timestamp.getTime()}-${index}`;
+
                   return (
-                    <div key={itemId}>
+                    <div key={timelineItemKey}>
                       {showTimeGap && (
                         <div className="flex items-center gap-3 py-2">
                           <div className="h-px bg-border/50 flex-1" />
@@ -1016,6 +1056,38 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
           title="Edit Vitamin D"
         >
           <TimelineVitaminDDrawer
+            babyId={babyId}
+            existingActivity={editingActivity}
+            isOpen={true}
+            onClose={handleDrawerClose}
+          />
+        </TimelineDrawerWrapper>
+      )}
+
+      {/* Nail Trimming Drawer */}
+      {editingActivity && openDrawer === 'nail_trimming' && (
+        <TimelineDrawerWrapper
+          isOpen={true}
+          onClose={handleDrawerClose}
+          title="Edit Nail Trimming"
+        >
+          <TimelineNailTrimmingDrawer
+            babyId={babyId}
+            existingActivity={editingActivity}
+            isOpen={true}
+            onClose={handleDrawerClose}
+          />
+        </TimelineDrawerWrapper>
+      )}
+
+      {/* Bath Drawer */}
+      {editingActivity && openDrawer === 'bath' && (
+        <TimelineDrawerWrapper
+          isOpen={true}
+          onClose={handleDrawerClose}
+          title="Edit Bath"
+        >
+          <TimelineBathDrawer
             babyId={babyId}
             existingActivity={editingActivity}
             isOpen={true}

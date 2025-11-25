@@ -64,6 +64,11 @@ const ACTIVITY_COLOR_CLASSES: Partial<
     }
   >
 > = {
+  bath: {
+    bgColor: 'bg-activity-bath/5',
+    borderColor: 'border-activity-bath/20',
+    color: 'bg-activity-bath/10 text-activity-bath',
+  },
   diaper: {
     bgColor: 'bg-activity-diaper/5',
     borderColor: 'border-activity-diaper/20',
@@ -73,6 +78,11 @@ const ACTIVITY_COLOR_CLASSES: Partial<
     bgColor: 'bg-activity-feeding/5',
     borderColor: 'border-activity-feeding/20',
     color: 'bg-activity-feeding/10 text-activity-feeding',
+  },
+  nail_trimming: {
+    bgColor: 'bg-activity-nail-trimming/5',
+    borderColor: 'border-activity-nail-trimming/20',
+    color: 'bg-activity-nail-trimming/10 text-activity-nail-trimming',
   },
   pumping: {
     bgColor: 'bg-activity-pumping/5',

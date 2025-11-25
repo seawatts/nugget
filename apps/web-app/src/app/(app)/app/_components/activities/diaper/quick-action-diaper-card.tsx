@@ -21,8 +21,10 @@ import {
   PredictiveCardSkeleton,
   PredictiveInfoDrawer,
 } from '../shared/components/predictive-cards';
+import { PredictiveProgressTrack } from '../shared/components/predictive-progress-track';
 import { StopSleepConfirmationDialog } from '../shared/components/stop-sleep-confirmation-dialog';
 import { TimelineDrawerWrapper } from '../shared/components/timeline-drawer-wrapper';
+import { getDiaperDailyProgress } from '../shared/daily-progress';
 import { useInProgressSleep } from '../shared/hooks/use-in-progress-sleep';
 import { autoStopInProgressSleepAction } from '../sleep/actions';
 import { useActivityMutations } from '../use-activity-mutations';
@@ -114,10 +116,16 @@ export function QuickActionDiaperCard({
     enabled: true,
   });
 
-  // Merge optimistic and recent activities
-  const mergedActivities = queryData
-    ? [...optimisticActivities, ...queryData.recentActivities]
-    : [];
+  const mergedActivities = useMemo(() => {
+    const map = new Map<string, typeof Activities.$inferSelect>();
+    (allActivities ?? []).forEach((activity) => {
+      map.set(activity.id, activity);
+    });
+    optimisticActivities.forEach((activity) => {
+      map.set(activity.id, activity);
+    });
+    return Array.from(map.values());
+  }, [allActivities, optimisticActivities]);
 
   // Process prediction data from tRPC query
   const data = queryData
@@ -125,13 +133,43 @@ export function QuickActionDiaperCard({
         babyAgeDays: queryData.babyAgeDays,
         babyBirthDate: queryData.babyBirthDate,
         prediction: predictNextDiaper(
-          mergedActivities.filter((a) => a.type === 'diaper'),
+          [...optimisticActivities, ...queryData.recentActivities].filter(
+            (a) => a.type === 'diaper',
+          ),
           queryData.babyBirthDate,
           mergedActivities,
         ),
         recentActivities: queryData.recentActivities,
       }
     : null;
+
+  const diaperProgress = useMemo(
+    () =>
+      getDiaperDailyProgress({
+        activities: mergedActivities,
+        babyAgeDays: data?.babyAgeDays ?? null,
+        dataPointsCount:
+          data?.prediction?.calculationDetails?.dataPoints ?? undefined,
+        predictedIntervalHours: data?.prediction?.intervalHours,
+      }),
+    [
+      data?.babyAgeDays,
+      mergedActivities,
+      data?.prediction?.calculationDetails?.dataPoints,
+      data?.prediction?.intervalHours,
+    ],
+  );
+
+  const diaperStartLabel =
+    typeof diaperProgress?.currentValue === 'number'
+      ? `${diaperProgress.currentValue} Today`
+      : typeof diaperProgress?.goalValue === 'number'
+        ? '0 Today'
+        : null;
+  const diaperEndLabel =
+    typeof diaperProgress?.goalValue === 'number'
+      ? `Goal ${diaperProgress.goalValue}`
+      : null;
 
   // Find the most recent diaper activity with user info
   const lastDiaperActivity = useMemo(() => {
@@ -476,30 +514,27 @@ export function QuickActionDiaperCard({
           `bg-${diaperTheme.color} ${diaperTheme.textColor}`,
         )}
       >
-        <PredictiveCardHeader
-          icon={DiaperIcon}
-          isFetching={isFetching && !isLoading}
-          onAddClick={handleAddClick}
-          onInfoClick={handleInfoClick}
-          onStatsClick={handleStatsClick}
-          quickLogEnabled={false}
-          showAddIcon={true}
-          showStatsIcon={userData?.showActivityGoals ?? true}
-          title="Diaper"
-        />
+        <div className="flex flex-col gap-6">
+          <PredictiveCardHeader
+            icon={DiaperIcon}
+            isFetching={isFetching && !isLoading}
+            onAddClick={handleAddClick}
+            onInfoClick={handleInfoClick}
+            onStatsClick={handleStatsClick}
+            quickLogEnabled={false}
+            showAddIcon={true}
+            showStatsIcon={userData?.showActivityGoals ?? true}
+            title="Diaper"
+          />
 
-        {/* Timeline Layout - Full Width */}
-        <div className="relative py-4 mt-4">
-          {/* Timeline dots and connecting line */}
-          <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-4">
-            <div className="w-2.5 h-2.5 rounded-full bg-white/40 shrink-0" />
-            <div className="flex-1 border-t border-white/20 mx-2" />
-            <div className="w-2.5 h-2.5 rounded-full bg-white/40 shrink-0" />
-          </div>
+          <PredictiveProgressTrack
+            endLabel={diaperEndLabel ?? undefined}
+            progressPercent={diaperProgress?.percentage}
+            srLabel={diaperProgress?.srLabel}
+            startLabel={diaperStartLabel ?? undefined}
+          />
 
-          {/* Two-column content with justify-between */}
-          <div className="flex items-start justify-between pt-6 px-2">
-            {/* Left Column: Last Diaper */}
+          <div className="flex items-start justify-between px-2">
             {lastTimeDistance && lastExactTime && lastDiaperActivity ? (
               <button
                 className="space-y-1.5 text-left cursor-pointer hover:opacity-80 transition-opacity"
@@ -551,7 +586,6 @@ export function QuickActionDiaperCard({
               </div>
             )}
 
-            {/* Right Column: Next Diaper */}
             <button
               className="space-y-1 text-right cursor-pointer hover:opacity-80 transition-opacity"
               onClick={handleInfoClick}
@@ -571,63 +605,62 @@ export function QuickActionDiaperCard({
               </div>
             </button>
           </div>
-        </div>
 
-        {/* Quick Action Buttons */}
-        <div className="grid grid-cols-3 gap-2 mt-4">
-          <Button
-            className={cn(
-              'flex flex-col items-center justify-center h-auto py-3 gap-1',
-              'bg-white/20 hover:bg-white/30 active:bg-white/40',
-              diaperTheme.textColor,
-            )}
-            disabled={creatingType !== null}
-            onClick={(e) => handleQuickDiaper(e, 'wet')}
-            variant="ghost"
-          >
-            {creatingType === 'wet' ? (
-              <Icons.Spinner className="size-5" />
-            ) : (
-              <Droplet className="size-5" />
-            )}
-            <span className="text-xs font-medium">Pee</span>
-          </Button>
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              className={cn(
+                'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                diaperTheme.textColor,
+              )}
+              disabled={creatingType !== null}
+              onClick={(e) => handleQuickDiaper(e, 'wet')}
+              variant="ghost"
+            >
+              {creatingType === 'wet' ? (
+                <Icons.Spinner className="size-5" />
+              ) : (
+                <Droplet className="size-5" />
+              )}
+              <span className="text-xs font-medium">Pee</span>
+            </Button>
 
-          <Button
-            className={cn(
-              'flex flex-col items-center justify-center h-auto py-3 gap-1',
-              'bg-white/20 hover:bg-white/30 active:bg-white/40',
-              diaperTheme.textColor,
-            )}
-            disabled={creatingType !== null}
-            onClick={(e) => handleQuickDiaper(e, 'dirty')}
-            variant="ghost"
-          >
-            {creatingType === 'dirty' ? (
-              <Icons.Spinner className="size-5" />
-            ) : (
-              <Droplets className="size-5" />
-            )}
-            <span className="text-xs font-medium">Poop</span>
-          </Button>
+            <Button
+              className={cn(
+                'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                diaperTheme.textColor,
+              )}
+              disabled={creatingType !== null}
+              onClick={(e) => handleQuickDiaper(e, 'dirty')}
+              variant="ghost"
+            >
+              {creatingType === 'dirty' ? (
+                <Icons.Spinner className="size-5" />
+              ) : (
+                <Droplets className="size-5" />
+              )}
+              <span className="text-xs font-medium">Poop</span>
+            </Button>
 
-          <Button
-            className={cn(
-              'flex flex-col items-center justify-center h-auto py-3 gap-1',
-              'bg-white/20 hover:bg-white/30 active:bg-white/40',
-              diaperTheme.textColor,
-            )}
-            disabled={creatingType !== null}
-            onClick={(e) => handleQuickDiaper(e, 'both')}
-            variant="ghost"
-          >
-            {creatingType === 'both' ? (
-              <Icons.Spinner className="size-5" />
-            ) : (
-              <Baby className="size-5" />
-            )}
-            <span className="text-xs font-medium">Both</span>
-          </Button>
+            <Button
+              className={cn(
+                'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                diaperTheme.textColor,
+              )}
+              disabled={creatingType !== null}
+              onClick={(e) => handleQuickDiaper(e, 'both')}
+              variant="ghost"
+            >
+              {creatingType === 'both' ? (
+                <Icons.Spinner className="size-5" />
+              ) : (
+                <Baby className="size-5" />
+              )}
+              <span className="text-xs font-medium">Both</span>
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -663,7 +696,6 @@ export function QuickActionDiaperCard({
             })) ?? []
         }
         timeFormat={timeFormat}
-        trendData={[]}
       />
 
       {/* Sleep Stop Confirmation Dialog */}

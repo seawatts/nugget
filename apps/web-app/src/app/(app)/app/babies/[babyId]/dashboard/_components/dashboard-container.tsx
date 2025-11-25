@@ -71,7 +71,9 @@ export function DashboardContainer() {
     baby.showSleepCard ||
     baby.showDiaperCard ||
     baby.showPumpingCard ||
-    baby.showDoctorVisitCard;
+    baby.showDoctorVisitCard ||
+    baby.showNailTrimmingCard ||
+    baby.showBathCard;
 
   // Check if everything is hidden
   const allHidden = !hasAnyActivityCards && !baby.showActivityTimeline;

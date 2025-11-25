@@ -13,10 +13,8 @@ import { subDays } from 'date-fns';
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
-  ComparisonChart,
   FrequencyHeatmap,
   FrequencyInsightsComponent,
-  getComparisonContent,
   getTrendContent,
   RecentActivitiesList,
   StatsDrawerWrapper,
@@ -24,26 +22,31 @@ import {
 } from '../../shared/components/stats';
 import type {
   AmountType,
-  ComparisonData,
-  ComparisonTimeRange,
+  HeatmapRangeValue,
   MetricType,
-  TrendData,
+  TimelineWeekRange,
+  TrendTimeRange,
 } from '../../shared/types';
-import { TIME_RANGE_OPTIONS } from '../../shared/types';
+import {
+  HEATMAP_RANGE_OPTIONS,
+  TIMELINE_WEEK_OPTIONS,
+} from '../../shared/types';
+import {
+  getCustomDateRangeLabel,
+  getDateRangeLabel,
+} from '../../shared/utils/date-range-utils';
 import {
   calculateHourlyFrequency,
   calculateTimeBlockData,
   detectPatterns,
 } from '../../shared/utils/frequency-utils';
-import { mlToOz } from '../../shared/volume-utils';
-import { calculatePumpingStatsWithComparison } from '../pumping-goals';
+import { calculatePumpingTrendData } from '../pumping-goals';
 import { PumpingTrendChart } from './pumping-trend-chart';
 
 interface PumpingStatsDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  trendData: TrendData[];
-  activities: Array<typeof Activities.$inferSelect>; // Raw activities for dynamic stats calculation
+  activities: Array<typeof Activities.$inferSelect>;
   unit: 'ML' | 'OZ';
   recentActivities: Array<{
     time: Date;
@@ -53,24 +56,60 @@ interface PumpingStatsDrawerProps {
   timeFormat: '12h' | '24h';
 }
 
+const TREND_RANGE_OPTIONS: Array<{ value: TrendTimeRange; label: string }> = [
+  { label: '24 Hours', value: '24h' },
+  { label: '7 Days', value: '7d' },
+  { label: '2 Weeks', value: '2w' },
+  { label: '1 Month', value: '1m' },
+  { label: '3 Months', value: '3m' },
+  { label: '6 Months', value: '6m' },
+];
+
+const getTrendRangeLabel = (value: TrendTimeRange) =>
+  TREND_RANGE_OPTIONS.find((option) => option.value === value)?.label ||
+  TREND_RANGE_OPTIONS[1]?.label ||
+  '7 Days';
+
 export function PumpingStatsDrawer({
   open,
   onOpenChange,
-  trendData,
   activities,
   unit,
   recentActivities,
   timeFormat,
 }: PumpingStatsDrawerProps) {
+  const [trendTimeRange, setTrendTimeRange] = useState<TrendTimeRange>('7d');
   const [metricType, setMetricType] = useState<MetricType>('count');
   const [amountType, setAmountType] = useState<AmountType>('total');
-  const [timeRange, setTimeRange] = useState<ComparisonTimeRange>('24h');
   const [timelineMetric, setTimelineMetric] = useState<'count' | 'amount'>(
     'count',
   );
   const [heatmapMetric, setHeatmapMetric] = useState<'count' | 'amount'>(
     'count',
   );
+  const [heatmapRange, setHeatmapRange] = useState<HeatmapRangeValue>('30d');
+  const [timelineRange, setTimelineRange] =
+    useState<TimelineWeekRange>('this_week');
+  const fallbackTimelineOption = TIMELINE_WEEK_OPTIONS[0] ?? {
+    label: 'This Week',
+    offsetDays: 0,
+    value: 'this_week',
+  };
+  const selectedTimelineOption =
+    TIMELINE_WEEK_OPTIONS.find((option) => option.value === timelineRange) ??
+    fallbackTimelineOption;
+  const fallbackHeatmapOption = HEATMAP_RANGE_OPTIONS.find(
+    (option) => option.value === '30d',
+  ) ??
+    HEATMAP_RANGE_OPTIONS[0] ?? {
+      days: 30,
+      label: '30 Days',
+      value: '30d',
+    };
+  const selectedHeatmapOption =
+    HEATMAP_RANGE_OPTIONS.find((option) => option.value === heatmapRange) ??
+    fallbackHeatmapOption;
+  const timelineOffsetDays = selectedTimelineOption.offsetDays;
 
   const handleMetricTypeChange = (newType: MetricType) => {
     setMetricType(newType);
@@ -80,21 +119,15 @@ export function PumpingStatsDrawer({
     }
   };
 
-  // Calculate stats based on selected time range
-  const statsComparison = useMemo(() => {
-    const selectedRange = TIME_RANGE_OPTIONS.find(
-      (opt) => opt.value === timeRange,
-    );
-    return calculatePumpingStatsWithComparison(
-      activities,
-      selectedRange?.hours ?? 24,
-    );
-  }, [activities, timeRange]);
-
   const trendContent = getTrendContent('pumping', metricType);
-  const selectedRangeHours =
-    TIME_RANGE_OPTIONS.find((opt) => opt.value === timeRange)?.hours ?? 24;
-  const comparisonContent = getComparisonContent(timeRange, selectedRangeHours);
+  const trendDateRangeLabel = useMemo(
+    () => getDateRangeLabel(trendTimeRange),
+    [trendTimeRange],
+  );
+  const dynamicTrendData = useMemo(
+    () => calculatePumpingTrendData(activities, trendTimeRange),
+    [activities, trendTimeRange],
+  );
 
   // Calculate frequency data
   const pumpingActivities = useMemo(
@@ -102,22 +135,26 @@ export function PumpingStatsDrawer({
     [activities],
   );
 
-  // Filter to last 30 days for heatmap
-  const last30DaysPumpingActivities = useMemo(() => {
-    const thirtyDaysAgo = subDays(new Date(), 30);
+  // Filter for heatmap range
+  const heatmapPumpingActivities = useMemo(() => {
+    const cutoff = subDays(new Date(), selectedHeatmapOption.days);
     return pumpingActivities.filter(
-      (activity) => new Date(activity.startTime) >= thirtyDaysAgo,
+      (activity) => new Date(activity.startTime) >= cutoff,
     );
-  }, [pumpingActivities]);
+  }, [pumpingActivities, selectedHeatmapOption]);
 
   const frequencyHeatmapData = useMemo(
-    () => calculateHourlyFrequency(last30DaysPumpingActivities),
-    [last30DaysPumpingActivities],
+    () => calculateHourlyFrequency(heatmapPumpingActivities),
+    [heatmapPumpingActivities],
+  );
+  const heatmapDateRangeLabel = useMemo(
+    () => getCustomDateRangeLabel(selectedHeatmapOption.days),
+    [selectedHeatmapOption.days],
   );
 
   const timeBlockData = useMemo(
-    () => calculateTimeBlockData(pumpingActivities, 7),
-    [pumpingActivities],
+    () => calculateTimeBlockData(pumpingActivities, 7, timelineOffsetDays),
+    [pumpingActivities, timelineOffsetDays],
   );
 
   const frequencyInsights = useMemo(
@@ -125,54 +162,10 @@ export function PumpingStatsDrawer({
     [pumpingActivities],
   );
 
-  const formatAmount = (ml: number) => {
-    if (unit === 'OZ') {
-      return mlToOz(ml);
-    }
-    return Math.round(ml);
-  };
-
-  const comparisonData: ComparisonData[] = [
-    {
-      current: statsComparison.current.count,
-      metric: 'Sessions',
-      previous: statsComparison.previous.count,
-    },
-  ];
-
-  if (statsComparison.current.totalMl !== undefined) {
-    comparisonData.push({
-      current:
-        unit === 'OZ'
-          ? formatAmount(statsComparison.current.totalMl)
-          : statsComparison.current.totalMl,
-      metric: `Total (${unit.toLowerCase()})`,
-      previous:
-        unit === 'OZ'
-          ? formatAmount(statsComparison.previous.totalMl ?? 0)
-          : (statsComparison.previous.totalMl ?? 0),
-    });
-  }
-
-  if (statsComparison.current.avgAmountMl !== undefined) {
-    comparisonData.push({
-      current:
-        statsComparison.current.avgAmountMl !== null &&
-        statsComparison.current.avgAmountMl !== undefined
-          ? unit === 'OZ'
-            ? formatAmount(statsComparison.current.avgAmountMl)
-            : statsComparison.current.avgAmountMl
-          : 0,
-      metric: `Avg (${unit.toLowerCase()})`,
-      previous:
-        statsComparison.previous.avgAmountMl !== null &&
-        statsComparison.previous.avgAmountMl !== undefined
-          ? unit === 'OZ'
-            ? formatAmount(statsComparison.previous.avgAmountMl)
-            : statsComparison.previous.avgAmountMl
-          : 0,
-    });
-  }
+  const timelineDateRangeLabel = useMemo(
+    () => getDateRangeLabel('7d', new Date(), timelineOffsetDays),
+    [timelineOffsetDays],
+  );
 
   return (
     <StatsDrawerWrapper
@@ -182,107 +175,83 @@ export function PumpingStatsDrawer({
     >
       {/* Trend Chart Section */}
       <Card className="p-4">
-        <div className="mb-3 space-y-3">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="text-sm font-medium text-foreground">
-                {trendContent.title}
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                {trendContent.description}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              {/* Metric Type Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="outline">
-                    {metricType === 'count' ? 'Count' : 'Amount'}
-                    <ChevronDown className="ml-1 size-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => handleMetricTypeChange('count')}
-                  >
-                    Count
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleMetricTypeChange('amount')}
-                  >
-                    Amount
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Total/Average Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="outline">
-                    {amountType === 'total' ? 'Total' : 'Average'}
-                    <ChevronDown className="ml-1 size-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setAmountType('total')}>
-                    Total
-                  </DropdownMenuItem>
-                  {metricType !== 'count' && (
-                    <DropdownMenuItem onClick={() => setAmountType('average')}>
-                      Average
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-        <PumpingTrendChart
-          amountType={amountType}
-          data={trendData}
-          metricType={metricType as 'count' | 'amount'}
-          unit={unit}
-        />
-      </Card>
-
-      {/* Comparison Stats Section */}
-      <Card className="p-4">
-        <div className="mb-3 flex items-start justify-between">
+        <div className="mb-3 flex items-start justify-between gap-2">
           <div>
             <h3 className="text-sm font-medium text-foreground">
-              {comparisonContent.title}
+              {trendContent.title}
             </h3>
             <p className="text-xs text-muted-foreground">
-              {comparisonContent.description}
+              {trendDateRangeLabel}
             </p>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline">
-                {
-                  TIME_RANGE_OPTIONS.find((opt) => opt.value === timeRange)
-                    ?.label
-                }
-                <ChevronDown className="ml-1 size-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {TIME_RANGE_OPTIONS.map((option) => (
+
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  {getTrendRangeLabel(trendTimeRange)}
+                  <ChevronDown className="ml-1 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {TREND_RANGE_OPTIONS.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => setTrendTimeRange(option.value)}
+                  >
+                    {option.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  {metricType === 'count' ? 'Count' : 'Amount'}
+                  <ChevronDown className="ml-1 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  key={option.value}
-                  onClick={() => setTimeRange(option.value)}
+                  onClick={() => handleMetricTypeChange('count')}
                 >
-                  {option.label}
+                  Count
                 </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuItem
+                  onClick={() => handleMetricTypeChange('amount')}
+                >
+                  Amount
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  {amountType === 'total' ? 'Total' : 'Average'}
+                  <ChevronDown className="ml-1 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setAmountType('total')}>
+                  Total
+                </DropdownMenuItem>
+                {metricType !== 'count' && (
+                  <DropdownMenuItem onClick={() => setAmountType('average')}>
+                    Average
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
-        <ComparisonChart
-          colorClass="var(--activity-pumping)"
-          currentLabel={comparisonContent.currentLabel}
-          data={comparisonData}
-          previousLabel={comparisonContent.previousLabel}
+
+        <PumpingTrendChart
+          amountType={amountType}
+          data={dynamicTrendData}
+          metricType={metricType as 'count' | 'amount'}
+          unit={unit}
         />
       </Card>
 
@@ -292,26 +261,49 @@ export function PumpingStatsDrawer({
           <div>
             <h3 className="text-sm font-medium text-foreground">Timeline</h3>
             <p className="text-xs text-muted-foreground">
-              When sessions occur throughout the day
+              {timelineDateRangeLabel}
             </p>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline">
-                {timelineMetric === 'count' ? 'Count' : 'Amount'}
-                <ChevronDown className="ml-1 size-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setTimelineMetric('count')}>
-                Count
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTimelineMetric('amount')}>
-                Amount
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  {selectedTimelineOption.label}
+                  <ChevronDown className="ml-1 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {TIMELINE_WEEK_OPTIONS.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => setTimelineRange(option.value)}
+                  >
+                    {option.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  {timelineMetric === 'count' ? 'Count' : 'Amount'}
+                  <ChevronDown className="ml-1 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setTimelineMetric('count')}>
+                  Count
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTimelineMetric('amount')}>
+                  Amount
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+
         <TimeBlockChart
           colorVar="var(--activity-pumping)"
           data={timeBlockData}
@@ -325,26 +317,49 @@ export function PumpingStatsDrawer({
           <div>
             <h3 className="text-sm font-medium text-foreground">Heatmap</h3>
             <p className="text-xs text-muted-foreground">
-              Frequency patterns by day and time
+              {heatmapDateRangeLabel}
             </p>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline">
-                {heatmapMetric === 'count' ? 'Count' : 'Amount'}
-                <ChevronDown className="ml-1 size-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setHeatmapMetric('count')}>
-                Count
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setHeatmapMetric('amount')}>
-                Amount
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  {selectedHeatmapOption.label}
+                  <ChevronDown className="ml-1 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {HEATMAP_RANGE_OPTIONS.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => setHeatmapRange(option.value)}
+                  >
+                    {option.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  {heatmapMetric === 'count' ? 'Count' : 'Amount'}
+                  <ChevronDown className="ml-1 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setHeatmapMetric('count')}>
+                  Count
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setHeatmapMetric('amount')}>
+                  Amount
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+
         <FrequencyHeatmap
           colorVar="var(--activity-pumping)"
           data={frequencyHeatmapData}
@@ -362,6 +377,7 @@ export function PumpingStatsDrawer({
             Key trends and patterns
           </p>
         </div>
+
         <FrequencyInsightsComponent
           activityLabel="pumping sessions"
           colorVar="var(--activity-pumping)"

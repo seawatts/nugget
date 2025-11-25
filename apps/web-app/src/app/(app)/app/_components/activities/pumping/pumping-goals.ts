@@ -1,5 +1,6 @@
 import type { Activities } from '@nugget/db/schema';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
+import type { TrendTimeRange } from '../shared/types';
 import { getPumpingIntervalByAge } from './pumping-intervals';
 
 /**
@@ -180,26 +181,38 @@ export function calculatePumpingStatsWithComparison(
  * Calculate pumping statistics grouped by day for trend charts
  * Returns data for the last 7 days
  */
+const TREND_RANGE_DAYS: Record<TrendTimeRange, number> = {
+  '1m': 30,
+  '2w': 14,
+  '3m': 90,
+  '6m': 180,
+  '7d': 7,
+  '24h': 1,
+};
+
 export function calculatePumpingTrendData(
   activities: Array<typeof Activities.$inferSelect>,
+  timeRange: TrendTimeRange = '7d',
 ): Array<{ date: string; count: number; totalMl: number }> {
+  if (!activities || !Array.isArray(activities)) {
+    return [];
+  }
+
   const now = new Date();
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const days = TREND_RANGE_DAYS[timeRange] ?? 7;
+  const rangeStart = startOfDay(
+    new Date(now.getTime() - (days - 1) * 24 * 60 * 60 * 1000),
+  );
 
-  // Filter to pumping sessions from the last 7 days
-  const recentPumping = activities.filter((activity) => {
-    const activityDate = new Date(activity.startTime);
-    const isRecent = activityDate >= sevenDaysAgo;
-    const isPumping = activity.type === 'pumping';
-    return isRecent && isPumping;
-  });
-
-  // Group by date
   const statsByDate = new Map<string, { count: number; totalMl: number }>();
 
-  for (const activity of recentPumping) {
+  for (const activity of activities) {
+    if (activity.type !== 'pumping') continue;
     const date = new Date(activity.startTime);
-    const dateKey = format(date, 'yyyy-MM-dd');
+    if (date < rangeStart) continue;
+
+    const dayStart = startOfDay(date);
+    const dateKey = format(dayStart, 'yyyy-MM-dd');
 
     if (!statsByDate.has(dateKey)) {
       statsByDate.set(dateKey, { count: 0, totalMl: 0 });
@@ -212,10 +225,9 @@ export function calculatePumpingTrendData(
     stats.totalMl += activity.amountMl || 0;
   }
 
-  // Convert to array and fill in missing dates
   const result: Array<{ date: string; count: number; totalMl: number }> = [];
-  for (let i = 6; i >= 0; i -= 1) {
-    const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const date = startOfDay(new Date(now.getTime() - i * 24 * 60 * 60 * 1000));
     const dateKey = format(date, 'yyyy-MM-dd');
     const stats = statsByDate.get(dateKey) || { count: 0, totalMl: 0 };
     result.push({

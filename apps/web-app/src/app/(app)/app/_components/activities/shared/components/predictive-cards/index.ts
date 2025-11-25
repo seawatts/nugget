@@ -1,4 +1,7 @@
 // Re-export hooks
+
+export { BasePredictiveCard } from './base-predictive-card';
+export { DayGridButton } from './day-grid-button';
 export {
   usePredictiveActions,
   usePredictiveTimer,

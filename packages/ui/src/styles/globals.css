@@ -78,6 +78,8 @@
   --activity-doctor-visit-foreground: oklch(0.985 0 0);
   --activity-vitamin-d: oklch(0.68 0.18 50);
   --activity-vitamin-d-foreground: oklch(0.98 0.02 0);
+  --activity-nail-trimming: oklch(0.73 0.17 345);
+  --activity-nail-trimming-foreground: oklch(0.985 0 0);
 
   /* Custom --- */
   /* Animation durations */
@@ -157,6 +159,8 @@
   --activity-doctor-visit-foreground: oklch(0.985 0 0);
   --activity-vitamin-d: oklch(0.68 0.18 50);
   --activity-vitamin-d-foreground: oklch(0.98 0.02 0);
+  --activity-nail-trimming: oklch(0.73 0.17 345);
+  --activity-nail-trimming-foreground: oklch(0.985 0 0);
 }
 
 @theme inline {
@@ -235,6 +239,10 @@
   );
   --color-activity-vitamin-d: var(--activity-vitamin-d);
   --color-activity-vitamin-d-foreground: var(--activity-vitamin-d-foreground);
+  --color-activity-nail-trimming: var(--activity-nail-trimming);
+  --color-activity-nail-trimming-foreground: var(
+    --activity-nail-trimming-foreground
+  );
   --animate-accordion-down: accordion-down 0.1s ease-out;
   --animate-accordion-up: accordion-up 0.1s ease-out;
 

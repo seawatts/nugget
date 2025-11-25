@@ -26,7 +26,6 @@ import { useActivityMutations } from '../use-activity-mutations';
 import { PumpingStatsDrawer } from './components';
 import { getPumpingLearningContent } from './learning-content';
 import { predictNextPumping } from './prediction';
-import { calculatePumpingTrendData } from './pumping-goals';
 import { getAgeBasedPumpingAmounts } from './pumping-volume-utils';
 
 interface QuickActionPumpingCardProps {
@@ -159,10 +158,6 @@ export function QuickActionPumpingCard({
     addSuffix: false,
   }).replace(/^about /, '');
 
-  // Calculate stats for drawer
-  const pumpingTrendData = allActivities
-    ? calculatePumpingTrendData(allActivities)
-    : [];
   const nextExactTime = formatTimeWithPreference(
     prediction.nextPumpingTime,
     timeFormat,
@@ -286,29 +281,20 @@ export function QuickActionPumpingCard({
           `bg-${pumpingTheme.color} ${pumpingTheme.textColor}`,
         )}
       >
-        <PredictiveCardHeader
-          icon={PumpingIcon}
-          isFetching={isFetching && !isLoading}
-          onAddClick={handleAddClick}
-          onInfoClick={handleInfoClick}
-          onStatsClick={handleStatsClick}
-          quickLogEnabled={false}
-          showAddIcon={true}
-          showStatsIcon={userData?.showActivityGoals ?? true}
-          title="Pumping"
-        />
+        <div className="flex flex-col gap-6">
+          <PredictiveCardHeader
+            icon={PumpingIcon}
+            isFetching={isFetching && !isLoading}
+            onAddClick={handleAddClick}
+            onInfoClick={handleInfoClick}
+            onStatsClick={handleStatsClick}
+            quickLogEnabled={false}
+            showAddIcon={true}
+            showStatsIcon={userData?.showActivityGoals ?? true}
+            title="Pumping"
+          />
 
-        {/* Timeline Layout - Full Width */}
-        <div className="relative py-4 mt-4">
-          {/* Timeline dots and connecting line */}
-          <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-4">
-            <div className="w-2.5 h-2.5 rounded-full bg-white/40 shrink-0" />
-            <div className="flex-1 border-t border-white/20 mx-2" />
-            <div className="w-2.5 h-2.5 rounded-full bg-white/40 shrink-0" />
-          </div>
-
-          {/* Two-column content with justify-between */}
-          <div className="flex items-start justify-between pt-6 px-2">
+          <div className="flex items-start justify-between px-2">
             {/* Left Column: Last Pumping */}
             {lastTimeDistance && lastExactTime && lastPumpingActivity ? (
               <div className="space-y-1.5">
@@ -356,63 +342,62 @@ export function QuickActionPumpingCard({
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Quick Action Buttons - 3 Amount Options */}
-        <div className="grid grid-cols-3 gap-2 mt-4">
-          <Button
-            className={cn(
-              'flex flex-col items-center justify-center h-auto py-3 gap-1',
-              'bg-white/20 hover:bg-white/30 active:bg-white/40',
-              pumpingTheme.textColor,
-            )}
-            disabled={creatingAmount !== null}
-            onClick={(e) => handleQuickPump(e, 'low')}
-            variant="ghost"
-          >
-            {creatingAmount === 'low' ? (
-              <Icons.Spinner className="size-5" />
-            ) : (
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              className={cn(
+                'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                pumpingTheme.textColor,
+              )}
+              disabled={creatingAmount !== null}
+              onClick={(e) => handleQuickPump(e, 'low')}
+              variant="ghost"
+            >
+              {creatingAmount === 'low' ? (
+                <Icons.Spinner className="size-5" />
+              ) : (
+                <Droplets className="size-5" />
+              )}
+              <span className="text-xs font-medium">
+                {formatAmount(amounts.low)}
+              </span>
+            </Button>
+
+            <Button
+              className={cn(
+                'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                pumpingTheme.textColor,
+              )}
+              disabled={creatingAmount !== null}
+              onClick={(e) => handleQuickPump(e, 'medium')}
+              variant="ghost"
+            >
+              {creatingAmount === 'medium' ? (
+                <Icons.Spinner className="size-5" />
+              ) : (
+                <Droplets className="size-5" />
+              )}
+              <span className="text-xs font-medium">
+                {formatAmount(amounts.medium)}
+              </span>
+            </Button>
+
+            <Button
+              className={cn(
+                'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                pumpingTheme.textColor,
+              )}
+              disabled={creatingAmount !== null}
+              onClick={handleAddClick}
+              variant="ghost"
+            >
               <Droplets className="size-5" />
-            )}
-            <span className="text-xs font-medium">
-              {formatAmount(amounts.low)}
-            </span>
-          </Button>
-
-          <Button
-            className={cn(
-              'flex flex-col items-center justify-center h-auto py-3 gap-1',
-              'bg-white/20 hover:bg-white/30 active:bg-white/40',
-              pumpingTheme.textColor,
-            )}
-            disabled={creatingAmount !== null}
-            onClick={(e) => handleQuickPump(e, 'medium')}
-            variant="ghost"
-          >
-            {creatingAmount === 'medium' ? (
-              <Icons.Spinner className="size-5" />
-            ) : (
-              <Droplets className="size-5" />
-            )}
-            <span className="text-xs font-medium">
-              {formatAmount(amounts.medium)}
-            </span>
-          </Button>
-
-          <Button
-            className={cn(
-              'flex flex-col items-center justify-center h-auto py-3 gap-1',
-              'bg-white/20 hover:bg-white/30 active:bg-white/40',
-              pumpingTheme.textColor,
-            )}
-            disabled={creatingAmount !== null}
-            onClick={handleAddClick}
-            variant="ghost"
-          >
-            <Droplets className="size-5" />
-            <span className="text-xs font-medium">Custom Amount</span>
-          </Button>
+              <span className="text-xs font-medium">Custom Amount </span>
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -445,7 +430,6 @@ export function QuickActionPumpingCard({
           })) ?? []
         }
         timeFormat={timeFormat}
-        trendData={pumpingTrendData}
         unit={userUnitPref}
       />
     </>
