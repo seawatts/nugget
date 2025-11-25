@@ -643,7 +643,7 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
           let closestEntry: HeaderEntry | null = null;
           let closestDistance = Number.POSITIVE_INFINITY;
 
-          entries.forEach((entry) => {
+          for (const entry of entries) {
             if (entry.isIntersecting) {
               const top = entry.boundingClientRect.top;
               // Only consider headers that are above or at the viewport top
@@ -663,9 +663,9 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
                 }
               }
             }
-          });
+          }
 
-          if (closestEntry !== null) {
+          if (closestEntry) {
             setActiveDayIndex(closestEntry.index);
           }
         }
