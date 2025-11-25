@@ -1,6 +1,5 @@
 'use client';
 
-import { Button } from '@nugget/ui/button';
 import { H3, P } from '@nugget/ui/custom/typography';
 import { Particles } from '@nugget/ui/magicui/particles';
 import { ShineBorder } from '@nugget/ui/magicui/shine-border';
@@ -67,26 +66,20 @@ export function CelebrationCardComingSoon({
         {/* Message */}
         <div className="gap-3 grid">
           <P className="text-sm text-muted-foreground">
-            Check back{' '}
+            Come back{' '}
             <span className="font-semibold text-foreground">
               {daysUntilNext === 1 ? 'tomorrow' : `in ${daysUntilNext} days`}
             </span>{' '}
-            when <span className="font-bold text-primary">{babyName}</span>{' '}
+            to celebrate{' '}
+            <span className="font-bold text-primary">{babyName}'s</span>{' '}
             <span className="font-semibold text-foreground">
               {nextCelebrationTitle
                 .toLowerCase()
                 .replace(/[🎉🎂]/gu, '')
+                .replace(/^happy\s+/i, '')
                 .trim()}
             </span>
           </P>
-        </div>
-
-        {/* Button */}
-        <div className="w-full pt-2">
-          <Button className="w-full gap-2" disabled size="sm" variant="outline">
-            <Cake className="size-4" />
-            Unlock soon
-          </Button>
         </div>
       </div>
     </div>
