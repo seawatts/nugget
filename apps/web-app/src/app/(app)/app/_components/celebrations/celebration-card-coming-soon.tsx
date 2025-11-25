@@ -64,23 +64,22 @@ export function CelebrationCardComingSoon({
         </H3>
 
         {/* Message */}
-        <div className="gap-3 grid">
-          <P className="text-sm text-muted-foreground">
-            Come back{' '}
-            <span className="font-semibold text-foreground">
-              {daysUntilNext === 1 ? 'tomorrow' : `in ${daysUntilNext} days`}
-            </span>{' '}
-            to celebrate{' '}
-            <span className="font-bold text-primary">{babyName}'s</span>{' '}
-            <span className="font-semibold text-foreground">
-              {nextCelebrationTitle
-                .toLowerCase()
-                .replace(/[🎉🎂]/gu, '')
-                .replace(/^happy\s+/i, '')
-                .trim()}
-            </span>
-          </P>
-        </div>
+        <P className="text-sm text-muted-foreground">
+          Come back{' '}
+          <span className="font-semibold text-foreground">
+            {daysUntilNext === 1 ? 'tomorrow' : `in ${daysUntilNext} days`}
+          </span>{' '}
+          to celebrate{' '}
+          <span className="font-bold text-primary">{babyName}'s</span>{' '}
+          <span className="font-semibold text-foreground">
+            {nextCelebrationTitle
+              .toLowerCase()
+              .replace(/[🎉🎂]/gu, '')
+              .replace(/^happy\s+/i, '')
+              .trim()}
+          </span>
+          !
+        </P>
       </div>
     </div>
   );

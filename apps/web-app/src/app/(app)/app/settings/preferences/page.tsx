@@ -36,7 +36,6 @@ import { AlarmSettings } from './_components/alarm-settings';
 import { QuickLogInfoDrawer } from './_components/quick-log-info-drawer';
 
 type QuickLogInfoType =
-  | 'enable'
   | 'feeding'
   | 'feedingAmount'
   | 'feedingDuration'
@@ -106,20 +105,6 @@ const quickLogInfoContent: Record<
       'Patterns typically emerge after 2-3 days',
     ],
     title: 'Auto-fill predicted type',
-  },
-  enable: {
-    bgColor: 'bg-primary/5',
-    borderColor: 'border-primary/20',
-    color: 'bg-primary/10 text-primary',
-    educationalContent:
-      "Quick Log analyzes your baby's last 7-14 activities of each type to create smart defaults. When you tap the Quick Log button on a prediction card, it pre-fills the activity drawer with suggested values based on your selected preferences, saving you 30-45 seconds per log.",
-    icon: Zap,
-    tips: [
-      'Reduces logging time by ~70%',
-      'All values can be edited before saving',
-      'Works best with consistent tracking',
-    ],
-    title: 'Enable Quick Log',
   },
   feeding: {
     bgColor: 'bg-activity-feeding/5',
@@ -857,29 +842,11 @@ export default function PreferencesSettingsPage() {
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Zap className="h-5 w-5" />
             Quick Log Settings
-            <Button
-              className="size-4 p-0"
-              onClick={() => setOpenInfoDialog('enable')}
-              type="button"
-              variant="ghost"
-            >
-              <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors" />
-            </Button>
           </h2>
           <p className="text-sm text-muted-foreground">
             Customize smart defaults for quick logging activities
           </p>
         </div>
-
-        {/* Master Toggle */}
-        <SettingToggle
-          checked={preferences.quickLogEnabled}
-          description="Show quick log button on prediction cards"
-          label="Enable Quick Log"
-          onCheckedChange={(checked) =>
-            handlePreferenceChange('quickLogEnabled', checked)
-          }
-        />
 
         {/* Predictive Times Toggle */}
         <SettingToggle
@@ -945,7 +912,6 @@ export default function PreferencesSettingsPage() {
             <SettingToggle
               checked={preferences.quickLogFeedingUseLastAmount}
               className="py-2"
-              disabled={!preferences.quickLogEnabled}
               label="Auto-fill from last feeding"
               labelAction={
                 <Button
@@ -968,7 +934,6 @@ export default function PreferencesSettingsPage() {
             <SettingToggle
               checked={preferences.quickLogFeedingUseTypicalDuration}
               className="py-2"
-              disabled={!preferences.quickLogEnabled}
               label="Auto-fill average duration"
               labelAction={
                 <Button
@@ -994,7 +959,6 @@ export default function PreferencesSettingsPage() {
             <SettingToggle
               checked={preferences.quickLogFeedingUseLastType}
               className="py-2"
-              disabled={!preferences.quickLogEnabled}
               label="Auto-fill feeding method"
               labelAction={
                 <Button
@@ -1035,7 +999,6 @@ export default function PreferencesSettingsPage() {
             <SettingToggle
               checked={preferences.quickLogSleepUseSuggestedDuration}
               className="py-2"
-              disabled={!preferences.quickLogEnabled}
               label="Auto-fill age-based duration"
               labelAction={
                 <Button
@@ -1079,7 +1042,6 @@ export default function PreferencesSettingsPage() {
             <SettingToggle
               checked={preferences.quickLogDiaperUsePredictedType}
               className="py-2"
-              disabled={!preferences.quickLogEnabled}
               label="Auto-fill predicted type"
               labelAction={
                 <Button
@@ -1123,7 +1085,6 @@ export default function PreferencesSettingsPage() {
             <SettingToggle
               checked={preferences.quickLogPumpingUseLastVolume}
               className="py-2"
-              disabled={!preferences.quickLogEnabled}
               label="Auto-fill from last session"
               labelAction={
                 <Button
@@ -1146,7 +1107,6 @@ export default function PreferencesSettingsPage() {
             <SettingToggle
               checked={preferences.quickLogPumpingUseTypicalDuration}
               className="py-2"
-              disabled={!preferences.quickLogEnabled}
               label="Auto-fill average duration"
               labelAction={
                 <Button

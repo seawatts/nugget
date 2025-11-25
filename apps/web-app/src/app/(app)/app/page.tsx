@@ -39,8 +39,15 @@ export default async function Home() {
     if (user?.lastSelectedBabyId) {
       redirect(`/app/babies/${user.lastSelectedBabyId}/dashboard`);
     }
+
+    // If no preference or last selected baby, check if user has any babies
+    // and redirect to the first baby's dashboard
+    const babies = await api.babies.list();
+    if (babies && babies.length > 0 && babies[0]) {
+      redirect(`/app/babies/${babies[0].id}/dashboard`);
+    }
   }
 
-  // Redirect to babies page to select or view babies
+  // Redirect to babies page to select or view babies (only if no babies exist)
   redirect('/app/babies');
 }

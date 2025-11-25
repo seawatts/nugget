@@ -182,14 +182,62 @@ export function AlarmSettings({
     }
 
     try {
-      // Send a message to the service worker to check immediately
-      if ('serviceWorker' in navigator) {
+      // Check if we're on iOS and have service worker support
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const hasServiceWorker = 'serviceWorker' in navigator;
+      const hasPushManager = 'PushManager' in window;
+
+      if (isIOS && !hasPushManager && hasServiceWorker) {
+        // iOS 16.3 and earlier don't support Push API
+        // Try to show a notification directly as a fallback
         const registration = await navigator.serviceWorker.ready;
-        registration.active?.postMessage({ type: 'CHECK_OVERDUE_NOW' });
-        toast.success('Checking for overdue activities...');
+        await registration.showNotification('🔔 Test Notification', {
+          badge: '/favicon-32x32.png',
+          body: 'This is a test notification. Push API may not be supported on your iOS version.',
+          icon: '/android-chrome-192x192.png',
+          tag: 'test-notification',
+        });
+        toast.success('Test notification sent (direct)');
+        return;
       }
-    } catch (_error) {
-      toast.error('Failed to trigger check');
+
+      // Try to send via push API first
+      const response = await fetch('/api/push/test', {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // If push fails, try direct notification as fallback
+        if (hasServiceWorker && data.error?.includes('No push subscription')) {
+          const registration = await navigator.serviceWorker.ready;
+          await registration.showNotification('🔔 Test Notification', {
+            badge: '/favicon-32x32.png',
+            body: 'This is a test notification. Push subscription not found - using direct notification.',
+            icon: '/android-chrome-192x192.png',
+            tag: 'test-notification',
+          });
+          toast.success('Test notification sent (fallback)');
+          return;
+        }
+
+        toast.error(
+          data.message || data.error || 'Failed to send test notification',
+        );
+        return;
+      }
+
+      toast.success(
+        data.message || `Test notification sent to ${data.sent} device(s)`,
+      );
+    } catch (error) {
+      console.error('Error sending test notification:', error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to send test notification',
+      );
     }
   };
 

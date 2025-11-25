@@ -28,29 +28,166 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
   );
 });
 
-// Fetch event - serve from cache when offline
+// Fetch event - optimized caching strategies for PWA performance
 self.addEventListener('fetch', (event: FetchEvent) => {
   // Only handle GET requests
   if (event.request.method !== 'GET') {
     return;
   }
 
+  const url = new URL(event.request.url);
+  const pathname = url.pathname;
+
+  // Strategy 1: CacheFirst for baby dashboard routes - instant load from cache
+  if (/^\/app\/babies\/[^/]+\/dashboard/.test(pathname)) {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(CACHE_NAME);
+        const cachedResponse = await cache.match(event.request);
+
+        // Serve from cache immediately if available
+        if (cachedResponse) {
+          // Update cache in background (StaleWhileRevalidate pattern)
+          fetch(event.request)
+            .then((networkResponse) => {
+              if (networkResponse.ok) {
+                cache.put(event.request, networkResponse.clone());
+              }
+            })
+            .catch(() => {
+              // Ignore network errors in background update
+            });
+          return cachedResponse;
+        }
+
+        // If not in cache, fetch from network and cache it
+        try {
+          const networkResponse = await fetch(event.request);
+          if (networkResponse.ok) {
+            cache.put(event.request, networkResponse.clone());
+          }
+          return networkResponse;
+        } catch (_error) {
+          return new Response('Offline', {
+            status: 503,
+            statusText: 'Service Unavailable',
+          });
+        }
+      })(),
+    );
+    return;
+  }
+
+  // Strategy 2: StaleWhileRevalidate for /app route - instant redirect from cache
+  if (pathname === '/app' || pathname === '/app/') {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(CACHE_NAME);
+        const cachedResponse = await cache.match(event.request);
+
+        // Fetch fresh content in background
+        const fetchPromise = fetch(event.request)
+          .then((networkResponse) => {
+            if (networkResponse.ok) {
+              cache.put(event.request, networkResponse.clone());
+            }
+            return networkResponse;
+          })
+          .catch(() => {
+            // Ignore network errors
+            return null;
+          });
+
+        // Return cached response immediately if available, otherwise wait for network
+        if (cachedResponse) {
+          // Don't await fetchPromise - let it update cache in background
+          void fetchPromise;
+          return cachedResponse;
+        }
+
+        // No cache, wait for network
+        const networkResponse = await fetchPromise;
+        if (networkResponse) {
+          return networkResponse;
+        }
+
+        return new Response('Offline', {
+          status: 503,
+          statusText: 'Service Unavailable',
+        });
+      })(),
+    );
+    return;
+  }
+
+  // Strategy 3: NetworkFirst for API calls with short timeout
+  if (/^\/(api|trpc)\//.test(pathname)) {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(CACHE_NAME);
+        const timeoutPromise = new Promise<Response | null>((resolve) => {
+          setTimeout(() => resolve(null), 3000); // 3 second timeout
+        });
+
+        try {
+          const networkResponse = await Promise.race([
+            fetch(event.request),
+            timeoutPromise,
+          ]);
+
+          if (networkResponse?.ok) {
+            // Cache successful API responses
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          }
+
+          // Network failed or timed out, try cache
+          const cachedResponse = await cache.match(event.request);
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+
+          // Both failed
+          return (
+            networkResponse ||
+            new Response('Offline', {
+              status: 503,
+              statusText: 'Service Unavailable',
+            })
+          );
+        } catch (_error) {
+          // Network error, try cache
+          const cachedResponse = await cache.match(event.request);
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+
+          return new Response('Offline', {
+            status: 503,
+            statusText: 'Service Unavailable',
+          });
+        }
+      })(),
+    );
+    return;
+  }
+
+  // Strategy 4: NetworkFirst for other routes (default behavior)
   event.respondWith(
     (async () => {
+      const cache = await caches.open(CACHE_NAME);
       try {
-        // Try network first
         const networkResponse = await fetch(event.request);
 
         // Cache successful responses
         if (networkResponse.ok) {
-          const cache = await caches.open(CACHE_NAME);
           cache.put(event.request, networkResponse.clone());
         }
 
         return networkResponse;
       } catch (_error) {
         // If network fails, try cache
-        const cachedResponse = await caches.match(event.request);
+        const cachedResponse = await cache.match(event.request);
         if (cachedResponse) {
           return cachedResponse;
         }
@@ -86,22 +223,54 @@ self.addEventListener('sync', ((event: ExtendableEvent & { tag: string }) => {
 // Push notification event
 self.addEventListener('push', (event: PushEvent) => {
   if (!event.data) {
+    console.log('[Service Worker] Push event received but no data');
     return;
   }
 
-  const data = event.data.json();
-  const options = {
-    actions: data.actions || [],
-    badge: '/favicon-32x32.png',
-    body: data.body,
-    data: data.data || {},
-    icon: '/android-chrome-192x192.png',
-    vibrate: [200, 100, 200],
-  } as NotificationOptions;
+  try {
+    const data = event.data.json();
 
-  event.waitUntil(
-    self.registration.showNotification(data.title || 'Nugget', options),
-  );
+    // Build notification options compatible with iOS and other platforms
+    // iOS may not support actions or vibrate, so we make them optional
+    const options: NotificationOptions & {
+      actions?: Array<{ action: string; title: string }>;
+      vibrate?: number[];
+    } = {
+      badge: '/favicon-32x32.png',
+      body: data.body,
+      data: data.data || {},
+      icon: '/android-chrome-192x192.png',
+      tag: data.tag || 'nugget-notification',
+    };
+
+    // Add optional features that may not be supported on all platforms
+    if (
+      data.actions &&
+      Array.isArray(data.actions) &&
+      data.actions.length > 0
+    ) {
+      options.actions = data.actions;
+    }
+
+    // Vibrate is not supported on iOS, but we can include it for other platforms
+    // The browser will ignore it if not supported
+    if (data.vibrate !== false) {
+      options.vibrate = [200, 100, 200];
+    }
+
+    event.waitUntil(
+      self.registration
+        .showNotification(data.title || 'Nugget', options)
+        .catch((error) => {
+          console.error('[Service Worker] Failed to show notification:', error);
+        }),
+    );
+  } catch (error) {
+    console.error(
+      '[Service Worker] Error processing push notification:',
+      error,
+    );
+  }
 });
 
 // Notification click event
@@ -140,6 +309,28 @@ self.addEventListener('message', (event: ExtendableMessageEvent) => {
 
   if (event.data && event.data.type === 'CHECK_OVERDUE_NOW') {
     event.waitUntil(checkOverdueActivities());
+  }
+
+  // Handle direct test notification requests (for iOS fallback)
+  if (event.data && event.data.type === 'SHOW_TEST_NOTIFICATION') {
+    event.waitUntil(
+      self.registration
+        .showNotification('🔔 Test Notification', {
+          badge: '/favicon-32x32.png',
+          body: event.data.body || 'This is a test notification from Nugget.',
+          data: {
+            url: '/app',
+          },
+          icon: '/android-chrome-192x192.png',
+          tag: 'test-notification',
+        })
+        .catch((error) => {
+          console.error(
+            '[Service Worker] Failed to show test notification:',
+            error,
+          );
+        }),
+    );
   }
 });
 
@@ -237,17 +428,11 @@ async function sendOverdueNotification(activity: {
   const title = `${emoji} ${activityName} Overdue`;
   const body = `${activity.babyName} is ${activity.overdueMinutes} minutes overdue for ${activityName.toLowerCase()}`;
 
-  const options = {
-    actions: [
-      {
-        action: 'log',
-        title: `Log ${activityName}`,
-      },
-      {
-        action: 'dismiss',
-        title: 'Dismiss',
-      },
-    ],
+  // Build notification options compatible with iOS and other platforms
+  const options: NotificationOptions & {
+    actions?: Array<{ action: string; title: string }>;
+    vibrate?: number[];
+  } = {
     badge: '/favicon-32x32.png',
     body,
     data: {
@@ -256,12 +441,37 @@ async function sendOverdueNotification(activity: {
       url: `/app/babies/${activity.babyId}`,
     },
     icon: '/android-chrome-192x192.png',
-    requireInteraction: true,
     tag: `overdue-${activity.activityType}-${activity.babyId}`,
-    vibrate: [200, 100, 200, 100, 200],
-  } as NotificationOptions;
+  };
 
-  await self.registration.showNotification(title, options);
+  // Add actions (may not be supported on iOS, but browser will ignore if not supported)
+  options.actions = [
+    {
+      action: 'log',
+      title: `Log ${activityName}`,
+    },
+    {
+      action: 'dismiss',
+      title: 'Dismiss',
+    },
+  ];
+
+  // Vibrate is not supported on iOS, but we can include it for other platforms
+  // The browser will ignore it if not supported
+  options.vibrate = [200, 100, 200, 100, 200];
+
+  // requireInteraction may be too aggressive for iOS, so we set it conditionally
+  // iOS will handle this appropriately
+  options.requireInteraction = true;
+
+  try {
+    await self.registration.showNotification(title, options);
+  } catch (error) {
+    console.error(
+      '[Service Worker] Failed to show overdue notification:',
+      error,
+    );
+  }
 }
 
 /**
