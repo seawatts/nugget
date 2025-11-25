@@ -905,7 +905,7 @@ export function QuickActionFeedingCard({
           `bg-${feedingTheme.color} ${feedingTheme.textColor}`,
         )}
       >
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           <PredictiveCardHeader
             icon={FeedingIcon}
             isFetching={isFetching && !isLoading}

@@ -281,7 +281,7 @@ export function QuickActionPumpingCard({
           `bg-${pumpingTheme.color} ${pumpingTheme.textColor}`,
         )}
       >
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           <PredictiveCardHeader
             icon={PumpingIcon}
             isFetching={isFetching && !isLoading}

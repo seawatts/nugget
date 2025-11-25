@@ -9,6 +9,7 @@ export interface SevenDayActivity {
   dateObj: Date;
   displayDate: string;
   hasActivity: boolean;
+  isToday: boolean;
   activity?: typeof Activities.$inferSelect;
 }
 
@@ -34,6 +35,7 @@ export function useSevenDayActivities(
 
       const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
       const monthDay = `${date.getMonth() + 1}/${date.getDate()}`;
+      const isToday = i === 0; // Last day in the loop (today)
 
       days.push({
         activity: dayActivity,
@@ -41,6 +43,7 @@ export function useSevenDayActivities(
         dateObj: date,
         displayDate: `${dayName} ${monthDay}`,
         hasActivity: !!dayActivity,
+        isToday,
       });
     }
 

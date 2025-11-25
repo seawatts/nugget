@@ -29,7 +29,17 @@ export function DayGridButton({ day, onClick, isLogging }: DayGridButtonProps) {
       }}
       type="button"
     >
-      <span className="text-xs font-semibold opacity-90">{dayAbbr}</span>
+      <div className="flex flex-col items-center gap-0.5 min-h-[28px]">
+        <span className="text-xs font-semibold opacity-90">{dayAbbr}</span>
+        <span
+          className={cn(
+            'text-[10px] font-medium opacity-75 leading-none',
+            !day.isToday && 'invisible',
+          )}
+        >
+          Today
+        </span>
+      </div>
       <div
         className={cn(
           'flex size-10 items-center justify-center rounded-full transition-all',

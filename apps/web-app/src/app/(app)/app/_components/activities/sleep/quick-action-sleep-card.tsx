@@ -654,7 +654,7 @@ export function QuickActionSleepCard({
           `bg-${sleepTheme.color} ${sleepTheme.textColor}`,
         )}
       >
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           <PredictiveCardHeader
             icon={SleepIcon}
             isFetching={isFetching && !isLoading}

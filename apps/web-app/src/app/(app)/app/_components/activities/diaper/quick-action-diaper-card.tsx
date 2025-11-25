@@ -514,7 +514,7 @@ export function QuickActionDiaperCard({
           `bg-${diaperTheme.color} ${diaperTheme.textColor}`,
         )}
       >
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           <PredictiveCardHeader
             icon={DiaperIcon}
             isFetching={isFetching && !isLoading}
