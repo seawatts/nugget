@@ -636,10 +636,11 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
           setActiveDayIndex(activeHeader.index);
         } else {
           // If no header is stuck, find the one closest to the top
-          let closestEntry: {
+          type HeaderEntry = {
             entry: IntersectionObserverEntry;
             index: number;
-          } | null = null;
+          };
+          let closestEntry: HeaderEntry | null = null;
           let closestDistance = Number.POSITIVE_INFINITY;
 
           entries.forEach((entry) => {
@@ -664,7 +665,7 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
             }
           });
 
-          if (closestEntry) {
+          if (closestEntry !== null) {
             setActiveDayIndex(closestEntry.index);
           }
         }
