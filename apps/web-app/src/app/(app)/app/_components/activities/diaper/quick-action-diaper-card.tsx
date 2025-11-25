@@ -21,10 +21,15 @@ import {
   PredictiveCardSkeleton,
   PredictiveInfoDrawer,
 } from '../shared/components/predictive-cards';
+import { StopSleepConfirmationDialog } from '../shared/components/stop-sleep-confirmation-dialog';
+import { TimelineDrawerWrapper } from '../shared/components/timeline-drawer-wrapper';
+import { useInProgressSleep } from '../shared/hooks/use-in-progress-sleep';
+import { autoStopInProgressSleepAction } from '../sleep/actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import { DiaperStatsDrawer } from './components';
 import { getDiaperLearningContent } from './learning-content';
 import { predictNextDiaper } from './prediction';
+import { TimelineDiaperDrawer } from './timeline-diaper-drawer';
 
 interface QuickActionDiaperCardProps {
   onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
@@ -85,6 +90,14 @@ export function QuickActionDiaperCard({
   const [creatingType, setCreatingType] = useState<
     'wet' | 'dirty' | 'both' | null
   >(null);
+  const [showSleepConfirmation, setShowSleepConfirmation] = useState(false);
+  const [pendingActivity, setPendingActivity] = useState<{
+    type: 'wet' | 'dirty' | 'both';
+  } | null>(null);
+  const [editingActivity, setEditingActivity] = useState<
+    typeof Activities.$inferSelect | null
+  >(null);
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
 
   const { createActivity } = useActivityMutations();
   const addOptimisticActivity = useOptimisticActivitiesStore(
@@ -94,6 +107,12 @@ export function QuickActionDiaperCard({
     (state) => state.removeActivity,
   );
   const utils = api.useUtils();
+
+  // Check for in-progress sleep
+  const { inProgressSleep, sleepDuration } = useInProgressSleep({
+    babyId,
+    enabled: true,
+  });
 
   // Merge optimistic and recent activities
   const mergedActivities = queryData
@@ -190,6 +209,15 @@ export function QuickActionDiaperCard({
     type: 'wet' | 'dirty' | 'both',
   ) => {
     e.stopPropagation();
+
+    // Check for in-progress sleep before creating activity
+    if (inProgressSleep) {
+      // Store activity data and show confirmation dialog
+      setPendingActivity({ type });
+      setShowSleepConfirmation(true);
+      return;
+    }
+
     setCreatingType(type);
 
     let tempId: string | null = null;
@@ -271,6 +299,172 @@ export function QuickActionDiaperCard({
     onOpenDrawer?.();
   };
 
+  const handleLastActivityClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (lastDiaperActivity) {
+      setEditingActivity(lastDiaperActivity);
+      setEditDrawerOpen(true);
+    }
+  };
+
+  const handleEditDrawerClose = () => {
+    setEditDrawerOpen(false);
+    setEditingActivity(null);
+  };
+
+  const handleStopSleepAndCreate = async () => {
+    if (!pendingActivity) return;
+
+    setShowSleepConfirmation(false);
+    setCreatingType(pendingActivity.type);
+
+    let tempId: string | null = null;
+
+    try {
+      // Stop the in-progress sleep (non-blocking)
+      const result = await autoStopInProgressSleepAction({ babyId });
+      if (result?.data?.activity) {
+        toast.info('Sleep tracking stopped');
+      }
+    } catch (error) {
+      console.error('Failed to stop sleep:', error);
+      toast.error('Failed to stop sleep tracking');
+    }
+
+    try {
+      const now = new Date();
+      const { type } = pendingActivity;
+
+      // Build diaper activity data
+      const diaperData = {
+        details: { type },
+        type: 'diaper' as const,
+      };
+
+      // Create optimistic activity for immediate UI feedback
+      const optimisticActivity = {
+        ...diaperData,
+        amountMl: null,
+        assignedUserId: null,
+        babyId: babyId,
+        createdAt: now,
+        duration: 0,
+        endTime: now,
+        familyId: 'temp',
+        familyMemberId: null,
+        feedingSource: null,
+        id: `activity-optimistic-diaper-${Date.now()}`,
+        isScheduled: false,
+        notes: null,
+        startTime: now,
+        subjectType: 'baby' as const,
+        updatedAt: now,
+        userId: 'temp',
+      } as typeof Activities.$inferSelect;
+
+      // Store the tempId returned by addOptimisticActivity
+      tempId = addOptimisticActivity(optimisticActivity);
+
+      // Create the actual activity
+      const activity = await createActivity({
+        activityType: 'diaper',
+        babyId,
+        details: { type },
+        endTime: now,
+        startTime: now,
+      });
+
+      // Remove optimistic activity after real one is created
+      if (tempId) {
+        removeOptimisticActivity(tempId);
+      }
+
+      onActivityLogged?.(activity);
+      utils.activities.getUpcomingDiaper.invalidate();
+    } catch (err) {
+      console.error('Failed to log diaper change:', err);
+      // Remove optimistic activity on error to avoid stuck state
+      if (tempId) {
+        removeOptimisticActivity(tempId);
+      }
+      toast.error('Failed to log diaper change. Please try again.');
+    } finally {
+      setCreatingType(null);
+      setPendingActivity(null);
+    }
+  };
+
+  const handleKeepSleepingAndCreate = async () => {
+    if (!pendingActivity) return;
+
+    setShowSleepConfirmation(false);
+    setCreatingType(pendingActivity.type);
+
+    let tempId: string | null = null;
+
+    try {
+      const now = new Date();
+      const { type } = pendingActivity;
+
+      // Build diaper activity data
+      const diaperData = {
+        details: { type },
+        type: 'diaper' as const,
+      };
+
+      // Create optimistic activity for immediate UI feedback
+      const optimisticActivity = {
+        ...diaperData,
+        amountMl: null,
+        assignedUserId: null,
+        babyId: babyId,
+        createdAt: now,
+        duration: 0,
+        endTime: now,
+        familyId: 'temp',
+        familyMemberId: null,
+        feedingSource: null,
+        id: `activity-optimistic-diaper-${Date.now()}`,
+        isScheduled: false,
+        notes: null,
+        startTime: now,
+        subjectType: 'baby' as const,
+        updatedAt: now,
+        userId: 'temp',
+      } as typeof Activities.$inferSelect;
+
+      // Store the tempId returned by addOptimisticActivity
+      tempId = addOptimisticActivity(optimisticActivity);
+
+      // Create the actual activity
+      const activity = await createActivity({
+        activityType: 'diaper',
+        babyId,
+        details: { type },
+        endTime: now,
+        startTime: now,
+      });
+
+      // Remove optimistic activity after real one is created
+      if (tempId) {
+        removeOptimisticActivity(tempId);
+      }
+
+      onActivityLogged?.(activity);
+      utils.activities.getUpcomingDiaper.invalidate();
+    } catch (err) {
+      console.error('Failed to log diaper change:', err);
+      // Remove optimistic activity on error to avoid stuck state
+      if (tempId) {
+        removeOptimisticActivity(tempId);
+      }
+      toast.error('Failed to log diaper change. Please try again.');
+    } finally {
+      setCreatingType(null);
+      setPendingActivity(null);
+    }
+  };
+
   const diaperTheme = getActivityTheme('diaper');
   const DiaperIcon = diaperTheme.icon;
 
@@ -307,7 +501,11 @@ export function QuickActionDiaperCard({
           <div className="flex items-start justify-between pt-6 px-2">
             {/* Left Column: Last Diaper */}
             {lastTimeDistance && lastExactTime && lastDiaperActivity ? (
-              <div className="space-y-1.5">
+              <button
+                className="space-y-1.5 text-left cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={handleLastActivityClick}
+                type="button"
+              >
                 <div className="flex items-center gap-2">
                   {(() => {
                     const DiaperTypeIcon = getDiaperTypeIcon(
@@ -346,7 +544,7 @@ export function QuickActionDiaperCard({
                     </Avatar>
                   )}
                 </div>
-              </div>
+              </button>
             ) : (
               <div className="space-y-1">
                 <div className="text-sm opacity-60">No recent change</div>
@@ -354,7 +552,11 @@ export function QuickActionDiaperCard({
             )}
 
             {/* Right Column: Next Diaper */}
-            <div className="space-y-1 text-right">
+            <button
+              className="space-y-1 text-right cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={handleInfoClick}
+              type="button"
+            >
               <div className="text-lg font-semibold leading-tight">
                 In {nextTimeDistance}
               </div>
@@ -367,7 +569,7 @@ export function QuickActionDiaperCard({
                   </>
                 )}
               </div>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -463,6 +665,36 @@ export function QuickActionDiaperCard({
         timeFormat={timeFormat}
         trendData={[]}
       />
+
+      {/* Sleep Stop Confirmation Dialog */}
+      <StopSleepConfirmationDialog
+        onKeepSleeping={handleKeepSleepingAndCreate}
+        onOpenChange={setShowSleepConfirmation}
+        onStopSleep={handleStopSleepAndCreate}
+        open={showSleepConfirmation}
+        sleepDuration={sleepDuration}
+      />
+
+      {/* Edit Drawer */}
+      {editingActivity &&
+        (editingActivity.type === 'diaper' ||
+          editingActivity.type === 'wet' ||
+          editingActivity.type === 'dirty' ||
+          editingActivity.type === 'both') &&
+        editDrawerOpen && (
+          <TimelineDrawerWrapper
+            isOpen={editDrawerOpen}
+            onClose={handleEditDrawerClose}
+            title="Edit Diaper"
+          >
+            <TimelineDiaperDrawer
+              babyId={babyId}
+              existingActivity={editingActivity}
+              isOpen={editDrawerOpen}
+              onClose={handleEditDrawerClose}
+            />
+          </TimelineDrawerWrapper>
+        )}
     </>
   );
 }

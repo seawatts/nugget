@@ -4,9 +4,6 @@ import { api, type TimelineItem } from '@nugget/api/react';
 import type { Activities, Milestones } from '@nugget/db/schema';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Icons } from '@nugget/ui/custom/icons';
-import { Dialog, DialogContent, DialogTitle } from '@nugget/ui/dialog';
-import { Drawer, DrawerContent, DrawerTitle } from '@nugget/ui/drawer';
-import { useIsDesktop } from '@nugget/ui/hooks/use-media-query';
 import {
   differenceInMinutes,
   format,
@@ -44,6 +41,7 @@ import { TimelineDoctorVisitDrawer } from '../doctor-visit/timeline-doctor-visit
 import { TimelineFeedingDrawer } from '../feeding/timeline-feeding-drawer';
 import { TimelinePumpingDrawer } from '../pumping/timeline-pumping-drawer';
 import { getDisplayNotes } from '../shared/activity-utils';
+import { TimelineDrawerWrapper } from '../shared/components/timeline-drawer-wrapper';
 import {
   formatLengthDisplay,
   formatWeightDisplay,
@@ -311,44 +309,6 @@ function formatTimeGap(minutes: number): string {
     return `${hours} hour${hours !== 1 ? 's' : ''}`;
   }
   return `${hours}h ${remainingMinutes}m`;
-}
-
-// Helper component to wrap timeline drawers with responsive Dialog/Drawer
-function TimelineDrawerWrapper({
-  children,
-  isOpen,
-  onClose,
-  title,
-}: {
-  children: React.ReactNode;
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-}) {
-  const isDesktop = useIsDesktop();
-
-  if (isDesktop) {
-    return (
-      <Dialog onOpenChange={onClose} open={isOpen}>
-        <DialogContent
-          className="sm:max-w-2xl max-h-[95vh] p-0 gap-0 overflow-hidden flex flex-col"
-          showCloseButton={false}
-        >
-          <DialogTitle className="sr-only">{title}</DialogTitle>
-          {children}
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  return (
-    <Drawer onOpenChange={(open) => !open && onClose()} open={isOpen}>
-      <DrawerContent className="max-h-[95vh] bg-background border-none p-0 overflow-x-hidden">
-        <DrawerTitle className="sr-only">{title}</DrawerTitle>
-        {children}
-      </DrawerContent>
-    </Drawer>
-  );
 }
 
 interface ActivityTimelineProps {

@@ -21,6 +21,7 @@ import {
   PredictiveCardSkeleton,
   PredictiveInfoDrawer,
 } from '../shared/components/predictive-cards';
+import { TimelineDrawerWrapper } from '../shared/components/timeline-drawer-wrapper';
 import { formatMinutesToHoursMinutes } from '../shared/time-formatting-utils';
 import { useActivityMutations } from '../use-activity-mutations';
 import { quickLogSleepAction } from './actions';
@@ -28,6 +29,7 @@ import { SleepStatsDrawer } from './components';
 import { getSleepLearningContent } from './learning-content';
 import { predictNextSleep } from './prediction';
 import { calculateSleepTrendData } from './sleep-goals';
+import { TimelineSleepDrawer } from './timeline-sleep-drawer';
 
 interface QuickActionSleepCardProps {
   onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
@@ -82,6 +84,10 @@ export function QuickActionSleepCard({
   >(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [editingActivity, setEditingActivity] = useState<
+    typeof Activities.$inferSelect | null
+  >(null);
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
 
   // Query for in-progress sleep activity
   const { data: inProgressActivity } =
@@ -558,6 +564,19 @@ export function QuickActionSleepCard({
     onOpenDrawer?.();
   };
 
+  const handleLastActivityClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (lastSleepActivity) {
+      setEditingActivity(lastSleepActivity);
+      setEditDrawerOpen(true);
+    }
+  };
+
+  const handleEditDrawerClose = () => {
+    setEditDrawerOpen(false);
+    setEditingActivity(null);
+  };
+
   const sleepTheme = getActivityTheme('sleep');
   const SleepIcon = sleepTheme.icon;
 
@@ -616,7 +635,11 @@ export function QuickActionSleepCard({
                 </div>
               </div>
             ) : lastTimeDistance && lastExactTime && lastSleepActivity ? (
-              <div className="space-y-1.5">
+              <button
+                className="space-y-1.5 text-left cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={handleLastActivityClick}
+                type="button"
+              >
                 <div className="flex items-center gap-2">
                   <Moon className="size-4 shrink-0 opacity-90" />
                   <span className="text-lg font-semibold leading-tight">
@@ -647,7 +670,7 @@ export function QuickActionSleepCard({
                     </Avatar>
                   )}
                 </div>
-              </div>
+              </button>
             ) : (
               <div className="space-y-1">
                 <div className="text-sm opacity-60">No recent sleep</div>
@@ -655,7 +678,11 @@ export function QuickActionSleepCard({
             )}
 
             {/* Right Column: Next Sleep */}
-            <div className="space-y-1 text-right">
+            <button
+              className="space-y-1 text-right cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={handleInfoClick}
+              type="button"
+            >
               <div className="text-lg font-semibold leading-tight">
                 In {nextTimeDistance}
               </div>
@@ -668,7 +695,7 @@ export function QuickActionSleepCard({
                   </>
                 )}
               </div>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -713,8 +740,10 @@ export function QuickActionSleepCard({
           <Button
             className={cn(
               'flex flex-col items-center justify-center h-auto py-3 gap-1',
-              'bg-white/20 hover:bg-white/30 active:bg-white/40',
-              sleepTheme.textColor,
+              inProgressActivity
+                ? 'bg-destructive/90 hover:bg-destructive active:bg-destructive text-destructive-foreground'
+                : 'bg-white/20 hover:bg-white/30 active:bg-white/40',
+              inProgressActivity ? '' : sleepTheme.textColor,
             )}
             disabled={creatingType !== null}
             onClick={handleStartTimer}
@@ -768,6 +797,24 @@ export function QuickActionSleepCard({
         timeFormat={timeFormat}
         trendData={trendData}
       />
+
+      {/* Edit Drawer */}
+      {editingActivity &&
+        editingActivity.type === 'sleep' &&
+        editDrawerOpen && (
+          <TimelineDrawerWrapper
+            isOpen={editDrawerOpen}
+            onClose={handleEditDrawerClose}
+            title="Edit Sleep"
+          >
+            <TimelineSleepDrawer
+              babyId={babyId}
+              existingActivity={editingActivity}
+              isOpen={editDrawerOpen}
+              onClose={handleEditDrawerClose}
+            />
+          </TimelineDrawerWrapper>
+        )}
     </>
   );
 }

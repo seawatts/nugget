@@ -174,12 +174,21 @@ export function PredictiveVitaminDCard({
       setActivityToDelete(day.activity);
     } else {
       // Auto-log vitamin D for this date
-      // Parse the date string as local date at noon to avoid timezone issues
+      // Parse the date string and apply current time to the selected day
       const parts = day.date.split('-').map(Number);
       const year = parts[0] ?? 0;
       const month = parts[1] ?? 1;
       const dayNum = parts[2] ?? 1;
-      const normalizedDate = new Date(year, month - 1, dayNum, 12, 0, 0);
+      const now = new Date();
+      const normalizedDate = new Date(
+        year,
+        month - 1,
+        dayNum,
+        now.getHours(),
+        now.getMinutes(),
+        now.getSeconds(),
+        now.getMilliseconds(),
+      );
 
       try {
         setIsLogging(true);
@@ -241,7 +250,8 @@ export function PredictiveVitaminDCard({
     }
   };
 
-  const handleCardClick = () => {
+  const handleAddClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setShowDialog(true);
   };
 
@@ -263,16 +273,17 @@ export function PredictiveVitaminDCard({
     <>
       <Card
         className={cn(
-          'relative overflow-hidden p-6 transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer',
+          'relative overflow-hidden p-6',
           `bg-${vitaminDTheme.color} ${vitaminDTheme.textColor}`,
         )}
-        onClick={handleCardClick}
       >
         <PredictiveCardHeader
           icon={vitaminDTheme.icon}
           isFetching={false}
+          onAddClick={handleAddClick}
           onInfoClick={handleInfoClick}
           onStatsClick={handleStatsClick}
+          showAddIcon={true}
           showStatsIcon={true}
           title="Vitamin D"
         />

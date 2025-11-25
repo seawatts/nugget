@@ -420,6 +420,8 @@ export function QuickActionPumpingCard({
       <PredictiveInfoDrawer
         activityType="pumping"
         babyAgeDays={data.babyAgeDays}
+        babyId={babyId}
+        customPreferences={queryData?.customPreferences}
         learningContent={getPumpingLearningContent(
           data.babyAgeDays ?? 0,
           baby?.firstName || undefined,

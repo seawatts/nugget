@@ -1,6 +1,4 @@
-import { Button } from '@nugget/ui/button';
 import { Zap } from 'lucide-react';
-import Link from 'next/link';
 import { InfoCard } from '../../../shared/info-card';
 import type { QuickLogActivityType } from '../activity-theme-config';
 
@@ -42,11 +40,6 @@ export function QuickLogInfoSection({
 
   return (
     <InfoCard
-      actions={
-        <Button asChild className="w-full" size="sm" variant="outline">
-          <Link href="/app/settings/preferences">Edit Settings</Link>
-        </Button>
-      }
       bgColor={bgColor}
       borderColor={borderColor}
       color={color}

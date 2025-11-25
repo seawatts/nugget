@@ -685,12 +685,14 @@ export const Babies = pgTable(
         bottleType?: 'formula' | 'pumped';
         nursingDurationMinutes?: number;
         preferredType?: 'bottle' | 'nursing';
+        preferenceWeight?: number; // 0-1, weight for custom preferences vs predictions for feeding
       };
       pumping?: {
         amountMl?: number;
         durationMinutes?: number;
+        preferenceWeight?: number; // 0-1, weight for custom preferences vs predictions for pumping
       };
-      preferenceWeight?: number; // 0-1, default 0.4 (40% custom preference weight)
+      preferenceWeight?: number; // 0-1, deprecated: use feeding.preferenceWeight or pumping.preferenceWeight instead
     }>(),
     dueDate: timestamp('dueDate', { mode: 'date', withTimezone: true }),
     familyId: varchar('familyId', { length: 128 })

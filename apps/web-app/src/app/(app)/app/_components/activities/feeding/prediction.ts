@@ -1,4 +1,5 @@
 import type { BabyCustomPreferences } from '@nugget/db';
+import { getPreferenceWeight } from '@nugget/db';
 import type { Activities } from '@nugget/db/schema';
 import { differenceInMinutes } from 'date-fns';
 import { getOverdueThreshold } from '../../shared/overdue-thresholds';
@@ -207,8 +208,8 @@ export function predictNextFeeding(
       ? getFeedingIntervalByAge(ageDays)
       : babyFeedIntervalHours || 3;
 
-  // Get preference weight (default 0.4 = 40%)
-  const preferenceWeight = customPreferences?.preferenceWeight ?? 0.4;
+  // Get preference weight for feeding (default 0.4 = 40%)
+  const preferenceWeight = getPreferenceWeight(customPreferences, 'feeding');
 
   // Calculate adjusted weights based on preference weight
   // If preferenceWeight is high (e.g., 1.0), most weight goes to custom

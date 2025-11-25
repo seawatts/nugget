@@ -21,11 +21,16 @@ import {
   PredictiveCardSkeleton,
   PredictiveInfoDrawer,
 } from '../shared/components/predictive-cards';
+import { StopSleepConfirmationDialog } from '../shared/components/stop-sleep-confirmation-dialog';
+import { TimelineDrawerWrapper } from '../shared/components/timeline-drawer-wrapper';
+import { useInProgressSleep } from '../shared/hooks/use-in-progress-sleep';
 import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
+import { autoStopInProgressSleepAction } from '../sleep/actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import { FeedingStatsDrawer } from './components';
 import { getFeedingLearningContent } from './learning-content';
 import { predictNextFeeding } from './prediction';
+import { TimelineFeedingDrawer } from './timeline-feeding-drawer';
 
 interface QuickActionFeedingCardProps {
   onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
@@ -93,9 +98,23 @@ export function QuickActionFeedingCard({
 
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
-  const [creatingType, setCreatingType] = useState<'bottle' | 'nursing' | null>(
-    null,
-  );
+  const [creatingType, setCreatingType] = useState<
+    'bottle' | 'nursing-left' | 'nursing-right' | null
+  >(null);
+  const [showSleepConfirmation, setShowSleepConfirmation] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<
+    typeof Activities.$inferSelect | null
+  >(null);
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+  const [pendingActivity, setPendingActivity] = useState<{
+    type: 'bottle' | 'nursing';
+    data: {
+      amountMl?: number;
+      duration?: number;
+      feedingSource?: 'formula' | 'pumped' | 'direct';
+      side?: 'left' | 'right';
+    };
+  } | null>(null);
 
   const { createActivity } = useActivityMutations();
   const addOptimisticActivity = useOptimisticActivitiesStore(
@@ -105,6 +124,12 @@ export function QuickActionFeedingCard({
     (state) => state.removeActivity,
   );
   const utils = api.useUtils();
+
+  // Check for in-progress sleep
+  const { inProgressSleep, sleepDuration } = useInProgressSleep({
+    babyId,
+    enabled: true,
+  });
 
   // Process prediction data from tRPC query
   const data = queryData
@@ -237,17 +262,32 @@ export function QuickActionFeedingCard({
 
   const handleQuickBottle = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Use predicted amount if available, otherwise fall back to age-based amount
+    const amountMl =
+      prediction.suggestedAmount ||
+      getAgeBasedAmount(data?.babyAgeDays || null);
+
+    // Check for in-progress sleep before creating activity
+    if (inProgressSleep) {
+      // Store activity data and show confirmation dialog
+      setPendingActivity({
+        data: {
+          amountMl,
+          feedingSource: mostCommonBottleSource,
+        },
+        type: 'bottle',
+      });
+      setShowSleepConfirmation(true);
+      return;
+    }
+
     setCreatingType('bottle');
 
     let tempId: string | null = null;
 
     try {
       const now = new Date();
-
-      // Use predicted amount if available, otherwise fall back to age-based amount
-      const amountMl =
-        prediction.suggestedAmount ||
-        getAgeBasedAmount(data?.babyAgeDays || null);
 
       // Build bottle activity data
       const bottleData = {
@@ -310,18 +350,35 @@ export function QuickActionFeedingCard({
     }
   };
 
-  const handleQuickNursing = async (e: React.MouseEvent) => {
+  const handleQuickNursingLeft = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCreatingType('nursing');
+
+    // Use predicted duration if available, otherwise use age-based typical duration
+    const duration =
+      prediction.suggestedDuration ||
+      getAgeBasedDuration(data?.babyAgeDays || null);
+
+    // Check for in-progress sleep before creating activity
+    if (inProgressSleep) {
+      // Store activity data and show confirmation dialog
+      setPendingActivity({
+        data: {
+          duration,
+          feedingSource: 'direct',
+          side: 'left',
+        },
+        type: 'nursing',
+      });
+      setShowSleepConfirmation(true);
+      return;
+    }
+
+    setCreatingType('nursing-left');
 
     let tempId: string | null = null;
 
     try {
       const now = new Date();
-      // Use predicted duration if available, otherwise use age-based typical duration
-      const duration =
-        prediction.suggestedDuration ||
-        getAgeBasedDuration(data?.babyAgeDays || null);
 
       // Build nursing activity data
       const nursingData = {
@@ -338,13 +395,13 @@ export function QuickActionFeedingCard({
         babyId: babyId,
         createdAt: now,
         details: {
-          side: 'both' as const,
+          side: 'left' as const,
           type: 'nursing' as const,
         },
         endTime: now,
         familyId: 'temp',
         familyMemberId: null,
-        id: `activity-optimistic-nursing-${Date.now()}`,
+        id: `activity-optimistic-nursing-left-${Date.now()}`,
         isScheduled: false,
         notes: null,
         startTime: now,
@@ -361,7 +418,7 @@ export function QuickActionFeedingCard({
         activityType: 'nursing',
         babyId,
         details: {
-          side: 'both',
+          side: 'left',
           type: 'nursing',
         },
         duration,
@@ -379,7 +436,104 @@ export function QuickActionFeedingCard({
       // Don't await - let it invalidate in background (mutation already handles invalidation)
       utils.activities.getUpcomingFeeding.invalidate();
     } catch (err) {
-      console.error('Failed to log nursing:', err);
+      console.error('Failed to log nursing left:', err);
+      // Remove optimistic activity on error to avoid stuck state
+      if (tempId) {
+        removeOptimisticActivity(tempId);
+      }
+      toast.error('Failed to log nursing. Please try again.');
+    } finally {
+      setCreatingType(null);
+    }
+  };
+
+  const handleQuickNursingRight = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    // Use predicted duration if available, otherwise use age-based typical duration
+    const duration =
+      prediction.suggestedDuration ||
+      getAgeBasedDuration(data?.babyAgeDays || null);
+
+    // Check for in-progress sleep before creating activity
+    if (inProgressSleep) {
+      // Store activity data and show confirmation dialog
+      setPendingActivity({
+        data: {
+          duration,
+          feedingSource: 'direct',
+          side: 'right',
+        },
+        type: 'nursing',
+      });
+      setShowSleepConfirmation(true);
+      return;
+    }
+
+    setCreatingType('nursing-right');
+
+    let tempId: string | null = null;
+
+    try {
+      const now = new Date();
+
+      // Build nursing activity data
+      const nursingData = {
+        duration,
+        feedingSource: 'direct' as const,
+        type: 'nursing' as const,
+      };
+
+      // Create optimistic activity for immediate UI feedback
+      const optimisticActivity = {
+        ...nursingData,
+        amountMl: null,
+        assignedUserId: null,
+        babyId: babyId,
+        createdAt: now,
+        details: {
+          side: 'right' as const,
+          type: 'nursing' as const,
+        },
+        endTime: now,
+        familyId: 'temp',
+        familyMemberId: null,
+        id: `activity-optimistic-nursing-right-${Date.now()}`,
+        isScheduled: false,
+        notes: null,
+        startTime: now,
+        subjectType: 'baby' as const,
+        updatedAt: now,
+        userId: 'temp',
+      } as typeof Activities.$inferSelect;
+
+      // Store the tempId returned by addOptimisticActivity
+      tempId = addOptimisticActivity(optimisticActivity);
+
+      // Create the actual activity
+      const activity = await createActivity({
+        activityType: 'nursing',
+        babyId,
+        details: {
+          side: 'right',
+          type: 'nursing',
+        },
+        duration,
+        endTime: now,
+        feedingSource: 'direct',
+        startTime: now,
+      });
+
+      // Remove optimistic activity after real one is created
+      if (tempId) {
+        removeOptimisticActivity(tempId);
+      }
+
+      onActivityLogged?.(activity);
+      // Don't await - let it invalidate in background (mutation already handles invalidation)
+      utils.activities.getUpcomingFeeding.invalidate();
+    } catch (err) {
+      console.error('Failed to log nursing right:', err);
       // Remove optimistic activity on error to avoid stuck state
       if (tempId) {
         removeOptimisticActivity(tempId);
@@ -403,6 +557,300 @@ export function QuickActionFeedingCard({
   const handleAddClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onOpenDrawer?.();
+  };
+
+  const handleLastActivityClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (lastFeedingActivity) {
+      setEditingActivity(lastFeedingActivity);
+      setEditDrawerOpen(true);
+    }
+  };
+
+  const handleEditDrawerClose = () => {
+    setEditDrawerOpen(false);
+    setEditingActivity(null);
+  };
+
+  const handleStopSleepAndCreate = async () => {
+    if (!pendingActivity) return;
+
+    setShowSleepConfirmation(false);
+    setCreatingType(
+      pendingActivity.type === 'nursing'
+        ? pendingActivity.data.side === 'right'
+          ? 'nursing-right'
+          : 'nursing-left'
+        : pendingActivity.type,
+    );
+
+    let tempId: string | null = null;
+
+    try {
+      // Stop the in-progress sleep (non-blocking)
+      const result = await autoStopInProgressSleepAction({ babyId });
+      if (result?.data?.activity) {
+        toast.info('Sleep tracking stopped');
+      }
+    } catch (error) {
+      console.error('Failed to stop sleep:', error);
+      toast.error('Failed to stop sleep tracking');
+    }
+
+    try {
+      const now = new Date();
+      const { type, data } = pendingActivity;
+
+      if (type === 'bottle') {
+        // Build bottle activity data
+        const bottleData = {
+          amountMl: data.amountMl,
+          feedingSource: data.feedingSource as 'formula' | 'pumped',
+          type: 'bottle' as const,
+        };
+
+        // Create optimistic activity for immediate UI feedback
+        const optimisticActivity = {
+          ...bottleData,
+          assignedUserId: null,
+          babyId: babyId,
+          createdAt: now,
+          details: { type: 'bottle' as const },
+          duration: 0,
+          endTime: now,
+          familyId: 'temp',
+          familyMemberId: null,
+          id: `activity-optimistic-bottle-${Date.now()}`,
+          isScheduled: false,
+          notes: null,
+          startTime: now,
+          subjectType: 'baby' as const,
+          updatedAt: now,
+          userId: 'temp',
+        } as typeof Activities.$inferSelect;
+
+        tempId = addOptimisticActivity(optimisticActivity);
+
+        // Create the actual activity
+        const activity = await createActivity({
+          activityType: 'bottle',
+          amountMl: data.amountMl,
+          babyId,
+          duration: 0,
+          endTime: now,
+          feedingSource: data.feedingSource as 'formula' | 'pumped',
+          startTime: now,
+        });
+
+        if (tempId) {
+          removeOptimisticActivity(tempId);
+        }
+
+        onActivityLogged?.(activity);
+        utils.activities.getUpcomingFeeding.invalidate();
+      } else if (type === 'nursing') {
+        // Build nursing activity data
+        const nursingData = {
+          duration: data.duration,
+          feedingSource: 'direct' as const,
+          type: 'nursing' as const,
+        };
+
+        const side = data.side || 'both';
+
+        // Create optimistic activity for immediate UI feedback
+        const optimisticActivity = {
+          ...nursingData,
+          amountMl: null,
+          assignedUserId: null,
+          babyId: babyId,
+          createdAt: now,
+          details: {
+            side: side as 'left' | 'right' | 'both',
+            type: 'nursing' as const,
+          },
+          endTime: now,
+          familyId: 'temp',
+          familyMemberId: null,
+          id: `activity-optimistic-nursing-${Date.now()}`,
+          isScheduled: false,
+          notes: null,
+          startTime: now,
+          subjectType: 'baby' as const,
+          updatedAt: now,
+          userId: 'temp',
+        } as typeof Activities.$inferSelect;
+
+        tempId = addOptimisticActivity(optimisticActivity);
+
+        // Create the actual activity
+        const activity = await createActivity({
+          activityType: 'nursing',
+          babyId,
+          details: {
+            side: side as 'left' | 'right' | 'both',
+            type: 'nursing',
+          },
+          duration: data.duration,
+          endTime: now,
+          feedingSource: 'direct',
+          startTime: now,
+        });
+
+        if (tempId) {
+          removeOptimisticActivity(tempId);
+        }
+
+        onActivityLogged?.(activity);
+        utils.activities.getUpcomingFeeding.invalidate();
+      }
+    } catch (err) {
+      console.error(`Failed to log ${pendingActivity.type}:`, err);
+      if (tempId) {
+        removeOptimisticActivity(tempId);
+      }
+      toast.error(
+        `Failed to log ${pendingActivity.type === 'bottle' ? 'bottle feeding' : 'nursing'}. Please try again.`,
+      );
+    } finally {
+      setCreatingType(null);
+      setPendingActivity(null);
+    }
+  };
+
+  const handleKeepSleepingAndCreate = async () => {
+    if (!pendingActivity) return;
+
+    setShowSleepConfirmation(false);
+    setCreatingType(
+      pendingActivity.type === 'nursing'
+        ? pendingActivity.data.side === 'right'
+          ? 'nursing-right'
+          : 'nursing-left'
+        : pendingActivity.type,
+    );
+
+    let tempId: string | null = null;
+
+    try {
+      const now = new Date();
+      const { type, data } = pendingActivity;
+
+      if (type === 'bottle') {
+        // Build bottle activity data
+        const bottleData = {
+          amountMl: data.amountMl,
+          feedingSource: data.feedingSource as 'formula' | 'pumped',
+          type: 'bottle' as const,
+        };
+
+        // Create optimistic activity for immediate UI feedback
+        const optimisticActivity = {
+          ...bottleData,
+          assignedUserId: null,
+          babyId: babyId,
+          createdAt: now,
+          details: { type: 'bottle' as const },
+          duration: 0,
+          endTime: now,
+          familyId: 'temp',
+          familyMemberId: null,
+          id: `activity-optimistic-bottle-${Date.now()}`,
+          isScheduled: false,
+          notes: null,
+          startTime: now,
+          subjectType: 'baby' as const,
+          updatedAt: now,
+          userId: 'temp',
+        } as typeof Activities.$inferSelect;
+
+        tempId = addOptimisticActivity(optimisticActivity);
+
+        // Create the actual activity
+        const activity = await createActivity({
+          activityType: 'bottle',
+          amountMl: data.amountMl,
+          babyId,
+          duration: 0,
+          endTime: now,
+          feedingSource: data.feedingSource as 'formula' | 'pumped',
+          startTime: now,
+        });
+
+        if (tempId) {
+          removeOptimisticActivity(tempId);
+        }
+
+        onActivityLogged?.(activity);
+        utils.activities.getUpcomingFeeding.invalidate();
+      } else if (type === 'nursing') {
+        // Build nursing activity data
+        const nursingData = {
+          duration: data.duration,
+          feedingSource: 'direct' as const,
+          type: 'nursing' as const,
+        };
+
+        const side = data.side || 'both';
+
+        // Create optimistic activity for immediate UI feedback
+        const optimisticActivity = {
+          ...nursingData,
+          amountMl: null,
+          assignedUserId: null,
+          babyId: babyId,
+          createdAt: now,
+          details: {
+            side: side as 'left' | 'right' | 'both',
+            type: 'nursing' as const,
+          },
+          endTime: now,
+          familyId: 'temp',
+          familyMemberId: null,
+          id: `activity-optimistic-nursing-${Date.now()}`,
+          isScheduled: false,
+          notes: null,
+          startTime: now,
+          subjectType: 'baby' as const,
+          updatedAt: now,
+          userId: 'temp',
+        } as typeof Activities.$inferSelect;
+
+        tempId = addOptimisticActivity(optimisticActivity);
+
+        // Create the actual activity
+        const activity = await createActivity({
+          activityType: 'nursing',
+          babyId,
+          details: {
+            side: side as 'left' | 'right' | 'both',
+            type: 'nursing',
+          },
+          duration: data.duration,
+          endTime: now,
+          feedingSource: 'direct',
+          startTime: now,
+        });
+
+        if (tempId) {
+          removeOptimisticActivity(tempId);
+        }
+
+        onActivityLogged?.(activity);
+        utils.activities.getUpcomingFeeding.invalidate();
+      }
+    } catch (err) {
+      console.error(`Failed to log ${pendingActivity.type}:`, err);
+      if (tempId) {
+        removeOptimisticActivity(tempId);
+      }
+      toast.error(
+        `Failed to log ${pendingActivity.type === 'bottle' ? 'bottle feeding' : 'nursing'}. Please try again.`,
+      );
+    } finally {
+      setCreatingType(null);
+      setPendingActivity(null);
+    }
   };
 
   const feedingTheme = getActivityTheme('feeding');
@@ -441,7 +889,11 @@ export function QuickActionFeedingCard({
           <div className="flex items-start justify-between pt-6 px-2">
             {/* Left Column: Last Feeding */}
             {lastTimeDistance && lastExactTime && lastFeedingActivity ? (
-              <div className="space-y-1.5">
+              <button
+                className="space-y-1.5 text-left cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={handleLastActivityClick}
+                type="button"
+              >
                 <div className="flex items-center gap-2">
                   {(() => {
                     const ActivityIcon = getActivityIcon(
@@ -479,7 +931,7 @@ export function QuickActionFeedingCard({
                     </Avatar>
                   )}
                 </div>
-              </div>
+              </button>
             ) : (
               <div className="space-y-1">
                 <div className="text-sm opacity-60">No recent feeding</div>
@@ -487,7 +939,11 @@ export function QuickActionFeedingCard({
             )}
 
             {/* Right Column: Next Feeding */}
-            <div className="space-y-1 text-right">
+            <button
+              className="space-y-1 text-right cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={handleInfoClick}
+              type="button"
+            >
               <div className="text-lg font-semibold leading-tight">
                 In {nextTimeDistance}
               </div>
@@ -499,12 +955,12 @@ export function QuickActionFeedingCard({
                     getAgeBasedAmount(data?.babyAgeDays || null),
                 )}
               </div>
-            </div>
+            </button>
           </div>
         </div>
 
         {/* Quick Action Buttons */}
-        <div className="grid grid-cols-2 gap-2 mt-4">
+        <div className="grid grid-cols-3 gap-2 mt-4">
           <Button
             className={cn(
               'flex flex-col items-center justify-center h-auto py-3 gap-1',
@@ -538,15 +994,39 @@ export function QuickActionFeedingCard({
               feedingTheme.textColor,
             )}
             disabled={creatingType !== null}
-            onClick={handleQuickNursing}
+            onClick={handleQuickNursingLeft}
             variant="ghost"
           >
-            {creatingType === 'nursing' ? (
+            {creatingType === 'nursing-left' ? (
               <Icons.Spinner className="size-5" />
             ) : (
               <Droplet className="size-5" />
             )}
-            <span className="text-xs font-medium">Nursing</span>
+            <span className="text-xs font-medium">Nursing Left</span>
+            <span className="text-xs opacity-80">
+              (
+              {prediction.suggestedDuration ||
+                getAgeBasedDuration(data?.babyAgeDays || null)}{' '}
+              min)
+            </span>
+          </Button>
+
+          <Button
+            className={cn(
+              'flex flex-col items-center justify-center h-auto py-3 gap-1',
+              'bg-white/20 hover:bg-white/30 active:bg-white/40',
+              feedingTheme.textColor,
+            )}
+            disabled={creatingType !== null}
+            onClick={handleQuickNursingRight}
+            variant="ghost"
+          >
+            {creatingType === 'nursing-right' ? (
+              <Icons.Spinner className="size-5" />
+            ) : (
+              <Droplet className="size-5" />
+            )}
+            <span className="text-xs font-medium">Nursing Right</span>
             <span className="text-xs opacity-80">
               (
               {prediction.suggestedDuration ||
@@ -561,6 +1041,8 @@ export function QuickActionFeedingCard({
       <PredictiveInfoDrawer
         activityType="feeding"
         babyAgeDays={data.babyAgeDays}
+        babyId={babyId}
+        customPreferences={queryData?.customPreferences}
         learningContent={getFeedingLearningContent(
           data.babyAgeDays ?? 0,
           baby?.firstName || undefined,
@@ -586,6 +1068,36 @@ export function QuickActionFeedingCard({
         timeFormat={timeFormat}
         unit={userUnitPref}
       />
+
+      {/* Sleep Stop Confirmation Dialog */}
+      <StopSleepConfirmationDialog
+        onKeepSleeping={handleKeepSleepingAndCreate}
+        onOpenChange={setShowSleepConfirmation}
+        onStopSleep={handleStopSleepAndCreate}
+        open={showSleepConfirmation}
+        sleepDuration={sleepDuration}
+      />
+
+      {/* Edit Drawer */}
+      {editingActivity &&
+        (editingActivity.type === 'feeding' ||
+          editingActivity.type === 'nursing' ||
+          editingActivity.type === 'bottle' ||
+          editingActivity.type === 'solids') &&
+        editDrawerOpen && (
+          <TimelineDrawerWrapper
+            isOpen={editDrawerOpen}
+            onClose={handleEditDrawerClose}
+            title="Edit Feeding"
+          >
+            <TimelineFeedingDrawer
+              babyId={babyId}
+              existingActivity={editingActivity}
+              isOpen={editDrawerOpen}
+              onClose={handleEditDrawerClose}
+            />
+          </TimelineDrawerWrapper>
+        )}
     </>
   );
 }

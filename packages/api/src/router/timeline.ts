@@ -138,10 +138,22 @@ export const timelineRouter = createTRPCRouter({
             ...activities
               .filter((activity) => activity.startTime)
               .map((activity): TimelineActivity | null => {
-                const timestamp =
-                  activity.startTime instanceof Date
-                    ? activity.startTime
-                    : new Date(activity.startTime);
+                // For sleep activities, use endTime if available (shows when sleep was stopped)
+                // For other activities, use startTime
+                let timestampDate: Date;
+                if (activity.type === 'sleep' && activity.endTime) {
+                  timestampDate =
+                    activity.endTime instanceof Date
+                      ? activity.endTime
+                      : new Date(activity.endTime);
+                } else {
+                  timestampDate =
+                    activity.startTime instanceof Date
+                      ? activity.startTime
+                      : new Date(activity.startTime);
+                }
+
+                const timestamp = timestampDate;
 
                 if (Number.isNaN(timestamp.getTime())) {
                   return null;

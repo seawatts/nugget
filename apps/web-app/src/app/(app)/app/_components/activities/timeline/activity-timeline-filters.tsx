@@ -24,7 +24,7 @@ import { Label } from '@nugget/ui/label';
 import { Separator } from '@nugget/ui/separator';
 import type { LucideIcon } from 'lucide-react';
 import { Filter } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 
 interface ActivityType {
@@ -55,6 +55,9 @@ export function ActivityTimelineFilters({
     selectedActivityTypes,
   );
   const [isOpen, setIsOpen] = useState(false);
+
+  // Scroll position preservation
+  const scrollPositionRef = useRef<number>(0);
 
   // Get family members from dashboard store (already fetched in DashboardContainer)
   const familyMembers = useDashboardDataStore.use.familyMembers();
@@ -95,6 +98,21 @@ export function ActivityTimelineFilters({
         setLocalActivityTypes(selectedActivityTypes);
     }
   }, [initialized, selectedUserIds, selectedActivityTypes]);
+
+  // Save and restore scroll position when drawer opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      // Save current scroll position when drawer opens
+      scrollPositionRef.current = window.scrollY;
+    } else if (scrollPositionRef.current > 0) {
+      // Restore scroll position after drawer closes (with delay for animation)
+      const timeoutId = setTimeout(() => {
+        window.scrollTo(0, scrollPositionRef.current);
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isOpen]);
 
   const handleUserToggle = (userId: string) => {
     setLocalUserIds((prev) =>
@@ -303,9 +321,20 @@ export function ActivityTimelineFilters({
     </div>
   );
 
+  const handleTriggerClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsOpen(true);
+  };
+
   const triggerButton = (
     <div className="relative inline-flex">
-      <Button className="size-8 p-0" size="sm" variant="ghost">
+      <Button
+        className="size-8 p-0"
+        onClick={handleTriggerClick}
+        size="sm"
+        variant="ghost"
+      >
         <Filter className="size-4" />
       </Button>
       {activeFilterCount > 0 && (
@@ -335,9 +364,16 @@ export function ActivityTimelineFilters({
   }
 
   return (
-    <Drawer onOpenChange={setIsOpen} open={isOpen}>
+    <Drawer
+      dismissible={false}
+      onOpenChange={(open) => !open && setIsOpen(false)}
+      open={isOpen}
+    >
       <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
-      <DrawerContent className="max-h-[85vh]">
+      <DrawerContent
+        className="max-h-[85vh]"
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DrawerHeader>
           <DrawerTitle>Filter Timeline</DrawerTitle>
         </DrawerHeader>

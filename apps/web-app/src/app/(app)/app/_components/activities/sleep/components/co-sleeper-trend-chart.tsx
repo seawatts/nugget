@@ -78,6 +78,7 @@ export function CoSleeperTrendChart({
 
     const dataPoint: Record<string, string | number> = {
       displayDate,
+      rawDate: item.date,
     };
 
     // Add data for each user
@@ -146,7 +147,15 @@ export function CoSleeperTrendChart({
             content={(props) => (
               <ChartTooltipContent
                 {...props}
-                labelFormatter={(value) => `${value}`}
+                labelFormatter={(_, payload) => {
+                  const dataPoint = payload?.[0]?.payload as
+                    | { rawDate?: string; displayDate?: string }
+                    | undefined;
+                  if (!dataPoint?.rawDate) {
+                    return dataPoint?.displayDate ?? null;
+                  }
+                  return format(new Date(dataPoint.rawDate), 'EEE, MMM d');
+                }}
                 nameKey="label"
               />
             )}

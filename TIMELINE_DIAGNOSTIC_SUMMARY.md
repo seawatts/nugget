@@ -203,3 +203,4 @@ Since all backend checks pass, the issue is **definitely on the frontend**. Most
 The backend is **working perfectly** with 5 items ready to display. The issue must be investigated on the frontend side using browser DevTools and the debugging steps outlined above.
 
 
+

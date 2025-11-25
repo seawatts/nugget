@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@nugget/ui/dropdown-menu';
-import { subDays } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
@@ -96,6 +96,24 @@ export function FeedingStatsDrawer({
     [feedingActivities],
   );
 
+  // Calculate the date range for display based on selected time range
+  const dateRangeText = useMemo(() => {
+    const now = new Date();
+    const daysMap: Record<string, number> = {
+      '1m': 30,
+      '2w': 14,
+      '3m': 90,
+      '6m': 180,
+      '7d': 7,
+      '24h': 1,
+    };
+    const days = daysMap[trendTimeRange] ?? 7;
+    const startDate = subDays(now, days);
+    const endDate = now;
+
+    return `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d')}`;
+  }, [trendTimeRange]);
+
   return (
     <StatsDrawerWrapper
       onOpenChange={onOpenChange}
@@ -110,9 +128,7 @@ export function FeedingStatsDrawer({
               <h3 className="text-sm font-medium text-foreground">
                 Feeding Count
               </h3>
-              <p className="text-xs text-muted-foreground">
-                Number of feedings over time
-              </p>
+              <p className="text-xs text-muted-foreground">{dateRangeText}</p>
             </div>
             <div className="flex gap-2">
               {/* Time Range Dropdown */}

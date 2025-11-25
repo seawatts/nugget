@@ -192,14 +192,16 @@ export const babiesRouter = createTRPCRouter({
                 bottleAmountMl: z.number().positive().optional(),
                 bottleType: z.enum(['formula', 'pumped']).optional(),
                 nursingDurationMinutes: z.number().positive().optional(),
+                preferenceWeight: z.number().min(0).max(1).optional(),
                 preferredType: z.enum(['bottle', 'nursing']).optional(),
               })
               .optional(),
-            preferenceWeight: z.number().min(0).max(1).optional(),
+            preferenceWeight: z.number().min(0).max(1).optional(), // Deprecated: use feeding.preferenceWeight or pumping.preferenceWeight
             pumping: z
               .object({
                 amountMl: z.number().positive().optional(),
                 durationMinutes: z.number().positive().optional(),
+                preferenceWeight: z.number().min(0).max(1).optional(),
               })
               .optional(),
           })

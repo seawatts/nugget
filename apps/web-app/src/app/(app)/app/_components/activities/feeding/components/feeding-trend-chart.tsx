@@ -58,6 +58,7 @@ export function FeedingTrendChart({
 
     return {
       displayDate,
+      rawDate: item.date,
       value,
     };
   });
@@ -90,7 +91,20 @@ export function FeedingTrendChart({
           />
           <YAxis fontSize={12} stroke="var(--muted-foreground)" width={20} />
           <ChartTooltip
-            content={(props) => <ChartTooltipContent {...props} />}
+            content={(props) => (
+              <ChartTooltipContent
+                {...props}
+                labelFormatter={(_, payload) => {
+                  const dataPoint = payload?.[0]?.payload as
+                    | { rawDate?: string }
+                    | undefined;
+                  if (!dataPoint?.rawDate) {
+                    return null;
+                  }
+                  return format(new Date(dataPoint.rawDate), 'EEE, MMM d');
+                }}
+              />
+            )}
           />
           <Bar
             dataKey="value"

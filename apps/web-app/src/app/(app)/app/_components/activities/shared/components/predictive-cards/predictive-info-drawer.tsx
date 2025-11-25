@@ -16,6 +16,7 @@ import {
   getActivityTheme,
   type QuickLogActivityType,
 } from '../../activity-theme-config';
+import { PreferencesSection } from '../preferences-section';
 import { QuickLogInfoSection } from '../quick-log-info-section';
 
 interface QuickLogSettings {
@@ -48,6 +49,8 @@ interface PredictiveInfoDrawerProps {
   quickLogSettings?: QuickLogSettings;
   calculationDetails?: CalculationDetails;
   unit?: 'ML' | 'OZ';
+  babyId?: string;
+  customPreferences?: import('@nugget/db').BabyCustomPreferences | null;
 }
 
 // Map activity types to their color classes for Tailwind
@@ -100,6 +103,8 @@ export function PredictiveInfoDrawer({
   quickLogSettings,
   calculationDetails,
   unit = 'OZ',
+  babyId,
+  customPreferences,
 }: PredictiveInfoDrawerProps) {
   const theme = getActivityTheme(activityType);
   const Icon = icon || theme?.icon;
@@ -164,6 +169,20 @@ export function PredictiveInfoDrawer({
               isQuickLogEnabled={quickLogSettings.enabled}
             />
           )}
+
+          {/* Preferences Section for feeding and pumping */}
+          {babyId &&
+            (activityType === 'feeding' || activityType === 'pumping') && (
+              <PreferencesSection
+                activityType={activityType}
+                babyId={babyId}
+                bgColor={colorClasses.bgColor}
+                borderColor={colorClasses.borderColor}
+                color={colorClasses.color}
+                currentPreferences={customPreferences}
+                unit={unit}
+              />
+            )}
 
           {/* Average Interval */}
           {averageInterval !== null && averageInterval !== undefined && (
