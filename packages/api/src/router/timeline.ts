@@ -4,6 +4,7 @@ import {
   ChatMessages,
   Chats,
   Milestones,
+  ParentDailyResponses,
 } from '@nugget/db/schema';
 import { and, asc, desc, eq, inArray, isNotNull, lt } from 'drizzle-orm';
 import { z } from 'zod';
@@ -38,10 +39,25 @@ export type TimelineChatMessage = {
   timestamp: Date;
 };
 
+export type TimelineParentWellness = {
+  type: 'parent_wellness';
+  data: typeof ParentDailyResponses.$inferSelect & {
+    user?: {
+      id: string;
+      firstName: string | null;
+      lastName: string | null;
+      avatarUrl: string | null;
+      email: string;
+    } | null;
+  };
+  timestamp: Date;
+};
+
 export type TimelineItem =
   | TimelineActivity
   | TimelineMilestone
-  | TimelineChatMessage;
+  | TimelineChatMessage
+  | TimelineParentWellness;
 
 export const timelineRouter = createTRPCRouter({
   /**
@@ -55,7 +71,7 @@ export const timelineRouter = createTRPCRouter({
         babyId: z.string(),
         cursor: z.string().optional(), // ISO timestamp of the oldest item from the previous page
         itemTypes: z
-          .array(z.enum(['activity', 'milestone', 'chat']))
+          .array(z.enum(['activity', 'milestone', 'chat', 'parent_wellness']))
           .optional(),
         limit: z.number().min(1).max(100).default(30),
         userIds: z.array(z.string()).optional(),
@@ -97,6 +113,8 @@ export const timelineRouter = createTRPCRouter({
         const shouldFetchMilestones =
           !itemTypes || itemTypes.includes('milestone');
         const shouldFetchChats = !itemTypes || itemTypes.includes('chat');
+        const shouldFetchParentWellness =
+          !itemTypes || itemTypes.includes('parent_wellness');
 
         const allItems: TimelineItem[] = [];
 
@@ -256,6 +274,57 @@ export const timelineRouter = createTRPCRouter({
                 };
               })
               .filter((item): item is TimelineChatMessage => item !== null),
+          );
+        }
+
+        // Fetch parent wellness responses if needed
+        if (shouldFetchParentWellness) {
+          const parentWellnessConditions = [
+            eq(ParentDailyResponses.babyId, babyId),
+            isNotNull(ParentDailyResponses.selectedAnswer),
+          ];
+
+          if (cursorDate) {
+            parentWellnessConditions.push(
+              lt(ParentDailyResponses.date, cursorDate),
+            );
+          }
+
+          if (userIds && userIds.length > 0) {
+            parentWellnessConditions.push(
+              inArray(ParentDailyResponses.userId, userIds),
+            );
+          }
+
+          const parentWellnessResponses =
+            await ctx.db.query.ParentDailyResponses.findMany({
+              limit: fetchLimit,
+              orderBy: desc(ParentDailyResponses.date),
+              where: and(...parentWellnessConditions),
+              with: {
+                user: true,
+              },
+            });
+
+          allItems.push(
+            ...parentWellnessResponses
+              .map((response): TimelineParentWellness | null => {
+                const timestamp =
+                  response.date instanceof Date
+                    ? response.date
+                    : new Date(response.date);
+
+                if (Number.isNaN(timestamp.getTime())) {
+                  return null;
+                }
+
+                return {
+                  data: response,
+                  timestamp,
+                  type: 'parent_wellness',
+                };
+              })
+              .filter((item): item is TimelineParentWellness => item !== null),
           );
         }
 

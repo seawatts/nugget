@@ -174,3 +174,26 @@ While this fix dramatically improves performance for cached content, we can furt
 - `packages/content-rules/src/db-cache-adapter.ts`
 - `packages/content-rules/src/dynamic-baml.ts`
 
+---
+
+## PWA Home Launch Warm Start (Nov 2025)
+
+### Profiling & Instrumentation
+- `apps/web-app/src/app/(app)/app/page.tsx` now logs `[AppRedirectTiming]` entries around onboarding, user preference, and baby list calls.
+- To capture timings on iPhone:
+  1. Install the Nugget PWA and connect the device to your Mac.
+  2. Open Safari → **Develop** → select the device → choose the PWA instance.
+  3. In the console, filter for `AppRedirectTiming` to compare cold-start vs refresh timings.
+- Use the network tab’s waterfall to confirm the `/app` navigation no longer blocks on sequential requests—the redirect should finish as soon as the first response streams in.
+
+### Implementation Highlights
+- Parallelized the `/app` redirect flow and cached user home preferences via `unstable_cache` (`apps/web-app/src/app/(app)/app/page.tsx`).
+- Added a client-side route persistence tracker plus a loading-state redirector so the installed PWA instantly navigates to the last dashboard (`apps/web-app/src/app/(app)/app/_components/route-persistence.tsx`, `apps/web-app/src/app/(app)/app/loading.tsx`).
+- The service worker now stores the last successful dashboard path in IndexedDB and can synthesize a redirect for `/app` while the network warms up (`apps/web-app/public/sw.ts`).
+
+### Regression Test Checklist
+1. Install/launch the PWA on iOS, open the remote inspector, and confirm that `/app` logs show the onboarding, user, and baby phases finishing in parallel (< 500 ms on cached runs).
+2. Kill and relaunch the PWA in airplane mode: it should bounce directly to the last dashboard using cached HTML (watch the service worker logs for `handleAppEntry` hits).
+3. Navigate to a different baby dashboard and ensure the `RoutePersistence` component updates localStorage, then reload `/app` to verify the new route is used instantly.
+4. Trigger an onboarding-incomplete account and confirm the fast redirect still honors `/app/onboarding`.
+

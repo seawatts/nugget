@@ -3,6 +3,15 @@ import { startOfDay, startOfHour, startOfWeek } from 'date-fns';
 import { calculateWeightedInterval } from '../shared/adaptive-weighting';
 import { getFeedingIntervalByAge } from './feeding-intervals';
 
+const LIQUID_FEEDING_TYPES = new Set(['feeding', 'bottle', 'nursing']);
+
+export function isLiquidFeedingActivity(
+  activityType: string | null | undefined,
+): boolean {
+  if (!activityType) return false;
+  return LIQUID_FEEDING_TYPES.has(activityType);
+}
+
 /**
  * Calculate recommended daily feeding count based on baby's age and actual patterns
  * Uses adaptive weighting to gradually shift from age-based to pattern-based recommendations
@@ -95,10 +104,9 @@ export function calculateTodaysFeedingStats(
   }
 
   // Filter to feeding activities only (caller is responsible for time filtering)
-  const todaysFeedings = activities.filter((activity) => {
-    const isFeeding = activity.type === 'bottle' || activity.type === 'nursing';
-    return isFeeding;
-  });
+  const todaysFeedings = activities.filter((activity) =>
+    isLiquidFeedingActivity(activity.type),
+  );
 
   // Calculate count
   const count = todaysFeedings.length;
@@ -176,9 +184,7 @@ export function calculateFeedingStatsWithComparison(
     const feedings = activities.filter((activity) => {
       const activityDate = new Date(activity.startTime);
       const isInRange = activityDate >= startTime && activityDate < endTime;
-      const isFeeding =
-        activity.type === 'bottle' || activity.type === 'nursing';
-      return isInRange && isFeeding;
+      return isInRange && isLiquidFeedingActivity(activity.type);
     });
 
     const count = feedings.length;
@@ -253,11 +259,6 @@ export function calculateFeedingTrendData(
 
   const now = new Date();
 
-  const isFeedingActivity = (activityType: string | null | undefined) =>
-    activityType === 'feeding' ||
-    activityType === 'bottle' ||
-    activityType === 'nursing';
-
   if (timeRange === '24h') {
     // For 24h view, group by hour
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -266,7 +267,7 @@ export function calculateFeedingTrendData(
     const recentFeedings = activities.filter((activity) => {
       const activityDate = new Date(activity.startTime);
       const isRecent = activityDate >= twentyFourHoursAgo;
-      return isRecent && isFeedingActivity(activity.type);
+      return isRecent && isLiquidFeedingActivity(activity.type);
     });
 
     // Group by hour
@@ -329,7 +330,7 @@ export function calculateFeedingTrendData(
   const recentFeedings = activities.filter((activity) => {
     const activityDate = new Date(activity.startTime);
     const isRecent = activityDate >= startDate;
-    return isRecent && isFeedingActivity(activity.type);
+    return isRecent && isLiquidFeedingActivity(activity.type);
   });
 
   if (useWeeklyGrouping) {

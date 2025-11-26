@@ -271,7 +271,6 @@ export const parentWellnessRouter = createTRPCRouter({
       // Calculate streak
       let currentStreak = 0;
       if (responses.length > 0) {
-        const today = startOfDay(new Date());
         let checkDate = startOfDay(new Date());
         let consecutiveDays = 0;
 
@@ -355,18 +354,6 @@ export const parentWellnessRouter = createTRPCRouter({
         throw new Error('Baby not found');
       }
 
-      // Format response history for AI
-      const responseHistory = responses
-        .filter((r) => r.selectedAnswer)
-        .map((r) => ({
-          answer: r.selectedAnswer ?? '',
-          date: r.date.toISOString().split('T')[0],
-          question: r.question,
-        }))
-        .slice(0, 30)
-        .reverse()
-        .join('\n');
-
       // TODO: Create a BAML function for insights generation
       // For now, return a simple message
       const answeredCount = responses.filter((r) => r.selectedAnswer).length;
@@ -381,6 +368,66 @@ export const parentWellnessRouter = createTRPCRouter({
 
       return {
         insights: `You've checked in ${answeredCount} out of the last ${totalDays} days. ${encouragementMessage}`,
+      };
+    }),
+
+  /**
+   * Submit a response to a daily wellness question
+   */
+  submitResponse: protectedProcedure
+    .input(
+      z.object({
+        babyId: z.string(),
+        responseId: z.string(),
+        selectedAnswer: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.auth.userId || !ctx.auth.orgId) {
+        throw new Error('Unauthorized');
+      }
+
+      const userId = ctx.auth.userId;
+      const orgId = ctx.auth.orgId;
+
+      // Verify the response belongs to the user
+      const existingResponse =
+        await ctx.db.query.ParentDailyResponses.findFirst({
+          where: (responses, { and, eq }) =>
+            and(
+              eq(responses.id, input.responseId),
+              eq(responses.userId, userId),
+              eq(responses.babyId, input.babyId),
+              eq(responses.familyId, orgId),
+            ),
+        });
+
+      if (!existingResponse) {
+        throw new Error('Response not found or unauthorized.');
+      }
+
+      // Verify the selected answer is one of the valid choices
+      if (!existingResponse.answerChoices.includes(input.selectedAnswer)) {
+        throw new Error('Invalid answer choice.');
+      }
+
+      // Update the response
+      const [updatedResponse] = await ctx.db
+        .update(ParentDailyResponses)
+        .set({
+          selectedAnswer: input.selectedAnswer,
+          updatedAt: new Date(),
+        })
+        .where(eq(ParentDailyResponses.id, input.responseId))
+        .returning();
+
+      if (!updatedResponse) {
+        throw new Error('Failed to update response.');
+      }
+
+      return {
+        response: updatedResponse,
+        success: true,
       };
     }),
 });

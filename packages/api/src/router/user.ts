@@ -116,6 +116,7 @@ export const userRouter = {
   updatePreferences: protectedProcedure
     .input(
       z.object({
+        hasSeenParentWellnessIntro: z.boolean().optional(),
         measurementUnit: z
           .enum([MeasurementUnitType.imperial, MeasurementUnitType.metric])
           .optional(),
@@ -129,6 +130,7 @@ export const userRouter = {
         quickLogPumpingUseTypicalDuration: z.boolean().optional(),
         quickLogSleepUseSuggestedDuration: z.boolean().optional(),
         showActivityGoals: z.boolean().optional(),
+        showParentWellnessCard: z.boolean().optional(),
         showPredictiveTimes: z.boolean().optional(),
         temperatureUnit: z
           .enum([TemperatureUnitType.fahrenheit, TemperatureUnitType.celsius])

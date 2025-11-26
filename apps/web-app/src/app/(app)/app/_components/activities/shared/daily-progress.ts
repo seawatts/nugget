@@ -8,6 +8,7 @@ import {
   calculateTodaysFeedingStats,
   getDailyAmountGoal,
   getDailyFeedingGoal,
+  isLiquidFeedingActivity,
 } from '../feeding/feeding-goals';
 import {
   calculateTodaysSleepStats,
@@ -136,9 +137,7 @@ export function getFeedingDailyProgress({
 
   const todaysFeedings = filterSinceStartOfDay(normalizedActivities).filter(
     (activity) =>
-      activity.type === 'bottle' ||
-      activity.type === 'nursing' ||
-      activity.type === 'solids',
+      isLiquidFeedingActivity(activity.type) || activity.type === 'solids',
   );
 
   if (!todaysFeedings.length) {

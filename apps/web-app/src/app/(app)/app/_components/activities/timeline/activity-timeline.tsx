@@ -20,6 +20,7 @@ import {
   Bath,
   Droplet,
   Droplets,
+  Heart,
   MessageSquare,
   Milk,
   Moon,
@@ -183,6 +184,13 @@ const activities = [
     label: 'Skipped Activities',
     textColor: 'text-white',
   },
+  {
+    color: 'bg-activity-parent-wellness',
+    icon: Heart,
+    id: 'parent_wellness',
+    label: 'Daily Check-In',
+    textColor: 'text-activity-parent-wellness-foreground',
+  },
 ] satisfies Array<{
   color: string;
   icon: LucideIcon;
@@ -203,6 +211,7 @@ const activityIcons: Record<string, typeof Moon> = {
   milestone: Award,
   nail_trimming: Scissors,
   nursing: Droplet,
+  parent_wellness: Heart,
   potty: Toilet,
   pumping: Droplets,
   sleep: Moon,
@@ -224,6 +233,7 @@ const activityColors: Record<string, string> = {
   milestone: 'border-l-activity-milestone',
   nail_trimming: 'border-l-activity-nail-trimming',
   nursing: 'border-l-activity-feeding',
+  parent_wellness: 'border-l-activity-parent-wellness',
   potty: 'border-l-activity-potty',
   pumping: 'border-l-activity-pumping',
   sleep: 'border-l-activity-sleep',
@@ -244,6 +254,7 @@ const activityIconColors: Record<string, string> = {
   milestone: 'text-activity-milestone',
   nail_trimming: 'text-activity-nail-trimming',
   nursing: 'text-activity-feeding',
+  parent_wellness: 'text-activity-parent-wellness',
   potty: 'text-activity-potty',
   pumping: 'text-activity-pumping',
   sleep: 'text-activity-sleep',
@@ -266,6 +277,7 @@ const activityLabels: Record<string, string> = {
   milestone: 'Milestone',
   nail_trimming: 'Nail Trimming',
   nursing: 'Nursing',
+  parent_wellness: 'Daily Check-In',
   potty: 'Potty',
   pumping: 'Pumping',
   sleep: 'Sleep',
@@ -595,6 +607,9 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
       // Open milestone drawer
       setSelectedMilestone(item.data);
       setMilestoneDrawerOpen(true);
+    } else if (item.type === 'parent_wellness') {
+      // Parent wellness items are display-only, no action needed
+      return;
     }
   };
 
@@ -977,6 +992,21 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
                       ? `${chat.content.slice(0, 100)}...`
                       : chat.content;
                   itemId = chat.chat.id;
+                } else if (item.type === 'parent_wellness') {
+                  const wellness = item.data;
+                  itemTitle = 'Daily Check-In';
+                  itemNotes = `Q: ${wellness.question}\nA: ${wellness.selectedAnswer}`;
+                  itemId = wellness.id;
+                  if (wellness.user) {
+                    const firstName = wellness.user.firstName || '';
+                    const lastName = wellness.user.lastName || '';
+                    userName = firstName
+                      ? `${firstName}${lastName ? ` ${lastName}` : ''}`
+                      : wellness.user.email;
+                    userAvatar = wellness.user.avatarUrl;
+                    userInitials =
+                      `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase();
+                  }
                 }
 
                 const detailsText =
@@ -1013,10 +1043,16 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
                       className={`flex items-start gap-3 p-3.5 rounded-xl bg-card/50 border-l-4 ${colorClass} ${
                         isOptimistic
                           ? 'opacity-100 animate-pulse cursor-not-allowed'
-                          : 'opacity-60 hover:opacity-90 cursor-pointer'
-                      } transition-all duration-200 hover:scale-[1.01] hover:shadow-sm w-full text-left`}
-                      disabled={isOptimistic}
-                      onClick={() => !isOptimistic && handleItemClick(item)}
+                          : item.type === 'parent_wellness'
+                            ? 'opacity-60 cursor-default'
+                            : 'opacity-60 hover:opacity-90 cursor-pointer'
+                      } transition-all duration-200 ${item.type !== 'parent_wellness' ? 'hover:scale-[1.01] hover:shadow-sm' : ''} w-full text-left`}
+                      disabled={isOptimistic || item.type === 'parent_wellness'}
+                      onClick={() =>
+                        !isOptimistic &&
+                        item.type !== 'parent_wellness' &&
+                        handleItemClick(item)
+                      }
                       type="button"
                     >
                       <div
@@ -1056,17 +1092,19 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
                                 {isOptimistic ? 'Just now' : relativeTime}
                               </span>
                             </div>
-                            {item.type === 'activity' && userName && (
-                              <Avatar className="size-6 -mt-1">
-                                <AvatarImage
-                                  alt={userName}
-                                  src={userAvatar || ''}
-                                />
-                                <AvatarFallback className="text-[10px]">
-                                  {userInitials}
-                                </AvatarFallback>
-                              </Avatar>
-                            )}
+                            {(item.type === 'activity' ||
+                              item.type === 'parent_wellness') &&
+                              userName && (
+                                <Avatar className="size-6 -mt-1">
+                                  <AvatarImage
+                                    alt={userName}
+                                    src={userAvatar || ''}
+                                  />
+                                  <AvatarFallback className="text-[10px]">
+                                    {userInitials}
+                                  </AvatarFallback>
+                                </Avatar>
+                              )}
                           </div>
                         </div>
                         {getDisplayNotes(itemNotes) && (

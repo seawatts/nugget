@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "showParentWellnessCard" boolean DEFAULT true NOT NULL;

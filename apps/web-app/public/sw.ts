@@ -5,10 +5,25 @@ declare const self: ServiceWorkerGlobalScope;
 const CACHE_VERSION = 'v1';
 const CACHE_NAME = `nugget-cache-${CACHE_VERSION}`;
 const LAST_NOTIFICATION_KEY = 'last-overdue-notification';
+const LAST_DASHBOARD_ROUTE_KEY = 'last-dashboard-route';
+const LAST_ROUTE_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 hours
+const BABY_DASHBOARD_REGEX = /^\/app\/babies\/[^/]+\/dashboard/;
+const FAMILY_ROUTE_REGEX = /^\/app\/family\/[^/]+/;
+const LAST_ROUTE_MESSAGE = 'SET_LAST_ROUTE';
 
 // Install event - cache essential assets
-self.addEventListener('install', (_event: ExtendableEvent) => {
+self.addEventListener('install', (event: ExtendableEvent) => {
   console.log('[Service Worker] Install');
+  event.waitUntil(
+    (async () => {
+      try {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.addAll(['/app', '/offline']);
+      } catch (error) {
+        console.warn('[Service Worker] Failed to precache shell', error);
+      }
+    })(),
+  );
   self.skipWaiting();
 });
 
@@ -56,11 +71,18 @@ self.addEventListener('fetch', (event: FetchEvent) => {
 
   const url = new URL(event.request.url);
   const pathname = url.pathname;
+  const isNavigationRequest = event.request.mode === 'navigate';
+
+  if (isNavigationRequest && (pathname === '/app' || pathname === '/app/')) {
+    event.respondWith(handleAppEntry(event));
+    return;
+  }
 
   // Strategy 1: NetworkFirst with short timeout for baby dashboard routes
   // Tries fresh content first, falls back to cache if network is slow
   // This ensures HTML updates are visible while still being fast
-  if (/^\/app\/babies\/[^/]+\/dashboard/.test(pathname)) {
+  if (BABY_DASHBOARD_REGEX.test(pathname)) {
+    rememberDashboardPath(pathname);
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_NAME);
@@ -123,56 +145,6 @@ self.addEventListener('fetch', (event: FetchEvent) => {
             statusText: 'Service Unavailable',
           });
         }
-      })(),
-    );
-    return;
-  }
-
-  // Strategy 2: StaleWhileRevalidate for /app route - instant redirect, update in background
-  // The redirect is just HTML, so we can serve from cache instantly
-  // Updates happen in background so redirect logic changes are picked up
-  if (pathname === '/app' || pathname === '/app/') {
-    event.respondWith(
-      (async () => {
-        const cache = await caches.open(CACHE_NAME);
-        const cachedResponse = await cache.match(event.request);
-
-        // Fetch fresh content in background (don't block)
-        // Use AbortController to prevent hanging on slow networks
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-        const fetchPromise = fetch(event.request, { signal: controller.signal })
-          .then((networkResponse) => {
-            clearTimeout(timeoutId);
-            if (networkResponse.ok) {
-              cache.put(event.request, networkResponse.clone());
-            }
-            return networkResponse;
-          })
-          .catch(() => {
-            clearTimeout(timeoutId);
-            // Ignore network errors in background
-            return null;
-          });
-
-        // Return cached response immediately if available (instant redirect)
-        if (cachedResponse) {
-          // Update cache in background without blocking
-          void fetchPromise;
-          return cachedResponse;
-        }
-
-        // No cache, wait for network (first load)
-        const networkResponse = await fetchPromise;
-        if (networkResponse) {
-          return networkResponse;
-        }
-
-        return new Response('Offline', {
-          status: 503,
-          statusText: 'Service Unavailable',
-        });
       })(),
     );
     return;
@@ -259,6 +231,89 @@ self.addEventListener('fetch', (event: FetchEvent) => {
     })(),
   );
 });
+
+async function handleAppEntry(event: FetchEvent): Promise<Response> {
+  const cache = await caches.open(CACHE_NAME);
+  const cachedResponsePromise = cache.match(event.request);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+  const networkPromise = fetch(event.request, { signal: controller.signal })
+    .then((networkResponse) => {
+      clearTimeout(timeoutId);
+      if (networkResponse?.ok) {
+        cache.put(event.request, networkResponse.clone());
+        if (networkResponse.redirected) {
+          const redirectedPath = extractPathFromUrl(networkResponse.url);
+          if (redirectedPath && isPersistableDashboardPath(redirectedPath)) {
+            void setLastDashboardRoute(redirectedPath);
+          }
+        }
+      }
+
+      return networkResponse;
+    })
+    .catch((error) => {
+      clearTimeout(timeoutId);
+      console.warn('[Service Worker] /app fetch failed', error);
+      return null;
+    });
+
+  const lastRoute = await getLastDashboardRoute();
+  if (lastRoute) {
+    void networkPromise;
+    return Response.redirect(
+      new URL(lastRoute, self.location.origin).toString(),
+      302,
+    );
+  }
+
+  const cachedResponse = await cachedResponsePromise;
+  if (cachedResponse) {
+    void networkPromise;
+    return cachedResponse;
+  }
+
+  const networkResponse = await networkPromise;
+  if (networkResponse) {
+    return networkResponse;
+  }
+
+  return new Response('Offline', {
+    status: 503,
+    statusText: 'Service Unavailable',
+  });
+}
+
+function rememberDashboardPath(pathname: string): void {
+  if (isPersistableDashboardPath(pathname)) {
+    void setLastDashboardRoute(pathname);
+  }
+}
+
+function isPersistableDashboardPath(pathname: string): boolean {
+  if (BABY_DASHBOARD_REGEX.test(pathname)) {
+    return true;
+  }
+
+  if (FAMILY_ROUTE_REGEX.test(pathname)) {
+    return true;
+  }
+
+  return false;
+}
+
+function extractPathFromUrl(urlString: string): string | null {
+  try {
+    const parsed = new URL(urlString);
+    const normalizedPath = `${parsed.pathname}${parsed.search}`;
+    return normalizedPath.startsWith('/')
+      ? normalizedPath
+      : `/${normalizedPath}`;
+  } catch {
+    return null;
+  }
+}
 
 // Periodic Background Sync - Check for overdue activities
 if ('periodicSync' in self.registration) {
@@ -361,6 +416,15 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
 
 // Message event - handle messages from the app
 self.addEventListener('message', (event: ExtendableMessageEvent) => {
+  if (
+    event.data &&
+    event.data.type === LAST_ROUTE_MESSAGE &&
+    typeof event.data.path === 'string' &&
+    isPersistableDashboardPath(event.data.path)
+  ) {
+    event.waitUntil(setLastDashboardRoute(event.data.path));
+  }
+
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
@@ -580,6 +644,67 @@ async function setLastNotificationTime(time: number): Promise<void> {
   } catch (error) {
     console.error(
       '[Service Worker] Error setting last notification time:',
+      error,
+    );
+  }
+}
+
+async function getLastDashboardRoute(): Promise<string | null> {
+  try {
+    const db = await openDatabase();
+    const transaction = db.transaction(['settings'], 'readonly');
+    const store = transaction.objectStore('settings');
+    const request = store.get(LAST_DASHBOARD_ROUTE_KEY);
+
+    return await new Promise((resolve, reject) => {
+      request.onsuccess = () => {
+        const record = request.result as {
+          value?: { path?: string; updatedAt?: number };
+        };
+        const path = record?.value?.path;
+        const updatedAt = record?.value?.updatedAt;
+
+        if (
+          typeof path === 'string' &&
+          isPersistableDashboardPath(path) &&
+          (!updatedAt || Date.now() - updatedAt <= LAST_ROUTE_MAX_AGE_MS)
+        ) {
+          resolve(path);
+          return;
+        }
+
+        resolve(null);
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  } catch (error) {
+    console.error(
+      '[Service Worker] Error getting last dashboard route:',
+      error,
+    );
+    return null;
+  }
+}
+
+async function setLastDashboardRoute(path: string): Promise<void> {
+  try {
+    const db = await openDatabase();
+    const transaction = db.transaction(['settings'], 'readwrite');
+    const store = transaction.objectStore('settings');
+    store.put({
+      key: LAST_DASHBOARD_ROUTE_KEY,
+      value: { path, updatedAt: Date.now() },
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  } catch (error) {
+    console.error(
+      '[Service Worker] Error setting last dashboard route:',
       error,
     );
   }

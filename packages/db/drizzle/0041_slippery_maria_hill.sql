@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "hasSeenParentWellnessIntro" boolean DEFAULT false NOT NULL;

@@ -14,6 +14,7 @@ import { formatTimeWithPreference } from '~/lib/format-time';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { getActivityTheme } from '../shared/activity-theme-config';
+import { calculateBabyAgeDays } from '../shared/baby-age-utils';
 import {
   PredictiveCardHeader,
   PredictiveCardSkeleton,
@@ -34,6 +35,7 @@ import { useActivityMutations } from '../use-activity-mutations';
 import { FeedingStatsDrawer } from './components';
 import { FeedingActionButtons } from './feeding-action-buttons';
 import { getFeedingLearningContent } from './learning-content';
+import { calculateNursingVolumes } from './nursing-volume-calculator';
 import { predictNextFeeding } from './prediction';
 import { TimelineFeedingDrawer } from './timeline-feeding-drawer';
 
@@ -176,6 +178,25 @@ export function QuickActionFeedingCard({
         recentActivities: queryData.recentActivities,
       }
     : null;
+
+  const babyAgeDaysForNursing = useMemo(() => {
+    if (typeof data?.babyAgeDays === 'number') {
+      return data.babyAgeDays;
+    }
+    if (baby?.birthDate) {
+      return calculateBabyAgeDays(new Date(baby.birthDate));
+    }
+    return null;
+  }, [baby?.birthDate, data?.babyAgeDays]);
+
+  const getEstimatedNursingAmount = (durationMinutes: number | null) => {
+    if (!durationMinutes) {
+      return null;
+    }
+    const ageDays = babyAgeDaysForNursing ?? 90;
+    const { totalMl } = calculateNursingVolumes(ageDays, durationMinutes);
+    return totalMl;
+  };
 
   const feedingProgress = useMemo(
     () =>
@@ -421,12 +442,14 @@ export function QuickActionFeedingCard({
     const duration =
       prediction.suggestedDuration ||
       getAgeBasedDuration(data?.babyAgeDays || null);
+    const amountMl = getEstimatedNursingAmount(duration);
 
     // Check for in-progress sleep before creating activity
     if (inProgressSleep) {
       // Store activity data and show confirmation dialog
       setPendingActivity({
         data: {
+          amountMl: amountMl ?? undefined,
           duration,
           feedingSource: 'direct',
           side: 'left',
@@ -446,6 +469,7 @@ export function QuickActionFeedingCard({
 
       // Build nursing activity data
       const nursingData = {
+        amountMl,
         duration,
         feedingSource: 'direct' as const,
         type: 'nursing' as const,
@@ -454,7 +478,7 @@ export function QuickActionFeedingCard({
       // Create optimistic activity for immediate UI feedback
       const optimisticActivity = {
         ...nursingData,
-        amountMl: null,
+        amountMl: nursingData.amountMl ?? null,
         assignedUserId: null,
         babyId: babyId,
         createdAt: now,
@@ -480,6 +504,7 @@ export function QuickActionFeedingCard({
       // Create the actual activity
       const activity = await createActivity({
         activityType: 'nursing',
+        amountMl: nursingData.amountMl ?? undefined,
         babyId,
         details: {
           side: 'left',
@@ -518,12 +543,14 @@ export function QuickActionFeedingCard({
     const duration =
       prediction.suggestedDuration ||
       getAgeBasedDuration(data?.babyAgeDays || null);
+    const amountMl = getEstimatedNursingAmount(duration);
 
     // Check for in-progress sleep before creating activity
     if (inProgressSleep) {
       // Store activity data and show confirmation dialog
       setPendingActivity({
         data: {
+          amountMl: amountMl ?? undefined,
           duration,
           feedingSource: 'direct',
           side: 'right',
@@ -543,6 +570,7 @@ export function QuickActionFeedingCard({
 
       // Build nursing activity data
       const nursingData = {
+        amountMl,
         duration,
         feedingSource: 'direct' as const,
         type: 'nursing' as const,
@@ -551,7 +579,7 @@ export function QuickActionFeedingCard({
       // Create optimistic activity for immediate UI feedback
       const optimisticActivity = {
         ...nursingData,
-        amountMl: null,
+        amountMl: nursingData.amountMl ?? null,
         assignedUserId: null,
         babyId: babyId,
         createdAt: now,
@@ -577,6 +605,7 @@ export function QuickActionFeedingCard({
       // Create the actual activity
       const activity = await createActivity({
         activityType: 'nursing',
+        amountMl: nursingData.amountMl ?? undefined,
         babyId,
         details: {
           side: 'right',
@@ -714,7 +743,10 @@ export function QuickActionFeedingCard({
         utils.activities.getUpcomingFeeding.invalidate();
       } else if (type === 'nursing') {
         // Build nursing activity data
+        const computedAmountMl =
+          data.amountMl ?? getEstimatedNursingAmount(data.duration ?? null);
         const nursingData = {
+          amountMl: computedAmountMl ?? null,
           duration: data.duration,
           feedingSource: 'direct' as const,
           type: 'nursing' as const,
@@ -725,7 +757,7 @@ export function QuickActionFeedingCard({
         // Create optimistic activity for immediate UI feedback
         const optimisticActivity = {
           ...nursingData,
-          amountMl: null,
+          amountMl: nursingData.amountMl ?? null,
           assignedUserId: null,
           babyId: babyId,
           createdAt: now,
@@ -750,6 +782,7 @@ export function QuickActionFeedingCard({
         // Create the actual activity
         const activity = await createActivity({
           activityType: 'nursing',
+          amountMl: nursingData.amountMl ?? undefined,
           babyId,
           details: {
             side: side as 'left' | 'right' | 'both',
@@ -849,7 +882,10 @@ export function QuickActionFeedingCard({
         utils.activities.getUpcomingFeeding.invalidate();
       } else if (type === 'nursing') {
         // Build nursing activity data
+        const computedAmountMl =
+          data.amountMl ?? getEstimatedNursingAmount(data.duration ?? null);
         const nursingData = {
+          amountMl: computedAmountMl ?? null,
           duration: data.duration,
           feedingSource: 'direct' as const,
           type: 'nursing' as const,
@@ -860,7 +896,7 @@ export function QuickActionFeedingCard({
         // Create optimistic activity for immediate UI feedback
         const optimisticActivity = {
           ...nursingData,
-          amountMl: null,
+          amountMl: nursingData.amountMl ?? null,
           assignedUserId: null,
           babyId: babyId,
           createdAt: now,
@@ -885,6 +921,7 @@ export function QuickActionFeedingCard({
         // Create the actual activity
         const activity = await createActivity({
           activityType: 'nursing',
+          amountMl: nursingData.amountMl ?? undefined,
           babyId,
           details: {
             side: side as 'left' | 'right' | 'both',

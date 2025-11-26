@@ -1,7 +1,7 @@
 import { Button } from '@nugget/ui/button';
 import { Icons } from '@nugget/ui/custom/icons';
 import { cn } from '@nugget/ui/lib/utils';
-import { Milk } from 'lucide-react';
+import { Droplet, Milk } from 'lucide-react';
 
 interface FeedingActionButtonsProps {
   creatingType: 'bottle' | 'nursing-left' | 'nursing-right' | null;
@@ -57,11 +57,14 @@ export function FeedingActionButtons({
         {creatingType === 'nursing-left' ? (
           <Icons.Spinner className="size-5" />
         ) : (
-          <div
-            aria-hidden="true"
-            className="flex items-center justify-center size-8 rounded-full bg-white/25 text-base font-semibold"
-          >
-            &lt;
+          <div className="relative flex items-center justify-center">
+            <Droplet aria-hidden="true" className="size-6" />
+            <span
+              aria-hidden="true"
+              className="absolute top-0 right-0 translate-x-2 -translate-y-1 rounded-full bg-white/90 px-1 text-[10px] font-semibold leading-none text-activity-feeding shadow"
+            >
+              L
+            </span>
           </div>
         )}
         <span className="text-xs font-medium">Nursing</span>
@@ -82,11 +85,14 @@ export function FeedingActionButtons({
         {creatingType === 'nursing-right' ? (
           <Icons.Spinner className="size-5" />
         ) : (
-          <div
-            aria-hidden="true"
-            className="flex items-center justify-center size-8 rounded-full bg-white/25 text-base font-semibold"
-          >
-            &gt;
+          <div className="relative flex items-center justify-center">
+            <Droplet aria-hidden="true" className="size-6" />
+            <span
+              aria-hidden="true"
+              className="absolute top-0 right-0 translate-x-2 -translate-y-1 rounded-full bg-white/90 px-1 text-[10px] font-semibold leading-none text-activity-feeding shadow"
+            >
+              R
+            </span>
           </div>
         )}
         <span className="text-xs font-medium">Nursing</span>

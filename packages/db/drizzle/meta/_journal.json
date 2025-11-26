@@ -266,6 +266,20 @@
       "tag": "0039_curious_excalibur",
       "version": "7",
       "when": 1764113013470
+    },
+    {
+      "breakpoints": true,
+      "idx": 40,
+      "tag": "0040_special_synch",
+      "version": "7",
+      "when": 1764146948712
+    },
+    {
+      "breakpoints": true,
+      "idx": 41,
+      "tag": "0041_slippery_maria_hill",
+      "version": "7",
+      "when": 1764147651966
     }
   ],
   "version": "7"

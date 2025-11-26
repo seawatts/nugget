@@ -35,12 +35,12 @@ export function PredictiveCardHeader({
   children,
 }: PredictiveCardHeaderProps) {
   return (
-    <div className="flex items-start gap-4 min-w-0 overflow-hidden">
+    <div className="flex items-center gap-4 min-w-0 overflow-hidden">
       <div className="opacity-30 shrink-0">
-        <Icon className="h-12 w-12" strokeWidth={1.5} />
+        <Icon className="h-10 w-10" strokeWidth={1.5} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold truncate">{title}</h2>
           <div className="flex items-center gap-1 shrink-0">
             {isFetching && (

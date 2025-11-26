@@ -367,6 +367,7 @@ export default function PreferencesSettingsPage() {
     quickLogPumpingUseTypicalDuration: true,
     quickLogSleepUseSuggestedDuration: true,
     showActivityGoals: true,
+    showParentWellnessCard: true,
     showPredictiveTimes: true,
     temperatureUnit: 'fahrenheit' as 'fahrenheit' | 'celsius',
     timeFormat: '12h' as '12h' | '24h',
@@ -428,6 +429,7 @@ export default function PreferencesSettingsPage() {
         quickLogSleepUseSuggestedDuration:
           user.quickLogSleepUseSuggestedDuration ?? true,
         showActivityGoals: user.showActivityGoals ?? true,
+        showParentWellnessCard: user.showParentWellnessCard ?? true,
         showPredictiveTimes: user.showPredictiveTimes ?? true,
         temperatureUnit: user.temperatureUnit || 'fahrenheit',
         timeFormat: user.timeFormat || '12h',
@@ -467,6 +469,7 @@ export default function PreferencesSettingsPage() {
       | 'quickLogPumpingUseLastVolume'
       | 'quickLogPumpingUseTypicalDuration'
       | 'showActivityGoals'
+      | 'showParentWellnessCard'
       | 'showPredictiveTimes',
     value: string | boolean,
   ) => {
@@ -497,6 +500,7 @@ export default function PreferencesSettingsPage() {
           quickLogSleepUseSuggestedDuration:
             user.quickLogSleepUseSuggestedDuration ?? true,
           showActivityGoals: user.showActivityGoals ?? true,
+          showParentWellnessCard: user.showParentWellnessCard ?? true,
           showPredictiveTimes: user.showPredictiveTimes ?? true,
           temperatureUnit: user.temperatureUnit || 'fahrenheit',
           timeFormat: user.timeFormat || '12h',
@@ -891,6 +895,16 @@ export default function PreferencesSettingsPage() {
           }
           onCheckedChange={(checked) =>
             handlePreferenceChange('showActivityGoals', checked)
+          }
+        />
+
+        {/* Parent Wellness Card Toggle */}
+        <SettingToggle
+          checked={preferences.showParentWellnessCard}
+          description="Show daily check-in card for parent well-being tracking"
+          label="Show daily check-in card"
+          onCheckedChange={(checked) =>
+            handlePreferenceChange('showParentWellnessCard', checked)
           }
         />
 

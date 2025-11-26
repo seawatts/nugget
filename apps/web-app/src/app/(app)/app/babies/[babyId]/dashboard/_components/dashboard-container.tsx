@@ -90,16 +90,17 @@ export function DashboardContainer() {
         </Suspense>
       </div>
 
-      {/* Parent Daily Question Card - Only show to parents */}
-      {familyMembersData.some(
-        (member) =>
-          member.userId === user?.id &&
-          (member.userRole === 'primary' || member.userRole === 'partner'),
-      ) && (
-        <div className="mb-6">
-          <ParentDailyQuestionCard />
-        </div>
-      )}
+      {/* Parent Daily Question Card - Only show to parents who have it enabled */}
+      {user?.showParentWellnessCard &&
+        familyMembersData.some((member) => {
+          if (member.userId !== user?.id) return false;
+          const role = member.userRole ?? member.role ?? 'primary';
+          return role === 'primary' || role === 'partner';
+        }) && (
+          <div className="mb-6">
+            <ParentDailyQuestionCard />
+          </div>
+        )}
 
       {/* Show message if all activity cards and timeline are hidden */}
       {allHidden && (

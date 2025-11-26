@@ -276,6 +276,9 @@ export const Users = pgTable('users', {
     .default('baby'),
   email: text('email').notNull(),
   firstName: text('firstName'),
+  hasSeenParentWellnessIntro: boolean('hasSeenParentWellnessIntro')
+    .default(false)
+    .notNull(),
   id: varchar('id', { length: 128 }).notNull().primaryKey(),
   lastLoggedInAt: timestamp('lastLoggedInAt', {
     mode: 'date',
@@ -322,6 +325,9 @@ export const Users = pgTable('users', {
     .default(true)
     .notNull(),
   showActivityGoals: boolean('showActivityGoals').default(true).notNull(),
+  showParentWellnessCard: boolean('showParentWellnessCard')
+    .default(true)
+    .notNull(),
   showPredictiveTimes: boolean('showPredictiveTimes').default(true).notNull(),
   temperatureUnit: temperatureUnitEnum('temperatureUnit')
     .default('fahrenheit')
