@@ -434,7 +434,7 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
           !Number.isNaN(item.timestamp.getTime());
         return isValid;
       }),
-    );
+    ) as TimelineItem[];
 
     // Deduplicate items by creating a unique key for each item
     const seen = new Set<string>();
@@ -450,8 +450,9 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
       } else if (item.type === 'chat') {
         uniqueKey = `chat-${item.data.chat.id}`;
       } else {
-        // Fallback for unknown types
-        uniqueKey = `${item.type}-${item.timestamp.getTime()}`;
+        const fallbackItem = item as TimelineItem;
+        // Fallback for unknown types while keeping gate for future union members
+        uniqueKey = `${fallbackItem.type}-${fallbackItem.timestamp.getTime()}`;
       }
 
       if (!seen.has(uniqueKey)) {
