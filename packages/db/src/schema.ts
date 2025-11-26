@@ -1908,6 +1908,71 @@ export const WellnessAssessments = pgTable(
   }),
 );
 
+// Parent Daily Responses - Daily wellness questions for parents
+export const ParentDailyResponses = pgTable(
+  'parentDailyResponses',
+  {
+    answerChoices: json('answerChoices').$type<string[]>().notNull(),
+    babyId: varchar('babyId', { length: 128 })
+      .notNull()
+      .references(() => Babies.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('createdAt', {
+      mode: 'date',
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+    date: timestamp('date', { mode: 'date', withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    familyId: varchar('familyId', { length: 128 })
+      .notNull()
+      .references(() => Families.id, { onDelete: 'cascade' })
+      .default(requestingFamilyId()),
+    id: varchar('id', { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId({ prefix: 'pdr' })),
+    question: text('question').notNull(),
+    questionContext: json('questionContext').$type<{
+      babyAgeInDays?: number;
+      babyAgeInWeeks?: number;
+      previousResponses?: Array<{
+        date: string;
+        question: string;
+        selectedAnswer: string;
+      }>;
+      recentActivitySummary?: {
+        feedingCount24h?: number;
+        sleepHours24h?: number;
+        diaperCount24h?: number;
+      };
+    }>(),
+    selectedAnswer: varchar('selectedAnswer', { length: 256 }),
+    updatedAt: timestamp('updatedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }).$onUpdateFn(() => new Date()),
+    userId: varchar('userId', { length: 128 })
+      .notNull()
+      .references(() => Users.id, { onDelete: 'cascade' }),
+  },
+  (table) => ({
+    babyIdx: index('parentDailyResponses_baby_idx').on(table.babyId),
+    dateIdx: index('parentDailyResponses_date_idx').on(table.date),
+    familyIdx: index('parentDailyResponses_family_idx').on(table.familyId),
+    // Unique constraint: one response per user per day
+    uniqueUserDate: unique('parentDailyResponses_user_date_unique').on(
+      table.userId,
+      table.date,
+    ),
+    userDateIdx: index('parentDailyResponses_user_date_idx').on(
+      table.userId,
+      table.date,
+    ),
+    userIdx: index('parentDailyResponses_user_idx').on(table.userId),
+  }),
+);
+
 // ============================================================================
 // Relations - Parent Wellness & Support
 // ============================================================================
@@ -1943,6 +2008,24 @@ export const WellnessAssessmentsRelations = relations(
     }),
     user: one(Users, {
       fields: [WellnessAssessments.userId],
+      references: [Users.id],
+    }),
+  }),
+);
+
+export const ParentDailyResponsesRelations = relations(
+  ParentDailyResponses,
+  ({ one }) => ({
+    baby: one(Babies, {
+      fields: [ParentDailyResponses.babyId],
+      references: [Babies.id],
+    }),
+    family: one(Families, {
+      fields: [ParentDailyResponses.familyId],
+      references: [Families.id],
+    }),
+    user: one(Users, {
+      fields: [ParentDailyResponses.userId],
       references: [Users.id],
     }),
   }),

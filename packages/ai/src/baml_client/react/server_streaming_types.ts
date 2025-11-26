@@ -21,7 +21,7 @@ $ pnpm add @boundaryml/baml
 import type { Check, Checked  } from "../types";
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml";
 
-import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  CelebrationQuestion,  CelebrationQuestionsOutput,  CelebrationStatistics,  CelebrationSummaryOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  DailyLearningPlan,  DoctorQuestionsOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningPlanItem,  LearningTip,  MilestoneEnhancementOutput,  MilestoneExplanationOutput,  MilestoneInput,  MilestonePlan,  MilestonePlanItem,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsInput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "../types"
+import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  CelebrationQuestion,  CelebrationQuestionsOutput,  CelebrationStatistics,  CelebrationSummaryOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  DailyLearningPlan,  DailyWellnessQuestionOutput,  DoctorQuestionsOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningPlanItem,  LearningTip,  MilestoneEnhancementOutput,  MilestoneExplanationOutput,  MilestoneInput,  MilestonePlan,  MilestonePlanItem,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsInput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "../types"
 
 import type * as types from "../types"
 import type { partial_types }from "../partial_types";
@@ -33,6 +33,7 @@ export type StreamingServerTypes = {
   BirthPlanHeadline: BirthPlanHeadlineOutput,
   DailyCheckInQuestions: DailyCheckInQuestionsOutput,
   DailyLearningPlanner: DailyLearningPlan,
+  DailyWellnessQuestion: DailyWellnessQuestionOutput,
   EnhanceMilestone: MilestoneEnhancementOutput,
   FirstWeekMilestone: MilestoneEnhancementOutput,
   GenerateCelebrationSummary: CelebrationSummaryOutput,

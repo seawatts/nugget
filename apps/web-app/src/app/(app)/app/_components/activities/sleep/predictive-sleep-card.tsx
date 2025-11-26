@@ -9,7 +9,7 @@ import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
 import { BarChart3, Info, Moon, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
@@ -80,6 +80,21 @@ export function PredictiveSleepCard({
 
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
+
+  // Fetch extended activities for stats drawer (90 days, only when drawer opens)
+  const ninetyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 90)), []);
+  const { data: extendedActivities = [] } = api.activities.list.useQuery(
+    {
+      babyId,
+      limit: 500,
+      since: ninetyDaysAgo,
+    },
+    {
+      enabled: Boolean(babyId) && showStatsDrawer,
+      staleTime: 60000,
+    },
+  );
+
   const [elapsedTime, setElapsedTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -476,7 +491,7 @@ export function PredictiveSleepCard({
 
       {/* Stats Drawer */}
       <SleepStatsDrawer
-        activities={last7DaysActivities ?? []}
+        activities={extendedActivities}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
         recentActivities={prediction.recentSleepPattern.map((item) => ({

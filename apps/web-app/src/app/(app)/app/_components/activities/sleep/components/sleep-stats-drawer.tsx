@@ -109,8 +109,11 @@ export function SleepStatsDrawer({
     fallbackHeatmapOption;
   const timelineOffsetDays = selectedTimelineOption.offsetDays;
 
-  // Fetch family members for co-sleeper charts
-  const { data: familyMembersData } = api.familyMembers.all.useQuery();
+  // Fetch family members for co-sleeper charts (only when drawer is open)
+  const { data: familyMembersData } = api.familyMembers.all.useQuery(
+    undefined,
+    { enabled: open },
+  );
 
   // Transform family members data for chart components
   const transformedFamilyMembers = familyMembersData?.map((member) => ({

@@ -9,7 +9,7 @@ import { cn } from '@nugget/ui/lib/utils';
 import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
 import { Baby, BarChart3, Info, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
@@ -80,6 +80,20 @@ export function PredictiveDiaperCard({
 
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
+
+  // Fetch extended activities for stats drawer (90 days, only when drawer opens)
+  const ninetyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 90)), []);
+  const { data: extendedActivities = [] } = api.activities.list.useQuery(
+    {
+      babyId,
+      limit: 500,
+      since: ninetyDaysAgo,
+    },
+    {
+      enabled: Boolean(babyId) && showStatsDrawer,
+      staleTime: 60000,
+    },
+  );
 
   // Merge optimistic and recent activities
   const mergedActivities = queryData
@@ -414,7 +428,7 @@ export function PredictiveDiaperCard({
 
       {/* Stats Drawer */}
       <DiaperStatsDrawer
-        activities={last7DaysActivities ?? []}
+        activities={extendedActivities}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
         recentActivities={prediction.recentDiaperPattern.map((item) => ({

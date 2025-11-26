@@ -23,7 +23,7 @@ import { toBamlError } from "@boundaryml/baml"
 import type { Checked, Check } from "./types"
 import type { partial_types } from "./partial_types"
 import type * as types from "./types"
-import type {AppointmentNudgeOutput, BabyAssistantChatOutput, BabyContext, BabyVisitExplainerOutput, BirthPlanHeadlineOutput, CelebrationQuestion, CelebrationQuestionsOutput, CelebrationStatistics, CelebrationSummaryOutput, ChatMessage, ChatTitleOutput, CheckInQuestion, ContextualMilestonesOutput, DailyCheckInQuestionsOutput, DailyLearningPlan, DoctorQuestionsOutput, HospitalPackAdviceOutput, ImprovementSuggestions, LearningPlanItem, LearningTip, MilestoneEnhancementOutput, MilestoneExplanationOutput, MilestoneInput, MilestonePlan, MilestonePlanItem, MilestoneSuggestion, NewbornMilestoneOutput, ParentTask, ParentTip, PersonalizedTasksOutput, PostpartumTipsInput, PostpartumTipsOutput, PregnancyWeekSummaryOutput, ResponseType, RoleSpecificTipsOutput, SleepRegressionTipsOutput, StalePromptsOutput, WellnessQuestion, WellnessScreeningOutput} from "./types"
+import type {AppointmentNudgeOutput, BabyAssistantChatOutput, BabyContext, BabyVisitExplainerOutput, BirthPlanHeadlineOutput, CelebrationQuestion, CelebrationQuestionsOutput, CelebrationStatistics, CelebrationSummaryOutput, ChatMessage, ChatTitleOutput, CheckInQuestion, ContextualMilestonesOutput, DailyCheckInQuestionsOutput, DailyLearningPlan, DailyWellnessQuestionOutput, DoctorQuestionsOutput, HospitalPackAdviceOutput, ImprovementSuggestions, LearningPlanItem, LearningTip, MilestoneEnhancementOutput, MilestoneExplanationOutput, MilestoneInput, MilestonePlan, MilestonePlanItem, MilestoneSuggestion, NewbornMilestoneOutput, ParentTask, ParentTip, PersonalizedTasksOutput, PostpartumTipsInput, PostpartumTipsOutput, PregnancyWeekSummaryOutput, ResponseType, RoleSpecificTipsOutput, SleepRegressionTipsOutput, StalePromptsOutput, WellnessQuestion, WellnessScreeningOutput} from "./types"
 import type TypeBuilder from "./type_builder"
 
 export class LlmResponseParser {
@@ -163,6 +163,29 @@ export class LlmResponseParser {
         __baml_options__?.clientRegistry,
         env,
       ) as types.DailyLearningPlan
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  DailyWellnessQuestion(
+      llmResponse: string,
+      __baml_options__?: { tb?: TypeBuilder, clientRegistry?: ClientRegistry, env?: Record<string, string | undefined> }
+  ): types.DailyWellnessQuestionOutput {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.parseLlmResponse(
+        "DailyWellnessQuestion",
+        llmResponse,
+        false,
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        env,
+      ) as types.DailyWellnessQuestionOutput
     } catch (error) {
       throw toBamlError(error);
     }
@@ -1043,6 +1066,29 @@ export class LlmStreamParser {
         __baml_options__?.clientRegistry,
         env,
       ) as partial_types.DailyLearningPlan
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  DailyWellnessQuestion(
+      llmResponse: string,
+      __baml_options__?: { tb?: TypeBuilder, clientRegistry?: ClientRegistry, env?: Record<string, string | undefined> }
+  ): partial_types.DailyWellnessQuestionOutput {
+    try {
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      return this.runtime.parseLlmResponse(
+        "DailyWellnessQuestion",
+        llmResponse,
+        true,
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __baml_options__?.clientRegistry,
+        env,
+      ) as partial_types.DailyWellnessQuestionOutput
     } catch (error) {
       throw toBamlError(error);
     }

@@ -1,6 +1,5 @@
 'use client';
 
-import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import {
   AlertDialog,
@@ -16,6 +15,7 @@ import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
 import { Baby, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { ClickableTimeDisplay } from '../shared/components/clickable-time-display';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { DiaperFormData } from './diaper-drawer';
@@ -41,8 +41,8 @@ export function TimelineDiaperDrawer({
   const { updateActivity, deleteActivity, isUpdating, isDeleting } =
     useActivityMutations();
 
-  // Fetch user preferences for time format
-  const { data: user } = api.user.current.useQuery();
+  // Get user preferences from dashboard store (already fetched by DashboardContainer)
+  const user = useDashboardDataStore.use.user();
   const timeFormat = user?.timeFormat || '12h';
 
   // Diaper-specific state

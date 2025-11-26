@@ -1,8 +1,10 @@
 'use client';
 
 import { useUser } from '@clerk/nextjs';
+import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { toast } from '@nugget/ui/sonner';
+import { startOfDay, subDays } from 'date-fns';
 import {
   Baby,
   Bath,
@@ -16,7 +18,7 @@ import {
   Tablet as Toilet,
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { createActivityAction } from './activity-cards.actions';
@@ -130,6 +132,109 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
   const { user } = useUser();
   const params = useParams<{ babyId?: string }>();
   const babyId = params?.babyId;
+
+  // Fetch activities here (within Suspense boundary for better performance)
+  const sevenDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 7)), []);
+  const [allActivitiesData = []] = api.activities.list.useSuspenseQuery({
+    babyId: babyId ?? '',
+    limit: 200,
+    since: sevenDaysAgo,
+  });
+
+  // Filter activities by type client-side
+  const bathActivities = useMemo(
+    () => allActivitiesData.filter((a) => a.type === 'bath'),
+    [allActivitiesData],
+  );
+  const pumpingActivities = useMemo(
+    () => allActivitiesData.filter((a) => a.type === 'pumping'),
+    [allActivitiesData],
+  );
+  const feedingActivities = useMemo(
+    () =>
+      allActivitiesData.filter((a) =>
+        ['feeding', 'bottle', 'nursing'].includes(a.type),
+      ),
+    [allActivitiesData],
+  );
+  const sleepActivities = useMemo(
+    () => allActivitiesData.filter((a) => a.type === 'sleep'),
+    [allActivitiesData],
+  );
+  const diaperActivities = useMemo(
+    () =>
+      allActivitiesData.filter((a) =>
+        ['diaper', 'wet', 'dirty', 'both'].includes(a.type),
+      ),
+    [allActivitiesData],
+  );
+  const vitaminDActivities = useMemo(
+    () => allActivitiesData.filter((a) => a.type === 'vitamin_d'),
+    [allActivitiesData],
+  );
+  const nailTrimmingActivities = useMemo(
+    () => allActivitiesData.filter((a) => a.type === 'nail_trimming'),
+    [allActivitiesData],
+  );
+  const doctorVisitActivities = useMemo(
+    () => allActivitiesData.filter((a) => a.type === 'doctor_visit'),
+    [allActivitiesData],
+  );
+  const otherActivities = useMemo(
+    () =>
+      allActivitiesData.filter((a) =>
+        [
+          'solids',
+          'medicine',
+          'temperature',
+          'tummy_time',
+          'growth',
+          'potty',
+        ].includes(a.type),
+      ),
+    [allActivitiesData],
+  );
+
+  // Populate store with activities for other components to use
+  useEffect(() => {
+    useDashboardDataStore
+      .getState()
+      .setActivitiesByType('bath', bathActivities);
+    useDashboardDataStore
+      .getState()
+      .setActivitiesByType('pumping', pumpingActivities);
+    useDashboardDataStore
+      .getState()
+      .setActivitiesByType('feeding', feedingActivities);
+    useDashboardDataStore
+      .getState()
+      .setActivitiesByType('sleep', sleepActivities);
+    useDashboardDataStore
+      .getState()
+      .setActivitiesByType('diaper', diaperActivities);
+    useDashboardDataStore
+      .getState()
+      .setActivitiesByType('vitamin_d', vitaminDActivities);
+    useDashboardDataStore
+      .getState()
+      .setActivitiesByType('nail_trimming', nailTrimmingActivities);
+    useDashboardDataStore
+      .getState()
+      .setActivitiesByType('doctor_visit', doctorVisitActivities);
+    useDashboardDataStore
+      .getState()
+      .setActivitiesByType('other', otherActivities);
+  }, [
+    bathActivities,
+    pumpingActivities,
+    feedingActivities,
+    sleepActivities,
+    diaperActivities,
+    vitaminDActivities,
+    nailTrimmingActivities,
+    doctorVisitActivities,
+    otherActivities,
+  ]);
 
   const [openDrawer, setOpenDrawer] = useState<string | null>(null);
   const [editingActivity, setEditingActivity] = useState<

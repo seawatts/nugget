@@ -7,6 +7,7 @@ import {
   insertActivitySchema,
   updateActivitySchema,
 } from '@nugget/db/schema';
+import { startOfDay } from 'date-fns';
 import { and, desc, eq, gte, inArray, isNull, or } from 'drizzle-orm';
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
@@ -296,6 +297,41 @@ export const activitiesRouter = createTRPCRouter({
           eq(Activities.isScheduled, true),
           gte(Activities.startTime, now),
         ),
+      });
+    }),
+
+  // Get today's activities for summary card (optimized query)
+  getTodaySummary: protectedProcedure
+    .input(z.object({ babyId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.auth.orgId) {
+        throw new Error('Authentication required');
+      }
+
+      // Verify baby belongs to family
+      const baby = await ctx.db.query.Babies.findFirst({
+        where: and(
+          eq(Babies.id, input.babyId),
+          eq(Babies.familyId, ctx.auth.orgId),
+        ),
+      });
+
+      if (!baby) {
+        throw new Error('Baby not found or does not belong to your family');
+      }
+
+      const todayStart = startOfDay(new Date());
+
+      return ctx.db.query.Activities.findMany({
+        limit: 50, // Today only - most users have < 20 activities per day
+        orderBy: [desc(Activities.startTime)],
+        where: and(
+          eq(Activities.babyId, input.babyId),
+          gte(Activities.startTime, todayStart),
+        ),
+        with: {
+          user: true,
+        },
       });
     }),
 

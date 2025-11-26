@@ -57,6 +57,8 @@ export default class TypeBuilder {
     
     DailyLearningPlan: ClassViewer<'DailyLearningPlan', "items" | "reasoning" | "coveredCategories" | "urgentHealthChecks">;
     
+    DailyWellnessQuestionOutput: ClassViewer<'DailyWellnessQuestionOutput', "question" | "answerChoices">;
+    
     DoctorQuestionsOutput: ClassViewer<'DoctorQuestionsOutput', "summary" | "questions" | "concerns">;
     
     HospitalPackAdviceOutput: ClassViewer<'HospitalPackAdviceOutput', "headline" | "subtext">;
@@ -110,7 +112,7 @@ export default class TypeBuilder {
     constructor() {
         this.tb = new _TypeBuilder({
           classes: new Set([
-            "AppointmentNudgeOutput","BabyAssistantChatOutput","BabyContext","BabyVisitExplainerOutput","BirthPlanHeadlineOutput","CelebrationQuestion","CelebrationQuestionsOutput","CelebrationStatistics","CelebrationSummaryOutput","ChatMessage","ChatTitleOutput","CheckInQuestion","ContextualMilestonesOutput","DailyCheckInQuestionsOutput","DailyLearningPlan","DoctorQuestionsOutput","HospitalPackAdviceOutput","ImprovementSuggestions","LearningPlanItem","LearningTip","MilestoneEnhancementOutput","MilestoneExplanationOutput","MilestoneInput","MilestonePlan","MilestonePlanItem","MilestoneSuggestion","NewbornMilestoneOutput","ParentTask","ParentTip","PersonalizedTasksOutput","PostpartumTipsInput","PostpartumTipsOutput","PregnancyWeekSummaryOutput","RoleSpecificTipsOutput","SleepRegressionTipsOutput","StalePromptsOutput","WellnessQuestion","WellnessScreeningOutput",
+            "AppointmentNudgeOutput","BabyAssistantChatOutput","BabyContext","BabyVisitExplainerOutput","BirthPlanHeadlineOutput","CelebrationQuestion","CelebrationQuestionsOutput","CelebrationStatistics","CelebrationSummaryOutput","ChatMessage","ChatTitleOutput","CheckInQuestion","ContextualMilestonesOutput","DailyCheckInQuestionsOutput","DailyLearningPlan","DailyWellnessQuestionOutput","DoctorQuestionsOutput","HospitalPackAdviceOutput","ImprovementSuggestions","LearningPlanItem","LearningTip","MilestoneEnhancementOutput","MilestoneExplanationOutput","MilestoneInput","MilestonePlan","MilestonePlanItem","MilestoneSuggestion","NewbornMilestoneOutput","ParentTask","ParentTip","PersonalizedTasksOutput","PostpartumTipsInput","PostpartumTipsOutput","PregnancyWeekSummaryOutput","RoleSpecificTipsOutput","SleepRegressionTipsOutput","StalePromptsOutput","WellnessQuestion","WellnessScreeningOutput",
           ]),
           enums: new Set([
             "ResponseType",
@@ -176,6 +178,10 @@ export default class TypeBuilder {
         
         this.DailyLearningPlan = this.tb.classViewer("DailyLearningPlan", [
           "items","reasoning","coveredCategories","urgentHealthChecks",
+        ]);
+        
+        this.DailyWellnessQuestionOutput = this.tb.classViewer("DailyWellnessQuestionOutput", [
+          "question","answerChoices",
         ]);
         
         this.DoctorQuestionsOutput = this.tb.classViewer("DoctorQuestionsOutput", [

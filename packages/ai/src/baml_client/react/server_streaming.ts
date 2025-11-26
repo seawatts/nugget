@@ -24,7 +24,7 @@ import { b } from '../index';
 import type { Check, Checked  } from "../types";
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml";
 
-import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  CelebrationQuestion,  CelebrationQuestionsOutput,  CelebrationStatistics,  CelebrationSummaryOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  DailyLearningPlan,  DoctorQuestionsOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningPlanItem,  LearningTip,  MilestoneEnhancementOutput,  MilestoneExplanationOutput,  MilestoneInput,  MilestonePlan,  MilestonePlanItem,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsInput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "../types"
+import type {  AppointmentNudgeOutput,  BabyAssistantChatOutput,  BabyContext,  BabyVisitExplainerOutput,  BirthPlanHeadlineOutput,  CelebrationQuestion,  CelebrationQuestionsOutput,  CelebrationStatistics,  CelebrationSummaryOutput,  ChatMessage,  ChatTitleOutput,  CheckInQuestion,  ContextualMilestonesOutput,  DailyCheckInQuestionsOutput,  DailyLearningPlan,  DailyWellnessQuestionOutput,  DoctorQuestionsOutput,  HospitalPackAdviceOutput,  ImprovementSuggestions,  LearningPlanItem,  LearningTip,  MilestoneEnhancementOutput,  MilestoneExplanationOutput,  MilestoneInput,  MilestonePlan,  MilestonePlanItem,  MilestoneSuggestion,  NewbornMilestoneOutput,  ParentTask,  ParentTip,  PersonalizedTasksOutput,  PostpartumTipsInput,  PostpartumTipsOutput,  PregnancyWeekSummaryOutput,  ResponseType,  RoleSpecificTipsOutput,  SleepRegressionTipsOutput,  StalePromptsOutput,  WellnessQuestion,  WellnessScreeningOutput } from "../types"
 
 import type * as types from "../types"
 
@@ -238,6 +238,52 @@ export const DailyLearningPlanner = async (
     activitySummary,
     parentWellness,
     medicalContext,
+  );
+  return Promise.resolve(stream.toStreamable());
+};
+
+/**
+ * Executes the streaming variant of the "DailyWellnessQuestion" BAML action.
+ *
+ * This action initiates a streaming response by calling the corresponding
+ * BAML stream function. The returned stream yields incremental updates.
+ *
+ * @param { string } babyName - Input parameter.
+ * @param { number } babyAgeInDays - Input parameter.
+ * @param { number } babyAgeInWeeks - Input parameter.
+ * @param { number | null } feedingCount24h (optional) - Input parameter.
+ * @param { number | null } sleepHours24h (optional) - Input parameter.
+ * @param { number | null } diaperCount24h (optional) - Input parameter.
+ * @param { string | null } previousResponses (optional) - Input parameter.
+ * @param { number | null } currentStreak (optional) - Input parameter.
+ * @param { number | null } weeklyCompletionCount (optional) - Input parameter.
+ * @param { number | null } daysSinceLastResponse (optional) - Input parameter.
+ *
+ * @returns {ReadableStream<Uint8Array>} A stream that yields incremental updates from the action.
+ */
+export const DailyWellnessQuestion = async (
+  babyName: string,
+  babyAgeInDays: number,
+  babyAgeInWeeks: number,
+  feedingCount24h?: number | null,
+  sleepHours24h?: number | null,
+  diaperCount24h?: number | null,
+  previousResponses?: string | null,
+  currentStreak?: number | null,
+  weeklyCompletionCount?: number | null,
+  daysSinceLastResponse?: number | null,
+): Promise<ReadableStream<Uint8Array>> => {
+  const stream = b.stream.DailyWellnessQuestion(
+    babyName,
+    babyAgeInDays,
+    babyAgeInWeeks,
+    feedingCount24h,
+    sleepHours24h,
+    diaperCount24h,
+    previousResponses,
+    currentStreak,
+    weeklyCompletionCount,
+    daysSinceLastResponse,
   );
   return Promise.resolve(stream.toStreamable());
 };

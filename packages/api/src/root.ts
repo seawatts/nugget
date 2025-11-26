@@ -11,6 +11,7 @@ import { learningRouter } from './router/learning';
 import { milestonesRouter } from './router/milestones';
 import { milestonesCarouselRouter } from './router/milestones-carousel';
 import { onboardingRouter } from './router/onboarding';
+import { parentWellnessRouter } from './router/parent-wellness';
 import { supplyInventoryRouter } from './router/supply-inventory';
 import { supplyTransactionsRouter } from './router/supply-transactions';
 import { timelineRouter } from './router/timeline';
@@ -31,6 +32,7 @@ export const appRouter = createTRPCRouter({
   milestones: milestonesRouter,
   milestonesCarousel: milestonesCarouselRouter,
   onboarding: onboardingRouter,
+  parentWellness: parentWellnessRouter,
   supplyInventory: supplyInventoryRouter,
   supplyTransactions: supplyTransactionsRouter,
   timeline: timelineRouter,

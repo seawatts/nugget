@@ -259,6 +259,13 @@
       "tag": "0038_legal_microchip",
       "version": "7",
       "when": 1764103367134
+    },
+    {
+      "breakpoints": true,
+      "idx": 39,
+      "tag": "0039_curious_excalibur",
+      "version": "7",
+      "when": 1764113013470
     }
   ],
   "version": "7"

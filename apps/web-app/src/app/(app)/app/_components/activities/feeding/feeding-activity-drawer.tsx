@@ -16,6 +16,7 @@ import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { ActivityDrawerHeader } from '../shared/components/activity-drawer-header';
 import { StopSleepConfirmationDialog } from '../shared/components/stop-sleep-confirmation-dialog';
 import { useInProgressSleep } from '../shared/hooks/use-in-progress-sleep';
@@ -47,10 +48,8 @@ export function FeedingActivityDrawer({
 }: FeedingActivityDrawerProps) {
   const { deleteActivity, isCreating, isUpdating } = useActivityMutations();
 
-  // Fetch baby data to get age information (prefetched on server)
-  const [baby] = api.babies.getByIdLight.useSuspenseQuery({
-    id: babyId,
-  });
+  // Get baby data from dashboard store (already fetched by DashboardContainer)
+  const baby = useDashboardDataStore.use.baby();
 
   // Calculate baby age in days
   const babyAgeDays = baby?.birthDate

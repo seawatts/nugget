@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Card } from '@nugget/ui/card';
 import { cn } from '@nugget/ui/lib/utils';
 import { toast } from '@nugget/ui/sonner';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
 import { Droplet, Milk } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -114,6 +114,21 @@ export function QuickActionFeedingCard({
 
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
+
+  // Fetch extended activities for stats drawer (90 days, only when drawer opens)
+  const ninetyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 90)), []);
+  const { data: extendedActivities = [] } = api.activities.list.useQuery(
+    {
+      babyId,
+      limit: 500,
+      since: ninetyDaysAgo,
+    },
+    {
+      enabled: Boolean(babyId) && showStatsDrawer,
+      staleTime: 60000,
+    },
+  );
+
   const [creatingType, setCreatingType] = useState<
     'bottle' | 'nursing-left' | 'nursing-right' | null
   >(null);
@@ -167,9 +182,17 @@ export function QuickActionFeedingCard({
       getFeedingDailyProgress({
         activities: mergedActivities,
         babyAgeDays: data?.babyAgeDays ?? null,
+        dataPointsCount: data?.prediction.calculationDetails.dataPoints,
+        predictedIntervalHours: data?.prediction.intervalHours,
         unitPreference: userUnitPref.toUpperCase() as 'ML' | 'OZ',
       }),
-    [data?.babyAgeDays, mergedActivities, userUnitPref],
+    [
+      data?.babyAgeDays,
+      data?.prediction.intervalHours,
+      data?.prediction.calculationDetails.dataPoints,
+      mergedActivities,
+      userUnitPref,
+    ],
   );
 
   const feedingStartLabel =
@@ -1050,7 +1073,7 @@ export function QuickActionFeedingCard({
 
       {/* Stats Drawer */}
       <FeedingStatsDrawer
-        activities={allActivities ?? []}
+        activities={extendedActivities}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
         recentActivities={

@@ -23,7 +23,6 @@ import {
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { memo, useEffect, useMemo, useState } from 'react';
-import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { formatVolumeDisplay } from './activities/shared/volume-utils';
 
@@ -192,25 +191,25 @@ export function TodaySummaryCard({
   // Determine volume unit based on measurement preference
   const userUnitPref = measurementUnit === 'imperial' ? 'OZ' : 'ML';
 
-  // Get shared data from dashboard store (populated by DashboardContainer)
-  const activitiesData = useDashboardDataStore.use.activities();
+  // Fetch today's activities using optimized query (non-blocking)
+  const { data: todayActivitiesData = [] } =
+    api.activities.getTodaySummary.useQuery(
+      { babyId: babyId ?? '' },
+      { enabled: Boolean(babyId) },
+    );
 
-  // Fetch milestones achieved today using tRPC suspense query (prefetched on server)
-  // Use babyId from params to avoid race condition with store population
-  const [allMilestones = []] = api.milestones.list.useSuspenseQuery({
-    babyId: babyId ?? '',
-    limit: 100,
-  });
+  // Fetch milestones achieved today using tRPC query (non-blocking)
+  const { data: allMilestones = [] } = api.milestones.list.useQuery(
+    { babyId: babyId ?? '', limit: 100 },
+    { enabled: Boolean(babyId) },
+  );
 
-  // Filter to only today's activities and milestones
+  // Filter to only today's milestones
   const todayStart = useMemo(() => startOfDay(new Date()), []);
 
   const todayActivities = useMemo(() => {
-    return activitiesData.filter((activity) => {
-      const activityDate = new Date(activity.startTime);
-      return activityDate >= todayStart;
-    });
-  }, [activitiesData, todayStart]);
+    return todayActivitiesData;
+  }, [todayActivitiesData]);
 
   const milestonesData = useMemo(() => {
     return allMilestones.filter((milestone) => {

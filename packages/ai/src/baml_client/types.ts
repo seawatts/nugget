@@ -156,6 +156,12 @@ export interface DailyLearningPlan {
   
 }
 
+export interface DailyWellnessQuestionOutput {
+  question: string
+  answerChoices: string[]
+  
+}
+
 export interface DoctorQuestionsOutput {
   summary: string
   questions: string[]

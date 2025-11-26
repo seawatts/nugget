@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import {
   AlertDialog,
@@ -11,6 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@nugget/ui/alert-dialog';
+import { startOfDay, subDays } from 'date-fns';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
@@ -40,6 +42,21 @@ export function PredictiveVitaminDCard({
   const [showDialog, setShowDialog] = useState(false);
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
+
+  // Fetch extended activities for stats drawer (90 days, only when drawer opens)
+  const ninetyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 90)), []);
+  const { data: extendedActivities = [] } = api.activities.list.useQuery(
+    {
+      babyId,
+      limit: 500,
+      since: ninetyDaysAgo,
+    },
+    {
+      enabled: Boolean(babyId) && showStatsDrawer,
+      staleTime: 60000,
+    },
+  );
+
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [activityToDelete, setActivityToDelete] = useState<
     typeof Activities.$inferSelect | null
@@ -48,10 +65,9 @@ export function PredictiveVitaminDCard({
 
   const vitaminDTheme = getActivityTheme('vitamin_d');
 
-  // Get shared data from dashboard store (populated by DashboardContainer)
+  // Get shared data from dashboard store
   const baby = useDashboardDataStore.use.baby();
   const userData = useDashboardDataStore.use.user();
-  const allActivities = useDashboardDataStore.use.activities();
 
   const timeFormat = userData?.timeFormat || '12h';
 
@@ -62,13 +78,16 @@ export function PredictiveVitaminDCard({
       )
     : null;
 
+  // Get activities from dashboard store
+  const allActivities = useDashboardDataStore.use.activities();
+
   // Get optimistic activities from store
   const optimisticActivities = useOptimisticActivitiesStore.use.activities();
   const addOptimisticActivity = useOptimisticActivitiesStore(
     (state) => state.addActivity,
   );
 
-  // Filter activities to only vitamin D from the shared data (already fetched 30 days)
+  // Filter activities to only vitamin D
   const serverVitaminDActivities = useMemo(() => {
     return (
       allActivities?.filter((activity) => activity.type === 'vitamin_d') ?? []
@@ -276,7 +295,7 @@ export function PredictiveVitaminDCard({
 
       {/* Stats Drawer */}
       <VitaminDStatsDrawer
-        activities={vitaminDActivities}
+        activities={extendedActivities}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
         timeFormat={timeFormat}

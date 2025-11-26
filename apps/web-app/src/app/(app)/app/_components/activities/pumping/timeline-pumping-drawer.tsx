@@ -1,6 +1,5 @@
 'use client';
 
-import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import {
   AlertDialog,
@@ -16,6 +15,7 @@ import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
 import { Droplets, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { ClickableTimeDisplay } from '../shared/components/clickable-time-display';
 import { useActivityMutations } from '../use-activity-mutations';
 import { PumpingDrawerContent } from './pumping-drawer';
@@ -40,8 +40,8 @@ export function TimelinePumpingDrawer({
   const { updateActivity, deleteActivity, isUpdating, isDeleting } =
     useActivityMutations();
 
-  // Fetch user preferences to determine default unit and time format
-  const { data: user } = api.user.current.useQuery();
+  // Get user preferences from dashboard store (already fetched by DashboardContainer)
+  const user = useDashboardDataStore.use.user();
   const measurementUnit = user?.measurementUnit || 'metric';
   const userUnitPref = measurementUnit === 'imperial' ? 'OZ' : 'ML';
   const timeFormat = user?.timeFormat || '12h';

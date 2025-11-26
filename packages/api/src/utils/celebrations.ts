@@ -573,11 +573,48 @@ export async function getCelebrationContent(
 
 /**
  * Get AI-enhanced celebration content
+ * Checks cache first before generating to avoid expensive AI calls
  */
 export async function getCelebrationAIContent(
   context: CelebrationEnhancementContext & { celebrationMemoryId: string },
 ) {
   try {
+    // Check cache first - look for existing AI content in CelebrationMemories
+    const existingMemory = await db
+      .select()
+      .from(CelebrationMemories)
+      .where(eq(CelebrationMemories.id, context.celebrationMemoryId))
+      .limit(1);
+
+    const memory = existingMemory[0];
+
+    if (memory) {
+      // Check if we have valid cached AI content (less than 1 day old)
+      const hasAICache =
+        memory.aiSummary &&
+        memory.aiQuestions &&
+        memory.aiGeneratedAt &&
+        differenceInDays(new Date(), memory.aiGeneratedAt) < 1;
+
+      if (hasAICache) {
+        console.log(
+          '[Celebration Cache] Cache hit, returning cached AI content',
+        );
+        return {
+          aiQuestions: memory.aiQuestions as {
+            guidance: { question: string; systemPrompt: string };
+            memory: { question: string; systemPrompt: string };
+            milestone: { question: string; systemPrompt: string };
+          },
+          aiSummary: memory.aiSummary as string,
+        };
+      }
+    }
+
+    // Cache miss - generate new AI content
+    console.log('[Celebration Cache] Cache miss, generating new AI content...');
+    const startTime = Date.now();
+
     // Generate AI content
     const enhancement = await enhanceCelebration(context);
 
@@ -598,6 +635,9 @@ export async function getCelebrationAIContent(
       },
       aiSummary: enhancement.summary.summary,
     };
+
+    const endTime = Date.now();
+    console.log(`[Celebration Cache] Generation took ${endTime - startTime}ms`);
 
     // Save AI content to database cache
     await db

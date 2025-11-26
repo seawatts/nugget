@@ -1,6 +1,5 @@
 'use client';
 
-import { api } from '@nugget/api/react';
 import type { Activities, ActivityDetails } from '@nugget/db/schema';
 import {
   AlertDialog,
@@ -16,6 +15,7 @@ import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
 import { Utensils, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { ClickableTimeDisplay } from '../shared/components/clickable-time-display';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { FeedingFormData } from './feeding-type-selector';
@@ -41,13 +41,9 @@ export function TimelineFeedingDrawer({
   const { updateActivity, deleteActivity, isUpdating, isDeleting } =
     useActivityMutations();
 
-  // Fetch baby data to get age information
-  const [baby] = api.babies.getByIdLight.useSuspenseQuery({
-    id: babyId,
-  });
-
-  // Fetch user preferences for time format
-  const [user] = api.user.current.useSuspenseQuery();
+  // Get baby and user data from dashboard store (already fetched by DashboardContainer)
+  const baby = useDashboardDataStore.use.baby();
+  const user = useDashboardDataStore.use.user();
   const timeFormat = user?.timeFormat || '12h';
 
   // Calculate baby age in days

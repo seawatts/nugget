@@ -1,5 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { api, HydrationBoundary } from '@nugget/api/rsc';
+import { startOfDay, subDays } from 'date-fns';
 import { updateLastSelectedBabyAction } from '../actions';
 import { DashboardContainer } from './_components/dashboard-container';
 
@@ -23,28 +24,27 @@ export default async function BabyDashboardPage({ params }: PageProps) {
     });
   }
 
-  // Prefetch all queries on server for baby dashboard
-  // Using tRPC RSC pattern with Clerk auth properly wired through createTRPCContext
+  // Prefetch ONLY critical data needed for initial render (useSuspenseQuery in DashboardContainer)
+  // Everything else is wrapped in Suspense and will lazy load client-side for better performance
   const trpc = await api();
 
-  // Prefetch all queries on server using tRPC - void keyword prevents awaiting
+  // Critical data for DashboardContainer (blocks initial render, but needed)
   void trpc.babies.getByIdLight.prefetch({ id: babyId });
   void trpc.user.current.prefetch();
   void trpc.familyMembers.all.prefetch();
+
+  // Activities for above-the-fold action cards (ActivityCards component)
+  // This prefetch ensures the data is cached before ActivityCards renders,
+  // preventing a blocking query during initial render
+  const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
   void trpc.activities.list.prefetch({
-    babyId: babyId,
-    isScheduled: false,
-    limit: 1000,
-  });
-  void trpc.milestones.list.prefetch({
-    babyId: babyId,
-    limit: 100,
+    babyId,
+    limit: 200,
+    since: sevenDaysAgo,
   });
 
-  // Prefetch carousel content using tRPC (replaces server action calls!)
-  void trpc.learning.getCarouselContent.prefetch({ babyId });
-  void trpc.milestonesCarousel.getCarouselContent.prefetch({ babyId });
-  void trpc.celebrations.getCarouselContent.prefetch({ babyId });
+  // NOTE: Carousels (celebrations, learning, milestones) and timeline are wrapped in Suspense
+  // They fetch their own data client-side for faster initial page load
 
   return (
     <HydrationBoundary>

@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { ChatDialog } from '../../chat/chat-dialog';
 import { MilestoneViewDrawer } from '../../milestones/milestone-view-drawer';
@@ -351,8 +352,8 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
   // Get optimistic activities from Zustand store
   const optimisticActivities = useOptimisticActivitiesStore.use.activities();
 
-  // Fetch user preferences for volume display and time format (prefetched on server)
-  const [user] = api.user.current.useSuspenseQuery();
+  // Get user preferences from dashboard store (already fetched by DashboardContainer)
+  const user = useDashboardDataStore.use.user();
   const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
   const timeFormat = user?.timeFormat || '12h';
   const measurementUnit = user?.measurementUnit || 'metric';
@@ -421,7 +422,7 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
       },
     );
 
-  // Flatten all pages into a single list
+  // Flatten all pages into a single list and deduplicate
   const serverTimelineItems = useMemo(() => {
     if (!data?.pages) return [];
 
@@ -434,7 +435,32 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
         return isValid;
       }),
     );
-    return flattened;
+
+    // Deduplicate items by creating a unique key for each item
+    const seen = new Set<string>();
+    const deduplicated: TimelineItem[] = [];
+
+    for (const item of flattened) {
+      // Create a unique key for this item
+      let uniqueKey: string;
+      if (item.type === 'activity') {
+        uniqueKey = `activity-${item.data.id}`;
+      } else if (item.type === 'milestone') {
+        uniqueKey = `milestone-${item.data.id}`;
+      } else if (item.type === 'chat') {
+        uniqueKey = `chat-${item.data.chat.id}`;
+      } else {
+        // Fallback for unknown types
+        uniqueKey = `${item.type}-${item.timestamp.getTime()}`;
+      }
+
+      if (!seen.has(uniqueKey)) {
+        seen.add(uniqueKey);
+        deduplicated.push(item);
+      }
+    }
+
+    return deduplicated;
   }, [data?.pages]);
 
   // Merge optimistic activities with timeline items
@@ -949,7 +975,7 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
                     chat.content.length > 100
                       ? `${chat.content.slice(0, 100)}...`
                       : chat.content;
-                  itemId = chat.id;
+                  itemId = chat.chat.id;
                 }
 
                 const detailsText =
@@ -962,10 +988,14 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
                   : 0;
                 const showTimeGap = timeGapMinutes >= 15;
 
+                // Generate a globally unique key based on item identity
+                // Use itemId + type + timestamp to ensure uniqueness
+                // The deduplication above should prevent duplicates, but this ensures
+                // keys are unique even if deduplication misses something
                 const timelineItemKey =
                   itemId && itemId.length > 0
-                    ? `${itemId}-${item.timestamp.getTime()}`
-                    : `${item.type}-${item.timestamp.getTime()}-${index}`;
+                    ? `${item.type}-${itemId}-${item.timestamp.getTime()}`
+                    : `${item.type}-${item.timestamp.getTime()}-${groupIndex}-${index}`;
 
                 return (
                   <div key={timelineItemKey}>

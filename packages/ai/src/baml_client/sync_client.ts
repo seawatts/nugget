@@ -22,7 +22,7 @@ import type { BamlRuntime, FunctionResult, BamlCtxManager, Image, Audio, Pdf, Vi
 import { toBamlError, BamlAbortError, type HTTPRequest } from "@boundaryml/baml"
 import type { Checked, Check, RecursivePartialNull as MovedRecursivePartialNull } from "./types"
 import type * as types from "./types"
-import type {AppointmentNudgeOutput, BabyAssistantChatOutput, BabyContext, BabyVisitExplainerOutput, BirthPlanHeadlineOutput, CelebrationQuestion, CelebrationQuestionsOutput, CelebrationStatistics, CelebrationSummaryOutput, ChatMessage, ChatTitleOutput, CheckInQuestion, ContextualMilestonesOutput, DailyCheckInQuestionsOutput, DailyLearningPlan, DoctorQuestionsOutput, HospitalPackAdviceOutput, ImprovementSuggestions, LearningPlanItem, LearningTip, MilestoneEnhancementOutput, MilestoneExplanationOutput, MilestoneInput, MilestonePlan, MilestonePlanItem, MilestoneSuggestion, NewbornMilestoneOutput, ParentTask, ParentTip, PersonalizedTasksOutput, PostpartumTipsInput, PostpartumTipsOutput, PregnancyWeekSummaryOutput, ResponseType, RoleSpecificTipsOutput, SleepRegressionTipsOutput, StalePromptsOutput, WellnessQuestion, WellnessScreeningOutput} from "./types"
+import type {AppointmentNudgeOutput, BabyAssistantChatOutput, BabyContext, BabyVisitExplainerOutput, BirthPlanHeadlineOutput, CelebrationQuestion, CelebrationQuestionsOutput, CelebrationStatistics, CelebrationSummaryOutput, ChatMessage, ChatTitleOutput, CheckInQuestion, ContextualMilestonesOutput, DailyCheckInQuestionsOutput, DailyLearningPlan, DailyWellnessQuestionOutput, DoctorQuestionsOutput, HospitalPackAdviceOutput, ImprovementSuggestions, LearningPlanItem, LearningTip, MilestoneEnhancementOutput, MilestoneExplanationOutput, MilestoneInput, MilestonePlan, MilestonePlanItem, MilestoneSuggestion, NewbornMilestoneOutput, ParentTask, ParentTip, PersonalizedTasksOutput, PostpartumTipsInput, PostpartumTipsOutput, PregnancyWeekSummaryOutput, ResponseType, RoleSpecificTipsOutput, SleepRegressionTipsOutput, StalePromptsOutput, WellnessQuestion, WellnessScreeningOutput} from "./types"
 import type TypeBuilder from "./type_builder"
 import { HttpRequest, HttpStreamRequest } from "./sync_request"
 import { LlmResponseParser, LlmStreamParser } from "./parser"
@@ -343,6 +343,48 @@ export class BamlSyncClient {
         options.watchers,
       )
       return raw.parsed(false) as types.DailyLearningPlan
+    } catch (error: any) {
+      throw toBamlError(error);
+    }
+  }
+  
+  DailyWellnessQuestion(
+      babyName: string,babyAgeInDays: number,babyAgeInWeeks: number,feedingCount24h?: number | null,sleepHours24h?: number | null,diaperCount24h?: number | null,previousResponses?: string | null,currentStreak?: number | null,weeklyCompletionCount?: number | null,daysSinceLastResponse?: number | null,
+      __baml_options__?: BamlCallOptions<never>
+  ): types.DailyWellnessQuestionOutput {
+    try {
+      const options = { ...this.bamlOptions, ...(__baml_options__ || {}) }
+      const signal = options.signal;
+
+      if (signal?.aborted) {
+        throw new BamlAbortError('Operation was aborted', signal.reason);
+      }
+
+      // Check if onTick is provided and reject for sync operations
+      if (options.onTick) {
+        throw new Error("onTick is not supported for synchronous functions. Please use the async client instead.");
+      }
+
+      const collector = options.collector ? (Array.isArray(options.collector) ? options.collector : [options.collector]) : [];
+      const rawEnv = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const env: Record<string, string> = Object.fromEntries(
+        Object.entries(rawEnv).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+      const raw = this.runtime.callFunctionSync(
+        "DailyWellnessQuestion",
+        {
+          "babyName": babyName,"babyAgeInDays": babyAgeInDays,"babyAgeInWeeks": babyAgeInWeeks,"feedingCount24h": feedingCount24h?? null,"sleepHours24h": sleepHours24h?? null,"diaperCount24h": diaperCount24h?? null,"previousResponses": previousResponses?? null,"currentStreak": currentStreak?? null,"weeklyCompletionCount": weeklyCompletionCount?? null,"daysSinceLastResponse": daysSinceLastResponse?? null
+        },
+        this.ctxManager.cloneContext(),
+        options.tb?.__tb(),
+        options.clientRegistry,
+        collector,
+        options.tags || {},
+        env,
+        signal,
+        options.watchers,
+      )
+      return raw.parsed(false) as types.DailyWellnessQuestionOutput
     } catch (error: any) {
       throw toBamlError(error);
     }

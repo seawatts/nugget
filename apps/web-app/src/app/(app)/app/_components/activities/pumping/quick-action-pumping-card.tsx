@@ -8,7 +8,7 @@ import { Card } from '@nugget/ui/card';
 import { Icons } from '@nugget/ui/custom/icons';
 import { cn } from '@nugget/ui/lib/utils';
 import { toast } from '@nugget/ui/sonner';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
 import { Droplets } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -21,12 +21,14 @@ import {
   PredictiveCardSkeleton,
   PredictiveInfoDrawer,
 } from '../shared/components/predictive-cards';
+import { TimelineDrawerWrapper } from '../shared/components/timeline-drawer-wrapper';
 import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
 import { useActivityMutations } from '../use-activity-mutations';
 import { PumpingStatsDrawer } from './components';
 import { getPumpingLearningContent } from './learning-content';
 import { predictNextPumping } from './prediction';
 import { getAgeBasedPumpingAmounts } from './pumping-volume-utils';
+import { TimelinePumpingDrawer } from './timeline-pumping-drawer';
 
 interface QuickActionPumpingCardProps {
   onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
@@ -64,9 +66,27 @@ export function QuickActionPumpingCard({
 
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
+
+  // Fetch extended activities for stats drawer (90 days, only when drawer opens)
+  const ninetyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 90)), []);
+  const { data: extendedActivities = [] } = api.activities.list.useQuery(
+    {
+      babyId,
+      limit: 500,
+      since: ninetyDaysAgo,
+    },
+    {
+      enabled: Boolean(babyId) && showStatsDrawer,
+      staleTime: 60000, // Cache for 1 minute
+    },
+  );
   const [creatingAmount, setCreatingAmount] = useState<
     'low' | 'medium' | 'high' | null
   >(null);
+  const [editingActivity, setEditingActivity] = useState<
+    typeof Activities.$inferSelect | null
+  >(null);
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
 
   const { createActivity } = useActivityMutations();
   const addOptimisticActivity = useOptimisticActivitiesStore(
@@ -270,6 +290,19 @@ export function QuickActionPumpingCard({
     onOpenDrawer?.();
   };
 
+  const handleLastActivityClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (lastPumpingActivity) {
+      setEditingActivity(lastPumpingActivity);
+      setEditDrawerOpen(true);
+    }
+  };
+
+  const handleEditDrawerClose = () => {
+    setEditDrawerOpen(false);
+    setEditingActivity(null);
+  };
+
   const pumpingTheme = getActivityTheme('pumping');
   const PumpingIcon = pumpingTheme.icon;
 
@@ -297,7 +330,11 @@ export function QuickActionPumpingCard({
           <div className="flex items-start justify-between px-2">
             {/* Left Column: Last Pumping */}
             {lastTimeDistance && lastExactTime && lastPumpingActivity ? (
-              <div className="space-y-1.5">
+              <button
+                className="space-y-1.5 text-left cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={handleLastActivityClick}
+                type="button"
+              >
                 <div className="flex items-center gap-2">
                   <Droplets className="size-4 shrink-0 opacity-90" />
                   <span className="text-lg font-semibold leading-tight">
@@ -323,7 +360,7 @@ export function QuickActionPumpingCard({
                     </Avatar>
                   )}
                 </div>
-              </div>
+              </button>
             ) : (
               <div className="space-y-1">
                 <div className="text-sm opacity-60">No recent pumping</div>
@@ -331,7 +368,11 @@ export function QuickActionPumpingCard({
             )}
 
             {/* Right Column: Next Pumping */}
-            <div className="space-y-1 text-right">
+            <button
+              className="space-y-1 text-right cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={handleInfoClick}
+              type="button"
+            >
               <div className="text-lg font-semibold leading-tight">
                 In {nextTimeDistance}
               </div>
@@ -340,7 +381,7 @@ export function QuickActionPumpingCard({
                 {' • '}
                 {formatAmount(amounts.medium)}
               </div>
-            </div>
+            </button>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
@@ -420,7 +461,7 @@ export function QuickActionPumpingCard({
 
       {/* Stats Drawer */}
       <PumpingStatsDrawer
-        activities={allActivities ?? []}
+        activities={extendedActivities}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
         recentActivities={
@@ -432,6 +473,24 @@ export function QuickActionPumpingCard({
         timeFormat={timeFormat}
         unit={userUnitPref}
       />
+
+      {/* Edit Drawer */}
+      {editingActivity &&
+        editingActivity.type === 'pumping' &&
+        editDrawerOpen && (
+          <TimelineDrawerWrapper
+            isOpen={editDrawerOpen}
+            onClose={handleEditDrawerClose}
+            title="Edit Pumping"
+          >
+            <TimelinePumpingDrawer
+              babyId={babyId}
+              existingActivity={editingActivity}
+              isOpen={editDrawerOpen}
+              onClose={handleEditDrawerClose}
+            />
+          </TimelineDrawerWrapper>
+        )}
     </>
   );
 }

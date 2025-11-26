@@ -712,6 +712,74 @@ export function useDailyLearningPlanner(
   }
 }
 /**
+ * A specialized hook for the DailyWellnessQuestion BAML function that supports both streaming and non‑streaming responses.
+ *
+ * **Input Types:**
+ *
+ * - babyName: string
+ *
+ * - babyAgeInDays: number
+ *
+ * - babyAgeInWeeks: number
+ *
+ * - feedingCount24h (optional): number | null
+ *
+ * - sleepHours24h (optional): number | null
+ *
+ * - diaperCount24h (optional): number | null
+ *
+ * - previousResponses (optional): string | null
+ *
+ * - currentStreak (optional): number | null
+ *
+ * - weeklyCompletionCount (optional): number | null
+ *
+ * - daysSinceLastResponse (optional): number | null
+ *
+ *
+ * **Return Type:**
+ * - **Non‑streaming:** types.DailyWellnessQuestionOutput
+ * - **Streaming Partial:** DailyWellnessQuestionOutput
+ * - **Streaming Final:** types.DailyWellnessQuestionOutput
+ *
+ * **Usage Patterns:**
+ * 1. **Non‑streaming (Default)**
+ *    - Best for quick responses and simple UI updates.
+ * 2. **Streaming**
+ *    - Ideal for long‑running operations or real‑time feedback.
+ *
+ * **Edge Cases:**
+ * - Ensure robust error handling via `onError`.
+ * - Handle cases where partial data may be incomplete or missing.
+ *
+ * @example
+ * ```tsx
+ * // Basic non‑streaming usage:
+ * const { data, error, isLoading, mutate } = useDailyWellnessQuestion({ stream: false});
+ *
+ * // Streaming usage:
+ * const { data, streamData, isLoading, error, mutate } = useDailyWellnessQuestion({
+ *   stream: true | undefined,
+ *   onStreamData: (partial) => console.log('Partial update:', partial),
+ *   onFinalData: (final) => console.log('Final result:', final),
+ *   onError: (err) => console.error('Error:', err),
+ * });
+ * ```
+ */
+export function useDailyWellnessQuestion(props: HookInput<'DailyWellnessQuestion', { stream: false }>): HookOutput<'DailyWellnessQuestion', { stream: false }>
+export function useDailyWellnessQuestion(props?: HookInput<'DailyWellnessQuestion', { stream?: true }>): HookOutput<'DailyWellnessQuestion', { stream: true }>
+export function useDailyWellnessQuestion(
+  props: HookInput<'DailyWellnessQuestion', { stream?: boolean }> = {},
+): HookOutput<'DailyWellnessQuestion', { stream: true }> | HookOutput<'DailyWellnessQuestion', { stream: false }> {
+  let action: ServerAction = Actions.DailyWellnessQuestion;
+  if (isStreamingProps(props)) {
+    action = StreamingActions.DailyWellnessQuestion;
+    return useBamlAction(action, props)
+  } else {
+    return useBamlAction(action, props as HookInput<'DailyWellnessQuestion', { stream: false }>)
+  }
+}
+/**
  * A specialized hook for the EnhanceMilestone BAML function that supports both streaming and non‑streaming responses.
  *
  * **Input Types:**

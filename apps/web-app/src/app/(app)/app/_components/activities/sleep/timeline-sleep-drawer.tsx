@@ -1,7 +1,6 @@
 'use client';
 
 import { useAuth } from '@clerk/nextjs';
-import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import {
   AlertDialog,
@@ -43,8 +42,8 @@ export function TimelineSleepDrawer({
   const { updateActivity, deleteActivity, isUpdating, isDeleting } =
     useActivityMutations();
 
-  // Fetch user preferences for time format
-  const { data: user } = api.user.current.useQuery();
+  // Get user preferences from dashboard store (already fetched by DashboardContainer)
+  const user = useDashboardDataStore.use.user();
   const timeFormat = user?.timeFormat || '12h';
 
   // Sleep-specific state

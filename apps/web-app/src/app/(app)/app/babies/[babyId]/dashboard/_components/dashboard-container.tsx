@@ -1,7 +1,6 @@
 'use client';
 
 import { api } from '@nugget/api/react';
-import { startOfDay, subDays } from 'date-fns';
 import { useParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo } from 'react';
 import { ActivityCards } from '~/app/(app)/app/_components/activities/activity-cards';
@@ -9,6 +8,7 @@ import { ActivityTimeline } from '~/app/(app)/app/_components/activities/timelin
 import { CelebrationsCarousel } from '~/app/(app)/app/_components/celebrations/celebrations-carousel';
 import { LearningCarousel } from '~/app/(app)/app/_components/learning/learning-carousel';
 import { MilestonesCarousel } from '~/app/(app)/app/_components/milestones/milestones-carousel';
+import { ParentDailyQuestionCard } from '~/app/(app)/app/_components/parent-wellness/daily-question-card';
 import {
   ActivityCardsSkeleton,
   ActivityTimelineSkeleton,
@@ -24,18 +24,11 @@ export function DashboardContainer() {
   const params = useParams();
   const babyId = params.babyId as string;
 
-  // Use suspense queries to leverage prefetched data (lightweight version without nested relations)
+  // Only fetch critical data needed for layout (baby, user, familyMembers)
+  // Activities are fetched inside ActivityCards Suspense boundary for better perceived performance
   const [baby] = api.babies.getByIdLight.useSuspenseQuery({ id: babyId });
   const [user] = api.user.current.useSuspenseQuery();
   const [familyMembersData] = api.familyMembers.all.useSuspenseQuery();
-
-  // Fetch last 30 days of activities once for all child components
-  const thirtyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 30)), []);
-  const [activities] = api.activities.list.useSuspenseQuery({
-    babyId,
-    limit: 1000,
-    since: thirtyDaysAgo,
-  });
 
   // Map family members to simplified format for dashboard store
   const familyMembers = useMemo(() => {
@@ -50,13 +43,12 @@ export function DashboardContainer() {
     }));
   }, [familyMembersData, user?.id]);
 
-  // Populate Zustand store with shared data to avoid duplicate queries in child components
+  // Populate Zustand store with critical shared data (activities populated by ActivityCards)
   useEffect(() => {
     useDashboardDataStore.getState().setBaby(baby ?? null);
     useDashboardDataStore.getState().setUser(user ?? null);
-    useDashboardDataStore.getState().setActivities(activities ?? []);
     useDashboardDataStore.getState().setFamilyMembers(familyMembers);
-  }, [baby, user, activities, familyMembers]);
+  }, [baby, user, familyMembers]);
 
   // Clear store on unmount
   useEffect(() => {
@@ -98,6 +90,17 @@ export function DashboardContainer() {
         </Suspense>
       </div>
 
+      {/* Parent Daily Question Card - Only show to parents */}
+      {familyMembersData.some(
+        (member) =>
+          member.userId === user?.id &&
+          (member.userRole === 'primary' || member.userRole === 'partner'),
+      ) && (
+        <div className="mb-6">
+          <ParentDailyQuestionCard />
+        </div>
+      )}
+
       {/* Show message if all activity cards and timeline are hidden */}
       {allHidden && (
         <div className="bg-card border border-border rounded-2xl p-6 mb-6">
@@ -127,6 +130,10 @@ export function DashboardContainer() {
       )}
 
       {/* Learning Carousel - Educational content based on baby's age */}
+      {/* NOTE: tRPC automatically batches queries that fire in the same render cycle.
+          This is GOOD (fewer HTTP requests). Separate Suspense boundaries allow
+          independent loading states, so fast queries can show content while slow
+          ones (like learning.getCarouselContent) load in the background. */}
       <Suspense fallback={<LearningCarouselSkeleton />}>
         <LearningCarousel babyId={babyId} />
       </Suspense>

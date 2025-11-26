@@ -751,61 +751,6 @@ export function BabyTab() {
         </div>
       </div>
 
-      {/* Feeding Settings */}
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold">Feeding Settings</h2>
-          <p className="text-sm text-muted-foreground">
-            Customize feeding and pumping preferences
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="feedIntervalHours">Feed Interval (hours)</Label>
-            <Input
-              id="feedIntervalHours"
-              onChange={(e) =>
-                setFormData({ ...formData, feedIntervalHours: e.target.value })
-              }
-              placeholder="e.g., 2.5"
-              step="0.5"
-              type="number"
-              value={formData.feedIntervalHours}
-            />
-            <p className="text-xs text-muted-foreground">
-              Time between scheduled feedings
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="pumpsPerDay">Pumps Per Day</Label>
-            <Input
-              id="pumpsPerDay"
-              onChange={(e) =>
-                setFormData({ ...formData, pumpsPerDay: e.target.value })
-              }
-              placeholder="e.g., 6"
-              type="number"
-              value={formData.pumpsPerDay}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="mlPerPump">ML Per Pump Session</Label>
-            <Input
-              id="mlPerPump"
-              onChange={(e) =>
-                setFormData({ ...formData, mlPerPump: e.target.value })
-              }
-              placeholder="e.g., 24"
-              type="number"
-              value={formData.mlPerPump}
-            />
-          </div>
-        </div>
-      </div>
-
       {/* Delete Baby Profile */}
       <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
         <div className="flex items-start gap-3">
