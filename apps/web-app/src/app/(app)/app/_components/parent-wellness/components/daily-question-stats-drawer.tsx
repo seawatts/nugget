@@ -28,13 +28,12 @@ export function DailyQuestionStatsDrawer({
   currentStreak,
   weeklyCompletionCount,
 }: DailyQuestionStatsDrawerProps) {
-  const { data: insightsData, isLoading: isLoadingInsights } =
-    api.parentWellness.getWeeklyInsights.useQuery(
-      { babyId },
-      {
-        enabled: responses.length > 0,
-      },
-    );
+  const { data: insightsData } = api.parentWellness.getWeeklyInsights.useQuery(
+    { babyId },
+    {
+      enabled: responses.length > 0,
+    },
+  );
 
   const answeredResponses = responses.filter((r) => r.selectedAnswer);
 

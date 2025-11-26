@@ -44,7 +44,6 @@ export function QuickActionPumpingCard({
 
   // Get shared data from dashboard store (populated by DashboardContainer)
   const userData = useDashboardDataStore.use.user();
-  const allActivities = useDashboardDataStore.use.activities();
   const baby = useDashboardDataStore.use.baby();
 
   const timeFormat = userData?.timeFormat || '12h';

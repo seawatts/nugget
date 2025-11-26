@@ -72,13 +72,6 @@ export function QuickActionSleepCard({
     return activityDate >= startOfDay(new Date());
   });
 
-  // Filter to last 7 days for trend data
-  const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
-  const last7DaysActivities = mergedActivities.filter((activity) => {
-    const activityDate = new Date(activity.startTime);
-    return activityDate >= sevenDaysAgo;
-  });
-
   // Use tRPC query for prediction data
   const {
     data: queryData,

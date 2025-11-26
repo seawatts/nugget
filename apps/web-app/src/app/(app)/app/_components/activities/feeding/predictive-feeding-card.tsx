@@ -64,13 +64,6 @@ export function PredictiveFeedingCard({
     return activityDate >= startOfDay(new Date());
   });
 
-  // Filter to last 7 days for trend data and vitamin D tracking
-  const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
-  const last7DaysActivities = allActivities?.filter((activity) => {
-    const activityDate = new Date(activity.startTime);
-    return activityDate >= sevenDaysAgo;
-  });
-
   // Use tRPC query for prediction data
   const {
     data: queryData,

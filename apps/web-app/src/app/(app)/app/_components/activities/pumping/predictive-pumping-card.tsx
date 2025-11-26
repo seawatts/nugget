@@ -51,7 +51,6 @@ export function PredictivePumpingCard({
 
   // Get shared data from dashboard store (populated by DashboardContainer)
   const user = useDashboardDataStore.use.user();
-  const allActivities = useDashboardDataStore.use.activities();
   const baby = useDashboardDataStore.use.baby();
 
   const userUnitPref = getVolumeUnit(user?.measurementUnit || 'metric');
@@ -70,13 +69,6 @@ export function PredictivePumpingCard({
     { babyId: babyId ?? '' },
     { enabled: Boolean(babyId) },
   );
-
-  // Filter to last 7 days for trend data
-  const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
-  const last7DaysActivities = allActivities?.filter((activity) => {
-    const activityDate = new Date(activity.startTime);
-    return activityDate >= sevenDaysAgo;
-  });
 
   const [showInfoDrawer, setShowInfoDrawer] = useState(false);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
