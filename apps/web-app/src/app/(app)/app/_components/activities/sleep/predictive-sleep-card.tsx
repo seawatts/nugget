@@ -25,7 +25,6 @@ import { SleepGoalDisplay } from './components/sleep-goal-display';
 import { getSleepLearningContent } from './learning-content';
 import { predictNextSleep } from './prediction';
 import {
-  calculateSleepTrendData,
   calculateTodaysSleepStats,
   getDailyNapGoal,
   getDailySleepHoursGoal,
@@ -203,9 +202,6 @@ export function PredictiveSleepCard({
     prediction.calculationDetails.dataPoints,
   );
   const dailySleepHoursGoal = getDailySleepHoursGoal(babyAgeDays ?? 0);
-  // Calculate 7-day trend data for stats drawer
-  const trendData = calculateSleepTrendData(todaysActivitiesData ?? []);
-
   // Check if we should suppress overdue state due to recent skip
   const isRecentlySkipped = prediction.recentSkipTime
     ? Date.now() - new Date(prediction.recentSkipTime).getTime() <

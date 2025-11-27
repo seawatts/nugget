@@ -30,11 +30,7 @@ import { quickLogSleepAction } from './actions';
 import { SleepStatsDrawer } from './components';
 import { getSleepLearningContent } from './learning-content';
 import { predictNextSleep } from './prediction';
-import {
-  calculateSleepTrendData,
-  getDailyNapGoal,
-  getDailySleepHoursGoal,
-} from './sleep-goals';
+import { getDailyNapGoal, getDailySleepHoursGoal } from './sleep-goals';
 import {
   calculateTimelineWindow,
   checkCollision,
@@ -74,12 +70,6 @@ export function QuickActionSleepCard({
     });
     return Array.from(map.values());
   }, [allActivities, optimisticActivities]);
-
-  // Filter to today's activities for trend display
-  const todaysActivitiesData = mergedActivities.filter((activity) => {
-    const activityDate = new Date(activity.startTime);
-    return activityDate >= startOfDay(new Date());
-  });
 
   // Use tRPC query for prediction data
   const {
@@ -702,8 +692,6 @@ export function QuickActionSleepCard({
   //   prediction.calculationDetails.dataPoints,
   // );
   // const dailySleepHoursGoal = getDailySleepHoursGoal(babyAgeDays ?? 0);
-  const trendData = calculateSleepTrendData(todaysActivitiesData ?? []);
-
   const dailyNapGoal =
     typeof babyAgeDays === 'number'
       ? getDailyNapGoal(
