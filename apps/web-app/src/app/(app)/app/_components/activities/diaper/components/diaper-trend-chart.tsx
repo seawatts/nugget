@@ -2,13 +2,17 @@
 
 import {
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from '@nugget/ui/chart';
 import {
   Bar,
-  BarChart,
   CartesianGrid,
+  ComposedChart,
+  Line,
+  ReferenceLine,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -18,9 +22,15 @@ import type { TrendData } from '../../shared/types';
 
 interface DiaperTrendChartProps {
   data: TrendData[];
+  goalSeries?: Array<number | null>;
+  dailyGoal?: number | null;
 }
 
-export function DiaperTrendChart({ data }: DiaperTrendChartProps) {
+export function DiaperTrendChart({
+  data,
+  goalSeries,
+  dailyGoal,
+}: DiaperTrendChartProps) {
   const formattedData = data.map((item) => {
     const date = new Date(item.date);
     const displayDate = formatChartDate(date);
@@ -37,6 +47,21 @@ export function DiaperTrendChart({ data }: DiaperTrendChartProps) {
       wet,
     };
   });
+
+  const chartData = formattedData.map((item, index) => {
+    const goal =
+      goalSeries && goalSeries.length > index ? goalSeries[index] : null;
+    return {
+      ...item,
+      goal,
+    };
+  });
+
+  const hasGoalSeries = chartData.some(
+    (item) => typeof item.goal === 'number' && !Number.isNaN(item.goal),
+  );
+
+  const fallbackGoal = hasGoalSeries ? null : (dailyGoal ?? null);
 
   return (
     <ChartContainer
@@ -58,12 +83,20 @@ export function DiaperTrendChart({ data }: DiaperTrendChartProps) {
           color: 'var(--activity-diaper)',
           label: 'Pee',
         },
+        ...(hasGoalSeries || fallbackGoal !== null
+          ? {
+              goal: {
+                color: 'var(--muted-foreground)',
+                label: 'Goal',
+              },
+            }
+          : {}),
       }}
     >
       <ResponsiveContainer height="100%" width="100%">
-        <BarChart
+        <ComposedChart
           barCategoryGap="16%"
-          data={formattedData}
+          data={chartData}
           margin={{ bottom: 0, left: 0, right: 0, top: 0 }}
         >
           <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
@@ -76,6 +109,7 @@ export function DiaperTrendChart({ data }: DiaperTrendChartProps) {
           <ChartTooltip
             content={(props) => <ChartTooltipContent {...props} />}
           />
+          <ChartLegend content={<ChartLegendContent />} />
           <Bar
             dataKey="wet"
             fill="var(--activity-diaper)"
@@ -96,7 +130,32 @@ export function DiaperTrendChart({ data }: DiaperTrendChartProps) {
             fill="var(--activity-sleep)"
             radius={[4, 4, 0, 0]}
           />
-        </BarChart>
+          {hasGoalSeries && (
+            <Line
+              connectNulls={false}
+              dataKey="goal"
+              dot={false}
+              isAnimationActive={false}
+              stroke="var(--muted-foreground)"
+              strokeDasharray="4 4"
+              strokeWidth={2}
+              type="monotone"
+            />
+          )}
+          {!hasGoalSeries && fallbackGoal !== null && (
+            <ReferenceLine
+              label={{
+                fill: 'var(--muted-foreground)',
+                fontSize: 10,
+                position: 'right',
+                value: 'Goal',
+              }}
+              stroke="var(--muted-foreground)"
+              strokeDasharray="4 4"
+              y={fallbackGoal}
+            />
+          )}
+        </ComposedChart>
       </ResponsiveContainer>
     </ChartContainer>
   );

@@ -5,7 +5,6 @@ import type { Activities } from '@nugget/db/schema';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
 import {
-  ArrowLeft,
   Baby,
   BedDouble,
   Car,
@@ -34,7 +33,7 @@ interface SleepDrawerContentProps {
   onTimerStart?: () => Promise<void>;
   isTimerStopped?: boolean;
   isManualEndTime?: boolean;
-  mode?: 'timer' | 'manual';
+  mode?: 'timer' | 'timeline';
   onBack?: () => void;
   existingActivity?: typeof Activities.$inferSelect | null;
   sleepQuality?: 'peaceful' | 'restless' | 'fussy' | 'crying';
@@ -97,8 +96,7 @@ export function SleepDrawerContent({
   activeActivityId,
   onTimerStart: _onTimerStart,
   isTimerStopped = false,
-  mode = 'manual',
-  onBack,
+  mode = 'timeline',
   sleepQuality,
   setSleepQuality,
   sleepLocation,
@@ -158,12 +156,6 @@ export function SleepDrawerContent({
     };
   }, [isTracking, startTime, setDuration]);
 
-  const quickDurations = [
-    { label: '30 min', seconds: 30 * 60 },
-    { label: '1 hour', seconds: 60 * 60 },
-    { label: '2 hours', seconds: 120 * 60 },
-  ];
-
   const quickTimeOptions = [
     { label: '15 mins ago', minutes: 15 },
     { label: '30 mins ago', minutes: 30 },
@@ -199,23 +191,10 @@ export function SleepDrawerContent({
 
   // Determine if we should show detail fields based on mode
   // Timer mode: only show when timer is stopped
-  // Manual Entry mode: always show
-  const showDetailFields = mode === 'manual' || isTimerStopped;
+  const showDetailFields = isTimerStopped;
 
   return (
     <div className="space-y-6">
-      {/* Back Button - Show in manual mode if not editing */}
-      {mode === 'manual' && onBack && (
-        <Button
-          className="w-full h-12 text-base bg-transparent"
-          onClick={onBack}
-          variant="outline"
-        >
-          <ArrowLeft className="mr-2 h-5 w-5" />
-          Back to Sleep Options
-        </Button>
-      )}
-
       {/* TIMER MODE */}
       {mode === 'timer' && (
         <>
@@ -255,23 +234,6 @@ export function SleepDrawerContent({
             />
           )}
         </>
-      )}
-
-      {/* MANUAL MODE */}
-      {mode === 'manual' && !hideTimeSelection && (
-        <TimeSelectionMode
-          activityColor="bg-activity-sleep"
-          activityTextColor="text-activity-sleep-foreground"
-          duration={duration}
-          endTime={endTime}
-          quickDurationOptions={quickDurations}
-          quickTimeOptions={quickTimeOptions}
-          setDuration={setDuration}
-          setEndTime={setEndTime}
-          setStartTime={setStartTime}
-          startTime={startTime}
-          timeFormat={user?.timeFormat ?? '12h'}
-        />
       )}
 
       {/* Sleep Type - Show for both modes when detail fields are visible */}

@@ -30,7 +30,16 @@ import { quickLogSleepAction } from './actions';
 import { SleepStatsDrawer } from './components';
 import { getSleepLearningContent } from './learning-content';
 import { predictNextSleep } from './prediction';
-import { calculateSleepTrendData } from './sleep-goals';
+import {
+  calculateSleepTrendData,
+  getDailyNapGoal,
+  getDailySleepHoursGoal,
+} from './sleep-goals';
+import {
+  calculateTimelineWindow,
+  checkCollision,
+  findAvailableTimeSlots,
+} from './timeline-entry/utils/timeline-calculations';
 import { TimelineSleepDrawer } from './timeline-sleep-drawer';
 
 interface QuickActionSleepCardProps {
@@ -101,7 +110,7 @@ export function QuickActionSleepCard({
   );
 
   const [creatingType, setCreatingType] = useState<
-    '1hr' | '2hr' | 'timer' | null
+    'lastActivity' | 'timer' | null
   >(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -164,7 +173,10 @@ export function QuickActionSleepCard({
     if (!minutes || minutes <= 0) return null;
     if (minutes >= 60) {
       const hours = minutes / 60;
-      return Number.isInteger(hours) ? `${hours}h` : `${hours.toFixed(1)}h`;
+      const displayHours = Number.isInteger(hours)
+        ? hours
+        : Number(hours.toFixed(1));
+      return `${displayHours}h`;
     }
     return `${minutes}m`;
   };
@@ -244,78 +256,133 @@ export function QuickActionSleepCard({
     };
   }, [inProgressActivity]);
 
-  if (error) {
-    return (
-      <Card
-        className={cn(
-          'relative overflow-hidden border-0 p-6 bg-destructive/10 col-span-2',
-        )}
-      >
-        <p className="text-sm text-destructive">{error}</p>
-      </Card>
+  // Calculate last activity sleep duration and timing
+  // This must be before conditional returns to follow React hooks rules
+  const lastActivitySleep = useMemo(() => {
+    const now = new Date();
+
+    // Find the last activity (any type) from mergedActivities
+    // Sort by endTime if available, otherwise startTime, most recent first
+    const sortedActivities = [...mergedActivities]
+      .filter((a) => !a.isScheduled)
+      .sort((a, b) => {
+        const aTime = a.endTime
+          ? new Date(a.endTime).getTime()
+          : new Date(a.startTime).getTime();
+        const bTime = b.endTime
+          ? new Date(b.endTime).getTime()
+          : new Date(b.startTime).getTime();
+        return bTime - aTime; // Most recent first
+      });
+
+    if (sortedActivities.length === 0) {
+      return null;
+    }
+
+    const lastActivity = sortedActivities[0];
+    if (!lastActivity) return null;
+    // Use endTime if available, otherwise startTime
+    const lastActivityTime = lastActivity.endTime
+      ? new Date(lastActivity.endTime)
+      : new Date(lastActivity.startTime);
+
+    // Calculate initial duration from last activity to now
+    const initialDurationMinutes = Math.floor(
+      (now.getTime() - lastActivityTime.getTime()) / (1000 * 60),
     );
-  }
 
-  if (isLoading && !data) {
-    return <PredictiveCardSkeleton activityType="sleep" />;
-  }
+    // Clamp duration to reasonable bounds (10 minutes to 8 hours)
+    const minDuration = 10;
+    const maxDuration = 480; // 8 hours
+    let durationMinutes = Math.max(
+      minDuration,
+      Math.min(maxDuration, initialDurationMinutes),
+    );
 
-  if (!data) return null;
+    // Calculate start time (duration minutes before now)
+    let startTime = new Date(now.getTime() - durationMinutes * 60 * 1000);
+    let endTime = now;
 
-  const { prediction } = data;
+    // Check for conflicts with existing sleep activities
+    const sleepActivities = mergedActivities.filter(
+      (a) =>
+        a.type === 'sleep' &&
+        !a.isScheduled &&
+        !(a.details && 'skipped' in a.details && a.details.skipped === true),
+    );
 
-  // Format time displays
-  const nextTimeDistance = formatDistanceToNow(prediction.nextSleepTime, {
-    addSuffix: false,
-  }).replace(/^about /, '');
-  const nextExactTime = formatTimeWithPreference(
-    prediction.nextSleepTime,
-    timeFormat,
-  );
+    // Create a timeline window that includes both startTime and now
+    // Center on the midpoint between startTime and now
+    const midpoint = new Date((startTime.getTime() + now.getTime()) / 2);
+    const timelineWindow = calculateTimelineWindow(midpoint);
 
-  const lastTimeDistance = prediction.lastSleepTime
-    ? formatDistanceToNow(prediction.lastSleepTime, {
-        addSuffix: false,
-      }).replace(/^about /, '')
-    : null;
-  const lastExactTime = prediction.lastSleepTime
-    ? formatTimeWithPreference(prediction.lastSleepTime, timeFormat)
-    : null;
+    // Check if there's a conflict
+    const hasConflict = checkCollision(
+      startTime,
+      endTime,
+      sleepActivities,
+      timelineWindow,
+    );
 
-  // Format duration for display
-  const formatDuration = (minutes: number | null) => {
-    if (!minutes) return null;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours > 0 && mins > 0) {
-      return `${hours}h ${mins}m`;
+    // If conflict exists, find the next available gap
+    if (hasConflict) {
+      const availableSlots = findAvailableTimeSlots(
+        sleepActivities,
+        timelineWindow,
+        10, // Minimum 10 minutes
+      );
+
+      // Find the first slot that ends at or before now
+      const suitableSlot = availableSlots.find(
+        (slot: { endTime: Date; startTime: Date }) =>
+          new Date(slot.endTime).getTime() <= now.getTime(),
+      );
+
+      if (suitableSlot) {
+        startTime = new Date(suitableSlot.startTime);
+        endTime = new Date(suitableSlot.endTime);
+        durationMinutes = Math.floor(
+          (endTime.getTime() - startTime.getTime()) / (1000 * 60),
+        );
+      } else {
+        // No suitable slot found, return null to disable button
+        return null;
+      }
     }
-    if (hours > 0) {
-      return `${hours}h`;
-    }
-    return `${mins}m`;
-  };
 
-  // Format elapsed time for timer display
-  const formatElapsedTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+    // Get activity theme for icon and label
+    const activityTheme = getActivityTheme(
+      lastActivity.type as Parameters<typeof getActivityTheme>[0],
+    );
+    const ActivityIcon = activityTheme.icon;
 
-  const handleQuick1Hour = async (e: React.MouseEvent) => {
+    return {
+      activity: {
+        icon: ActivityIcon,
+        label: activityTheme.label,
+        time: lastActivityTime,
+        type: lastActivity.type,
+      },
+      duration: durationMinutes,
+      endTime,
+      startTime,
+    };
+  }, [mergedActivities]);
+
+  const handleLastActivitySleep = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCreatingType('1hr');
+
+    if (!lastActivitySleep) {
+      toast.error('No recent activity found');
+      return;
+    }
+
+    setCreatingType('lastActivity');
 
     let tempId: string | null = null;
 
     try {
-      const now = new Date();
-      const duration = 60; // 1 hour in minutes
-
-      // Calculate start time (1 hour ago)
-      const startTime = new Date(now.getTime() - duration * 60 * 1000);
+      const { duration, endTime, startTime } = lastActivitySleep;
 
       // Determine sleep type based on time of day
       const hour = startTime.getHours();
@@ -326,13 +393,13 @@ export function QuickActionSleepCard({
         amountMl: null,
         assignedUserId: null,
         babyId: babyId,
-        createdAt: now,
+        createdAt: endTime,
         details: {
           sleepType,
           type: 'sleep' as const,
         },
         duration,
-        endTime: now,
+        endTime: endTime,
         familyId: 'temp',
         familyMemberId: null,
         feedingSource: null,
@@ -342,8 +409,8 @@ export function QuickActionSleepCard({
         startTime: startTime,
         subjectType: 'baby' as const,
         type: 'sleep' as const,
-        updatedAt: now,
-        user: userData || null, // Include user data for display
+        updatedAt: endTime,
+        user: userData || null,
         userId: userData?.id || 'temp',
       } as typeof Activities.$inferSelect;
 
@@ -354,7 +421,7 @@ export function QuickActionSleepCard({
       const result = await quickLogSleepAction({
         babyId,
         duration,
-        time: now.toISOString(),
+        time: endTime.toISOString(),
       });
 
       if (!result?.data?.activity) {
@@ -371,85 +438,7 @@ export function QuickActionSleepCard({
         removeOptimisticActivity(tempId);
       }
     } catch (err) {
-      console.error('Failed to log 1 hour sleep:', err);
-      // Remove optimistic activity on error to avoid stuck state
-      if (tempId) {
-        removeOptimisticActivity(tempId);
-      }
-      toast.error('Failed to log sleep. Please try again.');
-    } finally {
-      setCreatingType(null);
-    }
-  };
-
-  const handleQuick2Hours = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCreatingType('2hr');
-
-    let tempId: string | null = null;
-
-    try {
-      const now = new Date();
-      const duration = 120; // 2 hours in minutes
-
-      // Calculate start time (2 hours ago)
-      const startTime = new Date(now.getTime() - duration * 60 * 1000);
-
-      // Determine sleep type based on time of day
-      const hour = startTime.getHours();
-      const sleepType = hour >= 6 && hour < 18 ? 'nap' : 'night';
-
-      // Create optimistic activity for immediate UI feedback
-      const optimisticActivity = {
-        amountMl: null,
-        assignedUserId: null,
-        babyId: babyId,
-        createdAt: now,
-        details: {
-          sleepType,
-          type: 'sleep' as const,
-        },
-        duration,
-        endTime: now,
-        familyId: 'temp',
-        familyMemberId: null,
-        feedingSource: null,
-        id: `activity-optimistic-sleep-${Date.now()}`,
-        isScheduled: false,
-        notes: null,
-        startTime: startTime,
-        subjectType: 'baby' as const,
-        type: 'sleep' as const,
-        updatedAt: now,
-        user: userData || null, // Include user data for display
-        userId: userData?.id || 'temp',
-      } as typeof Activities.$inferSelect;
-
-      // Store the tempId returned by addOptimisticActivity
-      tempId = addOptimisticActivity(optimisticActivity);
-
-      // Create the actual activity using the server action
-      const result = await quickLogSleepAction({
-        babyId,
-        duration,
-        time: now.toISOString(),
-      });
-
-      if (!result?.data?.activity) {
-        throw new Error('Failed to create activity');
-      }
-
-      onActivityLogged?.(result.data.activity);
-
-      // Invalidate and await refetch to ensure UI updates with new data
-      await utils.activities.getUpcomingSleep.invalidate();
-
-      // Remove optimistic activity after query has refetched
-      if (tempId) {
-        removeOptimisticActivity(tempId);
-      }
-    } catch (err) {
-      console.error('Failed to log 2 hours sleep:', err);
+      console.error('Failed to log last activity sleep:', err);
       // Remove optimistic activity on error to avoid stuck state
       if (tempId) {
         removeOptimisticActivity(tempId);
@@ -635,6 +624,67 @@ export function QuickActionSleepCard({
     setEditingActivity(null);
   };
 
+  // Conditional returns must come after all hooks
+  if (error) {
+    return (
+      <Card
+        className={cn(
+          'relative overflow-hidden border-0 p-6 bg-destructive/10 col-span-2',
+        )}
+      >
+        <p className="text-sm text-destructive">{error}</p>
+      </Card>
+    );
+  }
+
+  if (isLoading && !data) {
+    return <PredictiveCardSkeleton activityType="sleep" />;
+  }
+
+  if (!data) return null;
+
+  const { prediction } = data;
+
+  // Format time displays
+  const nextTimeDistance = formatDistanceToNow(prediction.nextSleepTime, {
+    addSuffix: false,
+  }).replace(/^about /, '');
+  const nextExactTime = formatTimeWithPreference(
+    prediction.nextSleepTime,
+    timeFormat,
+  );
+
+  const lastTimeDistance = prediction.lastSleepTime
+    ? formatDistanceToNow(prediction.lastSleepTime, {
+        addSuffix: false,
+      }).replace(/^about /, '')
+    : null;
+  const lastExactTime = prediction.lastSleepTime
+    ? formatTimeWithPreference(prediction.lastSleepTime, timeFormat)
+    : null;
+
+  // Format duration for display
+  const formatDuration = (minutes: number | null) => {
+    if (!minutes) return null;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0 && mins > 0) {
+      return `${hours}h ${mins}m`;
+    }
+    if (hours > 0) {
+      return `${hours}h`;
+    }
+    return `${mins}m`;
+  };
+
+  // Format elapsed time for timer display
+  const formatElapsedTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const sleepTheme = getActivityTheme('sleep');
   const SleepIcon = sleepTheme.icon;
   const currentSleepStartTime = inProgressActivity
@@ -653,6 +703,20 @@ export function QuickActionSleepCard({
   // );
   // const dailySleepHoursGoal = getDailySleepHoursGoal(babyAgeDays ?? 0);
   const trendData = calculateSleepTrendData(todaysActivitiesData ?? []);
+
+  const dailyNapGoal =
+    typeof babyAgeDays === 'number'
+      ? getDailyNapGoal(
+          babyAgeDays,
+          prediction.averageIntervalHours,
+          prediction.calculationDetails.dataPoints,
+        )
+      : null;
+
+  const dailySleepHoursGoal =
+    typeof babyAgeDays === 'number'
+      ? getDailySleepHoursGoal(babyAgeDays)
+      : null;
 
   return (
     <>
@@ -684,7 +748,11 @@ export function QuickActionSleepCard({
 
           <div className="flex items-start justify-between px-2">
             {inProgressActivity ? (
-              <div className="space-y-1.5">
+              <button
+                className="space-y-1.5 text-left cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={handleAddClick}
+                type="button"
+              >
                 <div className="flex items-center gap-2">
                   <Moon className="size-4 shrink-0 opacity-90" />
                   <span className="text-lg font-semibold leading-tight">
@@ -700,7 +768,7 @@ export function QuickActionSleepCard({
                     </>
                   )}
                 </div>
-              </div>
+              </button>
             ) : lastTimeDistance && lastExactTime && lastSleepActivity ? (
               <button
                 className="space-y-1.5 text-left cursor-pointer hover:opacity-80 transition-opacity"
@@ -764,41 +832,37 @@ export function QuickActionSleepCard({
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Button
               className={cn(
                 'flex flex-col items-center justify-center h-auto py-3 gap-1',
                 'bg-white/20 hover:bg-white/30 active:bg-white/40',
                 sleepTheme.textColor,
               )}
-              disabled={creatingType !== null}
-              onClick={handleQuick1Hour}
+              disabled={creatingType !== null || !lastActivitySleep}
+              onClick={handleLastActivitySleep}
               variant="ghost"
             >
-              {creatingType === '1hr' ? (
+              {creatingType === 'lastActivity' ? (
                 <Icons.Spinner className="size-5" />
+              ) : lastActivitySleep ? (
+                <lastActivitySleep.activity.icon className="size-5 opacity-90" />
               ) : (
                 <Clock className="size-5" />
               )}
-              <span className="text-xs font-medium">1 Hour</span>
-            </Button>
-
-            <Button
-              className={cn(
-                'flex flex-col items-center justify-center h-auto py-3 gap-1',
-                'bg-white/20 hover:bg-white/30 active:bg-white/40',
-                sleepTheme.textColor,
+              <span className="text-xs font-medium">Since last activity</span>
+              {lastActivitySleep && (
+                <div className="flex items-center gap-1 text-[10px] opacity-70 leading-tight">
+                  <span>{lastActivitySleep.activity.label}</span>
+                  <span>
+                    {formatTimeWithPreference(
+                      lastActivitySleep.activity.time,
+                      timeFormat,
+                    )}
+                  </span>
+                  <span>{formatDuration(lastActivitySleep.duration)}</span>
+                </div>
               )}
-              disabled={creatingType !== null}
-              onClick={handleQuick2Hours}
-              variant="ghost"
-            >
-              {creatingType === '2hr' ? (
-                <Icons.Spinner className="size-5" />
-              ) : (
-                <Clock className="size-5" />
-              )}
-              <span className="text-xs font-medium">2 Hours</span>
             </Button>
 
             <Button
@@ -853,6 +917,14 @@ export function QuickActionSleepCard({
       {/* Stats Drawer */}
       <SleepStatsDrawer
         activities={extendedActivities}
+        dailyNapGoal={dailyNapGoal}
+        dailySleepHoursGoal={dailySleepHoursGoal}
+        goalContext={{
+          babyAgeDays,
+          babyBirthDate: data.babyBirthDate ?? baby?.birthDate ?? null,
+          dataPointsCount: prediction.calculationDetails.dataPoints,
+          predictedIntervalHours: prediction.averageIntervalHours,
+        }}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
         recentActivities={prediction.recentSleepPattern.map((item) => ({

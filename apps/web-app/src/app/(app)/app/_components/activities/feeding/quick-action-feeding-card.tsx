@@ -34,6 +34,7 @@ import { autoStopInProgressSleepAction } from '../sleep/actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import { FeedingStatsDrawer } from './components';
 import { FeedingActionButtons } from './feeding-action-buttons';
+import { getDailyAmountGoal, getDailyFeedingGoal } from './feeding-goals';
 import { getFeedingLearningContent } from './learning-content';
 import { calculateNursingVolumes } from './nursing-volume-calculator';
 import { predictNextFeeding } from './prediction';
@@ -317,6 +318,25 @@ export function QuickActionFeedingCard({
   if (!data) return null;
 
   const { prediction } = data;
+
+  const dailyFeedingGoal =
+    typeof data.babyAgeDays === 'number'
+      ? getDailyFeedingGoal(
+          data.babyAgeDays,
+          prediction.intervalHours,
+          prediction.calculationDetails.dataPoints,
+        )
+      : null;
+
+  const dailyAmountGoal =
+    typeof data.babyAgeDays === 'number'
+      ? getDailyAmountGoal(
+          data.babyAgeDays,
+          userUnitPref,
+          prediction.intervalHours,
+          prediction.calculationDetails.dataPoints,
+        )
+      : null;
 
   // Determine most common bottle source
   const mostCommonBottleSource = getMostCommonBottleSource(allActivities || []);
@@ -1111,6 +1131,14 @@ export function QuickActionFeedingCard({
       {/* Stats Drawer */}
       <FeedingStatsDrawer
         activities={extendedActivities}
+        dailyAmountGoal={dailyAmountGoal}
+        dailyCountGoal={dailyFeedingGoal}
+        goalContext={{
+          babyAgeDays: data.babyAgeDays,
+          babyBirthDate: data.babyBirthDate ?? baby?.birthDate ?? null,
+          dataPointsCount: prediction.calculationDetails.dataPoints,
+          predictedIntervalHours: prediction.intervalHours,
+        }}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
         recentActivities={

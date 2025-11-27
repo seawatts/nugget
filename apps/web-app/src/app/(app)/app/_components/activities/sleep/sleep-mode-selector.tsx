@@ -8,11 +8,12 @@
 
 import type { Activities } from '@nugget/db/schema';
 import { cn } from '@nugget/ui/lib/utils';
-import { Calendar, Loader2, Timer } from 'lucide-react';
+import { LayoutList, Loader2, Timer } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { SleepDrawerContent } from './sleep-drawer';
+import { SleepTimelineEntry } from './timeline-entry/sleep-timeline-entry';
 
-type SleepMode = 'timer' | 'manual' | null;
+type SleepMode = 'timer' | 'timeline' | null;
 
 interface SleepModeSelectorProps {
   onModeSelect?: (mode: SleepMode) => void;
@@ -77,6 +78,7 @@ interface SleepModeSelectorProps {
     avatarUrl?: string | null;
     userId: string;
   }>;
+  babyId?: string;
 }
 
 const sleepModes = [
@@ -90,10 +92,10 @@ const sleepModes = [
   },
   {
     color: 'bg-activity-sleep',
-    description: 'Enter sleep details',
-    icon: Calendar,
-    id: 'manual' as const,
-    label: 'Manual Entry',
+    description: 'Select time on timeline',
+    icon: LayoutList,
+    id: 'timeline' as const,
+    label: 'Timeline Entry',
     textColor: 'text-activity-sleep-foreground',
   },
 ];
@@ -127,6 +129,7 @@ export function SleepModeSelector({
   setCoSleepingWith,
   currentUserId,
   familyMembers = [],
+  babyId,
 }: SleepModeSelectorProps) {
   const [selectedMode, setSelectedMode] = useState<SleepMode>(
     externalSelectedMode ?? null,
@@ -135,7 +138,7 @@ export function SleepModeSelector({
   // If editing an existing activity, skip selection
   useEffect(() => {
     if (existingActivity) {
-      setSelectedMode('manual');
+      setSelectedMode('timeline');
     } else if (externalSelectedMode) {
       setSelectedMode(externalSelectedMode);
     } else {
@@ -158,9 +161,41 @@ export function SleepModeSelector({
 
   // If a mode is selected, show the sleep content
   if (selectedMode) {
+    // Timeline mode - render timeline entry component
+    if (selectedMode === 'timeline' && babyId) {
+      return (
+        <SleepTimelineEntry
+          activeActivityId={activeActivityId}
+          babyId={babyId}
+          coSleepingWith={coSleepingWith}
+          currentUserId={currentUserId}
+          duration={duration}
+          endTime={endTime}
+          existingActivity={existingActivity}
+          familyMembers={familyMembers}
+          isCoSleeping={isCoSleeping}
+          onBack={!existingActivity ? handleBack : undefined}
+          setCoSleepingWith={setCoSleepingWith}
+          setDuration={setDuration}
+          setEndTime={setEndTime}
+          setIsCoSleeping={setIsCoSleeping}
+          setSleepLocation={setSleepLocation}
+          setSleepQuality={setSleepQuality}
+          setSleepType={setSleepType}
+          setStartTime={setStartTime}
+          setWakeReason={setWakeReason}
+          sleepLocation={sleepLocation}
+          sleepQuality={sleepQuality}
+          sleepType={sleepType}
+          startTime={startTime}
+          wakeReason={wakeReason}
+        />
+      );
+    }
+
+    // Timer mode - render sleep drawer content
     return (
       <div className="space-y-6">
-        {/* Render the sleep drawer content with mode prop */}
         <SleepDrawerContent
           activeActivityId={activeActivityId}
           coSleepingWith={coSleepingWith}
@@ -202,7 +237,7 @@ export function SleepModeSelector({
           How would you like to track sleep?
         </h3>
         <p className="text-sm text-muted-foreground">
-          Choose timer for live tracking or manual entry
+          Choose timer for live tracking or timeline entry
         </p>
       </div>
 

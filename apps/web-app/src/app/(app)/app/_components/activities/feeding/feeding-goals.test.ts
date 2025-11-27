@@ -1,7 +1,10 @@
 import type { Activities } from '@nugget/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { getFeedingDailyProgress } from '../shared/daily-progress';
-import { calculateTodaysFeedingStats } from './feeding-goals';
+import {
+  calculateTodaysFeedingStats,
+  getDailyAmountGoal,
+} from './feeding-goals';
 
 let activityCounter = 0;
 
@@ -66,5 +69,24 @@ describe('feeding goals helpers', () => {
     expect(progress).not.toBeNull();
     expect(progress?.currentValue).toBe(150);
     expect(progress?.srLabel).toContain('150ml');
+  });
+
+  it('getFeedingDailyProgress returns amount goal when no feedings logged today', () => {
+    const today = new Date();
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    const babyAgeDays = 35;
+
+    const progress = getFeedingDailyProgress({
+      activities: [
+        makeActivity({ amountMl: 90, startTime: yesterday, type: 'bottle' }),
+      ],
+      babyAgeDays,
+    });
+
+    const expectedGoal = getDailyAmountGoal(babyAgeDays, 'ML');
+
+    expect(progress).not.toBeNull();
+    expect(progress?.goalValue).toBe(expectedGoal);
+    expect(progress?.srLabel).toContain('0ml');
   });
 });

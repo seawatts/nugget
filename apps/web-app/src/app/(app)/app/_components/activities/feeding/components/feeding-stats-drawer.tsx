@@ -37,8 +37,23 @@ import {
   calculateTimeBlockData,
   detectPatterns,
 } from '../../shared/utils/frequency-utils';
-import { calculateFeedingTrendData } from '../feeding-goals';
+import {
+  getAgeDaysForDate,
+  normalizeGoalContext,
+} from '../../shared/utils/goal-utils';
+import {
+  calculateFeedingTrendData,
+  getDailyAmountGoal,
+  getDailyFeedingGoal,
+} from '../feeding-goals';
 import { FeedingTrendChart } from './feeding-trend-chart';
+
+interface FeedingGoalContext {
+  babyBirthDate?: Date | string | null;
+  babyAgeDays?: number | null;
+  predictedIntervalHours?: number | null;
+  dataPointsCount?: number;
+}
 
 interface FeedingStatsDrawerProps {
   open: boolean;
@@ -51,6 +66,9 @@ interface FeedingStatsDrawerProps {
     [key: string]: unknown;
   }>;
   timeFormat: '12h' | '24h';
+  dailyCountGoal?: number | null;
+  dailyAmountGoal?: number | null;
+  goalContext?: FeedingGoalContext | null;
 }
 
 const FEEDING_ACTIVITY_TYPES = new Set(['feeding', 'bottle', 'nursing']);
@@ -66,6 +84,9 @@ export function FeedingStatsDrawer({
   unit,
   recentActivities,
   timeFormat,
+  dailyCountGoal,
+  dailyAmountGoal,
+  goalContext,
 }: FeedingStatsDrawerProps) {
   const [trendTimeRange, setTrendTimeRange] = useState<
     '24h' | '7d' | '2w' | '1m' | '3m' | '6m'
@@ -104,6 +125,48 @@ export function FeedingStatsDrawer({
   const dynamicTrendData = useMemo(
     () => calculateFeedingTrendData(activities, trendTimeRange),
     [activities, trendTimeRange],
+  );
+
+  const normalizedGoalContext = useMemo(
+    () => normalizeGoalContext(goalContext),
+    [goalContext],
+  );
+
+  const trendGoalSeries = useMemo(() => {
+    if (
+      !normalizedGoalContext ||
+      (!normalizedGoalContext.babyBirthDate &&
+        typeof normalizedGoalContext.babyAgeDays !== 'number')
+    ) {
+      return null;
+    }
+
+    return dynamicTrendData.map(({ date }) => {
+      const targetDate = new Date(date);
+      const ageDays = getAgeDaysForDate(targetDate, normalizedGoalContext);
+      if (ageDays === null) {
+        return { amount: null, count: null };
+      }
+
+      return {
+        amount: getDailyAmountGoal(
+          ageDays,
+          unit,
+          normalizedGoalContext.predictedIntervalHours ?? undefined,
+          normalizedGoalContext.dataPointsCount,
+        ),
+        count: getDailyFeedingGoal(
+          ageDays,
+          normalizedGoalContext.predictedIntervalHours ?? undefined,
+          normalizedGoalContext.dataPointsCount,
+        ),
+      };
+    });
+  }, [dynamicTrendData, normalizedGoalContext, unit]);
+
+  const countGoalSeries = trendGoalSeries?.map((entry) => entry.count ?? null);
+  const amountGoalSeries = trendGoalSeries?.map(
+    (entry) => entry.amount ?? null,
   );
 
   // Calculate frequency data
@@ -257,7 +320,9 @@ export function FeedingStatsDrawer({
         </div>
         <FeedingTrendChart
           amountType={countAmountType}
+          dailyGoal={dailyCountGoal ?? null}
           data={dynamicTrendData}
+          goalSeries={countGoalSeries}
           metricType="count"
           timeRange={trendTimeRange}
           unit={unit}
@@ -336,7 +401,15 @@ export function FeedingStatsDrawer({
         </div>
         <FeedingTrendChart
           amountType={amountAmountType}
+          dailyGoal={
+            amountAmountType === 'total' && dailyAmountGoal
+              ? dailyAmountGoal
+              : null
+          }
           data={dynamicTrendData}
+          goalSeries={
+            amountAmountType === 'total' ? amountGoalSeries : undefined
+          }
           metricType="amount"
           timeRange={trendTimeRange}
           unit={unit}

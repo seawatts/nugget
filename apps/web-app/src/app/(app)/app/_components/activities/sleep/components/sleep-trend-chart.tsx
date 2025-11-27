@@ -8,19 +8,24 @@ import {
 import { format } from 'date-fns';
 import {
   Bar,
-  BarChart,
   CartesianGrid,
+  ComposedChart,
+  Line,
+  ReferenceLine,
   ResponsiveContainer,
   XAxis,
   YAxis,
 } from 'recharts';
 import type { AmountType, TrendData } from '../../shared/types';
+import { adjustGoalForRange } from '../../shared/utils/goal-utils';
 
 interface SleepTrendChartProps {
   data: TrendData[];
   metricType: 'count' | 'hours';
   amountType: AmountType;
   timeRange: '24h' | '7d' | '2w' | '1m' | '3m' | '6m';
+  goalSeries?: Array<number | null>;
+  dailyGoal?: number | null;
 }
 
 export function SleepTrendChart({
@@ -28,6 +33,8 @@ export function SleepTrendChart({
   metricType,
   amountType,
   timeRange,
+  goalSeries,
+  dailyGoal,
 }: SleepTrendChartProps) {
   const formattedData = data.map((item) => {
     const date = new Date(item.date);
@@ -69,6 +76,23 @@ export function SleepTrendChart({
     label = `${amountType === 'average' ? 'Avg' : 'Total'} (h)`;
   }
 
+  const chartData = formattedData.map((item, index) => {
+    const seriesGoal =
+      goalSeries && goalSeries.length > index ? goalSeries[index] : null;
+    return {
+      ...item,
+      goal: adjustGoalForRange(seriesGoal, timeRange),
+    };
+  });
+
+  const hasGoalSeries = chartData.some(
+    (item) => typeof item.goal === 'number' && !Number.isNaN(item.goal),
+  );
+
+  const fallbackGoal = hasGoalSeries
+    ? null
+    : adjustGoalForRange(dailyGoal ?? null, timeRange);
+
   return (
     <ChartContainer
       className="h-[200px] w-full"
@@ -77,11 +101,19 @@ export function SleepTrendChart({
           color: 'var(--activity-sleep)',
           label,
         },
+        ...(hasGoalSeries || fallbackGoal !== null
+          ? {
+              goal: {
+                color: 'var(--muted-foreground)',
+                label: 'Goal',
+              },
+            }
+          : {}),
       }}
     >
       <ResponsiveContainer height="100%" width="100%">
-        <BarChart
-          data={formattedData}
+        <ComposedChart
+          data={chartData}
           margin={{ bottom: 0, left: 0, right: 0, top: 0 }}
         >
           <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
@@ -112,7 +144,32 @@ export function SleepTrendChart({
             fill="var(--activity-sleep)"
             radius={[8, 8, 0, 0]}
           />
-        </BarChart>
+          {hasGoalSeries && (
+            <Line
+              connectNulls={false}
+              dataKey="goal"
+              dot={false}
+              isAnimationActive={false}
+              stroke="var(--muted-foreground)"
+              strokeDasharray="4 4"
+              strokeWidth={2}
+              type="monotone"
+            />
+          )}
+          {!hasGoalSeries && fallbackGoal !== null && (
+            <ReferenceLine
+              label={{
+                fill: 'var(--muted-foreground)',
+                fontSize: 10,
+                position: 'right',
+                value: 'Goal',
+              }}
+              stroke="var(--muted-foreground)"
+              strokeDasharray="4 4"
+              y={fallbackGoal}
+            />
+          )}
+        </ComposedChart>
       </ResponsiveContainer>
     </ChartContainer>
   );

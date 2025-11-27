@@ -104,35 +104,59 @@ export function calculateTodaysSleepStats(
   longestSleepMinutes: number | null;
   avgIntervalHours: number | null;
 } {
-  const today = startOfDay(new Date());
+  const now = new Date();
+  const nowMs = now.getTime();
+  const today = startOfDay(now);
 
   // Filter to sleep sessions that ENDED today (or are in progress)
   const todaysSleeps = activities.filter((activity) => {
-    const isSleep = activity.type === 'sleep';
-    if (!isSleep) return false;
+    if (activity.type !== 'sleep') return false;
 
-    // For completed sleep: check if it ended today
-    if (activity.duration && activity.duration > 0) {
+    const isSkipped = Boolean(
+      activity.details &&
+        typeof activity.details === 'object' &&
+        'skipped' in activity.details &&
+        (activity.details as { skipped?: boolean }).skipped === true,
+    );
+
+    if (isSkipped) return false;
+
+    const hasDuration =
+      typeof activity.duration === 'number' && activity.duration >= 0;
+
+    // For completed sleep: check if it ended today (zero-duration counts as finished)
+    if (hasDuration) {
+      const durationMinutes = Math.max(activity.duration ?? 0, 0);
       const startTime = new Date(activity.startTime);
       const endTime = new Date(
-        startTime.getTime() + activity.duration * 60 * 1000,
+        startTime.getTime() + durationMinutes * 60 * 1000,
       );
       return endTime >= today;
     }
 
     // For in-progress sleep: check if it started before now
     const startTime = new Date(activity.startTime);
-    return startTime < new Date();
+    return startTime < now;
   });
 
   // For in-progress sleep, calculate elapsed time
   const sleepsWithDuration = todaysSleeps.map((activity) => {
-    if (activity.duration && activity.duration > 0) {
-      return activity;
+    const hasDuration =
+      typeof activity.duration === 'number' && activity.duration >= 0;
+
+    if (hasDuration) {
+      return {
+        ...activity,
+        duration: Math.max(activity.duration ?? 0, 0),
+      };
     }
+
     // Calculate elapsed time for in-progress sleep
-    const elapsed = Math.floor(
-      (Date.now() - new Date(activity.startTime).getTime()) / (1000 * 60),
+    const elapsed = Math.max(
+      Math.floor(
+        (nowMs - new Date(activity.startTime).getTime()) / (1000 * 60),
+      ),
+      0,
     );
     return { ...activity, duration: elapsed };
   });

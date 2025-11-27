@@ -16,14 +16,14 @@ import {
 import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
 import { Moon, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { useActivityMutations } from '../use-activity-mutations';
 import { SleepModeSelector } from './sleep-mode-selector';
 
-type SleepMode = 'timer' | 'manual' | null;
+type SleepMode = 'timer' | 'timeline' | null;
 interface SleepActivityDrawerProps {
   existingActivity?: typeof Activities.$inferSelect | null;
   isOpen: boolean;
@@ -53,6 +53,15 @@ export function SleepActivityDrawer({
   const addOptimisticActivity = useOptimisticActivitiesStore(
     (state) => state.addActivity,
   );
+
+  const { mutateAsync: persistStartTime } = api.activities.update.useMutation({
+    onSuccess: () => {
+      void utils.activities.getInProgressActivity.invalidate({
+        activityType: 'sleep',
+        babyId,
+      });
+    },
+  });
 
   // Sleep-specific state
   const [startTime, setStartTime] = useState(new Date());
@@ -120,7 +129,7 @@ export function SleepActivityDrawer({
         setEndTime(new Date(existingActivity.startTime));
       }
       // Set mode to manual for existing activities
-      setSelectedMode('manual');
+      setSelectedMode('timeline');
     } else {
       const now = new Date();
       setStartTime(now);
@@ -167,12 +176,25 @@ export function SleepActivityDrawer({
   }, [existingActivity]);
 
   // Sync endTime with duration changes (when timer is running)
+  // Only sync when in timer mode and timer is active, not when manually setting times
   useEffect(() => {
-    if (duration > 0) {
+    if (
+      selectedMode === 'timer' &&
+      (activeActivityId || isCreating) &&
+      !isTimerStopped &&
+      duration > 0
+    ) {
       const calculatedEndTime = new Date(startTime.getTime() + duration * 1000);
       setEndTime(calculatedEndTime);
     }
-  }, [duration, startTime]);
+  }, [
+    duration,
+    startTime,
+    selectedMode,
+    activeActivityId,
+    isCreating,
+    isTimerStopped,
+  ]);
 
   // Load in-progress sleep activity when drawer opens using tRPC
   const { data: inProgressActivity, isLoading: isLoadingInProgress } =
@@ -187,8 +209,23 @@ export function SleepActivityDrawer({
   // Process in-progress activity data
   useEffect(() => {
     if (inProgressActivity) {
+      const activityStartTime = new Date(inProgressActivity.startTime);
       setActiveActivityId(inProgressActivity.id);
-      setStartTime(new Date(inProgressActivity.startTime));
+      setStartTime(activityStartTime);
+
+      // Recalculate duration based on the activity's start time (in case it was updated)
+      if (selectedMode === 'timer' && !isTimerStopped) {
+        const now = new Date();
+        const currentDurationSeconds = Math.max(
+          0,
+          Math.floor((now.getTime() - activityStartTime.getTime()) / 1000),
+        );
+        setDuration(currentDurationSeconds);
+        // Update endTime to match the current calculation
+        setEndTime(
+          new Date(activityStartTime.getTime() + currentDurationSeconds * 1000),
+        );
+      }
 
       if (inProgressActivity.notes) {
         setNotes(inProgressActivity.notes);
@@ -207,7 +244,7 @@ export function SleepActivityDrawer({
       // Set mode to timer since we loaded an in-progress activity
       setSelectedMode('timer');
     }
-  }, [inProgressActivity]);
+  }, [inProgressActivity, selectedMode, isTimerStopped]);
 
   // Reset state when drawer closes - delay to allow closing animation to complete
   useEffect(() => {
@@ -258,10 +295,40 @@ export function SleepActivityDrawer({
     }
   };
 
+  const handleStartTimeChange = useCallback(
+    (newStartTime: Date) => {
+      setStartTime(newStartTime);
+
+      if (selectedMode === 'timer' && activeActivityId) {
+        const newDurationSeconds = Math.max(
+          0,
+          Math.floor((Date.now() - newStartTime.getTime()) / 1000),
+        );
+        setDuration(newDurationSeconds);
+
+        void persistStartTime({
+          id: activeActivityId,
+          startTime: newStartTime,
+        }).catch((error) => {
+          console.error('Failed to sync sleep start time', error);
+        });
+      }
+    },
+    [activeActivityId, persistStartTime, selectedMode],
+  );
+
   const handleStop = () => {
     // Stop the timer and show detail fields
     setIsTimerStopped(true);
-    // Duration is already being calculated by the timer, so we just need to stop it
+    // Set endTime to now to ensure accurate duration calculation
+    const now = new Date();
+    setEndTime(now);
+    // Recalculate duration from updated startTime to now
+    const currentDurationSeconds = Math.max(
+      0,
+      Math.floor((now.getTime() - startTime.getTime()) / 1000),
+    );
+    setDuration(currentDurationSeconds);
   };
 
   const handleCancelClick = () => {
@@ -457,6 +524,7 @@ export function SleepActivityDrawer({
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
         <SleepModeSelector
           activeActivityId={activeActivityId}
+          babyId={babyId}
           coSleepingWith={coSleepingWith}
           currentUserId={currentUserId}
           duration={duration}
@@ -477,7 +545,7 @@ export function SleepActivityDrawer({
           setSleepLocation={setSleepLocation}
           setSleepQuality={setSleepQuality}
           setSleepType={setSleepType}
-          setStartTime={setStartTime}
+          setStartTime={handleStartTimeChange}
           setWakeReason={setWakeReason}
           sleepLocation={sleepLocation}
           sleepQuality={sleepQuality}
@@ -510,7 +578,7 @@ export function SleepActivityDrawer({
               )}
               disabled={
                 (selectedMode === 'timer' && isTimerStopped && isPending) ||
-                (selectedMode === 'manual' && isPending) ||
+                (selectedMode === 'timeline' && isPending) ||
                 isLoadingInProgress
               }
               onClick={getButtonClickHandler()}

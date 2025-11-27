@@ -61,7 +61,7 @@ export function FeedingActionButtons({
             <Droplet aria-hidden="true" className="size-6" />
             <span
               aria-hidden="true"
-              className="absolute top-0 right-0 translate-x-2 -translate-y-1 rounded-full bg-white/90 px-1 text-[10px] font-semibold leading-none text-activity-feeding shadow"
+              className="absolute top-0 left-0 -translate-x-2 -translate-y-1 rounded-full bg-white/90 px-1 text-[10px] font-semibold leading-none text-activity-feeding shadow"
             >
               L
             </span>

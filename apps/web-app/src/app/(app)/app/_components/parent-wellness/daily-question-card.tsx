@@ -28,7 +28,8 @@ interface SevenDayResponse {
 
 function useSevenDayResponses(
   allResponses: Array<{
-    date: Date;
+    createdAt: Date;
+    date?: Date;
     selectedAnswer: string | null;
     question: string;
   }>,
@@ -43,7 +44,9 @@ function useSevenDayResponses(
 
       // Find response for this day
       const dayResponse = allResponses.find((response) => {
-        const responseDate = startOfDay(response.date);
+        const sourceDate = response.createdAt ?? response.date;
+        if (!sourceDate) return false;
+        const responseDate = startOfDay(sourceDate);
         const responseKey = format(responseDate, 'yyyy-MM-dd');
         return responseKey === dateKey;
       });
@@ -207,6 +210,7 @@ export function ParentDailyQuestionCard() {
 
   const sevenDayData = useSevenDayResponses(
     historyData?.responses.map((r) => ({
+      createdAt: r.createdAt ?? r.date,
       date: r.date,
       question: r.question,
       selectedAnswer: r.selectedAnswer,

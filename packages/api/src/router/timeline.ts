@@ -309,10 +309,11 @@ export const timelineRouter = createTRPCRouter({
           allItems.push(
             ...parentWellnessResponses
               .map((response): TimelineParentWellness | null => {
+                const rawTimestamp = response.createdAt ?? response.date;
                 const timestamp =
-                  response.date instanceof Date
-                    ? response.date
-                    : new Date(response.date);
+                  rawTimestamp instanceof Date
+                    ? rawTimestamp
+                    : new Date(rawTimestamp);
 
                 if (Number.isNaN(timestamp.getTime())) {
                   return null;

@@ -7,7 +7,6 @@ import {
 import {
   calculateTodaysFeedingStats,
   getDailyAmountGoal,
-  getDailyFeedingGoal,
   isLiquidFeedingActivity,
 } from '../feeding/feeding-goals';
 import {
@@ -139,28 +138,6 @@ export function getFeedingDailyProgress({
     (activity) =>
       isLiquidFeedingActivity(activity.type) || activity.type === 'solids',
   );
-
-  if (!todaysFeedings.length) {
-    const goalCount =
-      typeof babyAgeDays === 'number'
-        ? getDailyFeedingGoal(
-            babyAgeDays,
-            predictedIntervalHours,
-            dataPointsCount,
-          )
-        : null;
-    return {
-      currentValue: 0,
-      goalValue: goalCount,
-      percentage: 0,
-      srLabel: goalCount
-        ? `0 of ${goalCount} feedings logged today`
-        : 'No feedings logged today',
-    };
-  }
-
-  const stats = calculateTodaysFeedingStats(todaysFeedings);
-  const currentMl = stats.totalMl;
   const goalMl =
     typeof babyAgeDays === 'number'
       ? getDailyAmountGoal(
@@ -170,16 +147,29 @@ export function getFeedingDailyProgress({
           dataPointsCount,
         )
       : null;
+  const buildSrLabel = (currentMl: number) =>
+    goalMl
+      ? `${formatVolumeDisplay(currentMl, unitPreference, true)} of ${formatVolumeDisplay(goalMl, unitPreference, true)} logged today`
+      : `${formatVolumeDisplay(currentMl, unitPreference, true)} logged today`;
+
+  if (!todaysFeedings.length) {
+    return {
+      currentValue: 0,
+      goalValue: goalMl,
+      percentage: 0,
+      srLabel: buildSrLabel(0),
+    };
+  }
+
+  const stats = calculateTodaysFeedingStats(todaysFeedings);
+  const currentMl = stats.totalMl;
   const percentage = goalMl ? clampPercentage((currentMl / goalMl) * 100) : 0;
-  const srLabel = goalMl
-    ? `${formatVolumeDisplay(currentMl, unitPreference, true)} of ${formatVolumeDisplay(goalMl, unitPreference, true)} logged today`
-    : `${formatVolumeDisplay(currentMl, unitPreference, true)} logged today`;
 
   return {
     currentValue: currentMl,
     goalValue: goalMl,
     percentage,
-    srLabel,
+    srLabel: buildSrLabel(currentMl),
   };
 }
 

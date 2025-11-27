@@ -38,7 +38,12 @@ import {
   calculateTimeBlockData,
   detectPatterns,
 } from '../../shared/utils/frequency-utils';
-import { calculateDiaperTrendData } from '../diaper-goals';
+import type { GoalContextInput } from '../../shared/utils/goal-utils';
+import {
+  getAgeDaysForDate,
+  normalizeGoalContext,
+} from '../../shared/utils/goal-utils';
+import { calculateDiaperTrendData, getDailyDiaperGoal } from '../diaper-goals';
 import { DiaperTrendChart } from './diaper-trend-chart';
 
 type DiaperMetricType = 'total' | 'wet' | 'dirty' | 'both';
@@ -67,6 +72,8 @@ interface DiaperStatsDrawerProps {
     [key: string]: unknown;
   }>;
   timeFormat: '12h' | '24h';
+  dailyGoal?: number | null;
+  goalContext?: GoalContextInput | null;
 }
 
 export function DiaperStatsDrawer({
@@ -75,6 +82,8 @@ export function DiaperStatsDrawer({
   activities,
   recentActivities,
   timeFormat,
+  dailyGoal,
+  goalContext,
 }: DiaperStatsDrawerProps) {
   const [trendTimeRange, setTrendTimeRange] = useState<TrendTimeRange>('7d');
   const [timelineFilterType, setTimelineFilterType] =
@@ -94,6 +103,28 @@ export function DiaperStatsDrawer({
     () => calculateDiaperTrendData(activities, trendTimeRange),
     [activities, trendTimeRange],
   );
+
+  const normalizedGoalContext = useMemo(
+    () => normalizeGoalContext(goalContext),
+    [goalContext],
+  );
+
+  const goalSeries = useMemo(() => {
+    if (!normalizedGoalContext) return null;
+
+    return dynamicTrendData.map(({ date }) => {
+      const ageDays = getAgeDaysForDate(new Date(date), normalizedGoalContext);
+      if (ageDays === null) {
+        return null;
+      }
+
+      return getDailyDiaperGoal(
+        ageDays,
+        normalizedGoalContext.predictedIntervalHours ?? undefined,
+        normalizedGoalContext.dataPointsCount,
+      );
+    });
+  }, [dynamicTrendData, normalizedGoalContext]);
 
   // Helper functions
   const getMetricLabel = (type: DiaperMetricType) => {
@@ -237,7 +268,11 @@ export function DiaperStatsDrawer({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <DiaperTrendChart data={dynamicTrendData} />
+        <DiaperTrendChart
+          dailyGoal={dailyGoal ?? null}
+          data={dynamicTrendData}
+          goalSeries={goalSeries}
+        />
       </Card>
 
       {/* Timeline Card */}

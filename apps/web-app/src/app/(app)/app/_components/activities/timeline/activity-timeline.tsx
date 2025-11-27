@@ -199,6 +199,14 @@ const activities = [
   textColor: string;
 }>;
 
+function getTimelineActivityTimestamp(
+  activity: typeof Activities.$inferSelect,
+) {
+  return activity.type === 'sleep' && activity.endTime
+    ? new Date(activity.endTime)
+    : new Date(activity.startTime);
+}
+
 const activityIcons: Record<string, typeof Moon> = {
   activity: Activity,
   bath: Bath,
@@ -363,6 +371,8 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
 
   // Get optimistic activities from Zustand store
   const optimisticActivities = useOptimisticActivitiesStore.use.activities();
+  const optimisticActivityUpdates =
+    useOptimisticActivitiesStore.use.updatedActivities();
 
   // Get user preferences from dashboard store (already fetched by DashboardContainer)
   const user = useDashboardDataStore.use.user();
@@ -476,6 +486,25 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
     return deduplicated;
   }, [data?.pages]);
 
+  const serverTimelineItemsWithOptimisticUpdates = useMemo(() => {
+    if (!babyId) return serverTimelineItems;
+
+    return serverTimelineItems.map((item) => {
+      if (item.type !== 'activity') return item;
+
+      const optimisticUpdate = optimisticActivityUpdates[item.data.id];
+      if (!optimisticUpdate || optimisticUpdate.babyId !== babyId) {
+        return item;
+      }
+
+      return {
+        ...item,
+        data: optimisticUpdate,
+        timestamp: getTimelineActivityTimestamp(optimisticUpdate),
+      };
+    });
+  }, [serverTimelineItems, optimisticActivityUpdates, babyId]);
+
   // Merge optimistic activities with timeline items
   const optimisticTimelineItems = useMemo(() => {
     return optimisticActivities
@@ -485,14 +514,9 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
         return activity.babyId === babyId;
       })
       .map((activity): TimelineItem => {
-        const timestamp =
-          activity.type === 'sleep' && activity.endTime
-            ? new Date(activity.endTime)
-            : new Date(activity.startTime);
-
         return {
           data: activity,
-          timestamp,
+          timestamp: getTimelineActivityTimestamp(activity),
           type: 'activity' as const,
         };
       })
@@ -513,28 +537,32 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
         if (optimisticItem.type !== 'activity') return true;
 
         // Check if there's a matching real activity (same type, similar timestamp)
-        const hasMatchingRealActivity = serverTimelineItems.some((realItem) => {
-          if (realItem.type !== 'activity') return false;
+        const hasMatchingRealActivity =
+          serverTimelineItemsWithOptimisticUpdates.some((realItem) => {
+            if (realItem.type !== 'activity') return false;
 
-          const realActivity = realItem.data;
-          const optimisticActivity = optimisticItem.data;
+            const realActivity = realItem.data;
+            const optimisticActivity = optimisticItem.data;
 
-          // Match by type and timestamp (within 1 second tolerance)
-          if (realActivity.type !== optimisticActivity.type) return false;
+            // Match by type and timestamp (within 1 second tolerance)
+            if (realActivity.type !== optimisticActivity.type) return false;
 
-          const timeDiff = Math.abs(
-            realItem.timestamp.getTime() - optimisticItem.timestamp.getTime(),
-          );
+            const timeDiff = Math.abs(
+              realItem.timestamp.getTime() - optimisticItem.timestamp.getTime(),
+            );
 
-          return timeDiff <= 1000; // 1 second tolerance
-        });
+            return timeDiff <= 1000; // 1 second tolerance
+          });
 
         // Keep optimistic item only if no matching real activity exists
         return !hasMatchingRealActivity;
       },
     );
 
-    const merged = [...deduplicatedOptimisticItems, ...serverTimelineItems];
+    const merged = [
+      ...deduplicatedOptimisticItems,
+      ...serverTimelineItemsWithOptimisticUpdates,
+    ];
 
     // Check if skipped activities should be shown
     const showSkipped =
@@ -563,7 +591,11 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
     );
 
     return sorted;
-  }, [optimisticTimelineItems, serverTimelineItems, selectedActivityTypes]);
+  }, [
+    optimisticTimelineItems,
+    serverTimelineItemsWithOptimisticUpdates,
+    selectedActivityTypes,
+  ]);
 
   // Setup intersection observer for infinite scroll
   useEffect(() => {

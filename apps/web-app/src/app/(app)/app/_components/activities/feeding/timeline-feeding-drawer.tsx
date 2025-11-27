@@ -16,6 +16,7 @@ import { cn } from '@nugget/ui/lib/utils';
 import { Utensils, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { ClickableTimeDisplay } from '../shared/components/clickable-time-display';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { FeedingFormData } from './feeding-type-selector';
@@ -40,6 +41,10 @@ export function TimelineFeedingDrawer({
 }: TimelineFeedingDrawerProps) {
   const { updateActivity, deleteActivity, isUpdating, isDeleting } =
     useActivityMutations();
+  const optimisticUpdateActivity =
+    useOptimisticActivitiesStore.use.updateActivity();
+  const removeOptimisticUpdate =
+    useOptimisticActivitiesStore.use.removeUpdate();
 
   // Get baby and user data from dashboard store (already fetched by DashboardContainer)
   const baby = useDashboardDataStore.use.baby();
@@ -205,7 +210,7 @@ export function TimelineFeedingDrawer({
         };
       }
 
-      await updateActivity({
+      const updatePayload = {
         amountMl: formData.amountMl,
         details,
         duration: durationMinutes > 0 ? durationMinutes : undefined,
@@ -214,10 +219,27 @@ export function TimelineFeedingDrawer({
         id: existingActivity.id,
         notes: formData.notes,
         startTime,
-      });
+      };
+
+      const optimisticActivity = {
+        ...existingActivity,
+        amountMl: formData.amountMl ?? null,
+        details: details ?? null,
+        duration: durationMinutes > 0 ? durationMinutes : null,
+        endTime: actualEndTime,
+        feedingSource: feedingSource ?? null,
+        notes: formData.notes ?? null,
+        startTime,
+        updatedAt: new Date(),
+      } as typeof Activities.$inferSelect;
+
+      optimisticUpdateActivity(existingActivity.id, optimisticActivity);
 
       onClose();
+
+      await updateActivity(updatePayload);
     } catch (error) {
+      removeOptimisticUpdate(existingActivity.id);
       console.error('Failed to update feeding:', error);
     }
   };

@@ -338,6 +338,14 @@ export function PredictiveFeedingCard({
       {/* Stats Drawer */}
       <FeedingStatsDrawer
         activities={extendedActivities}
+        dailyAmountGoal={dailyAmountGoal}
+        dailyCountGoal={dailyFeedingGoal}
+        goalContext={{
+          babyAgeDays,
+          babyBirthDate: queryData?.babyBirthDate ?? null,
+          dataPointsCount: prediction.calculationDetails.dataPoints,
+          predictedIntervalHours: prediction.intervalHours,
+        }}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
         recentActivities={prediction.recentFeedingPattern.map((item) => ({

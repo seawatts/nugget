@@ -11,6 +11,7 @@ interface DailyQuestionStatsDrawerProps {
   onOpenChange: (open: boolean) => void;
   responses: Array<{
     id: string;
+    createdAt: Date;
     date: Date;
     question: string;
     selectedAnswer: string | null;
@@ -95,7 +96,10 @@ export function DailyQuestionStatsDrawer({
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">
-                    {format(new Date(response.date), 'MMM d, yyyy')}
+                    {format(
+                      new Date(response.createdAt ?? response.date),
+                      'MMM d, yyyy',
+                    )}
                   </span>
                 </div>
                 <p className="text-sm font-medium">{response.question}</p>

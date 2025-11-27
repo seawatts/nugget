@@ -14,10 +14,16 @@ export type OptimisticActivity = typeof Activities.$inferSelect & {
 
 interface OptimisticActivitiesState {
   activities: OptimisticActivity[];
+  updatedActivities: Record<string, OptimisticActivity>;
   addActivity: (
     activity: Omit<OptimisticActivity, '_optimistic' | '_tempId'>,
   ) => string;
+  updateActivity: (
+    activityId: string,
+    activity: Omit<OptimisticActivity, '_optimistic' | '_tempId'>,
+  ) => void;
   removeActivity: (tempId: string) => void;
+  removeUpdate: (activityId: string) => void;
   removeByMatch: (type: string, timestamp: Date, toleranceMs?: number) => void;
   clear: () => void;
 }
@@ -53,7 +59,7 @@ const useOptimisticActivitiesStoreBase = create<OptimisticActivitiesState>(
       return tempId;
     },
     clear: () => {
-      set({ activities: [] });
+      set({ activities: [], updatedActivities: {} });
     },
     removeActivity: (tempId) => {
       set((state) => ({
@@ -76,6 +82,27 @@ const useOptimisticActivitiesStoreBase = create<OptimisticActivitiesState>(
         }),
       }));
     },
+    removeUpdate: (activityId) => {
+      set((state) => {
+        const next = { ...state.updatedActivities };
+        delete next[activityId];
+        return { updatedActivities: next };
+      });
+    },
+    updateActivity: (activityId, activity) => {
+      const optimisticActivity: OptimisticActivity = {
+        ...activity,
+        _optimistic: true,
+        _tempId: activityId,
+      };
+      set((state) => ({
+        updatedActivities: {
+          ...state.updatedActivities,
+          [activityId]: optimisticActivity,
+        },
+      }));
+    },
+    updatedActivities: {},
   }),
 );
 

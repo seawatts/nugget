@@ -25,7 +25,6 @@ import type {
   AmountType,
   HeatmapRangeValue,
   TimelineWeekRange,
-  TrendData,
 } from '../../shared/types';
 import {
   HEATMAP_RANGE_OPTIONS,
@@ -40,9 +39,16 @@ import {
   calculateTimeBlockData,
   detectPatterns,
 } from '../../shared/utils/frequency-utils';
+import type { GoalContextInput } from '../../shared/utils/goal-utils';
+import {
+  getAgeDaysForDate,
+  normalizeGoalContext,
+} from '../../shared/utils/goal-utils';
 import {
   calculateCoSleeperTrendData,
   calculateSleepTrendData,
+  getDailyNapGoal,
+  getDailySleepHoursGoal,
 } from '../sleep-goals';
 import { CoSleeperTrendChart } from './co-sleeper-trend-chart';
 import { SleepTrendChart } from './sleep-trend-chart';
@@ -50,7 +56,6 @@ import { SleepTrendChart } from './sleep-trend-chart';
 interface SleepStatsDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  trendData: TrendData[];
   activities: Array<typeof Activities.$inferSelect>; // Raw activities for dynamic stats calculation
   recentActivities: Array<{
     time: Date;
@@ -58,6 +63,9 @@ interface SleepStatsDrawerProps {
     [key: string]: unknown;
   }>;
   timeFormat: '12h' | '24h';
+  dailyNapGoal?: number | null;
+  dailySleepHoursGoal?: number | null;
+  goalContext?: GoalContextInput | null;
 }
 
 export function SleepStatsDrawer({
@@ -66,6 +74,9 @@ export function SleepStatsDrawer({
   activities,
   recentActivities,
   timeFormat,
+  dailyNapGoal,
+  dailySleepHoursGoal,
+  goalContext,
 }: SleepStatsDrawerProps) {
   const [trendTimeRange, setTrendTimeRange] = useState<
     '24h' | '7d' | '2w' | '1m' | '3m' | '6m'
@@ -127,6 +138,37 @@ export function SleepStatsDrawer({
   const dynamicTrendData = useMemo(
     () => calculateSleepTrendData(activities, trendTimeRange),
     [activities, trendTimeRange],
+  );
+
+  const normalizedGoalContext = useMemo(
+    () => normalizeGoalContext(goalContext),
+    [goalContext],
+  );
+
+  const trendGoalSeries = useMemo(() => {
+    if (!normalizedGoalContext) return null;
+
+    return dynamicTrendData.map(({ date }) => {
+      const targetDate = new Date(date);
+      const ageDays = getAgeDaysForDate(targetDate, normalizedGoalContext);
+      if (ageDays === null) {
+        return { hours: null, naps: null };
+      }
+
+      return {
+        hours: getDailySleepHoursGoal(ageDays),
+        naps: getDailyNapGoal(
+          ageDays,
+          normalizedGoalContext.predictedIntervalHours ?? undefined,
+          normalizedGoalContext.dataPointsCount,
+        ),
+      };
+    });
+  }, [dynamicTrendData, normalizedGoalContext]);
+
+  const napGoalSeries = trendGoalSeries?.map((entry) => entry.naps ?? null);
+  const sleepHoursGoalSeries = trendGoalSeries?.map(
+    (entry) => entry.hours ?? null,
   );
 
   // Calculate co-sleeper data based on selected time range
@@ -272,7 +314,9 @@ export function SleepStatsDrawer({
         </div>
         <SleepTrendChart
           amountType={sessionsAmountType}
+          dailyGoal={dailyNapGoal ?? null}
           data={dynamicTrendData}
+          goalSeries={napGoalSeries}
           metricType="count"
           timeRange={trendTimeRange}
         />
@@ -350,7 +394,13 @@ export function SleepStatsDrawer({
         </div>
         <SleepTrendChart
           amountType={hoursAmountType}
+          dailyGoal={
+            hoursAmountType === 'total' ? (dailySleepHoursGoal ?? null) : null
+          }
           data={dynamicTrendData}
+          goalSeries={
+            hoursAmountType === 'total' ? sleepHoursGoalSeries : undefined
+          }
           metricType="hours"
           timeRange={trendTimeRange}
         />

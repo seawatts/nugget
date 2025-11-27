@@ -1,6 +1,12 @@
 'use client';
 
 import { api } from '@nugget/api/react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@nugget/ui/accordion';
 import { NuggetAvatar } from '@nugget/ui/custom/nugget-avatar';
 import { startOfDay } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
@@ -339,76 +345,86 @@ export function TodaySummaryCard({
   });
 
   return (
-    <div className="rounded-xl border border-border bg-linear-to-br from-card/50 to-card/80 backdrop-blur-sm p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2.5">
-          <Link
-            className="relative flex items-center justify-center size-9 rounded-full bg-linear-to-br from-primary to-primary/80 p-[2px] shadow-md shadow-primary/20 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
-            href="/app/settings/baby"
-          >
-            <div className="size-full rounded-full bg-card flex items-center justify-center p-0.5">
-              <NuggetAvatar
-                backgroundColor={babyAvatarBackgroundColor || undefined}
-                image={
-                  !babyAvatarBackgroundColor && babyPhotoUrl
-                    ? babyPhotoUrl
-                    : undefined
-                }
-                name={babyName}
-                size="sm"
-              />
-            </div>
-          </Link>
-          <div className="flex flex-col">
-            <h2 className="text-lg font-semibold text-foreground leading-tight">
-              {babyName ? `${babyName}'s Day` : "Today's Summary"}
-            </h2>
-            {babyBirthDate && (
-              <span className="text-xs text-muted-foreground font-mono leading-tight">
-                <LiveBabyAge birthDate={babyBirthDate} />
+    <div className="rounded-2xl border border-border/40 bg-linear-to-br from-activity-vitamin-d via-activity-nail-trimming/95 to-activity-feeding backdrop-blur-xl p-6 shadow-xl shadow-activity-nail-trimming/20">
+      <Accordion className="w-full" collapsible defaultValue="" type="single">
+        <AccordionItem className="border-0" value="activity-cards">
+          <AccordionTrigger className="hover:no-underline py-0 mb-0 data-[state=open]:mb-4 cursor-pointer items-center [&>svg]:translate-y-0">
+            <div className="flex items-center justify-between w-full pr-4">
+              <div className="flex items-center gap-2.5">
+                <Link
+                  className="relative flex items-center justify-center size-9 rounded-full bg-linear-to-br from-primary to-primary/80 p-[2px] shadow-md shadow-primary/20 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+                  href="/app/settings/baby"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  <div className="size-full rounded-full bg-card flex items-center justify-center p-0.5">
+                    <NuggetAvatar
+                      backgroundColor={babyAvatarBackgroundColor || undefined}
+                      image={
+                        !babyAvatarBackgroundColor && babyPhotoUrl
+                          ? babyPhotoUrl
+                          : undefined
+                      }
+                      name={babyName}
+                      size="sm"
+                    />
+                  </div>
+                </Link>
+                <div className="flex flex-col">
+                  <h2 className="text-lg font-semibold text-foreground leading-tight">
+                    {babyName ? `${babyName}'s Day` : "Today's Summary"}
+                  </h2>
+                  {babyBirthDate && (
+                    <span className="text-xs text-foreground/80 font-mono leading-tight">
+                      <LiveBabyAge birthDate={babyBirthDate} />
+                    </span>
+                  )}
+                </div>
+              </div>
+              <span className="text-sm text-foreground/80 font-medium">
+                {allActivities.length}{' '}
+                {allActivities.length === 1 ? 'activity' : 'activities'}
               </span>
-            )}
-          </div>
-        </div>
-        <span className="text-sm text-muted-foreground font-medium">
-          {allActivities.length}{' '}
-          {allActivities.length === 1 ? 'activity' : 'activities'}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
-        {categorySummaries.map(({ category, summary }) => {
-          const Icon = activityIcons[category] || Baby;
-          const colorClass = activityColors[category] || 'text-primary';
-          const label = activityLabels[category] || category;
-          const total = formatTotal(
-            category,
-            summary.totalAmount,
-            summary.totalDuration,
-            summary.count,
-            userUnitPref,
-          );
-
-          return (
-            <div
-              className="flex items-start gap-2.5 p-3 rounded-lg bg-card/60 border border-border/50"
-              key={category}
-            >
-              <div className="shrink-0 p-2 rounded-full bg-muted/40 self-start">
-                <Icon className={`size-4 ${colorClass}`} />
-              </div>
-              <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                <p className="text-xs text-muted-foreground leading-tight">
-                  {label}
-                </p>
-                <p className="text-sm font-semibold text-foreground leading-tight">
-                  {total}
-                </p>
-              </div>
             </div>
-          );
-        })}
-      </div>
+          </AccordionTrigger>
+          <AccordionContent className="pt-0">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+              {categorySummaries.map(({ category, summary }) => {
+                const Icon = activityIcons[category] || Baby;
+                const colorClass = activityColors[category] || 'text-primary';
+                const label = activityLabels[category] || category;
+                const total = formatTotal(
+                  category,
+                  summary.totalAmount,
+                  summary.totalDuration,
+                  summary.count,
+                  userUnitPref,
+                );
+
+                return (
+                  <div
+                    className="flex items-start gap-2.5 p-3 rounded-lg bg-card/60 border border-border/50"
+                    key={category}
+                  >
+                    <div className="shrink-0 p-2 rounded-full bg-muted/40 self-start">
+                      <Icon className={`size-4 ${colorClass}`} />
+                    </div>
+                    <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                      <p className="text-xs text-muted-foreground leading-tight">
+                        {label}
+                      </p>
+                      <p className="text-sm font-semibold text-foreground leading-tight">
+                        {total}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }

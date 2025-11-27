@@ -47,6 +47,7 @@ export interface TrendData {
   dirty?: number;
   both?: number;
   totalMinutes?: number;
+  goal?: number;
 }
 
 export interface ComparisonData {

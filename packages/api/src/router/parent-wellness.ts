@@ -38,6 +38,7 @@ export const parentWellnessRouter = createTRPCRouter({
       if (existingResponse?.selectedAnswer) {
         return {
           answerChoices: existingResponse.answerChoices,
+          createdAt: existingResponse.createdAt,
           id: existingResponse.id,
           isAnswered: true,
           question: existingResponse.question,
@@ -49,6 +50,7 @@ export const parentWellnessRouter = createTRPCRouter({
       if (existingResponse) {
         return {
           answerChoices: existingResponse.answerChoices,
+          createdAt: existingResponse.createdAt,
           id: existingResponse.id,
           isAnswered: false,
           question: existingResponse.question,
@@ -106,12 +108,12 @@ export const parentWellnessRouter = createTRPCRouter({
       const previousResponses =
         await ctx.db.query.ParentDailyResponses.findMany({
           limit: 14,
-          orderBy: (responses, { desc }) => [desc(responses.date)],
+          orderBy: (responses, { desc }) => [desc(responses.createdAt)],
           where: (responses, { and, eq, gte }) =>
             and(
               eq(responses.userId, ctx.auth.userId),
               eq(responses.babyId, input.babyId),
-              gte(responses.date, fourteenDaysAgo),
+              gte(responses.createdAt, fourteenDaysAgo),
             ),
         });
 
@@ -120,14 +122,14 @@ export const parentWellnessRouter = createTRPCRouter({
           ? previousResponses
               .map(
                 (r) =>
-                  `${r.date.toISOString().split('T')[0]}: "${r.question}" - Answered: "${r.selectedAnswer ?? 'Not answered'}"`,
+                  `${r.createdAt.toISOString().split('T')[0]}: "${r.question}" - Answered: "${r.selectedAnswer ?? 'Not answered'}"`,
               )
               .join('\n')
           : null;
 
       // Calculate streak and weekly count
       const allResponses = await ctx.db.query.ParentDailyResponses.findMany({
-        orderBy: (responses, { desc }) => [desc(responses.date)],
+        orderBy: (responses, { desc }) => [desc(responses.createdAt)],
         where: (responses, { and, eq }) =>
           and(
             eq(responses.userId, ctx.auth.userId),
@@ -138,8 +140,8 @@ export const parentWellnessRouter = createTRPCRouter({
       let currentStreak = 0;
       let daysSinceLastResponse: number | null = null;
 
-      if (allResponses.length > 0 && allResponses[0]?.date) {
-        const lastResponseDate = startOfDay(allResponses[0].date);
+      if (allResponses.length > 0 && allResponses[0]?.createdAt) {
+        const lastResponseDate = startOfDay(allResponses[0].createdAt);
         const todayDate = startOfDay(new Date());
         const daysDiff = differenceInDays(todayDate, lastResponseDate);
 
@@ -153,7 +155,7 @@ export const parentWellnessRouter = createTRPCRouter({
 
           for (let i = 0; i < 30; i++) {
             const responseForDay = allResponses.find((r) => {
-              const rDate = startOfDay(r.date);
+              const rDate = startOfDay(r.createdAt);
               return rDate.getTime() === checkDate.getTime();
             });
 
@@ -176,7 +178,7 @@ export const parentWellnessRouter = createTRPCRouter({
         ),
       );
       const weeklyResponses = allResponses.filter((r) => {
-        const rDate = startOfDay(r.date);
+        const rDate = startOfDay(r.createdAt);
         return rDate >= weekStart && r.selectedAnswer !== null;
       });
       const weeklyCompletionCount = weeklyResponses.length;
@@ -209,7 +211,7 @@ export const parentWellnessRouter = createTRPCRouter({
               babyAgeInDays,
               babyAgeInWeeks,
               previousResponses: previousResponses.map((r) => ({
-                date: r.date.toISOString(),
+                date: r.createdAt.toISOString(),
                 question: r.question,
                 selectedAnswer: r.selectedAnswer ?? '',
               })),
@@ -230,6 +232,7 @@ export const parentWellnessRouter = createTRPCRouter({
 
         return {
           answerChoices: aiResult.answerChoices,
+          createdAt: savedResponse.createdAt,
           id: savedResponse.id,
           isAnswered: false,
           question: aiResult.question,
@@ -259,12 +262,12 @@ export const parentWellnessRouter = createTRPCRouter({
       const cutoffDate = subDays(new Date(), input.days);
 
       const responses = await ctx.db.query.ParentDailyResponses.findMany({
-        orderBy: (responses, { desc }) => [desc(responses.date)],
+        orderBy: (responses, { desc }) => [desc(responses.createdAt)],
         where: (responses, { and, eq, gte }) =>
           and(
             eq(responses.userId, ctx.auth.userId),
             eq(responses.babyId, input.babyId),
-            gte(responses.date, cutoffDate),
+            gte(responses.createdAt, cutoffDate),
           ),
       });
 
@@ -276,7 +279,7 @@ export const parentWellnessRouter = createTRPCRouter({
 
         for (let i = 0; i < 30; i++) {
           const responseForDay = responses.find((r) => {
-            const rDate = startOfDay(r.date);
+            const rDate = startOfDay(r.createdAt);
             return rDate.getTime() === checkDate.getTime();
           });
 
@@ -298,7 +301,7 @@ export const parentWellnessRouter = createTRPCRouter({
         ),
       );
       const weeklyResponses = responses.filter((r) => {
-        const rDate = startOfDay(r.date);
+        const rDate = startOfDay(r.createdAt);
         return rDate >= weekStart && r.selectedAnswer !== null;
       });
       const weeklyCompletionCount = weeklyResponses.length;
@@ -307,6 +310,7 @@ export const parentWellnessRouter = createTRPCRouter({
         currentStreak,
         responses: responses.map((r) => ({
           answerChoices: r.answerChoices,
+          createdAt: r.createdAt,
           date: r.date,
           id: r.id,
           question: r.question,
@@ -329,12 +333,12 @@ export const parentWellnessRouter = createTRPCRouter({
       // Get last 30 days of responses
       const thirtyDaysAgo = subDays(new Date(), 30);
       const responses = await ctx.db.query.ParentDailyResponses.findMany({
-        orderBy: (responses, { desc }) => [desc(responses.date)],
+        orderBy: (responses, { desc }) => [desc(responses.createdAt)],
         where: (responses, { and, eq, gte }) =>
           and(
             eq(responses.userId, ctx.auth.userId),
             eq(responses.babyId, input.babyId),
-            gte(responses.date, thirtyDaysAgo),
+            gte(responses.createdAt, thirtyDaysAgo),
           ),
       });
 

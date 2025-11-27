@@ -29,6 +29,7 @@ import { useInProgressSleep } from '../shared/hooks/use-in-progress-sleep';
 import { autoStopInProgressSleepAction } from '../sleep/actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import { DiaperStatsDrawer } from './components';
+import { getDailyDiaperGoal } from './diaper-goals';
 import { getDiaperLearningContent } from './learning-content';
 import { predictNextDiaper } from './prediction';
 import { TimelineDiaperDrawer } from './timeline-diaper-drawer';
@@ -220,6 +221,16 @@ export function QuickActionDiaperCard({
   if (!data) return null;
 
   const { prediction } = data;
+  const babyAgeDays = data.babyAgeDays ?? null;
+
+  const dailyDiaperGoal =
+    typeof babyAgeDays === 'number'
+      ? getDailyDiaperGoal(
+          babyAgeDays,
+          prediction.intervalHours,
+          prediction.calculationDetails?.dataPoints,
+        )
+      : null;
 
   // Determine most common diaper type
   // const mostCommonDiaperType = getMostCommonDiaperType(allActivities || []);
@@ -681,6 +692,13 @@ export function QuickActionDiaperCard({
       {/* Stats Drawer */}
       <DiaperStatsDrawer
         activities={allActivities ?? []}
+        dailyGoal={dailyDiaperGoal}
+        goalContext={{
+          babyAgeDays,
+          babyBirthDate: data.babyBirthDate ?? baby?.birthDate ?? null,
+          dataPointsCount: prediction.calculationDetails?.dataPoints,
+          predictedIntervalHours: prediction.intervalHours,
+        }}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
         recentActivities={

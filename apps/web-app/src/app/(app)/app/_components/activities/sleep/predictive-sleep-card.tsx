@@ -485,6 +485,14 @@ export function PredictiveSleepCard({
       {/* Stats Drawer */}
       <SleepStatsDrawer
         activities={extendedActivities}
+        dailyNapGoal={dailyNapGoal}
+        dailySleepHoursGoal={dailySleepHoursGoal}
+        goalContext={{
+          babyAgeDays,
+          babyBirthDate: queryData?.babyBirthDate ?? null,
+          dataPointsCount: prediction.calculationDetails.dataPoints,
+          predictedIntervalHours: prediction.averageIntervalHours,
+        }}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
         recentActivities={prediction.recentSleepPattern.map((item) => ({

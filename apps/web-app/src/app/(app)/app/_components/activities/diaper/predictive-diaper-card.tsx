@@ -422,6 +422,13 @@ export function PredictiveDiaperCard({
       {/* Stats Drawer */}
       <DiaperStatsDrawer
         activities={extendedActivities}
+        dailyGoal={dailyDiaperGoal}
+        goalContext={{
+          babyAgeDays,
+          babyBirthDate: queryData?.babyBirthDate ?? null,
+          dataPointsCount: prediction.calculationDetails.dataPoints,
+          predictedIntervalHours: prediction.averageIntervalHours,
+        }}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
         recentActivities={prediction.recentDiaperPattern.map((item) => ({
