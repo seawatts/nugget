@@ -932,7 +932,6 @@ export function QuickActionSleepCard({
           duration: item.duration ?? undefined,
         }))}
         timeFormat={timeFormat}
-        trendData={trendData}
       />
 
       {/* Edit Drawer */}

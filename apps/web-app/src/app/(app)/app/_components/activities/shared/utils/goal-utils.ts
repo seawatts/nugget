@@ -1,5 +1,5 @@
 import { differenceInCalendarDays } from 'date-fns';
-import type { TrendTimeRange } from '../../types/stats';
+import type { TrendTimeRange } from '../types/stats';
 
 export interface GoalContextInput {
   babyBirthDate?: Date | string | null;

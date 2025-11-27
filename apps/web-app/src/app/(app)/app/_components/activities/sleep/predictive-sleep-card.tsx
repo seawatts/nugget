@@ -500,7 +500,6 @@ export function PredictiveSleepCard({
           duration: item.duration ?? undefined,
         }))}
         timeFormat={timeFormat}
-        trendData={trendData}
       />
     </>
   );

@@ -109,8 +109,8 @@ export function DiaperStatsDrawer({
     [goalContext],
   );
 
-  const goalSeries = useMemo(() => {
-    if (!normalizedGoalContext) return null;
+  const goalSeries = useMemo<Array<number | null> | undefined>(() => {
+    if (!normalizedGoalContext) return undefined;
 
     return dynamicTrendData.map(({ date }) => {
       const ageDays = getAgeDaysForDate(new Date(date), normalizedGoalContext);

@@ -95,6 +95,7 @@ export function ParentDailyQuestionCard() {
         answerChoices: string[];
         selectedAnswer: string | null;
         isAnswered: boolean;
+        createdAt: Date;
       };
       previousHistory?: {
         currentStreak: number;
@@ -105,6 +106,7 @@ export function ParentDailyQuestionCard() {
           answerChoices: string[];
           selectedAnswer: string | null;
           date: Date;
+          createdAt: Date;
         }>;
       };
     }>({

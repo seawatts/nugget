@@ -16,12 +16,25 @@ function makeSleepActivity(
   const startTime = overrides.startTime ?? new Date();
   const id = ++activityCounter;
 
+  const detailsOverrides =
+    (overrides.details as
+      | (Record<string, unknown> & {
+          sleepType?: 'nap' | 'night';
+        })
+      | undefined) ?? {};
+  const { type: _ignoredType, sleepType, ...restDetails } = detailsOverrides;
+  const resolvedDetails = {
+    ...restDetails,
+    sleepType: (sleepType as 'nap' | 'night' | undefined) ?? 'nap',
+    type: 'sleep' as const,
+  };
+
   return {
     amountMl: null,
     assignedUserId: null,
     babyId: 'baby',
     createdAt: startTime,
-    details: { type: 'sleep', ...(overrides.details ?? {}) },
+    details: resolvedDetails,
     duration: null,
     endTime: null,
     familyId: 'family',
@@ -56,7 +69,7 @@ describe('sleep goals helpers', () => {
         startTime: makeDate(8),
       }),
       makeSleepActivity({
-        details: { skipped: true, type: 'sleep' },
+        details: { skipped: true, sleepType: 'nap', type: 'sleep' },
         duration: 0,
         startTime: makeDate(9),
       }),

@@ -182,6 +182,9 @@ export function assignActivityLanes(
       let placed = false;
       for (let laneIndex = 0; laneIndex < lanes.length; laneIndex++) {
         const lane = lanes[laneIndex];
+        if (!lane) {
+          continue;
+        }
         const lastInLane = lane.at(-1);
         if (
           lastInLane &&
@@ -209,6 +212,9 @@ export function assignActivityLanes(
 
     const laneCount = lanes.length;
     for (const [laneIndex, lane] of lanes.entries()) {
+      if (!lane) {
+        continue;
+      }
       for (const activity of lane) {
         assignmentMap.set(activity.activity.id, {
           laneCount,
