@@ -56,30 +56,6 @@ const PHASE_THEME_COLORS: Record<
   },
 };
 
-const statusCopy: Record<
-  'upcoming' | 'active' | 'completed',
-  { label: string; className: string }
-> = {
-  active: {
-    className: 'bg-primary/15 text-primary',
-    label: 'Now',
-  },
-  completed: {
-    className: 'bg-muted text-muted-foreground',
-    label: 'Wrapped',
-  },
-  upcoming: {
-    className: 'bg-secondary/60 text-secondary-foreground',
-    label: 'Soon',
-  },
-};
-
-function getPhaseStatus(ageInDays: number, phase: DevelopmentalPhaseContent) {
-  if (ageInDays < phase.startDay) return 'upcoming';
-  if (ageInDays > phase.endDay) return 'completed';
-  return 'active';
-}
-
 function getWeekLabel({ startDay, endDay }: DevelopmentalPhaseContent) {
   const startWeek = Math.max(1, Math.floor(startDay / 7));
   const endWeek = Math.max(startWeek, Math.floor(endDay / 7));
@@ -258,7 +234,6 @@ export function PhaseCard({
     ],
   );
 
-  const status = getPhaseStatus(ageInDays, phase);
   const colorConfig = PHASE_THEME_COLORS[phase.theme];
   const isPendingFussy = pendingKey === `${phase.id}-fussy`;
   const isPendingSkills = pendingKey === `${phase.id}-skills`;

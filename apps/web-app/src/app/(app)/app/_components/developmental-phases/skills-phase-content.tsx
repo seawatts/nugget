@@ -40,8 +40,7 @@ export function SkillsPhaseContent({
 
       <Accordion
         className="space-y-3"
-        collapsible
-        defaultValue={focuses.length > 0 ? [focuses[0].id] : undefined}
+        defaultValue={focuses.length > 0 ? [focuses[0]!.id] : undefined}
         type="multiple"
       >
         {focuses.map((focus) => {

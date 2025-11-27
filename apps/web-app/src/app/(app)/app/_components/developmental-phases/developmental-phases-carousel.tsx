@@ -30,13 +30,12 @@ export function DevelopmentalPhasesCarousel({
   const progressByPhase = useMemo<PhaseProgressLookup>(() => {
     const map: PhaseProgressLookup = {};
     for (const entry of data?.progress ?? []) {
-      if (!map[entry.phaseId]) {
-        map[entry.phaseId] = {};
-      }
-      map[entry.phaseId][entry.subPhaseType] = {
+      const existing = map[entry.phaseId] ?? {};
+      existing[entry.subPhaseType] = {
         checklistItems: entry.checklistItems ?? [],
         completedAt: entry.completedAt ? new Date(entry.completedAt) : null,
       };
+      map[entry.phaseId] = existing;
     }
     return map;
   }, [data?.progress]);
