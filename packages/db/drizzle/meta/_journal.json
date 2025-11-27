@@ -280,6 +280,13 @@
       "tag": "0041_slippery_maria_hill",
       "version": "7",
       "when": 1764147651966
+    },
+    {
+      "breakpoints": true,
+      "idx": 42,
+      "tag": "0042_right_franklin_storm",
+      "version": "7",
+      "when": 1764233116583
     }
   ],
   "version": "7"

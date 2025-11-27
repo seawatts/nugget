@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ParentDailyCheckInCard } from './parent-daily-checkin-card';
 import { ParentLearningCarousel } from './parent-learning-carousel';
 import { ParentSleepCard } from './parent-sleep-card';
@@ -13,26 +13,49 @@ interface ParentDashboardProps {
   userId: string;
 }
 
+const DAILY_CHECKIN_DISMISS_KEY = 'parentDailyCheckInDismissedDate';
+
+function getTodayKey() {
+  const now = new Date();
+  const month = `${now.getMonth() + 1}`.padStart(2, '0');
+  const day = `${now.getDate()}`.padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
 export function ParentDashboard({ userId }: ParentDashboardProps) {
   const [showWellnessAssessment, _setShowWellnessAssessment] = useState(false);
-  const [checkInCompleted, setCheckInCompleted] = useState(false);
+  const [dismissedToday, setDismissedToday] = useState(false);
   const [wellnessModalOpen, setWellnessModalOpen] = useState(false);
-
-  const handleCheckInComplete = useCallback(() => {
-    setCheckInCompleted(true);
-  }, []);
 
   const handleStartAssessment = useCallback(() => {
     setWellnessModalOpen(true);
   }, []);
 
+  const todayKey = useMemo(() => getTodayKey(), []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const storedDate = window.localStorage.getItem(DAILY_CHECKIN_DISMISS_KEY);
+    setDismissedToday(storedDate === todayKey);
+  }, [todayKey]);
+
+  const handleDismissUntilTomorrow = useCallback(() => {
+    setDismissedToday(true);
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.localStorage.setItem(DAILY_CHECKIN_DISMISS_KEY, todayKey);
+  }, [todayKey]);
+
   return (
     <main className="px-4 pt-4 pb-8 min-h-screen space-y-6">
       {/* Daily Check-In - Top Priority */}
-      {!checkInCompleted && (
+      {!dismissedToday && (
         <div className="mb-6">
           <ParentDailyCheckInCard
-            onCheckInComplete={handleCheckInComplete}
+            onDismissUntilTomorrow={handleDismissUntilTomorrow}
             userId={userId}
           />
         </div>

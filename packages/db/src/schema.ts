@@ -109,6 +109,10 @@ export const celebrationTypeEnum = pgEnum('celebrationType', [
   'month_18',
   'year_2',
 ]);
+export const developmentalSubPhaseTypeEnum = pgEnum(
+  'developmentalSubPhaseType',
+  ['fussy', 'skills'],
+);
 export const feedingSourceEnum = pgEnum('feedingSource', [
   'pumped',
   'donor',
@@ -929,6 +933,83 @@ export const Milestones = pgTable(
     ),
     // Index for family queries
     index('milestones_familyId_idx').on(table.familyId),
+  ],
+);
+
+export const DevelopmentalPhases = pgTable(
+  'developmentalPhases',
+  {
+    createdAt: timestamp('createdAt', {
+      mode: 'date',
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+    description: text('description'),
+    endDay: integer('endDay').notNull(),
+    id: varchar('id', { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId({ prefix: 'phase' })),
+    name: text('name').notNull(),
+    phaseNumber: integer('phaseNumber').notNull(),
+    startDay: integer('startDay').notNull(),
+    updatedAt: timestamp('updatedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }).$onUpdateFn(() => new Date()),
+  },
+  (table) => [
+    unique('developmentalPhases_phaseNumber_unique').on(table.phaseNumber),
+  ],
+);
+
+export const DevelopmentalPhaseProgress = pgTable(
+  'developmentalPhaseProgress',
+  {
+    babyId: varchar('babyId', { length: 128 })
+      .notNull()
+      .references(() => Babies.id, { onDelete: 'cascade' }),
+    checklistItems: json('checklistItems')
+      .$type<string[]>()
+      .default([])
+      .notNull(),
+    completedAt: timestamp('completedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }),
+    createdAt: timestamp('createdAt', {
+      mode: 'date',
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+    familyId: varchar('familyId', { length: 128 })
+      .notNull()
+      .references(() => Families.id, { onDelete: 'cascade' })
+      .default(requestingFamilyId()),
+    id: varchar('id', { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId({ prefix: 'phaseprog' })),
+    phaseId: varchar('phaseId', { length: 128 })
+      .notNull()
+      .references(() => DevelopmentalPhases.id, { onDelete: 'cascade' }),
+    subPhaseType: developmentalSubPhaseTypeEnum('subPhaseType').notNull(),
+    updatedAt: timestamp('updatedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }).$onUpdateFn(() => new Date()),
+    userId: varchar('userId', { length: 128 })
+      .notNull()
+      .default(requestingUserId()),
+  },
+  (table) => [
+    index('developmentalPhaseProgress_babyId_idx').on(table.babyId),
+    index('developmentalPhaseProgress_phaseId_idx').on(table.phaseId),
+    unique('developmentalPhaseProgress_unique_subPhase').on(
+      table.babyId,
+      table.phaseId,
+      table.subPhaseType,
+    ),
   ],
 );
 

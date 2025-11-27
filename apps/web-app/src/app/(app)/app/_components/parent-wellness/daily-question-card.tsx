@@ -7,7 +7,7 @@ import { toast } from '@nugget/ui/sonner';
 import { format, startOfDay, subDays } from 'date-fns';
 import { Check, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { PredictiveInfoDrawer } from '../activities/shared/components/predictive-cards';
 import { PredictiveCardHeader } from '../activities/shared/components/predictive-cards/predictive-card-header';
@@ -70,6 +70,8 @@ function useSevenDayResponses(
   }, [allResponses]);
 }
 
+const DISMISS_KEY = 'parentWellnessDailyQuestionDismissedDate';
+
 export function ParentDailyQuestionCard() {
   const params = useParams();
   const babyId = params.babyId as string;
@@ -84,6 +86,7 @@ export function ParentDailyQuestionCard() {
   const [showIntro, setShowIntro] = useState(
     !userData?.hasSeenParentWellnessIntro,
   );
+  const [dismissedToday, setDismissedToday] = useState(false);
 
   const utils = api.useUtils();
 
@@ -240,6 +243,22 @@ export function ParentDailyQuestionCard() {
 
   const theme = parentWellnessTheme;
   const Icon = theme.icon;
+  const todayKey = useMemo(
+    () => format(startOfDay(new Date()), 'yyyy-MM-dd'),
+    [],
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = window.localStorage.getItem(DISMISS_KEY);
+    setDismissedToday(stored === todayKey);
+  }, [todayKey]);
+
+  const handleDismiss = () => {
+    setDismissedToday(true);
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(DISMISS_KEY, todayKey);
+  };
 
   const learningContent = {
     message:
@@ -251,6 +270,10 @@ export function ParentDailyQuestionCard() {
       'Building this habit supports your mental health journey',
     ],
   };
+
+  if (dismissedToday) {
+    return null;
+  }
 
   return (
     <>
@@ -335,20 +358,27 @@ export function ParentDailyQuestionCard() {
               </p>
 
               {questionData.isAnswered && !isEditing ? (
-                <div className="space-y-2">
-                  <div className="p-3 bg-white/10 rounded-lg">
-                    <p className="text-xs opacity-70 mb-1">You answered:</p>
+                <div className="space-y-4 rounded-lg border border-white/20 bg-white/5 p-4">
+                  <div className="space-y-2">
                     <p className="text-sm font-semibold">
                       {questionData.selectedAnswer}
                     </p>
+                    <p className="text-xs opacity-70">
+                      Come back tomorrow for a new check-in question.
+                    </p>
                   </div>
-                  <Button
-                    className="w-full bg-white/5 hover:bg-white/10 border border-white/20 text-sm"
-                    onClick={() => setIsEditing(true)}
-                    variant="ghost"
-                  >
-                    Change Answer
-                  </Button>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <Button
+                      className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-sm"
+                      onClick={() => setIsEditing(true)}
+                      variant="ghost"
+                    >
+                      Change Answer
+                    </Button>
+                    <Button className="w-full text-sm" onClick={handleDismiss}>
+                      Dismiss
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-2">

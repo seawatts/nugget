@@ -3,7 +3,6 @@
 import { api } from '@nugget/api/react';
 import { CelebrationsSkeleton } from '../skeletons';
 import { CelebrationCard } from './celebration-card';
-import { CelebrationCardComingSoon } from './celebration-card-coming-soon';
 
 interface CelebrationsCarouselProps {
   babyId: string;
@@ -20,8 +19,6 @@ export function CelebrationsCarousel({ babyId }: CelebrationsCarouselProps) {
 
   const celebration = data?.celebration ?? null;
   const babyName = data?.babyName ?? 'Baby';
-  const currentAgeInDays = data?.ageInDays ?? 0;
-  const nextCelebration = data?.nextCelebration ?? null;
   const hasCelebration = !!celebration;
 
   // Don't render anything while loading or if no data yet
@@ -31,18 +28,6 @@ export function CelebrationsCarousel({ babyId }: CelebrationsCarouselProps) {
 
   // If no celebration today, check for coming soon card
   if (hasCelebration === false) {
-    if (nextCelebration?.shouldShow) {
-      return (
-        <div className="mb-6">
-          <CelebrationCardComingSoon
-            babyName={babyName}
-            currentAgeInDays={currentAgeInDays}
-            nextCelebrationDay={nextCelebration.day}
-            nextCelebrationTitle={nextCelebration.title}
-          />
-        </div>
-      );
-    }
     return null;
   }
 

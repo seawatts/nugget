@@ -6,6 +6,7 @@ import { Suspense, useEffect, useMemo } from 'react';
 import { ActivityCards } from '~/app/(app)/app/_components/activities/activity-cards';
 import { ActivityTimeline } from '~/app/(app)/app/_components/activities/timeline/activity-timeline';
 import { CelebrationsCarousel } from '~/app/(app)/app/_components/celebrations/celebrations-carousel';
+import { DevelopmentalPhasesCarousel } from '~/app/(app)/app/_components/developmental-phases/developmental-phases-carousel';
 import { LearningCarousel } from '~/app/(app)/app/_components/learning/learning-carousel';
 import { MilestonesCarousel } from '~/app/(app)/app/_components/milestones/milestones-carousel';
 import { ParentDailyQuestionCard } from '~/app/(app)/app/_components/parent-wellness/daily-question-card';
@@ -13,6 +14,7 @@ import {
   ActivityCardsSkeleton,
   ActivityTimelineSkeleton,
   CelebrationsSkeleton,
+  DevelopmentalPhasesSkeleton,
   LearningCarouselSkeleton,
   MilestonesCarouselSkeleton,
   TodaySummarySkeleton,
@@ -137,6 +139,11 @@ export function DashboardContainer() {
           ones (like learning.getCarouselContent) load in the background. */}
       <Suspense fallback={<LearningCarouselSkeleton />}>
         <LearningCarousel babyId={babyId} />
+      </Suspense>
+
+      {/* Developmental Phases Carousel */}
+      <Suspense fallback={<DevelopmentalPhasesSkeleton />}>
+        <DevelopmentalPhasesCarousel babyId={babyId} />
       </Suspense>
 
       {/* Milestones Carousel - Track baby's developmental milestones */}

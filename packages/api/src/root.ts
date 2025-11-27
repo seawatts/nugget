@@ -3,6 +3,7 @@ import { babiesRouter } from './router/babies';
 import { billingRouter } from './router/billing';
 import { celebrationsRouter } from './router/celebrations';
 import { chatsRouter } from './router/chats';
+import { developmentalPhasesRouter } from './router/developmental-phases';
 import { familyRouter } from './router/family';
 import { familyMembersRouter } from './router/family-members';
 import { familyTabsRouter } from './router/family-tabs';
@@ -24,6 +25,7 @@ export const appRouter = createTRPCRouter({
   billing: billingRouter,
   celebrations: celebrationsRouter,
   chats: chatsRouter,
+  developmentalPhases: developmentalPhasesRouter,
   family: familyRouter,
   familyMembers: familyMembersRouter,
   familyTabs: familyTabsRouter,

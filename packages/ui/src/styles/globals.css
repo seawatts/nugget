@@ -81,6 +81,14 @@
   --activity-nail-trimming: oklch(0.85 0.08 310);
   --activity-nail-trimming-foreground: oklch(0.985 0 0);
 
+  /* Developmental Phases --- */
+  --developmental-phase-fussy: oklch(0.86 0.08 20);
+  --developmental-phase-fussy-foreground: oklch(0.985 0 0);
+  --developmental-phase-skills: oklch(0.88 0.07 180);
+  --developmental-phase-skills-foreground: oklch(0.18 0.02 250);
+  --developmental-phase-completed: oklch(0.88 0.01 250);
+  --developmental-phase-completed-foreground: oklch(0.439 0 0);
+
   /* Custom --- */
   /* Animation durations */
   --animation-duration-fast: 0.15s;
@@ -161,6 +169,14 @@
   --activity-vitamin-d-foreground: oklch(0.98 0 0);
   --activity-nail-trimming: oklch(0.48 0.07 310);
   --activity-nail-trimming-foreground: oklch(0.98 0 0);
+
+  /* Developmental Phases (Dark Mode) --- */
+  --developmental-phase-fussy: oklch(0.54 0.07 20);
+  --developmental-phase-fussy-foreground: oklch(0.98 0 0);
+  --developmental-phase-skills: oklch(0.55 0.07 180);
+  --developmental-phase-skills-foreground: oklch(0.98 0 0);
+  --developmental-phase-completed: oklch(0.35 0.01 250);
+  --developmental-phase-completed-foreground: oklch(0.65 0.01 250);
 }
 
 @theme inline {
@@ -242,6 +258,18 @@
   --color-activity-nail-trimming: var(--activity-nail-trimming);
   --color-activity-nail-trimming-foreground: var(
     --activity-nail-trimming-foreground
+  );
+  --color-developmental-phase-fussy: var(--developmental-phase-fussy);
+  --color-developmental-phase-fussy-foreground: var(
+    --developmental-phase-fussy-foreground
+  );
+  --color-developmental-phase-skills: var(--developmental-phase-skills);
+  --color-developmental-phase-skills-foreground: var(
+    --developmental-phase-skills-foreground
+  );
+  --color-developmental-phase-completed: var(--developmental-phase-completed);
+  --color-developmental-phase-completed-foreground: var(
+    --developmental-phase-completed-foreground
   );
   --animate-accordion-down: accordion-down 0.1s ease-out;
   --animate-accordion-up: accordion-up 0.1s ease-out;

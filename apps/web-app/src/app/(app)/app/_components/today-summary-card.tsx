@@ -204,6 +204,12 @@ export function TodaySummaryCard({
       { enabled: Boolean(babyId) },
     );
 
+  const { data: celebrationData } =
+    api.celebrations.getCarouselContent.useQuery(
+      { babyId: babyId ?? '' },
+      { enabled: Boolean(babyId), staleTime: 86400000 },
+    );
+
   // Fetch milestones achieved today using tRPC query (non-blocking)
   const { data: allMilestones = [] } = api.milestones.list.useQuery(
     { babyId: babyId ?? '', limit: 100 },
@@ -344,6 +350,22 @@ export function TodaySummaryCard({
     };
   });
 
+  const upcomingCelebration = useMemo(() => {
+    if (!celebrationData || celebrationData.celebration) return null;
+    const next = celebrationData.nextCelebration;
+    if (!next?.shouldShow) return null;
+    const daysUntil = Math.max(0, next.day - (celebrationData.ageInDays ?? 0));
+    const cleanedTitle = next.title
+      ?.replace(/[🎉🎂]/gu, '')
+      .replace(/happy\s+/gi, '')
+      .trim();
+    return {
+      babyLabel: celebrationData.babyName ?? babyName ?? 'Baby',
+      daysUntil,
+      title: cleanedTitle || 'special day',
+    };
+  }, [babyName, celebrationData]);
+
   return (
     <div className="rounded-2xl border border-border/40 bg-linear-to-br from-activity-vitamin-d via-activity-nail-trimming/95 to-activity-feeding backdrop-blur-xl p-6 shadow-xl shadow-activity-nail-trimming/20">
       <Accordion className="w-full" collapsible defaultValue="" type="single">
@@ -388,6 +410,25 @@ export function TodaySummaryCard({
               </span>
             </div>
           </AccordionTrigger>
+          {upcomingCelebration && (
+            <div className="mt-4 mb-2 data-[state=open]:mt-6 data-[state=open]:mb-4 flex items-start gap-3 rounded-xl border border-white/20 bg-white/10 px-5 py-4 text-sm text-foreground/90">
+              <div className="shrink-0 rounded-full bg-white/20 p-2 text-activity-feeding">
+                <Award className="size-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">
+                  {upcomingCelebration.daysUntil === 0
+                    ? `Today is ${upcomingCelebration.babyLabel}'s ${upcomingCelebration.title}!`
+                    : upcomingCelebration.daysUntil === 1
+                      ? `1 day to ${upcomingCelebration.babyLabel}'s ${upcomingCelebration.title}!`
+                      : `${upcomingCelebration.daysUntil} days to ${upcomingCelebration.babyLabel}'s ${upcomingCelebration.title}!`}
+                </p>
+                <p className="text-xs text-foreground/80 leading-snug">
+                  Come back then to see the celebration.
+                </p>
+              </div>
+            </div>
+          )}
           <AccordionContent className="pt-0">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
               {categorySummaries.map(({ category, summary }) => {

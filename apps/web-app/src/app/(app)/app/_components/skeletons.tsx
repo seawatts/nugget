@@ -85,3 +85,23 @@ export function ActivityTimelineSkeleton() {
     </div>
   );
 }
+
+export function DevelopmentalPhasesSkeleton() {
+  const placeholders = ['current-phase', 'upcoming-phase'];
+  return (
+    <div className="mb-6">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="size-5 bg-muted/30 rounded animate-pulse" />
+        <div className="h-6 bg-muted/30 rounded w-40 animate-pulse" />
+      </div>
+      <div className="flex gap-6 overflow-x-auto pb-4">
+        {placeholders.map((key) => (
+          <div
+            className="w-[340px] sm:w-96 h-[560px] bg-muted/30 rounded-3xl animate-pulse shrink-0"
+            key={key}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}

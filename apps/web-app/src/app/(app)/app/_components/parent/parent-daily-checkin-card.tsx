@@ -24,6 +24,7 @@ import {
 interface ParentDailyCheckInCardProps {
   userId: string;
   onCheckInComplete?: () => void;
+  onDismissUntilTomorrow?: () => void;
 }
 
 type ResponseValue = string | number | boolean;
@@ -31,6 +32,7 @@ type ResponseValue = string | number | boolean;
 export function ParentDailyCheckInCard({
   userId,
   onCheckInComplete,
+  onDismissUntilTomorrow,
 }: ParentDailyCheckInCardProps) {
   const [questions, setQuestions] = useState<CheckInQuestion[]>([]);
   const [responses, setResponses] = useState<Record<string, ResponseValue>>({});
@@ -125,17 +127,41 @@ export function ParentDailyCheckInCard({
     }
   }, [questions, responses, userId, onCheckInComplete]);
 
+  const handleDismiss = useCallback(() => {
+    onDismissUntilTomorrow?.();
+  }, [onDismissUntilTomorrow]);
+
   if (completed) {
     return (
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <CheckCircle2 className="size-12 text-green-500" />
-            <div>
-              <h3 className="text-lg font-semibold">Check-In Complete!</h3>
+          <div className="flex flex-col items-center gap-6 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <CheckCircle2 className="size-12 text-green-500" />
+              <div>
+                <h3 className="text-lg font-semibold">Check-In Complete!</h3>
+                <p className="text-sm text-muted-foreground">
+                  Come back tomorrow for a fresh check-in prompt.
+                </p>
+              </div>
+            </div>
+            <div className="w-full space-y-4">
               <p className="text-sm text-muted-foreground">
-                Thank you for taking time to check in today.
+                Need to adjust something from today? You can change your answer,
+                or dismiss this card until tomorrow.
               </p>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button
+                  className="w-full"
+                  onClick={() => setCompleted(false)}
+                  variant="secondary"
+                >
+                  Change Answer
+                </Button>
+                <Button className="w-full" onClick={handleDismiss}>
+                  Dismiss
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
