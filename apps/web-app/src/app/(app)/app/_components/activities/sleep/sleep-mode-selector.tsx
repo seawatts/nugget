@@ -160,7 +160,6 @@ export function SleepModeSelector({
           isManualEndTime={isManualEndTime}
           isTimerStopped={isTimerStopped}
           mode={selectedMode}
-          onBack={!existingActivity ? handleBack : undefined}
           onTimerStart={onTimerStart}
           setCoSleepingWith={setCoSleepingWith}
           setDuration={setDuration}

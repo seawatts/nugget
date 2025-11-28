@@ -17,7 +17,8 @@ const BABY_DASHBOARD_REGEX = /^\/app\/babies\/([^/]+)\/dashboard/;
  */
 function extractBabyId(pathname: string): string | null {
   const match = pathname.match(BABY_DASHBOARD_REGEX);
-  return match ? match[1] : null;
+  const babyId = match?.[1];
+  return babyId ?? null;
 }
 
 export function RoutePersistence() {
