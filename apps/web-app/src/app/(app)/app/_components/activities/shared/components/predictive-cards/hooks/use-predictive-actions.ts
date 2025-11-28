@@ -9,6 +9,7 @@ import { toast } from '@nugget/ui/sonner';
 import { useState } from 'react';
 import {
   getUserRelationFromStore,
+  type UserRelation,
   useOptimisticActivitiesStore,
 } from '~/stores/optimistic-activities';
 import { useActivityMutations } from '../../../../use-activity-mutations';
@@ -70,7 +71,7 @@ export function usePredictiveActions({
         updatedAt: now,
         user,
         userId: user?.id || 'temp',
-      } as typeof Activities.$inferSelect;
+      } as unknown as typeof Activities.$inferSelect & { user?: UserRelation };
 
       // Add to optimistic store immediately
       addOptimisticActivity(optimisticActivity);

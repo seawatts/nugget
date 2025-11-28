@@ -178,14 +178,14 @@ export function QuickActionFeedingCard({
           const mergedActivity = {
             ...existingActivity,
             user: existingActivity.user ?? activity.user ?? null,
-          } as (typeof recentActivities)[number];
+          } as unknown as (typeof recentActivities)[number];
           map.set(activity.id, mergedActivity);
         } else {
           // No real activity yet - use optimistic with user relation
           const activityWithUser = {
             ...activity,
             user: activity.user ?? null,
-          } as (typeof recentActivities)[number];
+          } as unknown as (typeof recentActivities)[number];
           map.set(activity.id, activityWithUser);
         }
       }

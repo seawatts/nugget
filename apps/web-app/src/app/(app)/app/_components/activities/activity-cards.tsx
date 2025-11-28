@@ -22,6 +22,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import {
   getUserRelationFromStore,
+  type UserRelation,
   useOptimisticActivitiesStore,
 } from '~/stores/optimistic-activities';
 import { createActivityAction } from './activity-cards.actions';
@@ -376,7 +377,7 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
       updatedAt: new Date(),
       user: userRelation,
       userId: userRelation?.id || user?.id || 'temp-user-id',
-    } as typeof Activities.$inferSelect;
+    } as unknown as typeof Activities.$inferSelect & { user?: UserRelation };
 
     // Add to Zustand optimistic state
     addOptimisticActivity(optimisticActivity);
