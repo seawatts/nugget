@@ -259,13 +259,123 @@ export function TodaySummaryCard({
     return [...deduplicatedOptimistic, ...todayActivities];
   }, [optimisticActivities, todayActivities, todayStart]);
 
+  // Helper function for age-based nursing duration fallback
+  const getAgeBasedNursingDuration = (ageDays: number | null): number => {
+    if (ageDays === null) return 20;
+    if (ageDays <= 7) return 30;
+    if (ageDays <= 30) return 25;
+    if (ageDays <= 90) return 20;
+    if (ageDays <= 180) return 15;
+    return 15;
+  };
+
   // Button handlers
   const handleBottleClick = () => {
     setOpenDrawer('bottle');
   };
 
-  const handleNursingDrawerClick = () => {
-    setOpenDrawer('nursing');
+  const handleQuickNursing = async () => {
+    // Use prediction data which already includes user preferences and weights
+    // The suggestedDuration is already blended with:
+    // - Custom preferences (customPreferences?.feeding?.nursingDurationMinutes)
+    // - Preference weights (preferenceWeight)
+    // - Recent activity patterns
+    // - Age-based defaults
+    const duration =
+      feedingData?.prediction.suggestedDuration ||
+      getAgeBasedNursingDuration(feedingData?.babyAgeDays ?? null);
+    const amountMl = getEstimatedNursingAmount(duration);
+
+    // Check for in-progress sleep before creating activity
+    if (inProgressSleep) {
+      setPendingActivity({
+        data: {
+          amountMl: amountMl ?? undefined,
+          duration,
+          feedingSource: 'direct',
+          side: 'both',
+        },
+        type: 'nursing',
+      });
+      setShowSleepConfirmation(true);
+      return;
+    }
+
+    setCreatingType('nursing');
+
+    let tempId: string | null = null;
+
+    try {
+      const now = new Date();
+
+      // Build nursing activity data
+      const nursingData = {
+        amountMl: amountMl ?? null,
+        duration,
+        feedingSource: 'direct' as const,
+        type: 'nursing' as const,
+      };
+
+      // Create optimistic activity for immediate UI feedback
+      const optimisticActivity = {
+        ...nursingData,
+        amountMl: nursingData.amountMl ?? null,
+        assignedUserId: null,
+        babyId: babyId,
+        createdAt: now,
+        details: {
+          side: 'both' as const,
+          type: 'nursing' as const,
+        },
+        endTime: now,
+        familyId: 'temp',
+        familyMemberId: null,
+        id: `activity-optimistic-nursing-${Date.now()}`,
+        isScheduled: false,
+        notes: null,
+        startTime: now,
+        subjectType: 'baby' as const,
+        updatedAt: now,
+        user: getUserRelationFromStore(),
+        userId: getUserRelationFromStore()?.id || 'temp',
+      } as typeof Activities.$inferSelect;
+
+      // Store the tempId returned by addOptimisticActivity
+      tempId = addOptimisticActivity(optimisticActivity);
+
+      // Create the actual activity
+      await createActivity({
+        activityType: 'nursing',
+        amountMl: nursingData.amountMl ?? undefined,
+        babyId,
+        details: {
+          side: 'both',
+          type: 'nursing',
+        },
+        duration,
+        endTime: now,
+        feedingSource: 'direct',
+        startTime: now,
+      });
+
+      // Remove optimistic activity after real one is created
+      if (tempId) {
+        removeOptimisticActivity(tempId);
+      }
+
+      // Don't await - let it invalidate in background
+      utils.activities.getUpcomingFeeding.invalidate();
+      utils.activities.getTodaySummary.invalidate();
+    } catch (err) {
+      console.error('Failed to log nursing:', err);
+      // Remove optimistic activity on error to avoid stuck state
+      if (tempId) {
+        removeOptimisticActivity(tempId);
+      }
+      toast.error('Failed to log nursing. Please try again.');
+    } finally {
+      setCreatingType(null);
+    }
   };
 
   const handleDiaperClick = async (type: 'wet' | 'dirty') => {
@@ -1139,10 +1249,14 @@ export function TodaySummaryCard({
                   feedingTheme.textColor,
                 )}
                 disabled={creatingType !== null}
-                onClick={handleNursingDrawerClick}
+                onClick={handleQuickNursing}
                 variant="ghost"
               >
-                <Droplet className="size-5" />
+                {creatingType === 'nursing' ? (
+                  <Icons.Spinner className="size-5" />
+                ) : (
+                  <Droplet className="size-5" />
+                )}
                 <span className="text-xs font-medium">Nursing</span>
                 {lastNursingTime && lastNursingExactTime && (
                   <div className="flex items-center gap-1 text-[10px] opacity-70 leading-tight">

@@ -387,15 +387,21 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
     if (!babyId) return null;
 
     // Determine which item types to fetch based on selected filters
-    const itemTypes: Array<'activity' | 'milestone' | 'chat'> = [];
+    const itemTypes: Array<
+      'activity' | 'milestone' | 'chat' | 'parent_wellness'
+    > = [];
 
     if (selectedActivityTypes.length === 0) {
       // No filters selected - fetch all types
-      itemTypes.push('activity', 'milestone', 'chat');
+      itemTypes.push('activity', 'milestone', 'chat', 'parent_wellness');
     } else {
-      // Check if any actual activity types are selected (excluding milestone, chat, and skipped)
+      // Check if any actual activity types are selected (excluding milestone, chat, parent_wellness, and skipped)
       const activityTypesList = selectedActivityTypes.filter(
-        (type) => type !== 'milestone' && type !== 'chat' && type !== 'skipped',
+        (type) =>
+          type !== 'milestone' &&
+          type !== 'chat' &&
+          type !== 'parent_wellness' &&
+          type !== 'skipped',
       );
 
       if (activityTypesList.length > 0) {
@@ -409,10 +415,18 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
       if (selectedActivityTypes.includes('chat')) {
         itemTypes.push('chat');
       }
+
+      if (selectedActivityTypes.includes('parent_wellness')) {
+        itemTypes.push('parent_wellness');
+      }
     }
 
     const activityTypesList = selectedActivityTypes.filter(
-      (type) => type !== 'milestone' && type !== 'chat' && type !== 'skipped',
+      (type) =>
+        type !== 'milestone' &&
+        type !== 'chat' &&
+        type !== 'parent_wellness' &&
+        type !== 'skipped',
     );
 
     return {

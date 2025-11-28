@@ -4,9 +4,11 @@ import type { Activities, Users } from '@nugget/db/schema';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { differenceInMinutes } from 'date-fns';
 import { Droplet, Milk } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
+import { TimelineDrawerWrapper } from '../shared/components/timeline-drawer-wrapper';
 import { formatVolumeDisplay } from '../shared/volume-utils';
+import { TimelineFeedingDrawer } from './timeline-feeding-drawer';
 
 // Type for activity with user relation (as returned by activities.list query with user relation)
 type ActivityWithUser = typeof Activities.$inferSelect & {
@@ -17,13 +19,28 @@ interface FeedingTimelineProps {
   feedings: Array<ActivityWithUser>;
   timeFormat: '12h' | '24h';
   userUnitPref: 'ML' | 'OZ';
+  babyId: string;
 }
 
 export function FeedingTimeline({
   feedings,
   timeFormat,
   userUnitPref,
+  babyId,
 }: FeedingTimelineProps) {
+  const [editingActivity, setEditingActivity] =
+    useState<ActivityWithUser | null>(null);
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+
+  const handleFeedingClick = (feeding: ActivityWithUser) => {
+    setEditingActivity(feeding);
+    setEditDrawerOpen(true);
+  };
+
+  const handleDrawerClose = () => {
+    setEditDrawerOpen(false);
+    setEditingActivity(null);
+  };
   // Get last 4 feedings, sorted by time (oldest first)
   const recentFeedings = useMemo(() => {
     const filtered = feedings
@@ -132,7 +149,11 @@ export function FeedingTimeline({
               >
                 {/* Icon container */}
                 <div className="relative shrink-0 z-10">
-                  <div className="relative flex flex-col items-center">
+                  <button
+                    className="relative flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => handleFeedingClick(feeding)}
+                    type="button"
+                  >
                     {/* Avatar above icon - positioned absolutely - always show */}
                     <div className="absolute -top-6 left-1/2 -translate-x-1/2">
                       <Avatar className="size-4 shrink-0">
@@ -147,7 +168,7 @@ export function FeedingTimeline({
                     </div>
                     {/* Icon - always on the line */}
                     <ActivityIcon className="size-5 text-white/90" />
-                  </div>
+                  </button>
                 </div>
 
                 {/* Line segment after icon (except for last) */}
@@ -216,10 +237,12 @@ export function FeedingTimeline({
           }
 
           return (
-            <div
-              className={`absolute top-1 flex flex-col gap-0.5 ${alignmentClass} ${transformClass}`}
+            <button
+              className={`absolute top-1 flex flex-col gap-0.5 ${alignmentClass} ${transformClass} cursor-pointer hover:opacity-80 transition-opacity`}
               key={`time-${feeding.id}`}
+              onClick={() => handleFeedingClick(feeding)}
               style={{ left: leftStyle }}
+              type="button"
             >
               <span className="text-xs font-medium text-white/90 leading-tight whitespace-nowrap">
                 {exactTime}
@@ -229,10 +252,31 @@ export function FeedingTimeline({
                   {amountDisplay}
                 </span>
               )}
-            </div>
+            </button>
           );
         })}
       </div>
+
+      {/* Edit Drawer */}
+      {editingActivity &&
+        (editingActivity.type === 'feeding' ||
+          editingActivity.type === 'nursing' ||
+          editingActivity.type === 'bottle' ||
+          editingActivity.type === 'solids') &&
+        editDrawerOpen && (
+          <TimelineDrawerWrapper
+            isOpen={editDrawerOpen}
+            onClose={handleDrawerClose}
+            title="Edit Feeding"
+          >
+            <TimelineFeedingDrawer
+              babyId={babyId}
+              existingActivity={editingActivity}
+              isOpen={editDrawerOpen}
+              onClose={handleDrawerClose}
+            />
+          </TimelineDrawerWrapper>
+        )}
     </div>
   );
 }

@@ -1186,6 +1186,7 @@ export function QuickActionFeedingCard({
           />
 
           <FeedingTimeline
+            babyId={babyId}
             feedings={timelineFeedings}
             timeFormat={timeFormat}
             userUnitPref={userUnitPref}
