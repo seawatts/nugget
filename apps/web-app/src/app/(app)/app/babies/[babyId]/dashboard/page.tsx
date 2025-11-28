@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { api, HydrationBoundary } from '@nugget/api/rsc';
 import { startOfDay, subDays } from 'date-fns';
 import { updateLastSelectedBabyAction } from '../actions';
+import { BabyIdCache } from './_components/baby-id-cache';
 import { DashboardContainer } from './_components/dashboard-container';
 
 interface PageProps {
@@ -48,6 +49,7 @@ export default async function BabyDashboardPage({ params }: PageProps) {
 
   return (
     <HydrationBoundary>
+      <BabyIdCache />
       <DashboardContainer />
     </HydrationBoundary>
   );

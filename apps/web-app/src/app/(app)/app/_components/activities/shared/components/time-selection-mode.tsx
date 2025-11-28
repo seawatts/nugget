@@ -6,8 +6,12 @@
  */
 
 import { Button } from '@nugget/ui/button';
-import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
-import { useEffect, useState } from 'react';
+import { Calendar } from '@nugget/ui/calendar';
+import { Input } from '@nugget/ui/input';
+import { Label } from '@nugget/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@nugget/ui/popover';
+import { format } from 'date-fns';
+import { useEffect, useMemo, useState } from 'react';
 
 interface QuickTimeOption {
   label: string;
@@ -33,6 +37,8 @@ interface TimeSelectionModeProps {
   showDurationOptions?: boolean; // Whether to show "how long" options
   activityColor?: string; // e.g., 'bg-activity-sleep'
   activityTextColor?: string; // e.g., 'text-activity-sleep-foreground'
+  externalMode?: 'now' | 'quick' | 'custom' | null; // External control of mode
+  onModeChange?: (mode: 'now' | 'quick' | 'custom') => void; // Callback when mode changes
 }
 
 const defaultQuickTimeOptions: QuickTimeOption[] = [
@@ -61,6 +67,8 @@ export function TimeSelectionMode({
   showDurationOptions = true,
   activityColor = 'bg-activity-sleep',
   activityTextColor = 'text-activity-sleep-foreground',
+  externalMode,
+  onModeChange,
 }: TimeSelectionModeProps) {
   // Check if startTime is for today
   const isToday = (date: Date) => {
@@ -80,11 +88,39 @@ export function TimeSelectionMode({
   const [selectedQuickTime, setSelectedQuickTime] = useState<number | null>(
     null,
   );
+  const [activeDatePicker, setActiveDatePicker] = useState<
+    'start' | 'end' | null
+  >(null);
+
+  // Sync with external mode if provided
+  const effectiveMode = externalMode ?? timeInputMode;
+
+  // Update internal mode when external mode changes
+  useEffect(() => {
+    if (externalMode !== null && externalMode !== undefined) {
+      setTimeInputMode(externalMode);
+    }
+  }, [externalMode]);
+
+  const effectiveEndTime = useMemo(() => {
+    if (!setEndTime) return null;
+    if (endTime) return endTime;
+    return new Date(startTime.getTime() + duration * 1000);
+  }, [endTime, setEndTime, startTime, duration]);
 
   // Update mode when startTime changes (e.g., when dialog reopens with different date)
+  // Only update if not externally controlled
   useEffect(() => {
-    setTimeInputMode(startTimeIsToday ? 'now' : 'custom');
-  }, [startTimeIsToday]);
+    if (externalMode === null || externalMode === undefined) {
+      setTimeInputMode(startTimeIsToday ? 'now' : 'custom');
+    }
+  }, [startTimeIsToday, externalMode]);
+
+  // Helper to update mode
+  const updateMode = (mode: 'now' | 'quick' | 'custom') => {
+    setTimeInputMode(mode);
+    onModeChange?.(mode);
+  };
 
   // Handle quick time selection
   const handleQuickTimeSelect = (minutes: number) => {
@@ -105,53 +141,165 @@ export function TimeSelectionMode({
     }
   };
 
+  const syncDurationFromTimes = (nextStart: Date, nextEnd?: Date | null) => {
+    if (!showDurationOptions || !nextEnd) return;
+    const diffSeconds = Math.max(
+      0,
+      Math.round((nextEnd.getTime() - nextStart.getTime()) / 1000),
+    );
+    setDuration(diffSeconds);
+  };
+
+  const updateStartTime = (newStart: Date) => {
+    setStartTime(newStart);
+    if (showDurationOptions && setEndTime) {
+      let currentEnd = effectiveEndTime
+        ? new Date(effectiveEndTime)
+        : new Date(newStart.getTime() + duration * 1000);
+      if (currentEnd <= newStart) {
+        currentEnd = new Date(newStart.getTime() + 60 * 60 * 1000);
+        setEndTime(currentEnd);
+      }
+      syncDurationFromTimes(newStart, currentEnd);
+    }
+  };
+
+  const updateEndTime = (newEnd: Date) => {
+    if (!setEndTime) return;
+    let adjustedEnd = newEnd;
+    if (adjustedEnd <= startTime) {
+      adjustedEnd = new Date(startTime.getTime() + 60 * 1000);
+    }
+    setEndTime(adjustedEnd);
+    syncDurationFromTimes(startTime, adjustedEnd);
+  };
+
+  const handleCustomStartDateSelect = (selectedDate?: Date) => {
+    if (!selectedDate) return;
+    const newStart = new Date(selectedDate);
+    newStart.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0);
+    updateStartTime(newStart);
+  };
+
+  const handleCustomEndDateSelect = (selectedDate?: Date) => {
+    if (!selectedDate || !setEndTime) return;
+    const newEnd = new Date(selectedDate);
+    const referenceEnd = effectiveEndTime ?? startTime;
+    newEnd.setHours(referenceEnd.getHours(), referenceEnd.getMinutes(), 0, 0);
+    updateEndTime(newEnd);
+  };
+
+  const handleCustomStartTimeChange = (value: string) => {
+    const [hoursStr, minutesStr] = value.split(':');
+    const hours = Number.parseInt(hoursStr ?? '0', 10);
+    const minutes = Number.parseInt(minutesStr ?? '0', 10);
+    const newStart = new Date(startTime);
+    newStart.setHours(hours, minutes, 0, 0);
+    updateStartTime(newStart);
+  };
+
+  const handleCustomEndTimeChange = (value: string) => {
+    if (!setEndTime) return;
+    const [hoursStr, minutesStr] = value.split(':');
+    const hours = Number.parseInt(hoursStr ?? '0', 10);
+    const minutes = Number.parseInt(minutesStr ?? '0', 10);
+    const newEnd = new Date(effectiveEndTime ?? startTime);
+    newEnd.setHours(hours, minutes, 0, 0);
+    updateEndTime(newEnd);
+  };
+
+  const renderInlineDateField = (
+    label: string,
+    pickerKey: 'start' | 'end',
+    selectedDate: Date,
+    onSelect: (date?: Date) => void,
+    timeValue: string,
+    onTimeChange: (value: string) => void,
+  ) => (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">{label}</Label>
+      <div className="flex items-center gap-2">
+        <Popover
+          onOpenChange={(open) => setActiveDatePicker(open ? pickerKey : null)}
+          open={activeDatePicker === pickerKey}
+        >
+          <PopoverTrigger asChild>
+            <button
+              className="flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-left text-sm font-normal text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              type="button"
+            >
+              <span>{format(selectedDate, 'MMM d, yyyy')}</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="p-0">
+            <Calendar
+              initialFocus
+              mode="single"
+              onSelect={(date) => {
+                onSelect(date);
+                if (date) {
+                  setActiveDatePicker(null);
+                }
+              }}
+              selected={selectedDate}
+            />
+          </PopoverContent>
+        </Popover>
+        <Input
+          className="sm:w-[120px]"
+          onChange={(e) => onTimeChange(e.target.value)}
+          type="time"
+          value={timeValue}
+        />
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      {/* Time Input Mode Toggle - Only show for today's date */}
-      {startTimeIsToday && (
-        <div className="grid grid-cols-3 gap-3">
-          <Button
-            className={`h-12 ${
-              timeInputMode === 'now'
-                ? `${activityColor} ${activityTextColor}`
-                : 'bg-transparent'
-            }`}
-            onClick={() => {
-              setTimeInputMode('now');
-              setStartTime(new Date());
-              setSelectedQuickTime(null);
-            }}
-            variant={timeInputMode === 'now' ? 'default' : 'outline'}
-          >
-            Now
-          </Button>
-          <Button
-            className={`h-12 ${
-              timeInputMode === 'quick'
-                ? `${activityColor} ${activityTextColor}`
-                : 'bg-transparent'
-            }`}
-            onClick={() => setTimeInputMode('quick')}
-            variant={timeInputMode === 'quick' ? 'default' : 'outline'}
-          >
-            Quick Time
-          </Button>
-          <Button
-            className={`h-12 ${
-              timeInputMode === 'custom'
-                ? `${activityColor} ${activityTextColor}`
-                : 'bg-transparent'
-            }`}
-            onClick={() => setTimeInputMode('custom')}
-            variant={timeInputMode === 'custom' ? 'default' : 'outline'}
-          >
-            Custom Time
-          </Button>
-        </div>
-      )}
+      {/* Time Input Mode Toggle */}
+      <div className="grid grid-cols-3 gap-3">
+        <Button
+          className={`h-12 ${
+            effectiveMode === 'now'
+              ? `${activityColor} ${activityTextColor}`
+              : 'bg-transparent'
+          }`}
+          onClick={() => {
+            updateMode('now');
+            setStartTime(new Date());
+            setSelectedQuickTime(null);
+          }}
+          variant={effectiveMode === 'now' ? 'default' : 'outline'}
+        >
+          Now
+        </Button>
+        <Button
+          className={`h-12 ${
+            effectiveMode === 'quick'
+              ? `${activityColor} ${activityTextColor}`
+              : 'bg-transparent'
+          }`}
+          onClick={() => updateMode('quick')}
+          variant={effectiveMode === 'quick' ? 'default' : 'outline'}
+        >
+          Quick Time
+        </Button>
+        <Button
+          className={`h-12 ${
+            effectiveMode === 'custom'
+              ? `${activityColor} ${activityTextColor}`
+              : 'bg-transparent'
+          }`}
+          onClick={() => updateMode('custom')}
+          variant={effectiveMode === 'custom' ? 'default' : 'outline'}
+        >
+          Custom Time
+        </Button>
+      </div>
 
       {/* Now Mode - Only show duration options */}
-      {timeInputMode === 'now' && showDurationOptions && (
+      {effectiveMode === 'now' && showDurationOptions && (
         <div className="space-y-3">
           <p className="text-sm font-medium text-muted-foreground">How long?</p>
           <div className="grid grid-cols-3 gap-3">
@@ -174,7 +322,7 @@ export function TimeSelectionMode({
       )}
 
       {/* Quick Add Mode */}
-      {timeInputMode === 'quick' && (
+      {effectiveMode === 'quick' && (
         <>
           {/* Quick Time Selection */}
           {showStartTimeOptions && (
@@ -235,26 +383,36 @@ export function TimeSelectionMode({
       )}
 
       {/* Custom Time Mode */}
-      {timeInputMode === 'custom' && (
+      {effectiveMode === 'custom' && (
         <div className="space-y-3">
           <p className="text-sm font-medium text-muted-foreground">
             {showDurationOptions ? 'Select Time Range' : 'Select Time'}
           </p>
-          {showDurationOptions ? (
-            <DateTimeRangePicker
-              endDate={endTime ?? undefined}
-              mode="range"
-              setEndDate={setEndTime}
-              setStartDate={setStartTime}
-              startDate={startTime}
-            />
-          ) : (
-            <DateTimeRangePicker
-              mode="single"
-              setStartDate={setStartTime}
-              startDate={startTime}
-            />
+          {renderInlineDateField(
+            'Start',
+            'start',
+            startTime,
+            handleCustomStartDateSelect,
+            `${startTime.getHours().toString().padStart(2, '0')}:${startTime
+              .getMinutes()
+              .toString()
+              .padStart(2, '0')}`,
+            handleCustomStartTimeChange,
           )}
+          {showDurationOptions &&
+            effectiveEndTime &&
+            setEndTime &&
+            renderInlineDateField(
+              'End',
+              'end',
+              effectiveEndTime,
+              handleCustomEndDateSelect,
+              `${(effectiveEndTime.getHours() || 0).toString().padStart(2, '0')}:${effectiveEndTime
+                .getMinutes()
+                .toString()
+                .padStart(2, '0')}`,
+              handleCustomEndTimeChange,
+            )}
         </div>
       )}
     </div>

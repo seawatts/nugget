@@ -102,7 +102,7 @@ export function SleepActivityDrawer({
   const [isTimerStopped, setIsTimerStopped] = useState(false);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
   const [isManualEndTime, setIsManualEndTime] = useState(false);
-  const [selectedMode, setSelectedMode] = useState<SleepMode>(null);
+  const [selectedMode, setSelectedMode] = useState<SleepMode>('timeline');
 
   const isPending = isCreating || isUpdating;
   const isEditing = Boolean(existingActivity) || Boolean(activeActivityId);
@@ -264,7 +264,7 @@ export function SleepActivityDrawer({
         setIsCoSleeping(false);
         setCoSleepingWith([]);
         setIsManualEndTime(false);
-        setSelectedMode(null);
+        setSelectedMode('timeline');
       }, 300); // Standard drawer animation duration
 
       return () => clearTimeout(timeoutId);
@@ -459,16 +459,6 @@ export function SleepActivityDrawer({
     }
   };
 
-  const handleModeSelect = async (mode: SleepMode) => {
-    setSelectedMode(mode);
-
-    // Auto-start timer when timer mode is selected (and not editing existing activity)
-    if (mode === 'timer' && !existingActivity && !activeActivityId) {
-      // Start timer in background without blocking UI
-      void handleTimerStart();
-    }
-  };
-
   // Get button text based on mode and state
   const getButtonText = () => {
     if (selectedMode === 'timer') {
@@ -537,10 +527,8 @@ export function SleepActivityDrawer({
           existingActivity={existingActivity}
           familyMembers={familyMembers}
           isCoSleeping={isCoSleeping}
-          isLoading={isLoadingInProgress}
           isManualEndTime={isManualEndTime}
           isTimerStopped={isTimerStopped}
-          onModeSelect={handleModeSelect}
           onTimerStart={handleTimerStart}
           selectedMode={selectedMode}
           setCoSleepingWith={setCoSleepingWith}

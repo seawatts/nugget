@@ -6,10 +6,12 @@ const CACHE_VERSION = 'v1';
 const CACHE_NAME = `nugget-cache-${CACHE_VERSION}`;
 const LAST_NOTIFICATION_KEY = 'last-overdue-notification';
 const LAST_DASHBOARD_ROUTE_KEY = 'last-dashboard-route';
+const LAST_BABY_ID_KEY = 'last-baby-id';
 const LAST_ROUTE_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 hours
 const BABY_DASHBOARD_REGEX = /^\/app\/babies\/[^/]+\/dashboard/;
 const FAMILY_ROUTE_REGEX = /^\/app\/family\/[^/]+/;
 const LAST_ROUTE_MESSAGE = 'SET_LAST_ROUTE';
+const LAST_BABY_ID_MESSAGE = 'SET_LAST_BABY_ID';
 
 // Install event - cache essential assets
 self.addEventListener('install', (event: ExtendableEvent) => {
@@ -78,68 +80,49 @@ self.addEventListener('fetch', (event: FetchEvent) => {
     return;
   }
 
-  // Strategy 1: NetworkFirst with short timeout for baby dashboard routes
-  // Tries fresh content first, falls back to cache if network is slow
-  // This ensures HTML updates are visible while still being fast
+  // Strategy 1: CacheFirst for baby dashboard routes
+  // Serves cached content instantly, updates in background
+  // This ensures instant loading while keeping content fresh
   if (BABY_DASHBOARD_REGEX.test(pathname)) {
     rememberDashboardPath(pathname);
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_NAME);
-        const timeoutPromise = new Promise<Response | null>((resolve) => {
-          setTimeout(() => resolve(null), 800); // 800ms timeout for instant feel
-        });
 
+        // Check cache first (instant serve)
+        const cachedResponse = await cache.match(event.request);
+        if (cachedResponse) {
+          // Serve cached response immediately, update in background
+          void (async () => {
+            try {
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 5000);
+              const networkResponse = await fetch(event.request, {
+                signal: controller.signal,
+              }).catch(() => null);
+              clearTimeout(timeoutId);
+
+              if (networkResponse?.ok) {
+                await cache.put(event.request, networkResponse.clone());
+              }
+            } catch (error) {
+              // Ignore background update errors
+              console.warn('[Service Worker] Background update failed', error);
+            }
+          })();
+
+          return cachedResponse;
+        }
+
+        // No cache, fetch from network
         try {
-          // Try network first with timeout
-          const networkResponse = await Promise.race([
-            fetch(event.request),
-            timeoutPromise,
-          ]);
-
+          const networkResponse = await fetch(event.request);
           if (networkResponse?.ok) {
-            // Cache successful responses
-            cache.put(event.request, networkResponse.clone());
-            return networkResponse;
+            await cache.put(event.request, networkResponse.clone());
           }
-
-          // Network failed or timed out, try cache
-          const cachedResponse = await cache.match(event.request);
-          if (cachedResponse) {
-            // Update cache in background if we have cached response
-            // Use AbortController to prevent hanging on slow networks
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-            fetch(event.request, { signal: controller.signal })
-              .then((freshResponse) => {
-                clearTimeout(timeoutId);
-                if (freshResponse.ok) {
-                  cache.put(event.request, freshResponse.clone());
-                }
-              })
-              .catch(() => {
-                clearTimeout(timeoutId);
-                // Ignore network errors in background update
-              });
-            return cachedResponse;
-          }
-
-          // Both failed, return error
-          return (
-            networkResponse ||
-            new Response('Offline', {
-              status: 503,
-              statusText: 'Service Unavailable',
-            })
-          );
+          return networkResponse;
         } catch (_error) {
-          // Network error, try cache
-          const cachedResponse = await cache.match(event.request);
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-
+          // Network failed, return error
           return new Response('Offline', {
             status: 503,
             statusText: 'Service Unavailable',
@@ -234,49 +217,101 @@ self.addEventListener('fetch', (event: FetchEvent) => {
 
 async function handleAppEntry(event: FetchEvent): Promise<Response> {
   const cache = await caches.open(CACHE_NAME);
-  const cachedResponsePromise = cache.match(event.request);
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-  const networkPromise = fetch(event.request, { signal: controller.signal })
-    .then((networkResponse) => {
-      clearTimeout(timeoutId);
-      if (networkResponse?.ok) {
-        cache.put(event.request, networkResponse.clone());
-        if (networkResponse.redirected) {
-          const redirectedPath = extractPathFromUrl(networkResponse.url);
-          if (redirectedPath && isPersistableDashboardPath(redirectedPath)) {
-            void setLastDashboardRoute(redirectedPath);
+  // First, try to get babyId from IndexedDB to construct dashboard URL
+  const babyId = await getLastBabyId();
+  if (babyId) {
+    const dashboardUrl = `/app/babies/${babyId}/dashboard`;
+    const dashboardRequest = new Request(
+      new URL(dashboardUrl, self.location.origin).toString(),
+    );
+
+    // Check cache for dashboard route - CacheFirst strategy (instant serve)
+    const cachedDashboardResponse = await cache.match(dashboardRequest);
+    if (cachedDashboardResponse) {
+      // Serve cached dashboard immediately, update in background
+      void (async () => {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          const networkResponse = await fetch(dashboardRequest, {
+            signal: controller.signal,
+          }).catch(() => null);
+          clearTimeout(timeoutId);
+
+          if (networkResponse?.ok) {
+            await cache.put(dashboardRequest, networkResponse.clone());
           }
+        } catch (error) {
+          // Ignore background update errors
+          console.warn('[Service Worker] Background update failed', error);
         }
-      }
+      })();
 
-      return networkResponse;
-    })
-    .catch((error) => {
-      clearTimeout(timeoutId);
-      console.warn('[Service Worker] /app fetch failed', error);
-      return null;
-    });
+      return cachedDashboardResponse;
+    }
+  }
 
+  // Fallback: try last dashboard route from IndexedDB
   const lastRoute = await getLastDashboardRoute();
   if (lastRoute) {
-    void networkPromise;
+    const lastRouteRequest = new Request(
+      new URL(lastRoute, self.location.origin).toString(),
+    );
+    const cachedRouteResponse = await cache.match(lastRouteRequest);
+    if (cachedRouteResponse) {
+      // Serve cached route immediately, update in background
+      void (async () => {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          const networkResponse = await fetch(lastRouteRequest, {
+            signal: controller.signal,
+          }).catch(() => null);
+          clearTimeout(timeoutId);
+
+          if (networkResponse?.ok) {
+            await cache.put(lastRouteRequest, networkResponse.clone());
+          }
+        } catch (error) {
+          // Ignore background update errors
+          console.warn('[Service Worker] Background update failed', error);
+        }
+      })();
+
+      return cachedRouteResponse;
+    }
+
+    // If we have a route but no cache, redirect to it
     return Response.redirect(
       new URL(lastRoute, self.location.origin).toString(),
       302,
     );
   }
 
-  const cachedResponse = await cachedResponsePromise;
-  if (cachedResponse) {
-    void networkPromise;
-    return cachedResponse;
+  // No cached route, fetch /app and let it redirect server-side
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  const networkResponse = await fetch(event.request, {
+    signal: controller.signal,
+  }).catch(() => null);
+  clearTimeout(timeoutId);
+
+  if (networkResponse?.ok) {
+    await cache.put(event.request, networkResponse.clone());
+    if (networkResponse.redirected) {
+      const redirectedPath = extractPathFromUrl(networkResponse.url);
+      if (redirectedPath && isPersistableDashboardPath(redirectedPath)) {
+        void setLastDashboardRoute(redirectedPath);
+      }
+    }
+    return networkResponse;
   }
 
-  const networkResponse = await networkPromise;
-  if (networkResponse) {
-    return networkResponse;
+  // Check for any cached /app response as last resort
+  const cachedResponse = await cache.match(event.request);
+  if (cachedResponse) {
+    return cachedResponse;
   }
 
   return new Response('Offline', {
@@ -423,6 +458,14 @@ self.addEventListener('message', (event: ExtendableMessageEvent) => {
     isPersistableDashboardPath(event.data.path)
   ) {
     event.waitUntil(setLastDashboardRoute(event.data.path));
+  }
+
+  if (
+    event.data &&
+    event.data.type === LAST_BABY_ID_MESSAGE &&
+    typeof event.data.babyId === 'string'
+  ) {
+    event.waitUntil(setLastBabyId(event.data.babyId));
   }
 
   if (event.data && event.data.type === 'SKIP_WAITING') {
@@ -707,6 +750,48 @@ async function setLastDashboardRoute(path: string): Promise<void> {
       '[Service Worker] Error setting last dashboard route:',
       error,
     );
+  }
+}
+
+async function getLastBabyId(): Promise<string | null> {
+  try {
+    const db = await openDatabase();
+    const transaction = db.transaction(['settings'], 'readonly');
+    const store = transaction.objectStore('settings');
+    const request = store.get(LAST_BABY_ID_KEY);
+
+    return await new Promise((resolve, reject) => {
+      request.onsuccess = () => {
+        const record = request.result as { value?: string };
+        const babyId = record?.value;
+        resolve(typeof babyId === 'string' ? babyId : null);
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  } catch (error) {
+    console.error('[Service Worker] Error getting last baby ID:', error);
+    return null;
+  }
+}
+
+async function setLastBabyId(babyId: string): Promise<void> {
+  try {
+    const db = await openDatabase();
+    const transaction = db.transaction(['settings'], 'readwrite');
+    const store = transaction.objectStore('settings');
+    store.put({
+      key: LAST_BABY_ID_KEY,
+      value: babyId,
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  } catch (error) {
+    console.error('[Service Worker] Error setting last baby ID:', error);
   }
 }
 

@@ -1,9 +1,8 @@
 'use client';
 
-import { format, isSameDay, parse } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { Clock } from 'lucide-react';
 import { useState } from 'react';
-import type { DateRange } from 'react-day-picker';
 import { Button } from '../components/button';
 import { Calendar } from '../components/calendar';
 import { Drawer, DrawerContent, DrawerTitle } from '../components/drawer';
@@ -39,6 +38,9 @@ export function DateTimeRangePicker({
 }: DateTimeRangePickerProps) {
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
+  const [activeDatePicker, setActiveDatePicker] = useState<
+    'start' | 'end' | null
+  >(null);
 
   const effectiveEndDate = endDate || startDate;
 
@@ -59,67 +61,35 @@ export function DateTimeRangePicker({
     return `${format(startDate, 'MMM d')} ${startTimeStr} - ${format(effectiveEndDate, 'MMM d')} ${endTimeStr}`;
   };
 
-  // Handle date selection (single mode)
-  const handleDateSelect = (selectedDate?: Date) => {
+  const handleStartDateSelect = (selectedDate?: Date) => {
     if (!selectedDate) return;
-
     const newStart = new Date(selectedDate);
     newStart.setHours(startDate.getHours(), startDate.getMinutes(), 0, 0);
     setStartDate(newStart);
-  };
 
-  // Handle date range selection (range mode)
-  const handleDateRangeSelect = (range?: DateRange) => {
-    if (!range || !setEndDate) return;
-
-    if (range.from) {
-      const newStart = new Date(range.from);
-      newStart.setHours(startDate.getHours(), startDate.getMinutes(), 0, 0);
-      setStartDate(newStart);
-    }
-
-    if (range.to) {
-      const newEnd = new Date(range.to);
-      newEnd.setHours(
-        effectiveEndDate.getHours(),
-        effectiveEndDate.getMinutes(),
-        0,
-        0,
-      );
+    if (setEndDate && newStart >= effectiveEndDate) {
+      const newEnd = new Date(newStart);
+      newEnd.setHours(newStart.getHours() + 1, newStart.getMinutes(), 0, 0);
       setEndDate(newEnd);
     }
   };
 
-  // Handle manual date input changes
-  const handleStartDateInputChange = (value: string) => {
-    try {
-      const parsed = parse(value, 'MMM d, yyyy', new Date());
-      if (!Number.isNaN(parsed.getTime())) {
-        const newStart = new Date(parsed);
-        newStart.setHours(startDate.getHours(), startDate.getMinutes(), 0, 0);
-        setStartDate(newStart);
-      }
-    } catch {
-      // Invalid date, ignore
-    }
-  };
+  const handleEndDateSelect = (selectedDate?: Date) => {
+    if (!selectedDate || !setEndDate) return;
+    const newEnd = new Date(selectedDate);
+    newEnd.setHours(
+      effectiveEndDate.getHours(),
+      effectiveEndDate.getMinutes(),
+      0,
+      0,
+    );
 
-  const handleEndDateInputChange = (value: string) => {
-    if (!setEndDate) return;
-    try {
-      const parsed = parse(value, 'MMM d, yyyy', new Date());
-      if (!Number.isNaN(parsed.getTime())) {
-        const newEnd = new Date(parsed);
-        newEnd.setHours(
-          effectiveEndDate.getHours(),
-          effectiveEndDate.getMinutes(),
-          0,
-          0,
-        );
-        setEndDate(newEnd);
-      }
-    } catch {
-      // Invalid date, ignore
+    if (newEnd > startDate) {
+      setEndDate(newEnd);
+    } else {
+      const adjustedEnd = new Date(startDate);
+      adjustedEnd.setMinutes(startDate.getMinutes() + 1);
+      setEndDate(adjustedEnd);
     }
   };
 
@@ -286,25 +256,24 @@ export function DateTimeRangePicker({
 
   // Trigger button (shared between mobile and desktop)
   const triggerButton = (
-    <button
+    <div
       className={cn(
         'flex items-center gap-2 text-sm transition-colors hover:opacity-80',
         className,
       )}
-      type="button"
     >
       <Clock className="size-4" />
       <span>{formatDisplayText()}</span>
-    </button>
+    </div>
   );
 
   // Quick time presets
   const quickPresets = [
     { label: 'Now', offset: 0 },
+    { label: '15m ago', offset: -15 },
     { label: '30m ago', offset: -30 },
     { label: '1h ago', offset: -60 },
     { label: '2h ago', offset: -120 },
-    { label: '3h ago', offset: -180 },
   ];
 
   const handleQuickPreset = (offsetMinutes: number) => {
@@ -322,108 +291,129 @@ export function DateTimeRangePicker({
     }
   };
 
+  const renderDatePickerField = (
+    pickerKey: 'start' | 'end',
+    selectedDate: Date,
+    onSelect: (date?: Date) => void,
+  ) => (
+    <Popover
+      onOpenChange={(open) => setActiveDatePicker(open ? pickerKey : null)}
+      open={activeDatePicker === pickerKey}
+    >
+      <PopoverTrigger asChild>
+        <button
+          className="flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-left text-sm font-normal text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          type="button"
+        >
+          <span>{format(selectedDate, 'MMM d, yyyy')}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="p-0">
+        <Calendar
+          initialFocus
+          mode="single"
+          onSelect={(date) => {
+            onSelect(date);
+            if (date) {
+              setActiveDatePicker(null);
+            }
+          }}
+          selected={selectedDate}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+
+  const renderRangeDateField = (
+    label: string,
+    pickerKey: 'start' | 'end',
+    selectedDate: Date,
+    onSelect: (date?: Date) => void,
+    timeValue: string,
+    onTimeChange: (value: string) => void,
+  ) => (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">{label}</Label>
+      <div className="flex gap-2">
+        {renderDatePickerField(pickerKey, selectedDate, onSelect)}
+        <Input
+          className="w-[120px]"
+          onChange={(e) => onTimeChange(e.target.value)}
+          type="time"
+          value={timeValue}
+        />
+      </div>
+    </div>
+  );
+
   // Content (shared between mobile and desktop)
   const pickerContent = (
-    <>
-      {/* Calendar */}
-      <div className="flex justify-center w-full p-3">
-        {mode === 'range' ? (
-          <Calendar
-            mode="range"
-            onSelect={handleDateRangeSelect}
-            selected={{ from: startDate, to: effectiveEndDate }}
-          />
-        ) : (
-          <Calendar
-            mode="single"
-            onSelect={handleDateSelect}
-            selected={startDate}
-          />
-        )}
+    <div className="p-3 space-y-4">
+      {/* Quick presets */}
+      <div className="w-full">
+        <p className="text-xs font-medium text-muted-foreground mb-2">
+          Quick Select
+        </p>
+        <div className="grid grid-cols-5 gap-2 w-full">
+          {quickPresets.map((preset) => (
+            <Button
+              className="h-10 text-xs font-medium whitespace-nowrap px-2"
+              key={preset.label}
+              onClick={() => handleQuickPreset(preset.offset)}
+              size="sm"
+              variant="outline"
+            >
+              {preset.label}
+            </Button>
+          ))}
+        </div>
       </div>
 
-      <div className="border-t p-3 space-y-4">
-        {/* Quick presets */}
-        <div className="w-full">
-          <p className="text-xs font-medium text-muted-foreground mb-2">
-            Quick Select
-          </p>
-          <div className="grid grid-cols-5 gap-2 w-full">
-            {quickPresets.map((preset) => (
-              <Button
-                className="h-10 text-xs font-medium whitespace-nowrap px-2"
-                key={preset.label}
-                onClick={() => handleQuickPreset(preset.offset)}
-                size="sm"
-                variant="outline"
-              >
-                {preset.label}
-              </Button>
-            ))}
+      {mode === 'single' ? (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Date</Label>
+            {renderDatePickerField('start', startDate, handleStartDateSelect)}
           </div>
-        </div>
-
-        {mode === 'single' ? (
           <div className="flex justify-center">
             {renderTimeSelector(startDate, true)}
           </div>
-        ) : (
-          <>
-            {/* Start section */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Start</Label>
-              <div className="flex gap-2">
-                <Input
-                  className="flex-1"
-                  onChange={(e) => handleStartDateInputChange(e.target.value)}
-                  placeholder="MMM DD, YYYY"
-                  value={format(startDate, 'MMM d, yyyy')}
-                />
-                <Input
-                  className="w-[120px]"
-                  onChange={(e) => handleMobileStartTimeChange(e.target.value)}
-                  type="time"
-                  value={`${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`}
-                />
-              </div>
-            </div>
-
-            {/* End section */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">End</Label>
-              <div className="flex gap-2">
-                <Input
-                  className="flex-1"
-                  onChange={(e) => handleEndDateInputChange(e.target.value)}
-                  placeholder="MMM DD, YYYY"
-                  value={format(effectiveEndDate, 'MMM d, yyyy')}
-                />
-                <Input
-                  className="w-[120px]"
-                  onChange={(e) => handleMobileEndTimeChange(e.target.value)}
-                  type="time"
-                  value={`${effectiveEndDate.getHours().toString().padStart(2, '0')}:${effectiveEndDate.getMinutes().toString().padStart(2, '0')}`}
-                />
-              </div>
-            </div>
-          </>
-        )}
-
-        <div className="flex gap-2 pt-2">
-          <Button
-            className="flex-1"
-            onClick={() => setIsOpen(false)}
-            size="sm"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button className="flex-1" onClick={() => setIsOpen(false)} size="sm">
-            Done
-          </Button>
         </div>
+      ) : (
+        <>
+          {renderRangeDateField(
+            'Start',
+            'start',
+            startDate,
+            handleStartDateSelect,
+            `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`,
+            handleMobileStartTimeChange,
+          )}
+          {renderRangeDateField(
+            'End',
+            'end',
+            effectiveEndDate,
+            handleEndDateSelect,
+            `${effectiveEndDate.getHours().toString().padStart(2, '0')}:${effectiveEndDate.getMinutes().toString().padStart(2, '0')}`,
+            handleMobileEndTimeChange,
+          )}
+        </>
+      )}
+
+      <div className="flex gap-2 pt-2">
+        <Button
+          className="flex-1"
+          onClick={() => setIsOpen(false)}
+          size="sm"
+          variant="outline"
+        >
+          Cancel
+        </Button>
+        <Button className="flex-1" onClick={() => setIsOpen(false)} size="sm">
+          Done
+        </Button>
       </div>
-    </>
+    </div>
   );
 
   // Mobile: Use Drawer

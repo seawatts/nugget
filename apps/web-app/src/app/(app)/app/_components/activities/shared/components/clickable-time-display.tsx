@@ -8,10 +8,10 @@ import { useMediaQuery } from '@nugget/ui/hooks/use-media-query';
 import { Input } from '@nugget/ui/input';
 import { Label } from '@nugget/ui/label';
 import { cn } from '@nugget/ui/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@nugget/ui/popover';
 import { format } from 'date-fns';
 import { Clock } from 'lucide-react';
 import { useState } from 'react';
-import type { DateRange } from 'react-day-picker';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { formatCompactRelativeTime } from '../utils/format-compact-relative-time';
 
@@ -57,6 +57,9 @@ export function ClickableTimeDisplay({
 }: ClickableTimeDisplayProps) {
   const [isOpen, setIsOpen] = useState(false);
   const isDesktop = useMediaQuery({ query: '(min-width: 768px)' });
+  const [activeDatePicker, setActiveDatePicker] = useState<
+    'start' | 'end' | null
+  >(null);
 
   const effectiveEndTime = endTime || startTime;
 
@@ -81,33 +84,35 @@ export function ClickableTimeDisplay({
     displayText = `${relativeTime} (${absoluteTime})`;
   }
 
-  // Handle date selection (single mode)
-  const handleDateSelect = (selectedDate?: Date) => {
+  const handleStartDateSelect = (selectedDate?: Date) => {
     if (!selectedDate) return;
     const newStart = new Date(selectedDate);
     newStart.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0);
     onStartTimeChange(newStart);
+
+    if (onEndTimeChange && effectiveEndTime && newStart >= effectiveEndTime) {
+      const newEnd = new Date(newStart);
+      newEnd.setHours(newStart.getHours() + 1, newStart.getMinutes(), 0, 0);
+      onEndTimeChange(newEnd);
+    }
   };
 
-  // Handle date range selection (range mode)
-  const handleDateRangeSelect = (range?: DateRange) => {
-    if (!range || !onEndTimeChange) return;
+  const handleEndDateSelect = (selectedDate?: Date) => {
+    if (!selectedDate || !onEndTimeChange) return;
+    const newEnd = new Date(selectedDate);
+    newEnd.setHours(
+      effectiveEndTime.getHours(),
+      effectiveEndTime.getMinutes(),
+      0,
+      0,
+    );
 
-    if (range.from) {
-      const newStart = new Date(range.from);
-      newStart.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0);
-      onStartTimeChange(newStart);
-    }
-
-    if (range.to) {
-      const newEnd = new Date(range.to);
-      newEnd.setHours(
-        effectiveEndTime.getHours(),
-        effectiveEndTime.getMinutes(),
-        0,
-        0,
-      );
+    if (newEnd > startTime) {
       onEndTimeChange(newEnd);
+    } else {
+      const adjustedEnd = new Date(startTime);
+      adjustedEnd.setMinutes(startTime.getMinutes() + 1);
+      onEndTimeChange(adjustedEnd);
     }
   };
 
@@ -148,6 +153,13 @@ export function ClickableTimeDisplay({
     { label: '2h ago', offset: -120 },
   ];
 
+  const quickDurationOptions = [
+    { label: '30 min', minutes: 30 },
+    { label: '1 hour', minutes: 60 },
+    { label: '1h 30m', minutes: 90 },
+    { label: '2 hours', minutes: 120 },
+  ];
+
   const handleQuickPreset = (offsetMinutes: number) => {
     const now = new Date();
     const newDate = new Date(now.getTime() + offsetMinutes * 60 * 1000);
@@ -162,126 +174,175 @@ export function ClickableTimeDisplay({
     }
   };
 
+  const handleQuickDurationSelect = (minutes: number) => {
+    if (!onEndTimeChange) return;
+    const newEnd = new Date(startTime.getTime() + minutes * 60 * 1000);
+    if (newEnd > startTime) {
+      onEndTimeChange(newEnd);
+    }
+  };
+
+  const renderDatePickerField = (
+    pickerKey: 'start' | 'end',
+    selectedDate: Date,
+    onSelect: (date?: Date) => void,
+  ) => (
+    <Popover
+      onOpenChange={(open) => setActiveDatePicker(open ? pickerKey : null)}
+      open={activeDatePicker === pickerKey}
+    >
+      <PopoverTrigger asChild>
+        <button
+          className="flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-left text-sm font-normal text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          type="button"
+        >
+          <span>{format(selectedDate, 'MMM d, yyyy')}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="p-0">
+        <Calendar
+          initialFocus
+          mode="single"
+          onSelect={(date) => {
+            onSelect(date);
+            if (date) {
+              setActiveDatePicker(null);
+            }
+          }}
+          selected={selectedDate}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+
   // Time picker content
   const timePickerContent = (
-    <>
-      {/* Calendar */}
-      <div className="flex justify-center w-full p-3">
-        {mode === 'range' ? (
-          <Calendar
-            mode="range"
-            onSelect={handleDateRangeSelect}
-            selected={{ from: startTime, to: effectiveEndTime }}
-          />
-        ) : (
-          <Calendar
-            mode="single"
-            onSelect={handleDateSelect}
-            selected={startTime}
-          />
-        )}
+    <div className="p-3 space-y-4">
+      {/* Quick presets */}
+      <div className="w-full">
+        <p className="text-xs font-medium text-muted-foreground mb-2">
+          Quick Select
+        </p>
+        <div className="grid grid-cols-5 gap-2 w-full">
+          {quickPresets.map((preset) => (
+            <Button
+              className="h-10 text-xs font-medium whitespace-nowrap px-2"
+              key={preset.label}
+              onClick={() => handleQuickPreset(preset.offset)}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {preset.label}
+            </Button>
+          ))}
+        </div>
       </div>
 
-      <div className="border-t p-3 space-y-4">
-        {/* Quick presets */}
-        <div className="w-full">
-          <p className="text-xs font-medium text-muted-foreground mb-2">
-            Quick Select
-          </p>
-          <div className="grid grid-cols-5 gap-2 w-full">
-            {quickPresets.map((preset) => (
-              <Button
-                className="h-10 text-xs font-medium whitespace-nowrap px-2"
-                key={preset.label}
-                onClick={() => handleQuickPreset(preset.offset)}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                {preset.label}
-              </Button>
-            ))}
+      {mode === 'single' ? (
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Date & Time</Label>
+          <div className="flex gap-2">
+            {renderDatePickerField('start', startTime, handleStartDateSelect)}
+            <Input
+              className="w-[120px]"
+              onChange={(e) => handleMobileStartTimeChange(e.target.value)}
+              type="time"
+              value={`${startTime.getHours().toString().padStart(2, '0')}:${startTime
+                .getMinutes()
+                .toString()
+                .padStart(2, '0')}`}
+            />
           </div>
         </div>
-
-        {mode === 'single' ? (
+      ) : (
+        <>
+          {/* Start section */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Date & Time</Label>
+            <Label className="text-sm font-medium">Start</Label>
             <div className="flex gap-2">
-              <Input
-                className="flex-1"
-                readOnly
-                value={format(startTime, 'MMM d, yyyy')}
-              />
+              {renderDatePickerField('start', startTime, handleStartDateSelect)}
               <Input
                 className="w-[120px]"
                 onChange={(e) => handleMobileStartTimeChange(e.target.value)}
                 type="time"
-                value={`${startTime.getHours().toString().padStart(2, '0')}:${startTime.getMinutes().toString().padStart(2, '0')}`}
+                value={`${startTime.getHours().toString().padStart(2, '0')}:${startTime
+                  .getMinutes()
+                  .toString()
+                  .padStart(2, '0')}`}
               />
             </div>
           </div>
-        ) : (
-          <>
-            {/* Start section */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Start</Label>
-              <div className="flex gap-2">
-                <Input
-                  className="flex-1"
-                  readOnly
-                  value={format(startTime, 'MMM d, yyyy')}
-                />
-                <Input
-                  className="w-[120px]"
-                  onChange={(e) => handleMobileStartTimeChange(e.target.value)}
-                  type="time"
-                  value={`${startTime.getHours().toString().padStart(2, '0')}:${startTime.getMinutes().toString().padStart(2, '0')}`}
-                />
-              </div>
-            </div>
 
-            {/* End section */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">End</Label>
-              <div className="flex gap-2">
-                <Input
-                  className="flex-1"
-                  readOnly
-                  value={format(effectiveEndTime, 'MMM d, yyyy')}
-                />
-                <Input
-                  className="w-[120px]"
-                  onChange={(e) => handleMobileEndTimeChange(e.target.value)}
-                  type="time"
-                  value={`${effectiveEndTime.getHours().toString().padStart(2, '0')}:${effectiveEndTime.getMinutes().toString().padStart(2, '0')}`}
-                />
-              </div>
+          {/* End section */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">End</Label>
+            <div className="flex gap-2">
+              {renderDatePickerField(
+                'end',
+                effectiveEndTime,
+                handleEndDateSelect,
+              )}
+              <Input
+                className="w-[120px]"
+                onChange={(e) => handleMobileEndTimeChange(e.target.value)}
+                type="time"
+                value={`${effectiveEndTime.getHours().toString().padStart(2, '0')}:${effectiveEndTime
+                  .getMinutes()
+                  .toString()
+                  .padStart(2, '0')}`}
+              />
             </div>
-          </>
-        )}
+          </div>
+        </>
+      )}
 
-        <div className="flex gap-2 pt-2">
-          <Button
-            className="flex-1"
-            onClick={() => setIsOpen(false)}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button
-            className="flex-1"
-            onClick={() => setIsOpen(false)}
-            size="sm"
-            type="button"
-          >
-            Done
-          </Button>
+      {mode === 'range' && onEndTimeChange && (
+        <div className="space-y-3">
+          <p className="text-xs font-medium text-muted-foreground">How long?</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {quickDurationOptions.map((option) => {
+              const minutesBetween =
+                (effectiveEndTime.getTime() - startTime.getTime()) /
+                (60 * 1000);
+              const isActive = Math.round(minutesBetween) === option.minutes;
+              return (
+                <Button
+                  className="h-10"
+                  key={option.label}
+                  onClick={() => handleQuickDurationSelect(option.minutes)}
+                  size="sm"
+                  type="button"
+                  variant={isActive ? 'default' : 'outline'}
+                >
+                  {option.label}
+                </Button>
+              );
+            })}
+          </div>
         </div>
+      )}
+
+      <div className="flex gap-2 pt-2">
+        <Button
+          className="flex-1"
+          onClick={() => setIsOpen(false)}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          Cancel
+        </Button>
+        <Button
+          className="flex-1"
+          onClick={() => setIsOpen(false)}
+          size="sm"
+          type="button"
+        >
+          Done
+        </Button>
       </div>
-    </>
+    </div>
   );
 
   return (

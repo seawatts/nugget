@@ -20,6 +20,7 @@ import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { ClickableTimeDisplay } from '../shared/components/clickable-time-display';
 import { useActivityMutations } from '../use-activity-mutations';
 import { SleepDrawerContent } from './sleep-drawer';
+import { SleepTimeline } from './sleep-timeline';
 
 interface TimelineSleepDrawerProps {
   existingActivity: typeof Activities.$inferSelect;
@@ -36,7 +37,7 @@ export function TimelineSleepDrawer({
   existingActivity,
   isOpen,
   onClose,
-  babyId: _babyId,
+  babyId,
 }: TimelineSleepDrawerProps) {
   const { userId } = useAuth();
   const { updateActivity, deleteActivity, isUpdating, isDeleting } =
@@ -217,6 +218,17 @@ export function TimelineSleepDrawer({
 
       {/* Content - Scrollable */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
+        {/* Sleep Timeline */}
+        {babyId && (
+          <SleepTimeline
+            babyId={babyId}
+            endTime={endTime}
+            setEndTime={setEndTime}
+            setStartTime={setStartTime}
+            startTime={startTime}
+            timeFormat={timeFormat}
+          />
+        )}
         <SleepDrawerContent
           activeActivityId={null}
           coSleepingWith={coSleepingWith}

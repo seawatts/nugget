@@ -1,133 +1,80 @@
-import { auth } from '@clerk/nextjs/server';
-import { getApi } from '@nugget/api/server';
-import { db } from '@nugget/db/client';
-import { Users } from '@nugget/db/schema';
-import { eq } from 'drizzle-orm';
-import { unstable_cache } from 'next/cache';
-import { redirect } from 'next/navigation';
+'use client';
 
-// This page needs to run at request time to access user data
-export const dynamic = 'force-dynamic';
+import { api } from '@nugget/api/react';
+import { Icons } from '@nugget/ui/custom/icons';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { checkOnboarding } from './onboarding/actions';
 
-type UserRecord = typeof Users.$inferSelect;
-type UserHomePreferences = Pick<
-  UserRecord,
-  'defaultHomeScreenId' | 'defaultHomeScreenType' | 'lastSelectedBabyId'
->;
+const LAST_BABY_ID_KEY = 'nugget:last-baby-id';
 
-type TimingEntry = {
-  duration: number;
-  label: string;
-};
+export default function Home() {
+  const router = useRouter();
+  const [isResolving, setIsResolving] = useState(true);
+  const utils = api.useUtils();
 
-const getUserHomePreferences = unstable_cache(
-  async (userId: string) => {
-    const user = await db.query.Users.findFirst({
-      columns: {
-        defaultHomeScreenId: true,
-        defaultHomeScreenType: true,
-        lastSelectedBabyId: true,
-      },
-      where: eq(Users.id, userId),
-    });
+  useEffect(() => {
+    async function resolveRoute() {
+      // Check localStorage for cached babyId first (instant redirect)
+      try {
+        const cachedBabyId = localStorage.getItem(LAST_BABY_ID_KEY);
+        if (cachedBabyId) {
+          // Instant redirect to cached dashboard
+          router.replace(`/app/babies/${cachedBabyId}/dashboard`);
+          return;
+        }
+      } catch (error) {
+        console.warn('[Home] Failed to read cached babyId', error);
+      }
 
-    return user ?? null;
-  },
-  ['user-home-preferences'],
-  {
-    revalidate: 300,
-  },
-);
+      // No cached babyId, check onboarding and get babies list
+      try {
+        const onboardingResult = await checkOnboarding();
 
-async function timeSegment<T>(
-  label: string,
-  timings: TimingEntry[],
-  fn: () => Promise<T>,
-): Promise<T> {
-  const start = performance.now();
-  try {
-    return await fn();
-  } finally {
-    const duration = performance.now() - start;
-    const entry = { duration, label };
-    timings.push(entry);
-    console.log(
-      `[AppRedirectTiming] ${label}: ${duration.toFixed(1)}ms`,
-      entry,
+        if (!onboardingResult?.data?.completed) {
+          router.replace('/app/onboarding');
+          return;
+        }
+
+        // Fetch babies list using tRPC utils
+        const babies = await utils.babies.list.fetch();
+
+        if (babies && babies.length > 0 && babies[0]) {
+          const firstBabyId = babies[0].id;
+          // Cache the babyId for next time
+          try {
+            localStorage.setItem(LAST_BABY_ID_KEY, firstBabyId);
+          } catch (error) {
+            console.warn('[Home] Failed to cache babyId', error);
+          }
+          router.replace(`/app/babies/${firstBabyId}/dashboard`);
+          return;
+        }
+
+        // No babies, redirect to babies list page
+        router.replace('/app/babies');
+      } catch (error) {
+        console.error('[Home] Failed to resolve route', error);
+        // Fallback to babies list page
+        router.replace('/app/babies');
+      } finally {
+        setIsResolving(false);
+      }
+    }
+
+    void resolveRoute();
+  }, [router, utils]);
+
+  // Show loading state while resolving route
+  if (isResolving) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+        <Icons.Spinner size="lg" variant="primary" />
+        <span>Opening your dashboard…</span>
+      </div>
     );
   }
-}
 
-function flushTimingsAndRedirect(path: string, timings: TimingEntry[]): never {
-  if (timings.length > 0) {
-    const summary = timings
-      .map((entry) => `${entry.label}=${entry.duration.toFixed(1)}ms`)
-      .join(', ');
-    console.log(`[AppRedirectTiming] summary -> ${summary}`);
-  }
-  redirect(path);
-}
-
-function resolveUserTarget(user: UserHomePreferences | null): string | null {
-  if (!user) {
-    return null;
-  }
-
-  if (user.defaultHomeScreenType === 'baby' && user.defaultHomeScreenId) {
-    return `/app/babies/${user.defaultHomeScreenId}/dashboard`;
-  }
-
-  if (user.defaultHomeScreenType === 'user' && user.defaultHomeScreenId) {
-    return `/app/family/${user.defaultHomeScreenId}`;
-  }
-
-  if (user.lastSelectedBabyId) {
-    return `/app/babies/${user.lastSelectedBabyId}/dashboard`;
-  }
-
+  // This should not render as we redirect above, but include as fallback
   return null;
-}
-
-export default async function Home() {
-  const timings: TimingEntry[] = [];
-  const api = await getApi();
-  const { userId } = await auth();
-
-  const onboardingPromise = timeSegment(
-    'api.onboarding.checkOnboarding',
-    timings,
-    () => api.onboarding.checkOnboarding(),
-  );
-  const userPreferencesPromise = userId
-    ? timeSegment('db.users.homePreferences', timings, () =>
-        getUserHomePreferences(userId),
-      )
-    : null;
-  const babiesPromise = userId
-    ? timeSegment('api.babies.list', timings, () => api.babies.list())
-    : null;
-
-  const onboardingStatus = await onboardingPromise;
-
-  if (!onboardingStatus.completed) {
-    flushTimingsAndRedirect('/app/onboarding', timings);
-  }
-
-  if (userId) {
-    const userHomePreferences = userPreferencesPromise
-      ? await userPreferencesPromise
-      : null;
-    const preferenceTarget = resolveUserTarget(userHomePreferences);
-
-    if (preferenceTarget) {
-      flushTimingsAndRedirect(preferenceTarget, timings);
-    }
-
-    const babies = babiesPromise ? await babiesPromise : null;
-    if (babies && babies.length > 0 && babies[0]) {
-      flushTimingsAndRedirect(`/app/babies/${babies[0].id}/dashboard`, timings);
-    }
-  }
-
-  flushTimingsAndRedirect('/app/babies', timings);
 }

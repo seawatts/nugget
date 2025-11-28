@@ -383,6 +383,8 @@ export function BottomNav() {
   );
 
   const isOnboarding = pathname?.startsWith('/app/onboarding');
+  // Hide bottom nav on /app route (redirect page) to prevent flashing
+  const isAppRoot = pathname === '/app' || pathname === '/app/';
 
   // Get baby name and age from API data
   const babyName = baby?.firstName || 'Baby';
@@ -434,7 +436,8 @@ export function BottomNav() {
     }
   }, [showFamilyMenu]);
 
-  if (isOnboarding) return null;
+  // Hide bottom nav on onboarding or app root (redirect page)
+  if (isOnboarding || isAppRoot) return null;
 
   const navGroups = getNavGroups(babyId);
   const filteredNavGroups = navGroups.filter((group) => {

@@ -10,7 +10,6 @@ import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
-import { subHours } from 'date-fns';
 import {
   ArrowLeft,
   Baby,
@@ -24,15 +23,9 @@ import {
   Smile,
   Volume2,
 } from 'lucide-react';
-import { useCallback, useMemo } from 'react';
-import { calculateBabyAgeDays } from '../../shared/baby-age-utils';
-import { TimelineView } from './timeline-view';
-import {
-  calculateSuggestedSleepDuration,
-  calculateTimelineWindow,
-  checkCollision,
-  snapToInterval,
-} from './utils/timeline-calculations';
+import { useCallback, useMemo, useState } from 'react';
+import { TimeSelectionMode } from '../../shared/components/time-selection-mode';
+import { SleepTimeline } from '../sleep-timeline';
 
 interface SleepTimelineEntryProps {
   startTime: Date;
@@ -121,44 +114,9 @@ export function SleepTimelineEntry({
 }: SleepTimelineEntryProps) {
   const { data: user } = api.user.current.useQuery();
   const timeFormat = user?.timeFormat ?? '12h';
-
-  // Fetch baby info for birth date
-  const { data: baby } = api.babies.getByIdLight.useQuery(
-    { id: babyId },
-    { enabled: Boolean(babyId) },
-  );
-
-  // Calculate baby age
-  const babyAgeDays = useMemo(() => {
-    if (!baby?.birthDate) return null;
-    return calculateBabyAgeDays(new Date(baby.birthDate));
-  }, [baby?.birthDate]);
-
-  // Calculate timeline window (12 hours, centered on current time or selected time)
-  const timelineWindow = useMemo(() => {
-    if (existingActivity) {
-      // If editing existing activity, center on that activity's time
-      const activityTime = new Date(existingActivity.startTime);
-      return calculateTimelineWindow(activityTime);
-    }
-    // Otherwise center on current time or selected start time
-    return calculateTimelineWindow(startTime);
-  }, [existingActivity, startTime]);
-
-  // Fetch activities for the timeline window (expand window slightly to catch overlaps)
-  const activitiesSince = useMemo(
-    () => subHours(timelineWindow.startTime, 1),
-    [timelineWindow.startTime],
-  );
-
-  const { data: allActivities = [] } = api.activities.list.useQuery(
-    {
-      babyId,
-      limit: 200,
-      since: activitiesSince,
-    },
-    { enabled: Boolean(babyId) },
-  );
+  const [timeInputMode, setTimeInputMode] = useState<
+    'now' | 'quick' | 'custom' | null
+  >(null);
 
   // Calculate end time - prefer _endTime if provided, otherwise calculate from duration
   const endTime = useMemo(() => {
@@ -169,71 +127,54 @@ export function SleepTimelineEntry({
     return new Date(startTime.getTime() + duration * 1000);
   }, [_endTime, startTime, duration]);
 
-  // Handle clicking on empty space to create sleep entry
-  const handleEmptySpaceClick = useCallback(
-    (clickTime: Date) => {
-      // Snap to 5-minute interval
-      const snappedTime = snapToInterval(clickTime, 5);
-
-      // Calculate suggested duration
-      const recentSleeps = allActivities
-        .filter((a) => a.type === 'sleep' && a.duration)
-        .slice(0, 10)
-        .map((a) => ({ duration: a.duration || null }));
-
-      const suggestedDuration = calculateSuggestedSleepDuration(
-        babyAgeDays,
-        recentSleeps,
+  // Wrapper handlers to update duration when times change
+  const handleStartTimeChange = useCallback(
+    (newStartTime: Date) => {
+      setStartTime(newStartTime);
+      // Update duration based on new start time
+      const newDurationSeconds = Math.round(
+        (endTime.getTime() - newStartTime.getTime()) / 1000,
       );
-
-      // Set start time to clicked time
-      setStartTime(snappedTime);
-
-      // Calculate end time
-      const calculatedEndTime = new Date(
-        snappedTime.getTime() + suggestedDuration * 60 * 1000,
-      );
-      if (setEndTime) {
-        setEndTime(calculatedEndTime);
+      if (newDurationSeconds > 0) {
+        setDuration(newDurationSeconds);
       }
-      setDuration(suggestedDuration * 60); // Convert to seconds
     },
-    [allActivities, babyAgeDays, setStartTime, setEndTime, setDuration],
+    [endTime, setStartTime, setDuration],
   );
 
-  // Handle sleep time changes from timeline
-  const handleSleepTimeChange = useCallback(
-    (newStart: Date, newEnd: Date) => {
-      if (
-        checkCollision(
-          newStart,
-          newEnd,
-          allActivities,
-          timelineWindow,
-          existingActivity?.id,
-        )
-      ) {
-        return;
-      }
-      // Set both times
-      setStartTime(newStart);
+  const handleEndTimeChange = useCallback(
+    (newEndTime: Date) => {
       if (setEndTime) {
-        setEndTime(newEnd);
+        setEndTime(newEndTime);
       }
-      // Calculate and set duration based on the new times
+      // Update duration based on new end time
       const newDurationSeconds = Math.round(
-        (newEnd.getTime() - newStart.getTime()) / 1000,
+        (newEndTime.getTime() - startTime.getTime()) / 1000,
       );
-      setDuration(newDurationSeconds);
+      if (newDurationSeconds > 0) {
+        setDuration(newDurationSeconds);
+      }
     },
-    [
-      setStartTime,
-      setEndTime,
-      setDuration,
-      allActivities,
-      timelineWindow,
-      existingActivity?.id,
-    ],
+    [startTime, setEndTime, setDuration],
+  );
+
+  // Handler for timeline duration clicks - sets custom mode and fills times
+  const handleTimelineDurationClick = useCallback(
+    (newStartTime: Date, newEndTime: Date) => {
+      setTimeInputMode('custom');
+      setStartTime(newStartTime);
+      if (setEndTime) {
+        setEndTime(newEndTime);
+      }
+      // Calculate duration
+      const newDurationSeconds = Math.round(
+        (newEndTime.getTime() - newStartTime.getTime()) / 1000,
+      );
+      if (newDurationSeconds > 0) {
+        setDuration(newDurationSeconds);
+      }
+    },
+    [setStartTime, setEndTime, setDuration],
   );
 
   const qualityOptions = [
@@ -278,15 +219,35 @@ export function SleepTimelineEntry({
       )}
 
       {/* Timeline View */}
-      <TimelineView
-        activities={allActivities}
-        excludeActivityId={existingActivity?.id}
-        onEmptySpaceClick={handleEmptySpaceClick}
-        onSleepTimeChange={handleSleepTimeChange}
-        selectedSleepEnd={endTime}
-        selectedSleepStart={startTime}
+      <SleepTimeline
+        babyId={babyId}
+        endTime={endTime}
+        onDurationClick={handleTimelineDurationClick}
+        setEndTime={handleEndTimeChange}
+        setStartTime={handleStartTimeChange}
+        startTime={startTime}
         timeFormat={timeFormat}
-        window={timelineWindow}
+      />
+
+      {/* Time Selection Mode */}
+      <TimeSelectionMode
+        activityColor="bg-activity-sleep"
+        activityTextColor="text-activity-sleep-foreground"
+        duration={duration}
+        endTime={endTime}
+        externalMode={timeInputMode}
+        onModeChange={setTimeInputMode}
+        quickDurationOptions={[
+          { label: '30 min', seconds: 30 * 60 },
+          { label: '1 hour', seconds: 60 * 60 },
+          { label: '1h 30m', seconds: 90 * 60 },
+          { label: '2 hours', seconds: 120 * 60 },
+        ]}
+        setDuration={setDuration}
+        setEndTime={setEndTime}
+        setStartTime={handleStartTimeChange}
+        startTime={startTime}
+        timeFormat={timeFormat}
       />
 
       {/* Sleep Type */}

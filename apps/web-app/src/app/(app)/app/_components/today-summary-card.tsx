@@ -25,14 +25,19 @@ import {
   getUserRelationFromStore,
   useOptimisticActivitiesStore,
 } from '~/stores/optimistic-activities';
+import { TimelineDiaperDrawer } from './activities/diaper/timeline-diaper-drawer';
 import { FeedingActivityDrawer } from './activities/feeding/feeding-activity-drawer';
 import { calculateNursingVolumes } from './activities/feeding/nursing-volume-calculator';
 import { predictNextFeeding } from './activities/feeding/prediction';
+import { TimelineFeedingDrawer } from './activities/feeding/timeline-feeding-drawer';
 import { getActivityTheme } from './activities/shared/activity-theme-config';
+import type { ActivityWithUser } from './activities/shared/components/activity-timeline';
 import { StopSleepConfirmationDialog } from './activities/shared/components/stop-sleep-confirmation-dialog';
 import { TimelineDrawerWrapper } from './activities/shared/components/timeline-drawer-wrapper';
 import { useInProgressSleep } from './activities/shared/hooks/use-in-progress-sleep';
 import { formatCompactRelativeTimeWithAgo } from './activities/shared/utils/format-compact-relative-time';
+import { SleepActivityDrawer } from './activities/sleep/sleep-activity-drawer';
+import { TimelineSleepDrawer } from './activities/sleep/timeline-sleep-drawer';
 import { useActivityMutations } from './activities/use-activity-mutations';
 
 interface TodaySummaryCardProps {
@@ -119,8 +124,15 @@ export function TodaySummaryCard({
   // Get shared data from dashboard store
   const allActivitiesFromStore = useDashboardDataStore.use.activities();
 
+  // Get user preferences from dashboard store
+  const user = useDashboardDataStore.use.user();
+  const timeFormat = user?.timeFormat || '12h';
+
   // State for drawer management
   const [openDrawer, setOpenDrawer] = useState<string | null>(null);
+  const [editingActivity, setEditingActivity] =
+    useState<ActivityWithUser | null>(null);
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
   const [creatingType, setCreatingType] = useState<
     'bottle' | 'nursing' | 'wet' | 'dirty' | 'sleep-timer' | null
   >(null);
@@ -591,6 +603,10 @@ export function TodaySummaryCard({
     }
   };
 
+  const handleManualSleepClick = () => {
+    setOpenDrawer('sleep');
+  };
+
   const handleStopSleepAndCreate = async (_e?: React.MouseEvent) => {
     if (!pendingActivity) return;
 
@@ -953,10 +969,7 @@ export function TodaySummaryCard({
   const feedingTheme = getActivityTheme('feeding');
   const diaperTheme = getActivityTheme('diaper');
   const sleepTheme = getActivityTheme('sleep');
-
-  // Get user time format
-  const userData = useDashboardDataStore.use.user();
-  const timeFormat = userData?.timeFormat || '12h';
+  const SleepIcon = sleepTheme.icon;
 
   // Fetch diaper and sleep prediction data for last activities with user info
   const { data: diaperQueryData } = api.activities.getUpcomingDiaper.useQuery(
@@ -1346,54 +1359,154 @@ export function TodaySummaryCard({
                 )}
               </Button>
 
-              {/* Sleep Timer Button */}
-              <Button
-                className={cn(
-                  'flex flex-col items-center justify-center h-auto py-3 gap-1',
-                  inProgressActivity
-                    ? 'bg-destructive/90 hover:bg-destructive active:bg-destructive text-destructive-foreground'
-                    : 'bg-white/20 hover:bg-white/30 active:bg-white/40',
-                  inProgressActivity ? '' : sleepTheme.textColor,
-                )}
-                disabled={creatingType !== null}
-                onClick={handleSleepTimerClick}
-                variant="ghost"
-              >
-                {creatingType === 'sleep-timer' ? (
-                  <Icons.Spinner className="size-5" />
-                ) : inProgressActivity ? (
-                  <StopCircle className="size-5" />
-                ) : (
-                  <Moon className="size-5" />
-                )}
-                <span className="text-xs font-medium">
-                  {inProgressActivity ? 'Stop Timer' : 'Start Timer'}
-                </span>
-                {inProgressActivity && sleepDurationMinutes > 0 ? (
-                  <span className="text-xs opacity-80">
-                    {formatElapsedTime(sleepDurationMinutes)}
+              {/* Sleep Actions */}
+              <div className="col-span-2 md:col-span-3 grid grid-cols-2 gap-2">
+                <Button
+                  className={cn(
+                    'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                    inProgressActivity
+                      ? 'bg-destructive/90 hover:bg-destructive active:bg-destructive text-destructive-foreground'
+                      : 'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                    inProgressActivity ? '' : sleepTheme.textColor,
+                  )}
+                  disabled={creatingType !== null}
+                  onClick={handleSleepTimerClick}
+                  variant="ghost"
+                >
+                  {creatingType === 'sleep-timer' ? (
+                    <Icons.Spinner className="size-5" />
+                  ) : inProgressActivity ? (
+                    <StopCircle className="size-5" />
+                  ) : (
+                    <Moon className="size-5" />
+                  )}
+                  <span className="text-xs font-medium">
+                    {inProgressActivity ? 'Stop Timer' : 'Start Timer'}
                   </span>
-                ) : lastSleepTime && lastSleepExactTime ? (
-                  <div className="flex items-center gap-1 text-[10px] opacity-70 leading-tight">
-                    <span>{lastSleepTime}</span>
-                    {lastSleepUser && (
-                      <Avatar className="size-3 shrink-0">
-                        <AvatarImage
-                          alt={lastSleepUser.name}
-                          src={lastSleepUser.avatar || ''}
-                        />
-                        <AvatarFallback className="text-[8px]">
-                          {lastSleepUser.initials}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                  </div>
-                ) : null}
-              </Button>
+                  {inProgressActivity && sleepDurationMinutes > 0 ? (
+                    <span className="text-xs opacity-80">
+                      {formatElapsedTime(sleepDurationMinutes)}
+                    </span>
+                  ) : lastSleepTime && lastSleepExactTime ? (
+                    <div className="flex items-center gap-1 text-[10px] opacity-70 leading-tight">
+                      <span>{lastSleepTime}</span>
+                      {lastSleepUser && (
+                        <Avatar className="size-3 shrink-0">
+                          <AvatarImage
+                            alt={lastSleepUser.name}
+                            src={lastSleepUser.avatar || ''}
+                          />
+                          <AvatarFallback className="text-[8px]">
+                            {lastSleepUser.initials}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                    </div>
+                  ) : null}
+                </Button>
+                <Button
+                  className={cn(
+                    'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                    'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                    sleepTheme.textColor,
+                  )}
+                  disabled={creatingType !== null}
+                  onClick={handleManualSleepClick}
+                  variant="ghost"
+                >
+                  <SleepIcon className="size-5" />
+                  <span className="text-xs font-medium">Log Sleep</span>
+                  <span className="text-[10px] opacity-70 leading-tight">
+                    Manual entry
+                  </span>
+                </Button>
+              </div>
             </div>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      {/* Activity Edit Drawers */}
+      {editingActivity &&
+        (editingActivity.type === 'feeding' ||
+          editingActivity.type === 'nursing' ||
+          editingActivity.type === 'bottle' ||
+          editingActivity.type === 'solids') &&
+        editDrawerOpen && (
+          <TimelineDrawerWrapper
+            isOpen={editDrawerOpen}
+            onClose={() => {
+              setEditDrawerOpen(false);
+              setEditingActivity(null);
+              setOpenDrawer(null);
+            }}
+            title="Edit Feeding"
+          >
+            <TimelineFeedingDrawer
+              babyId={babyId}
+              existingActivity={editingActivity}
+              isOpen={editDrawerOpen}
+              onClose={() => {
+                setEditDrawerOpen(false);
+                setEditingActivity(null);
+                setOpenDrawer(null);
+              }}
+            />
+          </TimelineDrawerWrapper>
+        )}
+
+      {editingActivity &&
+        editingActivity.type === 'sleep' &&
+        editDrawerOpen && (
+          <TimelineDrawerWrapper
+            isOpen={editDrawerOpen}
+            onClose={() => {
+              setEditDrawerOpen(false);
+              setEditingActivity(null);
+              setOpenDrawer(null);
+            }}
+            title="Edit Sleep"
+          >
+            <TimelineSleepDrawer
+              babyId={babyId}
+              existingActivity={editingActivity}
+              isOpen={editDrawerOpen}
+              onClose={() => {
+                setEditDrawerOpen(false);
+                setEditingActivity(null);
+                setOpenDrawer(null);
+              }}
+            />
+          </TimelineDrawerWrapper>
+        )}
+
+      {editingActivity &&
+        (editingActivity.type === 'diaper' ||
+          editingActivity.type === 'wet' ||
+          editingActivity.type === 'dirty' ||
+          editingActivity.type === 'both') &&
+        editDrawerOpen && (
+          <TimelineDrawerWrapper
+            isOpen={editDrawerOpen}
+            onClose={() => {
+              setEditDrawerOpen(false);
+              setEditingActivity(null);
+              setOpenDrawer(null);
+            }}
+            title="Edit Diaper"
+          >
+            <TimelineDiaperDrawer
+              babyId={babyId}
+              existingActivity={editingActivity}
+              isOpen={editDrawerOpen}
+              onClose={() => {
+                setEditDrawerOpen(false);
+                setEditingActivity(null);
+                setOpenDrawer(null);
+              }}
+            />
+          </TimelineDrawerWrapper>
+        )}
 
       {/* Feeding Drawer */}
       {(openDrawer === 'feeding' ||
@@ -1414,6 +1527,21 @@ export function TodaySummaryCard({
                   ? 'nursing'
                   : null
             }
+            isOpen={true}
+            onClose={handleDrawerClose}
+          />
+        </TimelineDrawerWrapper>
+      )}
+
+      {openDrawer === 'sleep' && (
+        <TimelineDrawerWrapper
+          isOpen={true}
+          onClose={handleDrawerClose}
+          title="Log Sleep"
+        >
+          <SleepActivityDrawer
+            babyId={babyId}
+            existingActivity={null}
             isOpen={true}
             onClose={handleDrawerClose}
           />
