@@ -6,13 +6,16 @@ import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Card } from '@nugget/ui/card';
 import { cn } from '@nugget/ui/lib/utils';
 import { toast } from '@nugget/ui/sonner';
-import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
+import { startOfDay, subDays, subHours } from 'date-fns';
 import { Droplet, Milk } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import {
+  getUserRelationFromStore,
+  useOptimisticActivitiesStore,
+} from '~/stores/optimistic-activities';
 import { getActivityTheme } from '../shared/activity-theme-config';
 import { calculateBabyAgeDays } from '../shared/baby-age-utils';
 import {
@@ -26,6 +29,10 @@ import { TimelineDrawerWrapper } from '../shared/components/timeline-drawer-wrap
 import { getFeedingDailyProgress } from '../shared/daily-progress';
 import { useInProgressSleep } from '../shared/hooks/use-in-progress-sleep';
 import {
+  formatCompactRelativeTime,
+  formatCompactRelativeTimeWithAgo,
+} from '../shared/utils/format-compact-relative-time';
+import {
   formatVolumeDisplay,
   getVolumeUnit,
   mlToOz,
@@ -35,6 +42,7 @@ import { useActivityMutations } from '../use-activity-mutations';
 import { FeedingStatsDrawer } from './components';
 import { FeedingActionButtons } from './feeding-action-buttons';
 import { getDailyAmountGoal, getDailyFeedingGoal } from './feeding-goals';
+import { FeedingTimeline } from './feeding-timeline';
 import { getFeedingLearningContent } from './learning-content';
 import { calculateNursingVolumes } from './nursing-volume-calculator';
 import { predictNextFeeding } from './prediction';
@@ -131,6 +139,59 @@ export function QuickActionFeedingCard({
       staleTime: 60000,
     },
   );
+
+  // Fetch recent feedings for timeline (last 24 hours to ensure we have enough)
+  const twentyFourHoursAgo = useMemo(() => subHours(new Date(), 24), []);
+  const { data: recentActivities = [] } = api.activities.list.useQuery(
+    {
+      babyId,
+      limit: 100,
+      since: twentyFourHoursAgo,
+    },
+    {
+      enabled: Boolean(babyId),
+      staleTime: 30000, // Refresh every 30 seconds for timeline
+    },
+  );
+
+  // Merge recent feedings with optimistic activities
+  // The timeline component will show the last 4 feedings
+  const timelineFeedings = useMemo(() => {
+    const map = new Map<string, (typeof recentActivities)[number]>();
+
+    // First, add all real activities
+    (recentActivities ?? []).forEach((activity) => {
+      map.set(activity.id, activity);
+    });
+
+    // Then, merge optimistic activities, preserving user relation if real activity doesn't have it
+    optimisticActivities.forEach((activity) => {
+      // Only include feeding types
+      if (
+        activity.type === 'bottle' ||
+        activity.type === 'nursing' ||
+        activity.type === 'feeding'
+      ) {
+        const existingActivity = map.get(activity.id);
+        if (existingActivity) {
+          // Real activity exists - merge user relation from optimistic if real doesn't have it
+          const mergedActivity = {
+            ...existingActivity,
+            user: existingActivity.user ?? activity.user ?? null,
+          } as (typeof recentActivities)[number];
+          map.set(activity.id, mergedActivity);
+        } else {
+          // No real activity yet - use optimistic with user relation
+          const activityWithUser = {
+            ...activity,
+            user: activity.user ?? null,
+          } as (typeof recentActivities)[number];
+          map.set(activity.id, activityWithUser);
+        }
+      }
+    });
+    return Array.from(map.values());
+  }, [recentActivities, optimisticActivities]);
 
   const [creatingType, setCreatingType] = useState<
     'bottle' | 'nursing-left' | 'nursing-right' | null
@@ -348,18 +409,19 @@ export function QuickActionFeedingCard({
   };
 
   // Format time displays
-  const nextTimeDistance = formatDistanceToNow(prediction.nextFeedingTime, {
-    addSuffix: false,
-  }).replace(/^about /, '');
+  const nextTimeDistance = formatCompactRelativeTime(
+    prediction.nextFeedingTime,
+    {
+      addSuffix: false,
+    },
+  );
   const nextExactTime = formatTimeWithPreference(
     prediction.nextFeedingTime,
     timeFormat,
   );
 
   const lastTimeDistance = prediction.lastFeedingTime
-    ? formatDistanceToNow(prediction.lastFeedingTime, {
-        addSuffix: false,
-      }).replace(/^about /, '')
+    ? formatCompactRelativeTimeWithAgo(prediction.lastFeedingTime)
     : null;
   const lastExactTime = prediction.lastFeedingTime
     ? formatTimeWithPreference(prediction.lastFeedingTime, timeFormat)
@@ -402,6 +464,7 @@ export function QuickActionFeedingCard({
       };
 
       // Create optimistic activity for immediate UI feedback
+      const userRelation = getUserRelationFromStore();
       const optimisticActivity = {
         ...bottleData,
         assignedUserId: null,
@@ -418,7 +481,8 @@ export function QuickActionFeedingCard({
         startTime: now,
         subjectType: 'baby' as const,
         updatedAt: now,
-        userId: 'temp',
+        user: userRelation,
+        userId: userRelation?.id || 'temp',
       } as typeof Activities.$inferSelect;
 
       // Store the tempId returned by addOptimisticActivity
@@ -496,6 +560,7 @@ export function QuickActionFeedingCard({
       };
 
       // Create optimistic activity for immediate UI feedback
+      const userRelation = getUserRelationFromStore();
       const optimisticActivity = {
         ...nursingData,
         amountMl: nursingData.amountMl ?? null,
@@ -515,7 +580,8 @@ export function QuickActionFeedingCard({
         startTime: now,
         subjectType: 'baby' as const,
         updatedAt: now,
-        userId: 'temp',
+        user: userRelation,
+        userId: userRelation?.id || 'temp',
       } as typeof Activities.$inferSelect;
 
       // Store the tempId returned by addOptimisticActivity
@@ -597,6 +663,7 @@ export function QuickActionFeedingCard({
       };
 
       // Create optimistic activity for immediate UI feedback
+      const userRelation = getUserRelationFromStore();
       const optimisticActivity = {
         ...nursingData,
         amountMl: nursingData.amountMl ?? null,
@@ -616,7 +683,8 @@ export function QuickActionFeedingCard({
         startTime: now,
         subjectType: 'baby' as const,
         updatedAt: now,
-        userId: 'temp',
+        user: userRelation,
+        userId: userRelation?.id || 'temp',
       } as typeof Activities.$inferSelect;
 
       // Store the tempId returned by addOptimisticActivity
@@ -723,6 +791,7 @@ export function QuickActionFeedingCard({
         };
 
         // Create optimistic activity for immediate UI feedback
+        const userRelation = getUserRelationFromStore();
         const optimisticActivity = {
           ...bottleData,
           assignedUserId: null,
@@ -739,7 +808,8 @@ export function QuickActionFeedingCard({
           startTime: now,
           subjectType: 'baby' as const,
           updatedAt: now,
-          userId: 'temp',
+          user: userRelation,
+          userId: userRelation?.id || 'temp',
         } as typeof Activities.$inferSelect;
 
         tempId = addOptimisticActivity(optimisticActivity);
@@ -775,6 +845,7 @@ export function QuickActionFeedingCard({
         const side = data.side || 'both';
 
         // Create optimistic activity for immediate UI feedback
+        const userRelation = getUserRelationFromStore();
         const optimisticActivity = {
           ...nursingData,
           amountMl: nursingData.amountMl ?? null,
@@ -794,7 +865,8 @@ export function QuickActionFeedingCard({
           startTime: now,
           subjectType: 'baby' as const,
           updatedAt: now,
-          userId: 'temp',
+          user: userRelation,
+          userId: userRelation?.id || 'temp',
         } as typeof Activities.$inferSelect;
 
         tempId = addOptimisticActivity(optimisticActivity);
@@ -862,6 +934,7 @@ export function QuickActionFeedingCard({
         };
 
         // Create optimistic activity for immediate UI feedback
+        const userRelation = getUserRelationFromStore();
         const optimisticActivity = {
           ...bottleData,
           assignedUserId: null,
@@ -878,7 +951,8 @@ export function QuickActionFeedingCard({
           startTime: now,
           subjectType: 'baby' as const,
           updatedAt: now,
-          userId: 'temp',
+          user: userRelation,
+          userId: userRelation?.id || 'temp',
         } as typeof Activities.$inferSelect;
 
         tempId = addOptimisticActivity(optimisticActivity);
@@ -914,6 +988,7 @@ export function QuickActionFeedingCard({
         const side = data.side || 'both';
 
         // Create optimistic activity for immediate UI feedback
+        const userRelation = getUserRelationFromStore();
         const optimisticActivity = {
           ...nursingData,
           amountMl: nursingData.amountMl ?? null,
@@ -933,7 +1008,8 @@ export function QuickActionFeedingCard({
           startTime: now,
           subjectType: 'baby' as const,
           updatedAt: now,
-          userId: 'temp',
+          user: userRelation,
+          userId: userRelation?.id || 'temp',
         } as typeof Activities.$inferSelect;
 
         tempId = addOptimisticActivity(optimisticActivity);
@@ -1023,7 +1099,7 @@ export function QuickActionFeedingCard({
                     );
                   })()}
                   <span className="text-lg font-semibold leading-tight">
-                    {lastTimeDistance} ago
+                    {lastTimeDistance}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 text-sm opacity-70 leading-tight">
@@ -1107,6 +1183,12 @@ export function QuickActionFeedingCard({
               prediction.suggestedDuration ||
               getAgeBasedDuration(data?.babyAgeDays || null)
             }
+          />
+
+          <FeedingTimeline
+            feedings={timelineFeedings}
+            timeFormat={timeFormat}
+            userUnitPref={userUnitPref}
           />
         </div>
       </Card>

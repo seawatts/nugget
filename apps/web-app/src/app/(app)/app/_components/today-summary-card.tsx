@@ -1,90 +1,39 @@
 'use client';
 
 import { api } from '@nugget/api/react';
+import type { Activities } from '@nugget/db/schema';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@nugget/ui/accordion';
+import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
+import { Button } from '@nugget/ui/button';
+import { Icons } from '@nugget/ui/custom/icons';
 import { NuggetAvatar } from '@nugget/ui/custom/nugget-avatar';
+import { cn } from '@nugget/ui/lib/utils';
+import { toast } from '@nugget/ui/sonner';
 import { startOfDay } from 'date-fns';
-import type { LucideIcon } from 'lucide-react';
-import {
-  Activity,
-  Award,
-  Baby,
-  Bath,
-  Droplet,
-  Droplets,
-  Milk,
-  Moon,
-  Pill,
-  Scale,
-  Thermometer,
-  Timer,
-  Tablet as Toilet,
-  UtensilsCrossed,
-} from 'lucide-react';
+import { Award, Droplet, Droplets, Milk, Moon, StopCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { memo, useEffect, useMemo, useState } from 'react';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
-import { formatVolumeDisplay } from './activities/shared/volume-utils';
-
-const activityIcons: Record<string, LucideIcon> = {
-  activity: Activity,
-  bath: Bath,
-  bottle: Milk,
-  diaper: Baby,
-  feeding: Milk,
-  growth: Scale,
-  medicine: Pill,
-  milestone: Award,
-  nursing: Droplet,
-  potty: Toilet,
-  pumping: Droplets,
-  sleep: Moon,
-  solids: UtensilsCrossed,
-  temperature: Thermometer,
-  'tummy-time': Timer,
-};
-
-const activityColors: Record<string, string> = {
-  activity: 'text-activity-tummy-time',
-  bath: 'text-activity-bath',
-  bottle: 'text-activity-feeding',
-  diaper: 'text-activity-diaper',
-  feeding: 'text-activity-feeding',
-  growth: 'text-activity-growth',
-  medicine: 'text-activity-medicine',
-  milestone: 'text-activity-milestone',
-  nursing: 'text-activity-feeding',
-  potty: 'text-activity-potty',
-  pumping: 'text-activity-pumping',
-  sleep: 'text-activity-sleep',
-  solids: 'text-activity-solids',
-  temperature: 'text-activity-temperature',
-  'tummy-time': 'text-activity-tummy-time',
-};
-
-const activityLabels: Record<string, string> = {
-  activity: 'Activity',
-  bath: 'Bath',
-  bottle: 'Bottle',
-  diaper: 'Diaper',
-  feeding: 'Feeding',
-  growth: 'Growth',
-  medicine: 'Medicine',
-  milestone: 'Milestones',
-  nursing: 'Nursing',
-  potty: 'Potty',
-  pumping: 'Pumping',
-  sleep: 'Sleep',
-  solids: 'Solids',
-  temperature: 'Temperature',
-  'tummy-time': 'Tummy Time',
-};
+import { formatTimeWithPreference } from '~/lib/format-time';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
+import {
+  getUserRelationFromStore,
+  useOptimisticActivitiesStore,
+} from '~/stores/optimistic-activities';
+import { FeedingActivityDrawer } from './activities/feeding/feeding-activity-drawer';
+import { calculateNursingVolumes } from './activities/feeding/nursing-volume-calculator';
+import { predictNextFeeding } from './activities/feeding/prediction';
+import { getActivityTheme } from './activities/shared/activity-theme-config';
+import { StopSleepConfirmationDialog } from './activities/shared/components/stop-sleep-confirmation-dialog';
+import { TimelineDrawerWrapper } from './activities/shared/components/timeline-drawer-wrapper';
+import { useInProgressSleep } from './activities/shared/hooks/use-in-progress-sleep';
+import { formatCompactRelativeTimeWithAgo } from './activities/shared/utils/format-compact-relative-time';
+import { useActivityMutations } from './activities/use-activity-mutations';
 
 interface TodaySummaryCardProps {
   babyBirthDate?: Date | null;
@@ -92,56 +41,6 @@ interface TodaySummaryCardProps {
   babyPhotoUrl?: string | null;
   babyAvatarBackgroundColor?: string | null;
   measurementUnit?: 'metric' | 'imperial';
-}
-
-function formatDuration(minutes: number): string {
-  if (minutes < 60) {
-    return `${minutes} min`;
-  }
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-  if (remainingMinutes === 0) {
-    return `${hours} hour${hours !== 1 ? 's' : ''}`;
-  }
-  return `${hours}h ${remainingMinutes}m`;
-}
-
-function formatTotal(
-  type: string,
-  totalAmount: number,
-  totalDuration: number,
-  count: number,
-  unitPref: 'ML' | 'OZ' = 'ML',
-): string {
-  switch (type) {
-    case 'feeding': {
-      if (totalAmount === 0) return unitPref === 'OZ' ? '0 oz' : '0 ml';
-      return formatVolumeDisplay(totalAmount, unitPref, true);
-    }
-    case 'sleep': {
-      if (totalDuration === 0) return '0 min';
-      return formatDuration(totalDuration);
-    }
-    case 'diaper': {
-      return `${count} ${count === 1 ? 'change' : 'changes'}`;
-    }
-    case 'pumping': {
-      if (totalAmount === 0) return unitPref === 'OZ' ? '0 oz' : '0 ml';
-      return formatVolumeDisplay(totalAmount, unitPref, true);
-    }
-    case 'tummy-time': {
-      if (totalDuration === 0) return '0 min';
-      return formatDuration(totalDuration);
-    }
-    case 'bath': {
-      return `${count} ${count === 1 ? 'time' : 'times'}`;
-    }
-    case 'milestone': {
-      return `${count}`;
-    }
-    default:
-      return `${count}`;
-  }
 }
 
 // Memoized component to prevent parent re-renders when age updates
@@ -188,14 +87,11 @@ export function TodaySummaryCard({
   babyName,
   babyPhotoUrl,
   babyAvatarBackgroundColor,
-  measurementUnit = 'metric',
+  measurementUnit: _measurementUnit = 'metric',
 }: TodaySummaryCardProps) {
   // Get babyId from params (TodaySummaryCard is only used on dashboard which has babyId in URL)
   const params = useParams();
   const babyId = params.babyId as string;
-
-  // Determine volume unit based on measurement preference
-  const userUnitPref = measurementUnit === 'imperial' ? 'OZ' : 'ML';
 
   // Fetch today's activities using optimized query (non-blocking)
   const { data: todayActivitiesData = [] } =
@@ -210,29 +106,126 @@ export function TodaySummaryCard({
       { enabled: Boolean(babyId), staleTime: 86400000 },
     );
 
-  // Fetch milestones achieved today using tRPC query (non-blocking)
-  const { data: allMilestones = [] } = api.milestones.list.useQuery(
-    { babyId: babyId ?? '', limit: 100 },
-    { enabled: Boolean(babyId) },
-  );
-
-  // Filter to only today's milestones
+  // Filter to only today's activities
   const todayStart = useMemo(() => startOfDay(new Date()), []);
 
   const todayActivities = useMemo(() => {
     return todayActivitiesData;
   }, [todayActivitiesData]);
 
-  const milestonesData = useMemo(() => {
-    return allMilestones.filter((milestone) => {
-      if (!milestone.achievedDate) return false;
-      const achievedDate = new Date(milestone.achievedDate);
-      return achievedDate >= todayStart;
-    });
-  }, [allMilestones, todayStart]);
-
   // Get optimistic activities from Zustand store
   const optimisticActivities = useOptimisticActivitiesStore.use.activities();
+
+  // Get shared data from dashboard store
+  const allActivitiesFromStore = useDashboardDataStore.use.activities();
+
+  // State for drawer management
+  const [openDrawer, setOpenDrawer] = useState<string | null>(null);
+  const [creatingType, setCreatingType] = useState<
+    'bottle' | 'nursing' | 'wet' | 'dirty' | 'sleep-timer' | null
+  >(null);
+  const [showSleepConfirmation, setShowSleepConfirmation] = useState(false);
+  const [pendingActivity, setPendingActivity] = useState<{
+    type: 'bottle' | 'nursing' | 'wet' | 'dirty';
+    data?: {
+      amountMl?: number;
+      duration?: number;
+      feedingSource?: 'formula' | 'pumped' | 'direct';
+      side?: 'left' | 'right' | 'both';
+    };
+  } | null>(null);
+
+  // Activity mutations
+  const { createActivity, updateActivity } = useActivityMutations();
+  const addOptimisticActivity = useOptimisticActivitiesStore(
+    (state) => state.addActivity,
+  );
+  const removeOptimisticActivity = useOptimisticActivitiesStore(
+    (state) => state.removeActivity,
+  );
+  const utils = api.useUtils();
+
+  // Check for in-progress sleep
+  const {
+    inProgressSleep,
+    sleepDuration,
+    durationMinutes: sleepDurationMinutes,
+  } = useInProgressSleep({
+    babyId,
+    enabled: true,
+  });
+
+  // Query for in-progress sleep activity (for timer display)
+  const { data: inProgressActivity } =
+    api.activities.getInProgressActivity.useQuery(
+      {
+        activityType: 'sleep',
+        babyId: babyId ?? '',
+      },
+      { enabled: Boolean(babyId), refetchInterval: 5000 },
+    );
+
+  // Fetch feeding prediction data
+  const { data: feedingQueryData } = api.activities.getUpcomingFeeding.useQuery(
+    { babyId: babyId ?? '' },
+    { enabled: Boolean(babyId) },
+  );
+
+  // Process feeding prediction data
+  const feedingData = feedingQueryData
+    ? {
+        babyAgeDays: feedingQueryData.babyAgeDays,
+        babyBirthDate: feedingQueryData.babyBirthDate,
+        prediction: predictNextFeeding(
+          [...optimisticActivities, ...feedingQueryData.recentActivities],
+          feedingQueryData.babyBirthDate,
+          feedingQueryData.feedIntervalHours,
+          feedingQueryData.customPreferences,
+        ),
+        recentActivities: feedingQueryData.recentActivities,
+      }
+    : null;
+
+  // Get estimated nursing amount
+  const getEstimatedNursingAmount = (durationMinutes: number | null) => {
+    if (!durationMinutes) {
+      return null;
+    }
+    const ageDays = feedingData?.babyAgeDays ?? null;
+    const ageDaysForCalc = ageDays ?? 90;
+    const { totalMl } = calculateNursingVolumes(
+      ageDaysForCalc,
+      durationMinutes,
+    );
+    return totalMl;
+  };
+
+  // Get most common bottle source
+  const getMostCommonBottleSource = (): 'formula' | 'pumped' => {
+    const activities = allActivitiesFromStore || [];
+    const bottleActivities = activities.filter(
+      (a) => a.type === 'bottle' && a.feedingSource,
+    );
+
+    if (bottleActivities.length === 0) {
+      return 'formula'; // Default to formula
+    }
+
+    const sourceCounts = bottleActivities.reduce(
+      (acc, activity) => {
+        const source = activity.feedingSource;
+        if (source === 'formula') {
+          acc.formula++;
+        } else if (source === 'pumped' || source === 'donor') {
+          acc.pumped++;
+        }
+        return acc;
+      },
+      { formula: 0, pumped: 0 },
+    );
+
+    return sourceCounts.formula >= sourceCounts.pumped ? 'formula' : 'pumped';
+  };
 
   // Merge optimistic activities with loaded activities
   const allActivities = useMemo(() => {
@@ -266,89 +259,760 @@ export function TodaySummaryCard({
     return [...deduplicatedOptimistic, ...todayActivities];
   }, [optimisticActivities, todayActivities, todayStart]);
 
-  // Map activity types to display categories
-  const mapActivityTypeToCategory = (type: string): string => {
-    // Feeding variants
-    if (type === 'feeding' || type === 'bottle' || type === 'nursing') {
-      return 'feeding';
-    }
-    // Diaper variants
-    if (
-      type === 'diaper' ||
-      type === 'wet' ||
-      type === 'dirty' ||
-      type === 'both'
-    ) {
-      return 'diaper';
-    }
-    // Tummy time conversion (underscore to dash)
-    if (type === 'tummy_time') {
-      return 'tummy-time';
-    }
-    // Everything else passes through as-is
-    return type;
+  // Button handlers
+  const handleBottleClick = () => {
+    setOpenDrawer('bottle');
   };
 
-  // Group activities by category, tracking count and totals
-  const activitySummaries = allActivities.reduce(
-    (acc, activity) => {
-      const category = mapActivityTypeToCategory(activity.type);
-      if (!acc[category]) {
-        acc[category] = {
-          count: 1,
-          totalAmount: activity.amountMl || 0,
-          totalDuration: activity.duration || 0,
-        };
-      } else {
-        acc[category].count += 1;
-        acc[category].totalDuration += activity.duration || 0;
-        acc[category].totalAmount += activity.amountMl || 0;
-      }
-      return acc;
-    },
-    {} as Record<
-      string,
-      {
-        count: number;
-        totalDuration: number;
-        totalAmount: number;
-      }
-    >,
-  );
+  const handleNursingDrawerClick = () => {
+    setOpenDrawer('nursing');
+  };
 
-  // Define the fixed categories to display
-  const displayCategories = [
-    'feeding',
-    'sleep',
-    'diaper',
-    'tummy-time',
-    'pumping',
-    'milestone',
-  ];
-
-  // Ensure all categories exist with default values
-  const categorySummaries = displayCategories.map((category) => {
-    // Special handling for milestones
-    if (category === 'milestone') {
-      return {
-        category,
-        summary: {
-          count: milestonesData.length,
-          totalAmount: 0,
-          totalDuration: 0,
-        },
-      };
+  const handleDiaperClick = async (type: 'wet' | 'dirty') => {
+    // Check for in-progress sleep before creating activity
+    if (inProgressSleep) {
+      setPendingActivity({ type });
+      setShowSleepConfirmation(true);
+      return;
     }
 
-    return {
-      category,
-      summary: activitySummaries[category] || {
-        count: 0,
-        totalAmount: 0,
-        totalDuration: 0,
-      },
-    };
-  });
+    setCreatingType(type);
+
+    let tempId: string | null = null;
+
+    try {
+      const now = new Date();
+
+      // Build diaper activity data
+      const diaperData = {
+        details: { type },
+        type: 'diaper' as const,
+      };
+
+      // Create optimistic activity for immediate UI feedback
+      const optimisticActivity = {
+        ...diaperData,
+        amountMl: null,
+        assignedUserId: null,
+        babyId: babyId,
+        createdAt: now,
+        duration: 0,
+        endTime: now,
+        familyId: 'temp',
+        familyMemberId: null,
+        feedingSource: null,
+        id: `activity-optimistic-diaper-${Date.now()}`,
+        isScheduled: false,
+        notes: null,
+        startTime: now,
+        subjectType: 'baby' as const,
+        updatedAt: now,
+        user: getUserRelationFromStore(),
+        userId: getUserRelationFromStore()?.id || 'temp',
+      } as typeof Activities.$inferSelect;
+
+      // Store the tempId returned by addOptimisticActivity
+      tempId = addOptimisticActivity(optimisticActivity);
+
+      // Create the actual activity
+      await createActivity({
+        activityType: 'diaper',
+        babyId,
+        details: { type },
+        endTime: now,
+        startTime: now,
+      });
+
+      // Remove optimistic activity after real one is created
+      if (tempId) {
+        removeOptimisticActivity(tempId);
+      }
+
+      // Don't await - let it invalidate in background
+      utils.activities.getUpcomingDiaper.invalidate();
+      utils.activities.getTodaySummary.invalidate();
+    } catch (err) {
+      console.error('Failed to log diaper change:', err);
+      // Remove optimistic activity on error to avoid stuck state
+      if (tempId) {
+        removeOptimisticActivity(tempId);
+      }
+      toast.error('Failed to log diaper change. Please try again.');
+    } finally {
+      setCreatingType(null);
+    }
+  };
+
+  const handleSleepTimerClick = async () => {
+    // If already tracking, stop the timer
+    if (inProgressActivity) {
+      setCreatingType('sleep-timer');
+
+      const now = new Date();
+      const startTime = new Date(inProgressActivity.startTime);
+      const elapsedMinutes =
+        (now.getTime() - startTime.getTime()) / (1000 * 60);
+      const durationMinutes = Math.max(1, Math.ceil(elapsedMinutes));
+
+      // Create optimistic completed activity for immediate UI feedback
+      const completedActivity = {
+        ...inProgressActivity,
+        duration: durationMinutes,
+        endTime: now,
+        updatedAt: now,
+      };
+
+      // Update optimistic store immediately
+      removeOptimisticActivity(inProgressActivity.id);
+      const tempId = addOptimisticActivity(completedActivity);
+
+      // Clear loading state immediately for better UX
+      setCreatingType(null);
+
+      try {
+        // Update in background - don't await
+        updateActivity({
+          duration: durationMinutes,
+          endTime: now,
+          id: inProgressActivity.id,
+        })
+          .then((_activity) => {
+            // Remove optimistic activity after real one is saved
+            if (tempId) {
+              removeOptimisticActivity(tempId);
+            }
+            // Invalidate queries in background
+            utils.activities.getUpcomingSleep.invalidate();
+            utils.activities.getInProgressActivity.invalidate();
+            utils.activities.getTodaySummary.invalidate();
+          })
+          .catch((err) => {
+            console.error('Failed to stop sleep timer:', err);
+            // Remove optimistic activity on error
+            if (tempId) {
+              removeOptimisticActivity(tempId);
+            }
+            toast.error('Failed to stop timer. Please try again.');
+          });
+
+        // Show success toast immediately
+        toast.success('Sleep tracking stopped');
+      } catch (err) {
+        console.error('Failed to stop sleep timer:', err);
+        if (tempId) {
+          removeOptimisticActivity(tempId);
+        }
+        toast.error('Failed to stop timer. Please try again.');
+      }
+    } else {
+      // Start timer
+      setCreatingType('sleep-timer');
+
+      let tempId: string | null = null;
+
+      try {
+        const now = new Date();
+
+        // Determine sleep type based on time of day
+        const hour = now.getHours();
+        const sleepType = hour >= 6 && hour < 18 ? 'nap' : 'night';
+
+        // Create optimistic activity for immediate UI feedback
+        const optimisticActivity = {
+          amountMl: null,
+          assignedUserId: null,
+          babyId: babyId,
+          createdAt: now,
+          details: {
+            sleepType,
+            type: 'sleep' as const,
+          },
+          duration: 0,
+          endTime: null, // No end time = in progress
+          familyId: 'temp',
+          familyMemberId: null,
+          feedingSource: null,
+          id: `activity-optimistic-sleep-timer-${Date.now()}`,
+          isScheduled: false,
+          notes: null,
+          startTime: now,
+          subjectType: 'baby' as const,
+          type: 'sleep' as const,
+          updatedAt: now,
+          user: getUserRelationFromStore(),
+          userId: getUserRelationFromStore()?.id || 'temp',
+        } as typeof Activities.$inferSelect;
+
+        // Store the tempId returned by addOptimisticActivity
+        tempId = addOptimisticActivity(optimisticActivity);
+
+        // Create the actual in-progress activity (no endTime)
+        await createActivity({
+          activityType: 'sleep',
+          babyId,
+          details: {
+            sleepType,
+            type: 'sleep',
+          },
+          startTime: now,
+          // No duration or endTime - this marks it as in-progress
+        });
+
+        // Remove optimistic activity after real one is created
+        if (tempId) {
+          removeOptimisticActivity(tempId);
+        }
+
+        toast.success('Sleep timer started');
+        // Don't await - let it invalidate in background
+        utils.activities.getUpcomingSleep.invalidate();
+        utils.activities.getInProgressActivity.invalidate();
+        utils.activities.getTodaySummary.invalidate();
+      } catch (err) {
+        console.error('Failed to start sleep timer:', err);
+        // Remove optimistic activity on error to avoid stuck state
+        if (tempId) {
+          removeOptimisticActivity(tempId);
+        }
+        toast.error('Failed to start timer. Please try again.');
+      } finally {
+        setCreatingType(null);
+      }
+    }
+  };
+
+  const handleStopSleepAndCreate = async (_e?: React.MouseEvent) => {
+    if (!pendingActivity) return;
+
+    setShowSleepConfirmation(false);
+    setCreatingType(pendingActivity.type === 'nursing' ? 'nursing' : 'bottle');
+
+    let tempId: string | null = null;
+
+    try {
+      // Stop the in-progress sleep (non-blocking)
+      const { autoStopInProgressSleepAction } = await import(
+        './activities/sleep/actions'
+      );
+      const result = await autoStopInProgressSleepAction({ babyId });
+      if (result?.data?.activity) {
+        toast.info('Sleep tracking stopped');
+      }
+    } catch (error) {
+      console.error('Failed to stop sleep:', error);
+      toast.error('Failed to stop sleep tracking');
+    }
+
+    try {
+      const now = new Date();
+      const { type, data } = pendingActivity;
+
+      if (type === 'bottle' && data?.amountMl) {
+        const mostCommonBottleSource = getMostCommonBottleSource();
+        const bottleData = {
+          amountMl: data.amountMl,
+          feedingSource: mostCommonBottleSource,
+          type: 'bottle' as const,
+        };
+
+        const optimisticActivity = {
+          ...bottleData,
+          assignedUserId: null,
+          babyId: babyId,
+          createdAt: now,
+          details: { type: 'bottle' as const },
+          duration: 0,
+          endTime: now,
+          familyId: 'temp',
+          familyMemberId: null,
+          id: `activity-optimistic-bottle-${Date.now()}`,
+          isScheduled: false,
+          notes: null,
+          startTime: now,
+          subjectType: 'baby' as const,
+          updatedAt: now,
+          user: getUserRelationFromStore(),
+          userId: getUserRelationFromStore()?.id || 'temp',
+        } as typeof Activities.$inferSelect;
+
+        tempId = addOptimisticActivity(optimisticActivity);
+
+        await createActivity({
+          activityType: 'bottle',
+          amountMl: data.amountMl,
+          babyId,
+          duration: 0,
+          endTime: now,
+          feedingSource: mostCommonBottleSource,
+          startTime: now,
+        });
+
+        if (tempId) {
+          removeOptimisticActivity(tempId);
+        }
+
+        utils.activities.getUpcomingFeeding.invalidate();
+        utils.activities.getTodaySummary.invalidate();
+      } else if (type === 'nursing' && data?.duration) {
+        const computedAmountMl =
+          data.amountMl ?? getEstimatedNursingAmount(data.duration ?? null);
+        const nursingData = {
+          amountMl: computedAmountMl ?? null,
+          duration: data.duration,
+          feedingSource: 'direct' as const,
+          type: 'nursing' as const,
+        };
+
+        const side = data.side || 'both';
+
+        const optimisticActivity = {
+          ...nursingData,
+          amountMl: nursingData.amountMl ?? null,
+          assignedUserId: null,
+          babyId: babyId,
+          createdAt: now,
+          details: {
+            side: side as 'left' | 'right' | 'both',
+            type: 'nursing' as const,
+          },
+          endTime: now,
+          familyId: 'temp',
+          familyMemberId: null,
+          id: `activity-optimistic-nursing-${Date.now()}`,
+          isScheduled: false,
+          notes: null,
+          startTime: now,
+          subjectType: 'baby' as const,
+          updatedAt: now,
+          user: getUserRelationFromStore(),
+          userId: getUserRelationFromStore()?.id || 'temp',
+        } as typeof Activities.$inferSelect;
+
+        tempId = addOptimisticActivity(optimisticActivity);
+
+        await createActivity({
+          activityType: 'nursing',
+          amountMl: nursingData.amountMl ?? undefined,
+          babyId,
+          details: {
+            side: side as 'left' | 'right' | 'both',
+            type: 'nursing',
+          },
+          duration: data.duration,
+          endTime: now,
+          feedingSource: 'direct',
+          startTime: now,
+        });
+
+        if (tempId) {
+          removeOptimisticActivity(tempId);
+        }
+
+        utils.activities.getUpcomingFeeding.invalidate();
+        utils.activities.getTodaySummary.invalidate();
+      } else if (type === 'wet' || type === 'dirty') {
+        const optimisticActivity = {
+          amountMl: null,
+          assignedUserId: null,
+          babyId: babyId,
+          createdAt: now,
+          details: { type },
+          duration: 0,
+          endTime: now,
+          familyId: 'temp',
+          familyMemberId: null,
+          feedingSource: null,
+          id: `activity-optimistic-diaper-${Date.now()}`,
+          isScheduled: false,
+          notes: null,
+          startTime: now,
+          subjectType: 'baby' as const,
+          type: 'diaper' as const,
+          updatedAt: now,
+          user: getUserRelationFromStore(),
+          userId: getUserRelationFromStore()?.id || 'temp',
+        } as typeof Activities.$inferSelect;
+
+        tempId = addOptimisticActivity(optimisticActivity);
+
+        await createActivity({
+          activityType: 'diaper',
+          babyId,
+          details: { type },
+          endTime: now,
+          startTime: now,
+        });
+
+        if (tempId) {
+          removeOptimisticActivity(tempId);
+        }
+
+        utils.activities.getUpcomingDiaper.invalidate();
+        utils.activities.getTodaySummary.invalidate();
+      }
+    } catch (err) {
+      console.error(`Failed to log ${pendingActivity.type}:`, err);
+      if (tempId) {
+        removeOptimisticActivity(tempId);
+      }
+      toast.error(
+        `Failed to log ${pendingActivity.type === 'bottle' ? 'bottle feeding' : pendingActivity.type === 'nursing' ? 'nursing' : 'diaper change'}. Please try again.`,
+      );
+    } finally {
+      setCreatingType(null);
+      setPendingActivity(null);
+    }
+  };
+
+  const handleKeepSleepingAndCreate = async () => {
+    if (!pendingActivity) return;
+
+    setShowSleepConfirmation(false);
+    setCreatingType(pendingActivity.type === 'nursing' ? 'nursing' : 'bottle');
+
+    let tempId: string | null = null;
+
+    try {
+      const now = new Date();
+      const { type, data } = pendingActivity;
+
+      if (type === 'bottle' && data?.amountMl) {
+        const mostCommonBottleSource = getMostCommonBottleSource();
+        const optimisticActivity = {
+          amountMl: data.amountMl,
+          assignedUserId: null,
+          babyId: babyId,
+          createdAt: now,
+          details: { type: 'bottle' as const },
+          duration: 0,
+          endTime: now,
+          familyId: 'temp',
+          familyMemberId: null,
+          feedingSource: mostCommonBottleSource,
+          id: `activity-optimistic-bottle-${Date.now()}`,
+          isScheduled: false,
+          notes: null,
+          startTime: now,
+          subjectType: 'baby' as const,
+          type: 'bottle' as const,
+          updatedAt: now,
+          user: getUserRelationFromStore(),
+          userId: getUserRelationFromStore()?.id || 'temp',
+        } as typeof Activities.$inferSelect;
+
+        tempId = addOptimisticActivity(optimisticActivity);
+
+        await createActivity({
+          activityType: 'bottle',
+          amountMl: data.amountMl,
+          babyId,
+          duration: 0,
+          endTime: now,
+          feedingSource: mostCommonBottleSource,
+          startTime: now,
+        });
+
+        if (tempId) {
+          removeOptimisticActivity(tempId);
+        }
+
+        utils.activities.getUpcomingFeeding.invalidate();
+        utils.activities.getTodaySummary.invalidate();
+      } else if (type === 'nursing' && data?.duration) {
+        const computedAmountMl =
+          data.amountMl ?? getEstimatedNursingAmount(data.duration ?? null);
+        const optimisticActivity = {
+          amountMl: computedAmountMl ?? null,
+          assignedUserId: null,
+          babyId: babyId,
+          createdAt: now,
+          details: {
+            side: (data.side || 'both') as 'left' | 'right' | 'both',
+            type: 'nursing' as const,
+          },
+          duration: data.duration,
+          endTime: now,
+          familyId: 'temp',
+          familyMemberId: null,
+          feedingSource: 'direct' as const,
+          id: `activity-optimistic-nursing-${Date.now()}`,
+          isScheduled: false,
+          notes: null,
+          startTime: now,
+          subjectType: 'baby' as const,
+          type: 'nursing' as const,
+          updatedAt: now,
+          user: getUserRelationFromStore(),
+          userId: getUserRelationFromStore()?.id || 'temp',
+        } as typeof Activities.$inferSelect;
+
+        tempId = addOptimisticActivity(optimisticActivity);
+
+        await createActivity({
+          activityType: 'nursing',
+          amountMl: computedAmountMl ?? undefined,
+          babyId,
+          details: {
+            side: (data.side || 'both') as 'left' | 'right' | 'both',
+            type: 'nursing',
+          },
+          duration: data.duration,
+          endTime: now,
+          feedingSource: 'direct',
+          startTime: now,
+        });
+
+        if (tempId) {
+          removeOptimisticActivity(tempId);
+        }
+
+        utils.activities.getUpcomingFeeding.invalidate();
+        utils.activities.getTodaySummary.invalidate();
+      } else if (type === 'wet' || type === 'dirty') {
+        const optimisticActivity = {
+          amountMl: null,
+          assignedUserId: null,
+          babyId: babyId,
+          createdAt: now,
+          details: { type },
+          duration: 0,
+          endTime: now,
+          familyId: 'temp',
+          familyMemberId: null,
+          feedingSource: null,
+          id: `activity-optimistic-diaper-${Date.now()}`,
+          isScheduled: false,
+          notes: null,
+          startTime: now,
+          subjectType: 'baby' as const,
+          type: 'diaper' as const,
+          updatedAt: now,
+          user: getUserRelationFromStore(),
+          userId: getUserRelationFromStore()?.id || 'temp',
+        } as typeof Activities.$inferSelect;
+
+        tempId = addOptimisticActivity(optimisticActivity);
+
+        await createActivity({
+          activityType: 'diaper',
+          babyId,
+          details: { type },
+          endTime: now,
+          startTime: now,
+        });
+
+        if (tempId) {
+          removeOptimisticActivity(tempId);
+        }
+
+        utils.activities.getUpcomingDiaper.invalidate();
+        utils.activities.getTodaySummary.invalidate();
+      }
+    } catch (err) {
+      console.error(`Failed to log ${pendingActivity.type}:`, err);
+      if (tempId) {
+        removeOptimisticActivity(tempId);
+      }
+      toast.error(
+        `Failed to log ${pendingActivity.type === 'bottle' ? 'bottle feeding' : pendingActivity.type === 'nursing' ? 'nursing' : 'diaper change'}. Please try again.`,
+      );
+    } finally {
+      setCreatingType(null);
+      setPendingActivity(null);
+    }
+  };
+
+  const handleDrawerClose = () => {
+    setOpenDrawer(null);
+  };
+
+  // Format elapsed time for sleep timer
+  const formatElapsedTime = (minutes: number): string => {
+    if (minutes < 60) {
+      return `${minutes}m`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (remainingMinutes === 0) {
+      return `${hours}h`;
+    }
+    return `${hours}h ${remainingMinutes}m`;
+  };
+
+  // Get activity themes
+  const feedingTheme = getActivityTheme('feeding');
+  const diaperTheme = getActivityTheme('diaper');
+  const sleepTheme = getActivityTheme('sleep');
+
+  // Get user time format
+  const userData = useDashboardDataStore.use.user();
+  const timeFormat = userData?.timeFormat || '12h';
+
+  // Fetch diaper and sleep prediction data for last activities with user info
+  const { data: diaperQueryData } = api.activities.getUpcomingDiaper.useQuery(
+    { babyId: babyId ?? '' },
+    { enabled: Boolean(babyId) },
+  );
+
+  const { data: sleepQueryData } = api.activities.getUpcomingSleep.useQuery(
+    { babyId: babyId ?? '' },
+    { enabled: Boolean(babyId) },
+  );
+
+  // Find last activities for each type from prediction queries (which include user data)
+  const lastBottleActivity = useMemo(() => {
+    if (!feedingQueryData?.recentActivities) return null;
+    return (
+      feedingQueryData.recentActivities.find(
+        (a) =>
+          a.type === 'bottle' &&
+          !a.isScheduled &&
+          !(a.details && 'skipped' in a.details && a.details.skipped === true),
+      ) || null
+    );
+  }, [feedingQueryData?.recentActivities]);
+
+  const lastNursingActivity = useMemo(() => {
+    if (!feedingQueryData?.recentActivities) return null;
+    return (
+      feedingQueryData.recentActivities.find(
+        (a) =>
+          a.type === 'nursing' &&
+          !a.isScheduled &&
+          !(a.details && 'skipped' in a.details && a.details.skipped === true),
+      ) || null
+    );
+  }, [feedingQueryData?.recentActivities]);
+
+  const lastDiaperActivity = useMemo(() => {
+    if (!diaperQueryData?.recentActivities) return null;
+    return (
+      diaperQueryData.recentActivities.find(
+        (a) =>
+          (a.type === 'diaper' ||
+            a.type === 'wet' ||
+            a.type === 'dirty' ||
+            a.type === 'both') &&
+          !a.isScheduled &&
+          !(a.details && 'skipped' in a.details && a.details.skipped === true),
+      ) || null
+    );
+  }, [diaperQueryData?.recentActivities]);
+
+  const lastSleepActivity = useMemo(() => {
+    if (!sleepQueryData?.recentActivities) return null;
+    return (
+      sleepQueryData.recentActivities.find(
+        (a) =>
+          a.type === 'sleep' &&
+          !a.isScheduled &&
+          a.endTime !== null &&
+          a.duration &&
+          a.duration > 0 &&
+          !(a.details && 'skipped' in a.details && a.details.skipped === true),
+      ) || null
+    );
+  }, [sleepQueryData?.recentActivities]);
+
+  // Format last activity times
+  const lastBottleTime = lastBottleActivity
+    ? formatCompactRelativeTimeWithAgo(new Date(lastBottleActivity.startTime))
+    : null;
+  const lastBottleExactTime = lastBottleActivity
+    ? formatTimeWithPreference(
+        new Date(lastBottleActivity.startTime),
+        timeFormat,
+      )
+    : null;
+  const lastBottleUser = lastBottleActivity?.user
+    ? {
+        avatar: lastBottleActivity.user.avatarUrl,
+        initials: (
+          lastBottleActivity.user.firstName?.[0] ||
+          lastBottleActivity.user.email[0] ||
+          '?'
+        ).toUpperCase(),
+        name:
+          [lastBottleActivity.user.firstName, lastBottleActivity.user.lastName]
+            .filter(Boolean)
+            .join(' ') || lastBottleActivity.user.email,
+      }
+    : null;
+
+  const lastNursingTime = lastNursingActivity
+    ? formatCompactRelativeTimeWithAgo(new Date(lastNursingActivity.startTime))
+    : null;
+  const lastNursingExactTime = lastNursingActivity
+    ? formatTimeWithPreference(
+        new Date(lastNursingActivity.startTime),
+        timeFormat,
+      )
+    : null;
+  const lastNursingUser = lastNursingActivity?.user
+    ? {
+        avatar: lastNursingActivity.user.avatarUrl,
+        initials: (
+          lastNursingActivity.user.firstName?.[0] ||
+          lastNursingActivity.user.email[0] ||
+          '?'
+        ).toUpperCase(),
+        name:
+          [
+            lastNursingActivity.user.firstName,
+            lastNursingActivity.user.lastName,
+          ]
+            .filter(Boolean)
+            .join(' ') || lastNursingActivity.user.email,
+      }
+    : null;
+
+  const lastDiaperTime = lastDiaperActivity
+    ? formatCompactRelativeTimeWithAgo(new Date(lastDiaperActivity.startTime))
+    : null;
+  const lastDiaperExactTime = lastDiaperActivity
+    ? formatTimeWithPreference(
+        new Date(lastDiaperActivity.startTime),
+        timeFormat,
+      )
+    : null;
+  const lastDiaperUser = lastDiaperActivity?.user
+    ? {
+        avatar: lastDiaperActivity.user.avatarUrl,
+        initials: (
+          lastDiaperActivity.user.firstName?.[0] ||
+          lastDiaperActivity.user.email[0] ||
+          '?'
+        ).toUpperCase(),
+        name:
+          [lastDiaperActivity.user.firstName, lastDiaperActivity.user.lastName]
+            .filter(Boolean)
+            .join(' ') || lastDiaperActivity.user.email,
+      }
+    : null;
+
+  const lastSleepTime = lastSleepActivity
+    ? formatCompactRelativeTimeWithAgo(new Date(lastSleepActivity.startTime))
+    : null;
+  const lastSleepExactTime = lastSleepActivity
+    ? formatTimeWithPreference(
+        new Date(lastSleepActivity.startTime),
+        timeFormat,
+      )
+    : null;
+  const lastSleepUser = lastSleepActivity?.user
+    ? {
+        avatar: lastSleepActivity.user.avatarUrl,
+        initials: (
+          lastSleepActivity.user.firstName?.[0] ||
+          lastSleepActivity.user.email[0] ||
+          '?'
+        ).toUpperCase(),
+        name:
+          [lastSleepActivity.user.firstName, lastSleepActivity.user.lastName]
+            .filter(Boolean)
+            .join(' ') || lastSleepActivity.user.email,
+      }
+    : null;
 
   const upcomingCelebration = useMemo(() => {
     if (!celebrationData || celebrationData.celebration) return null;
@@ -368,9 +1032,14 @@ export function TodaySummaryCard({
 
   return (
     <div className="rounded-2xl border border-border/40 bg-linear-to-br from-activity-vitamin-d via-activity-nail-trimming/95 to-activity-feeding backdrop-blur-xl p-6 shadow-xl shadow-activity-nail-trimming/20">
-      <Accordion className="w-full" collapsible defaultValue="" type="single">
+      <Accordion
+        className="w-full"
+        collapsible
+        defaultValue="activity-cards"
+        type="single"
+      >
         <AccordionItem className="border-0" value="activity-cards">
-          <AccordionTrigger className="hover:no-underline py-0 mb-0 data-[state=open]:mb-4 cursor-pointer items-center [&>svg]:translate-y-0">
+          <AccordionTrigger className="hover:no-underline py-0 mb-0 data-[state=open]:mb-2 cursor-pointer items-center [&>svg]:translate-y-0">
             <div className="flex items-center justify-between w-full pr-4">
               <div className="flex items-center gap-2.5">
                 <Link
@@ -411,7 +1080,7 @@ export function TodaySummaryCard({
             </div>
           </AccordionTrigger>
           {upcomingCelebration && (
-            <div className="mt-4 mb-2 data-[state=open]:mt-6 data-[state=open]:mb-4 flex items-start gap-3 rounded-xl border border-white/20 bg-white/10 px-5 py-4 text-sm text-foreground/90">
+            <div className="mt-2 mb-1.5 data-[state=open]:mt-2 data-[state=open]:mb-1.5 flex items-start gap-3 rounded-xl border border-white/20 bg-white/10 px-5 py-4 text-sm text-foreground/90">
               <div className="shrink-0 rounded-full bg-white/20 p-2 text-activity-feeding">
                 <Award className="size-4" />
               </div>
@@ -429,43 +1098,222 @@ export function TodaySummaryCard({
               </div>
             </div>
           )}
-          <AccordionContent className="pt-0">
+          <AccordionContent className="pt-0 pb-0">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
-              {categorySummaries.map(({ category, summary }) => {
-                const Icon = activityIcons[category] || Baby;
-                const colorClass = activityColors[category] || 'text-primary';
-                const label = activityLabels[category] || category;
-                const total = formatTotal(
-                  category,
-                  summary.totalAmount,
-                  summary.totalDuration,
-                  summary.count,
-                  userUnitPref,
-                );
-
-                return (
-                  <div
-                    className="flex items-start gap-2.5 p-3 rounded-lg bg-card/60 border border-border/50"
-                    key={category}
-                  >
-                    <div className="shrink-0 p-2 rounded-full bg-muted/40 self-start">
-                      <Icon className={`size-4 ${colorClass}`} />
-                    </div>
-                    <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                      <p className="text-xs text-muted-foreground leading-tight">
-                        {label}
-                      </p>
-                      <p className="text-sm font-semibold text-foreground leading-tight">
-                        {total}
-                      </p>
-                    </div>
+              {/* Bottle Button */}
+              <Button
+                className={cn(
+                  'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                  'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                  feedingTheme.textColor,
+                )}
+                disabled={creatingType !== null}
+                onClick={handleBottleClick}
+                variant="ghost"
+              >
+                <Milk className="size-5" />
+                <span className="text-xs font-medium">Bottle</span>
+                {lastBottleTime && lastBottleExactTime && (
+                  <div className="flex items-center gap-1 text-[10px] opacity-70 leading-tight">
+                    <span>{lastBottleTime}</span>
+                    {lastBottleUser && (
+                      <Avatar className="size-3 shrink-0">
+                        <AvatarImage
+                          alt={lastBottleUser.name}
+                          src={lastBottleUser.avatar || ''}
+                        />
+                        <AvatarFallback className="text-[8px]">
+                          {lastBottleUser.initials}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
                   </div>
-                );
-              })}
+                )}
+              </Button>
+
+              {/* Nursing Button */}
+              <Button
+                className={cn(
+                  'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                  'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                  feedingTheme.textColor,
+                )}
+                disabled={creatingType !== null}
+                onClick={handleNursingDrawerClick}
+                variant="ghost"
+              >
+                <Droplet className="size-5" />
+                <span className="text-xs font-medium">Nursing</span>
+                {lastNursingTime && lastNursingExactTime && (
+                  <div className="flex items-center gap-1 text-[10px] opacity-70 leading-tight">
+                    <span>{lastNursingTime}</span>
+                    {lastNursingUser && (
+                      <Avatar className="size-3 shrink-0">
+                        <AvatarImage
+                          alt={lastNursingUser.name}
+                          src={lastNursingUser.avatar || ''}
+                        />
+                        <AvatarFallback className="text-[8px]">
+                          {lastNursingUser.initials}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                  </div>
+                )}
+              </Button>
+
+              {/* Pee Button */}
+              <Button
+                className={cn(
+                  'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                  'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                  diaperTheme.textColor,
+                )}
+                disabled={creatingType !== null}
+                onClick={() => handleDiaperClick('wet')}
+                variant="ghost"
+              >
+                {creatingType === 'wet' ? (
+                  <Icons.Spinner className="size-5" />
+                ) : (
+                  <Droplet className="size-5" />
+                )}
+                <span className="text-xs font-medium">Pee</span>
+                {lastDiaperTime && lastDiaperExactTime && (
+                  <div className="flex items-center gap-1 text-[10px] opacity-70 leading-tight">
+                    <span>{lastDiaperTime}</span>
+                    {lastDiaperUser && (
+                      <Avatar className="size-3 shrink-0">
+                        <AvatarImage
+                          alt={lastDiaperUser.name}
+                          src={lastDiaperUser.avatar || ''}
+                        />
+                        <AvatarFallback className="text-[8px]">
+                          {lastDiaperUser.initials}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                  </div>
+                )}
+              </Button>
+
+              {/* Poop Button */}
+              <Button
+                className={cn(
+                  'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                  'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                  diaperTheme.textColor,
+                )}
+                disabled={creatingType !== null}
+                onClick={() => handleDiaperClick('dirty')}
+                variant="ghost"
+              >
+                {creatingType === 'dirty' ? (
+                  <Icons.Spinner className="size-5" />
+                ) : (
+                  <Droplets className="size-5" />
+                )}
+                <span className="text-xs font-medium">Poop</span>
+                {lastDiaperTime && lastDiaperExactTime && (
+                  <div className="flex items-center gap-1 text-[10px] opacity-70 leading-tight">
+                    <span>{lastDiaperTime}</span>
+                    {lastDiaperUser && (
+                      <Avatar className="size-3 shrink-0">
+                        <AvatarImage
+                          alt={lastDiaperUser.name}
+                          src={lastDiaperUser.avatar || ''}
+                        />
+                        <AvatarFallback className="text-[8px]">
+                          {lastDiaperUser.initials}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                  </div>
+                )}
+              </Button>
+
+              {/* Sleep Timer Button */}
+              <Button
+                className={cn(
+                  'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                  inProgressActivity
+                    ? 'bg-destructive/90 hover:bg-destructive active:bg-destructive text-destructive-foreground'
+                    : 'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                  inProgressActivity ? '' : sleepTheme.textColor,
+                )}
+                disabled={creatingType !== null}
+                onClick={handleSleepTimerClick}
+                variant="ghost"
+              >
+                {creatingType === 'sleep-timer' ? (
+                  <Icons.Spinner className="size-5" />
+                ) : inProgressActivity ? (
+                  <StopCircle className="size-5" />
+                ) : (
+                  <Moon className="size-5" />
+                )}
+                <span className="text-xs font-medium">
+                  {inProgressActivity ? 'Stop Timer' : 'Start Timer'}
+                </span>
+                {inProgressActivity && sleepDurationMinutes > 0 ? (
+                  <span className="text-xs opacity-80">
+                    {formatElapsedTime(sleepDurationMinutes)}
+                  </span>
+                ) : lastSleepTime && lastSleepExactTime ? (
+                  <div className="flex items-center gap-1 text-[10px] opacity-70 leading-tight">
+                    <span>{lastSleepTime}</span>
+                    {lastSleepUser && (
+                      <Avatar className="size-3 shrink-0">
+                        <AvatarImage
+                          alt={lastSleepUser.name}
+                          src={lastSleepUser.avatar || ''}
+                        />
+                        <AvatarFallback className="text-[8px]">
+                          {lastSleepUser.initials}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                  </div>
+                ) : null}
+              </Button>
             </div>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      {/* Feeding Drawer */}
+      {(openDrawer === 'feeding' ||
+        openDrawer === 'bottle' ||
+        openDrawer === 'nursing') && (
+        <TimelineDrawerWrapper
+          isOpen={true}
+          onClose={handleDrawerClose}
+          title="Log Feeding"
+        >
+          <FeedingActivityDrawer
+            babyId={babyId}
+            existingActivity={null}
+            initialType={
+              openDrawer === 'bottle'
+                ? 'bottle'
+                : openDrawer === 'nursing'
+                  ? 'nursing'
+                  : null
+            }
+            isOpen={true}
+            onClose={handleDrawerClose}
+          />
+        </TimelineDrawerWrapper>
+      )}
+
+      {/* Sleep Stop Confirmation Dialog */}
+      <StopSleepConfirmationDialog
+        onKeepSleeping={handleKeepSleepingAndCreate}
+        onOpenChange={setShowSleepConfirmation}
+        onStopSleep={handleStopSleepAndCreate}
+        open={showSleepConfirmation}
+        sleepDuration={sleepDuration}
+      />
     </div>
   );
 }

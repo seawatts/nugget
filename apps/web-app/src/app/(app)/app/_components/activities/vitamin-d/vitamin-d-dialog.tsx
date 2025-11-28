@@ -8,7 +8,10 @@ import { Drawer, DrawerContent, DrawerTitle } from '@nugget/ui/drawer';
 import { useIsDesktop } from '@nugget/ui/hooks/use-media-query';
 import { cn } from '@nugget/ui/lib/utils';
 import { useEffect, useState } from 'react';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import {
+  getUserRelationFromStore,
+  useOptimisticActivitiesStore,
+} from '~/stores/optimistic-activities';
 import { getActivityTheme } from '../shared/activity-theme-config';
 import { TimeSelectionMode } from '../shared/components/time-selection-mode';
 import { useActivityMutations } from '../use-activity-mutations';
@@ -68,6 +71,7 @@ export function VitaminDDialog({
         : { type: 'vitamin_d' as const };
 
       // Create optimistic activity for immediate UI feedback
+      const userRelation = getUserRelationFromStore();
       const optimisticActivity = {
         amountMl: null,
         assignedUserId: null,
@@ -86,7 +90,8 @@ export function VitaminDDialog({
         subjectType: 'baby' as const,
         type: 'vitamin_d' as const,
         updatedAt: normalizedDate,
-        userId: 'temp',
+        user: userRelation,
+        userId: userRelation?.id || 'temp',
       } as typeof Activities.$inferSelect;
 
       // Add to optimistic store immediately

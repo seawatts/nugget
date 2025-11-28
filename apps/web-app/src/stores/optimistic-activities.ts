@@ -3,6 +3,18 @@
 import type { Activities } from '@nugget/db/schema';
 import { createSelectors } from '@nugget/zustand';
 import { create } from 'zustand';
+import { useDashboardDataStore } from './dashboard-data';
+
+/**
+ * User relation type matching timeline structure
+ */
+export type UserRelation = {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  avatarUrl: string | null;
+  email: string;
+} | null;
 
 /**
  * Optimistic activity type with markers for client-side tracking
@@ -10,7 +22,26 @@ import { create } from 'zustand';
 export type OptimisticActivity = typeof Activities.$inferSelect & {
   _optimistic: true;
   _tempId: string;
+  user?: UserRelation;
 };
+
+/**
+ * Helper function to get user relation from dashboard store
+ * Formats user data to match timeline structure
+ */
+export function getUserRelationFromStore(): UserRelation {
+  const user = useDashboardDataStore.getState().user;
+  if (!user) {
+    return null;
+  }
+  return {
+    avatarUrl: user.avatarUrl,
+    email: user.email,
+    firstName: user.firstName,
+    id: user.id,
+    lastName: user.lastName,
+  };
+}
 
 interface OptimisticActivitiesState {
   activities: OptimisticActivity[];

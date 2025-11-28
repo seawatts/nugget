@@ -2,12 +2,12 @@
 
 import type { Activities } from '@nugget/db/schema';
 import { Skeleton } from '@nugget/ui/skeleton';
-import { formatDistanceToNow } from 'date-fns';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import {
   formatElapsedTime,
   formatOverdueTime,
 } from '../../time-formatting-utils';
+import { formatCompactRelativeTime } from '../../utils/format-compact-relative-time';
 
 interface PredictiveTimeDisplayProps {
   isLoading: boolean;
@@ -80,9 +80,9 @@ export function PredictiveTimeDisplay({
         {lastActivityTime && (
           <div className="flex items-baseline gap-2 min-w-0">
             <span className="text-lg font-semibold shrink-0">
-              {formatDistanceToNow(lastActivityTime, {
+              {formatCompactRelativeTime(lastActivityTime, {
                 addSuffix: true,
-              }).replace(/^about /, '')}
+              })}
             </span>
             <span className="text-sm opacity-70 truncate min-w-0">
               {formatTimeWithPreference(lastActivityTime, timeFormat)}
@@ -114,9 +114,9 @@ export function PredictiveTimeDisplay({
       {lastActivityTime && (
         <div className="flex items-baseline gap-2 min-w-0">
           <span className="text-lg font-semibold shrink-0">
-            {formatDistanceToNow(lastActivityTime, {
+            {formatCompactRelativeTime(lastActivityTime, {
               addSuffix: true,
-            }).replace(/^about /, '')}
+            })}
           </span>
           <span className="text-sm opacity-70 truncate min-w-0">
             {formatTimeWithPreference(lastActivityTime, timeFormat)}

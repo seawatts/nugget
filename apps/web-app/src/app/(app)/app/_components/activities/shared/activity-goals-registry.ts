@@ -5,7 +5,7 @@
 
 export type ActivityGoalConfig = {
   getWeeklyGoal: (ageDays: number) => number;
-  showProgressTracker: boolean; // false for daily activities like vitamin D
+  showProgressTracker: boolean; // whether to show the weekly progress tracker
 };
 
 export const ACTIVITY_GOALS: Record<string, ActivityGoalConfig> = {
@@ -25,7 +25,7 @@ export const ACTIVITY_GOALS: Record<string, ActivityGoalConfig> = {
     showProgressTracker: true,
   },
   vitamin_d: {
-    getWeeklyGoal: () => 7, // Daily = 7 per week
-    showProgressTracker: false, // Don't show tracker for daily activities
+    getWeeklyGoal: () => 7, // 7 per week
+    showProgressTracker: true,
   },
 };

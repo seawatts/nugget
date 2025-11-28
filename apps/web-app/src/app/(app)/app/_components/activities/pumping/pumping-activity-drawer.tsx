@@ -6,7 +6,10 @@ import { Button } from '@nugget/ui/button';
 import { cn } from '@nugget/ui/lib/utils';
 import { Droplets, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import {
+  getUserRelationFromStore,
+  useOptimisticActivitiesStore,
+} from '~/stores/optimistic-activities';
 import { TimeSelectionMode } from '../shared/components/time-selection-mode';
 import { useActivityMutations } from '../use-activity-mutations';
 import { PumpingDrawerContent } from './pumping-drawer';
@@ -174,6 +177,7 @@ export function PumpingActivityDrawer({
       // Only add optimistic activity for new activities (not updates)
       if (!existingActivity) {
         // Create optimistic activity for immediate UI feedback
+        const userRelation = getUserRelationFromStore();
         const optimisticActivity = {
           amountMl: totalAmountMl,
           assignedUserId: null,
@@ -192,7 +196,8 @@ export function PumpingActivityDrawer({
           subjectType: 'baby' as const,
           type: 'pumping' as const,
           updatedAt: startTime,
-          userId: 'temp',
+          user: userRelation,
+          userId: userRelation?.id || 'temp',
         } as typeof Activities.$inferSelect;
 
         addOptimisticActivity(optimisticActivity);

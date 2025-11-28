@@ -22,7 +22,7 @@ export function PredictiveProgressTrack({
   const safePercent = Math.max(0, Math.min(100, progressPercent ?? 0));
 
   return (
-    <div className={cn('px-4', className)}>
+    <div className={cn('px-2', className)}>
       {srLabel ? <span className="sr-only">{srLabel}</span> : null}
       {(startLabel || endLabel) && (
         <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-white/70">

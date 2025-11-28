@@ -4,7 +4,7 @@
  */
 
 import { api } from '@nugget/api/react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatCompactRelativeTime } from '../utils/format-compact-relative-time';
 
 interface UseInProgressSleepOptions {
   babyId?: string;
@@ -36,7 +36,7 @@ export function useInProgressSleep({
 
   // Calculate sleep duration if there's an in-progress sleep
   const sleepDuration = inProgressSleep?.startTime
-    ? formatDistanceToNow(new Date(inProgressSleep.startTime), {
+    ? formatCompactRelativeTime(new Date(inProgressSleep.startTime), {
         addSuffix: false,
       })
     : null;

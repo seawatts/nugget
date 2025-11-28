@@ -1,6 +1,6 @@
 'use client';
 
-import { differenceInMinutes, formatDistanceToNow } from 'date-fns';
+import { differenceInMinutes } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
 import {
   Baby,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { getDisplayNotes } from '../../activity-utils';
+import { formatCompactRelativeTime } from '../../utils/format-compact-relative-time';
 import { formatVolumeDisplay } from '../../volume-utils';
 
 interface RecentActivity {
@@ -117,7 +118,7 @@ export function RecentActivitiesList({
         {activities.slice(0, 5).map((item, index) => {
           const itemDate = item.time;
           const absoluteTime = formatTimeWithPreference(itemDate, timeFormat);
-          const relativeTime = formatDistanceToNow(itemDate, {
+          const relativeTime = formatCompactRelativeTime(itemDate, {
             addSuffix: true,
           });
 

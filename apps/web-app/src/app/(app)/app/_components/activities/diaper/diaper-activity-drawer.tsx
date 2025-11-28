@@ -7,7 +7,10 @@ import { cn } from '@nugget/ui/lib/utils';
 import { Baby, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import {
+  getUserRelationFromStore,
+  useOptimisticActivitiesStore,
+} from '~/stores/optimistic-activities';
 import { StopSleepConfirmationDialog } from '../shared/components/stop-sleep-confirmation-dialog';
 import { TimeSelectionMode } from '../shared/components/time-selection-mode';
 import { useInProgressSleep } from '../shared/hooks/use-in-progress-sleep';
@@ -242,6 +245,7 @@ export function DiaperActivityDrawer({
       // Only add optimistic activity for new activities (not updates)
       if (!existingActivity) {
         // Create optimistic activity for immediate UI feedback
+        const userRelation = getUserRelationFromStore();
         const optimisticActivity = {
           amountMl: null,
           assignedUserId: null,
@@ -267,7 +271,8 @@ export function DiaperActivityDrawer({
           subjectType: 'baby' as const,
           type: 'diaper' as const, // activity type
           updatedAt: startTime,
-          userId: 'temp',
+          user: userRelation,
+          userId: userRelation?.id || 'temp',
         } as typeof Activities.$inferSelect;
 
         addOptimisticActivity(optimisticActivity);

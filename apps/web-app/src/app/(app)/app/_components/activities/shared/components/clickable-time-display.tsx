@@ -8,11 +8,12 @@ import { useMediaQuery } from '@nugget/ui/hooks/use-media-query';
 import { Input } from '@nugget/ui/input';
 import { Label } from '@nugget/ui/label';
 import { cn } from '@nugget/ui/lib/utils';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { Clock } from 'lucide-react';
 import { useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { formatTimeWithPreference } from '~/lib/format-time';
+import { formatCompactRelativeTime } from '../utils/format-compact-relative-time';
 
 interface ClickableTimeDisplayProps {
   startTime: Date;
@@ -60,7 +61,9 @@ export function ClickableTimeDisplay({
   const effectiveEndTime = endTime || startTime;
 
   // Format relative time (e.g., "2 hours ago")
-  const relativeTime = formatDistanceToNow(startTime, { addSuffix: true });
+  const relativeTime = formatCompactRelativeTime(startTime, {
+    addSuffix: true,
+  });
 
   // Format absolute time (e.g., "2:30 PM")
   const absoluteTime = formatTimeWithPreference(startTime, timeFormat);

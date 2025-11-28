@@ -53,7 +53,7 @@ export function DevelopmentalPhasesCarousel({
   }
 
   return (
-    <div className="mb-6">
+    <div>
       <div className="mb-4 flex items-center gap-2">
         <Sparkles className="size-5 text-primary" />
         <H2 className="text-xl">Developmental phases</H2>

@@ -52,20 +52,19 @@ export function FussyPhaseContent({
               key={behavior.id}
               value={behavior.id}
             >
-              <AccordionTrigger
-                className="gap-3 px-1 py-3 text-left"
-                disabled={isComplete}
-              >
-                <div className="flex items-start gap-3">
-                  <Checkbox
-                    checked={checked}
-                    className="mt-1"
-                    disabled={isComplete}
-                    onCheckedChange={(value) =>
-                      onToggleBehavior(behavior.id, Boolean(value))
-                    }
-                    onClick={(event) => event.stopPropagation()}
-                  />
+              <div className="flex items-start gap-3 px-1 py-3">
+                <Checkbox
+                  checked={checked}
+                  className="mt-1 shrink-0"
+                  disabled={isComplete}
+                  onCheckedChange={(value) =>
+                    onToggleBehavior(behavior.id, Boolean(value))
+                  }
+                />
+                <AccordionTrigger
+                  className="gap-3 flex-1 text-left px-0 py-0"
+                  disabled={isComplete}
+                >
                   <div className="flex flex-1 flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <P className="text-sm font-semibold">{behavior.title}</P>
@@ -82,8 +81,8 @@ export function FussyPhaseContent({
                       {behavior.summary}
                     </P>
                   </div>
-                </div>
-              </AccordionTrigger>
+                </AccordionTrigger>
+              </div>
               <AccordionContent className="pb-4 pl-9 pr-4 text-sm text-muted-foreground">
                 <P className="text-sm text-foreground">{behavior.learnMore}</P>
                 <ul className="mt-3 flex list-disc flex-col gap-1 pl-5 text-xs text-muted-foreground">

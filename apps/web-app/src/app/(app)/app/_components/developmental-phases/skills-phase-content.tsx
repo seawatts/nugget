@@ -54,32 +54,19 @@ export function SkillsPhaseContent({
               key={focus.id}
               value={focus.id}
             >
-              <AccordionTrigger
-                className="gap-3 px-1 py-3 text-left"
-                disabled={isComplete}
-              >
-                <div
-                  className="flex items-start gap-3"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      event.stopPropagation();
-                    }
-                  }}
-                  role="presentation"
+              <div className="flex items-start gap-3 px-1 py-3">
+                <Checkbox
+                  checked={checked}
+                  className="mt-1 shrink-0"
+                  disabled={isComplete || !isFussyComplete}
+                  onCheckedChange={(value) =>
+                    onToggleFocus(focus.id, Boolean(value))
+                  }
+                />
+                <AccordionTrigger
+                  className="gap-3 flex-1 text-left px-0 py-0"
+                  disabled={isComplete}
                 >
-                  <Checkbox
-                    checked={checked}
-                    className="mt-1"
-                    disabled={isComplete || !isFussyComplete}
-                    onCheckedChange={(value) =>
-                      onToggleFocus(focus.id, Boolean(value))
-                    }
-                  />
                   <div className="flex flex-1 flex-col gap-1">
                     <P className="text-sm font-semibold text-foreground">
                       {focus.title}
@@ -88,8 +75,8 @@ export function SkillsPhaseContent({
                       {focus.summary}
                     </P>
                   </div>
-                </div>
-              </AccordionTrigger>
+                </AccordionTrigger>
+              </div>
               <AccordionContent className="pb-4 pl-9 pr-4 text-xs text-foreground/85">
                 <P className="text-sm text-foreground">
                   Try these gentle prompts:

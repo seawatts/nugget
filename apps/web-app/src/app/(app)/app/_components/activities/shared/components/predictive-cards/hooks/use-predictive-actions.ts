@@ -7,7 +7,10 @@ import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { toast } from '@nugget/ui/sonner';
 import { useState } from 'react';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import {
+  getUserRelationFromStore,
+  useOptimisticActivitiesStore,
+} from '~/stores/optimistic-activities';
 import { useActivityMutations } from '../../../../use-activity-mutations';
 
 interface UsePredictiveActionsOptions {
@@ -47,6 +50,7 @@ export function usePredictiveActions({
 
       // Create optimistic activity for immediate UI feedback
       // Set endTime to mark as completed (not in-progress)
+      const user = getUserRelationFromStore();
       const optimisticActivity = {
         ...defaultQuickLogData,
         assignedUserId: null,
@@ -64,7 +68,8 @@ export function usePredictiveActions({
         subjectType: 'baby' as const,
         type: specificType,
         updatedAt: now,
-        userId: 'temp',
+        user,
+        userId: user?.id || 'temp',
       } as typeof Activities.$inferSelect;
 
       // Add to optimistic store immediately

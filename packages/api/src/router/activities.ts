@@ -58,7 +58,15 @@ export const activitiesRouter = createTRPCRouter({
         throw new Error('Failed to create activity');
       }
 
-      return activity;
+      // Fetch the activity with user relation for the response
+      const activityWithUser = await ctx.db.query.Activities.findFirst({
+        where: eq(Activities.id, activity.id),
+        with: {
+          user: true,
+        },
+      });
+
+      return activityWithUser ?? activity;
     }),
 
   // Create multiple scheduled feedings at once

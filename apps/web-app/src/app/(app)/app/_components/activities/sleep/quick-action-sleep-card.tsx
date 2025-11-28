@@ -8,13 +8,16 @@ import { Card } from '@nugget/ui/card';
 import { Icons } from '@nugget/ui/custom/icons';
 import { cn } from '@nugget/ui/lib/utils';
 import { toast } from '@nugget/ui/sonner';
-import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
+import { startOfDay, subDays } from 'date-fns';
 import { Clock, Moon, StopCircle, Timer } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import {
+  getUserRelationFromStore,
+  useOptimisticActivitiesStore,
+} from '~/stores/optimistic-activities';
 import { getActivityTheme } from '../shared/activity-theme-config';
 import {
   PredictiveCardHeader,
@@ -25,6 +28,10 @@ import { PredictiveProgressTrack } from '../shared/components/predictive-progres
 import { TimelineDrawerWrapper } from '../shared/components/timeline-drawer-wrapper';
 import { getSleepDailyProgress } from '../shared/daily-progress';
 import { formatMinutesToHoursMinutes } from '../shared/time-formatting-utils';
+import {
+  formatCompactRelativeTime,
+  formatCompactRelativeTimeWithAgo,
+} from '../shared/utils/format-compact-relative-time';
 import { useActivityMutations } from '../use-activity-mutations';
 import { quickLogSleepAction } from './actions';
 import { SleepStatsDrawer } from './components';
@@ -379,6 +386,7 @@ export function QuickActionSleepCard({
       const sleepType = hour >= 6 && hour < 18 ? 'nap' : 'night';
 
       // Create optimistic activity for immediate UI feedback
+      const userRelation = getUserRelationFromStore();
       const optimisticActivity = {
         amountMl: null,
         assignedUserId: null,
@@ -400,8 +408,8 @@ export function QuickActionSleepCard({
         subjectType: 'baby' as const,
         type: 'sleep' as const,
         updatedAt: endTime,
-        user: userData || null,
-        userId: userData?.id || 'temp',
+        user: userRelation,
+        userId: userRelation?.id || 'temp',
       } as typeof Activities.$inferSelect;
 
       // Store the tempId returned by addOptimisticActivity
@@ -460,6 +468,7 @@ export function QuickActionSleepCard({
       const sleepType = hour >= 6 && hour < 18 ? 'nap' : 'night';
 
       // Create optimistic activity for immediate UI feedback
+      const userRelation = getUserRelationFromStore();
       const optimisticActivity = {
         amountMl: null,
         assignedUserId: null,
@@ -481,8 +490,8 @@ export function QuickActionSleepCard({
         subjectType: 'baby' as const,
         type: 'sleep' as const,
         updatedAt: now,
-        user: userData || null, // Include user data for display
-        userId: userData?.id || 'temp',
+        user: userRelation,
+        userId: userRelation?.id || 'temp',
       } as typeof Activities.$inferSelect;
 
       // Store the tempId returned by addOptimisticActivity
@@ -636,18 +645,16 @@ export function QuickActionSleepCard({
   const { prediction } = data;
 
   // Format time displays
-  const nextTimeDistance = formatDistanceToNow(prediction.nextSleepTime, {
+  const nextTimeDistance = formatCompactRelativeTime(prediction.nextSleepTime, {
     addSuffix: false,
-  }).replace(/^about /, '');
+  });
   const nextExactTime = formatTimeWithPreference(
     prediction.nextSleepTime,
     timeFormat,
   );
 
   const lastTimeDistance = prediction.lastSleepTime
-    ? formatDistanceToNow(prediction.lastSleepTime, {
-        addSuffix: false,
-      }).replace(/^about /, '')
+    ? formatCompactRelativeTimeWithAgo(prediction.lastSleepTime)
     : null;
   const lastExactTime = prediction.lastSleepTime
     ? formatTimeWithPreference(prediction.lastSleepTime, timeFormat)
@@ -766,7 +773,7 @@ export function QuickActionSleepCard({
                 <div className="flex items-center gap-2">
                   <Moon className="size-4 shrink-0 opacity-90" />
                   <span className="text-lg font-semibold leading-tight">
-                    {lastTimeDistance} ago
+                    {lastTimeDistance}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 text-sm opacity-70 leading-tight">

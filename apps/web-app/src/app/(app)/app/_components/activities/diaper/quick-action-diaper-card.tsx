@@ -8,13 +8,15 @@ import { Card } from '@nugget/ui/card';
 import { Icons } from '@nugget/ui/custom/icons';
 import { cn } from '@nugget/ui/lib/utils';
 import { toast } from '@nugget/ui/sonner';
-import { formatDistanceToNow } from 'date-fns';
 import { Baby, Droplet, Droplets } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import {
+  getUserRelationFromStore,
+  useOptimisticActivitiesStore,
+} from '~/stores/optimistic-activities';
 import { getActivityTheme } from '../shared/activity-theme-config';
 import {
   PredictiveCardHeader,
@@ -26,6 +28,10 @@ import { StopSleepConfirmationDialog } from '../shared/components/stop-sleep-con
 import { TimelineDrawerWrapper } from '../shared/components/timeline-drawer-wrapper';
 import { getDiaperDailyProgress } from '../shared/daily-progress';
 import { useInProgressSleep } from '../shared/hooks/use-in-progress-sleep';
+import {
+  formatCompactRelativeTime,
+  formatCompactRelativeTimeWithAgo,
+} from '../shared/utils/format-compact-relative-time';
 import { autoStopInProgressSleepAction } from '../sleep/actions';
 import { useActivityMutations } from '../use-activity-mutations';
 import { DiaperStatsDrawer } from './components';
@@ -236,18 +242,19 @@ export function QuickActionDiaperCard({
   // const mostCommonDiaperType = getMostCommonDiaperType(allActivities || []);
 
   // Format time displays
-  const nextTimeDistance = formatDistanceToNow(prediction.nextDiaperTime, {
-    addSuffix: false,
-  }).replace(/^about /, '');
+  const nextTimeDistance = formatCompactRelativeTime(
+    prediction.nextDiaperTime,
+    {
+      addSuffix: false,
+    },
+  );
   const nextExactTime = formatTimeWithPreference(
     prediction.nextDiaperTime,
     timeFormat,
   );
 
   const lastTimeDistance = prediction.lastDiaperTime
-    ? formatDistanceToNow(prediction.lastDiaperTime, {
-        addSuffix: false,
-      }).replace(/^about /, '')
+    ? formatCompactRelativeTimeWithAgo(prediction.lastDiaperTime)
     : null;
   const lastExactTime = prediction.lastDiaperTime
     ? formatTimeWithPreference(prediction.lastDiaperTime, timeFormat)
@@ -281,6 +288,7 @@ export function QuickActionDiaperCard({
       };
 
       // Create optimistic activity for immediate UI feedback
+      const userRelation = getUserRelationFromStore();
       const optimisticActivity = {
         ...diaperData,
         amountMl: null,
@@ -298,7 +306,8 @@ export function QuickActionDiaperCard({
         startTime: now,
         subjectType: 'baby' as const,
         updatedAt: now,
-        userId: 'temp',
+        user: userRelation,
+        userId: userRelation?.id || 'temp',
       } as typeof Activities.$inferSelect;
 
       // Store the tempId returned by addOptimisticActivity
@@ -391,6 +400,7 @@ export function QuickActionDiaperCard({
       };
 
       // Create optimistic activity for immediate UI feedback
+      const userRelation = getUserRelationFromStore();
       const optimisticActivity = {
         ...diaperData,
         amountMl: null,
@@ -408,7 +418,8 @@ export function QuickActionDiaperCard({
         startTime: now,
         subjectType: 'baby' as const,
         updatedAt: now,
-        userId: 'temp',
+        user: userRelation,
+        userId: userRelation?.id || 'temp',
       } as typeof Activities.$inferSelect;
 
       // Store the tempId returned by addOptimisticActivity
@@ -462,6 +473,7 @@ export function QuickActionDiaperCard({
       };
 
       // Create optimistic activity for immediate UI feedback
+      const userRelation = getUserRelationFromStore();
       const optimisticActivity = {
         ...diaperData,
         amountMl: null,
@@ -479,7 +491,8 @@ export function QuickActionDiaperCard({
         startTime: now,
         subjectType: 'baby' as const,
         updatedAt: now,
-        userId: 'temp',
+        user: userRelation,
+        userId: userRelation?.id || 'temp',
       } as typeof Activities.$inferSelect;
 
       // Store the tempId returned by addOptimisticActivity
@@ -562,7 +575,7 @@ export function QuickActionDiaperCard({
                     );
                   })()}
                   <span className="text-lg font-semibold leading-tight">
-                    {lastTimeDistance} ago
+                    {lastTimeDistance}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 text-sm opacity-70 leading-tight">

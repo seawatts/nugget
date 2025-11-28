@@ -23,9 +23,9 @@ import { useMediaQuery } from '@nugget/ui/hooks/use-media-query';
 import { Input } from '@nugget/ui/input';
 import { Label } from '@nugget/ui/label';
 import { toast } from '@nugget/ui/sonner';
-import { formatDistanceToNow } from 'date-fns';
 import { Moon, Plus } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { formatCompactRelativeTime } from '../activities/shared/utils/format-compact-relative-time';
 import {
   getParentSleepDataAction,
   type ParentSleepData,
@@ -138,7 +138,7 @@ export function ParentSleepCard({
                   {data?.lastSleep ? (
                     <p className="text-sm text-muted-foreground">
                       Last:{' '}
-                      {formatDistanceToNow(data.lastSleep.startTime, {
+                      {formatCompactRelativeTime(data.lastSleep.startTime, {
                         addSuffix: true,
                       })}
                     </p>

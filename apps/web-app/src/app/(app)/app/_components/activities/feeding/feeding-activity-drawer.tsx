@@ -28,6 +28,7 @@ import { useFeedingSave } from './hooks/use-feeding-save';
 
 interface FeedingActivityDrawerProps {
   existingActivity?: typeof Activities.$inferSelect | null;
+  initialType?: 'bottle' | 'nursing' | null;
   isOpen: boolean;
   onClose: () => void;
   babyId: string;
@@ -42,6 +43,7 @@ interface FeedingActivityDrawerProps {
  */
 export function FeedingActivityDrawer({
   existingActivity,
+  initialType,
   isOpen,
   onClose,
   babyId,
@@ -84,6 +86,22 @@ export function FeedingActivityDrawer({
     clearTimerState,
     handleStop,
   } = useFeedingDrawerState({ babyId, existingActivity, isOpen });
+
+  // Set initial type when drawer opens
+  useEffect(() => {
+    if (isOpen && initialType && !existingActivity && !formData) {
+      if (initialType === 'bottle') {
+        setFormData({
+          bottleType: null,
+          type: 'bottle',
+        });
+      } else if (initialType === 'nursing') {
+        setFormData({
+          type: 'nursing',
+        });
+      }
+    }
+  }, [isOpen, initialType, existingActivity, formData, setFormData]);
 
   // Save management
   const { saveActivity } = useFeedingSave({
@@ -259,9 +277,16 @@ export function FeedingActivityDrawer({
             existingActivity?.type === 'solids' ||
             existingActivity?.type === 'vitamin_d'
               ? existingActivity.type
-              : activeActivityId
-                ? (formData?.type ?? null)
-                : null) as 'bottle' | 'nursing' | 'solids' | 'vitamin_d' | null
+              : initialType
+                ? initialType
+                : activeActivityId
+                  ? (formData?.type ?? null)
+                  : null) as
+              | 'bottle'
+              | 'nursing'
+              | 'solids'
+              | 'vitamin_d'
+              | null
           }
           isLoading={isLoadingInProgress}
           isTimerStopped={isTimerStopped}

@@ -6,7 +6,7 @@ import { Card } from '@nugget/ui/card';
 import { Skeleton } from '@nugget/ui/components/skeleton';
 import { Icons } from '@nugget/ui/custom/icons';
 import { cn } from '@nugget/ui/lib/utils';
-import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
+import { startOfDay, subDays } from 'date-fns';
 import { Baby, BarChart3, Info, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -19,6 +19,7 @@ import {
   PredictiveOverdueActions,
   usePredictiveActions,
 } from '../shared/components/predictive-cards';
+import { formatCompactRelativeTime } from '../shared/utils/format-compact-relative-time';
 import { skipDiaperAction } from './actions';
 import { DiaperStatsDrawer } from './components';
 import { DiaperGoalDisplay } from './components/diaper-goal-display';
@@ -201,9 +202,9 @@ export function PredictiveDiaperCard({
   };
 
   // Format countdown
-  const timeUntil = formatDistanceToNow(displayNextTime, {
+  const timeUntil = formatCompactRelativeTime(displayNextTime, {
     addSuffix: true,
-  }).replace(/^in about /, 'in ');
+  });
   const exactTime = formatTimeWithPreference(displayNextTime, timeFormat);
 
   // Format overdue time
@@ -314,9 +315,9 @@ export function PredictiveDiaperCard({
                   {prediction.lastDiaperTime && (
                     <div className="flex items-baseline gap-2 min-w-0">
                       <span className="text-lg font-semibold shrink-0">
-                        {formatDistanceToNow(prediction.lastDiaperTime, {
+                        {formatCompactRelativeTime(prediction.lastDiaperTime, {
                           addSuffix: true,
-                        }).replace(/^about /, '')}
+                        })}
                       </span>
                       <span className="text-sm opacity-70 truncate min-w-0">
                         {formatTimeWithPreference(
@@ -352,9 +353,9 @@ export function PredictiveDiaperCard({
                   {prediction.lastDiaperTime && (
                     <div className="flex items-baseline gap-2 min-w-0">
                       <span className="text-lg font-semibold shrink-0">
-                        {formatDistanceToNow(prediction.lastDiaperTime, {
+                        {formatCompactRelativeTime(prediction.lastDiaperTime, {
                           addSuffix: true,
-                        }).replace(/^about /, '')}
+                        })}
                       </span>
                       <span className="text-sm opacity-70 truncate min-w-0">
                         {formatTimeWithPreference(

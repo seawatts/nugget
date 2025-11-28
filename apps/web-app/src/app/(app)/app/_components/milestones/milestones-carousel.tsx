@@ -183,7 +183,7 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="mb-6">
+      <div>
         <div className="flex items-center gap-2 mb-4">
           <Award className="size-5 text-primary" />
           <H2 className="text-xl">Milestones</H2>
@@ -197,7 +197,7 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
   // Show message if no milestones (don't hide completely)
   if (milestones.length === 0) {
     return (
-      <div className="mb-6">
+      <div>
         <div className="flex items-center gap-2 mb-4">
           <Award className="size-5 text-primary" />
           <H2 className="text-xl">Milestones</H2>
@@ -223,7 +223,7 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
   // Mobile: Stack view with current card
   if (isMobile) {
     return (
-      <div className="mb-6">
+      <div>
         <div className="flex items-center gap-2 mb-4">
           <Award className="size-5 text-primary" />
           <H2 className="text-xl">Milestones</H2>
@@ -305,7 +305,7 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
 
   // Desktop: Horizontal scroll view (original behavior with buttons)
   return (
-    <div className="mb-6">
+    <div>
       <div className="flex items-center gap-2 mb-4">
         <Award className="size-5 text-primary" />
         <H2 className="text-xl">Milestones</H2>

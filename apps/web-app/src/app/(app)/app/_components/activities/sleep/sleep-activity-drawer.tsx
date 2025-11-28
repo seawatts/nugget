@@ -19,7 +19,10 @@ import { Moon, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useDashboardDataStore } from '~/stores/dashboard-data';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import {
+  getUserRelationFromStore,
+  useOptimisticActivitiesStore,
+} from '~/stores/optimistic-activities';
 import { useActivityMutations } from '../use-activity-mutations';
 import { SleepModeSelector } from './sleep-mode-selector';
 
@@ -381,6 +384,7 @@ export function SleepActivityDrawer({
 
       // For new activities (not updates), add optimistic activity immediately
       if (!activeActivityId && !existingActivity) {
+        const userRelation = getUserRelationFromStore();
         const optimisticActivity = {
           amountMl: null,
           assignedUserId: null,
@@ -399,7 +403,8 @@ export function SleepActivityDrawer({
           subjectType: 'baby' as const,
           type: 'sleep' as const,
           updatedAt: new Date(),
-          userId: userId ?? 'temp',
+          user: userRelation,
+          userId: userRelation?.id || userId || 'temp',
         } as typeof Activities.$inferSelect;
 
         // Add to optimistic store immediately for instant UI feedback

@@ -8,7 +8,10 @@ import { Drawer, DrawerContent, DrawerTitle } from '@nugget/ui/drawer';
 import { useIsDesktop } from '@nugget/ui/hooks/use-media-query';
 import { cn } from '@nugget/ui/lib/utils';
 import { useEffect, useState } from 'react';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import {
+  getUserRelationFromStore,
+  useOptimisticActivitiesStore,
+} from '~/stores/optimistic-activities';
 import { getActivityTheme } from '../shared/activity-theme-config';
 import { ActivityDrawerHeader } from '../shared/components/activity-drawer-header';
 import { TimeSelectionMode } from '../shared/components/time-selection-mode';
@@ -64,6 +67,7 @@ export function BathDialog({
           }
         : { type: 'bath' as const };
 
+      const userRelation = getUserRelationFromStore();
       const optimisticActivity = {
         amountMl: null,
         assignedUserId: null,
@@ -82,7 +86,8 @@ export function BathDialog({
         subjectType: 'baby' as const,
         type: 'bath' as const,
         updatedAt: normalizedDate,
-        userId: 'temp',
+        user: userRelation,
+        userId: userRelation?.id || 'temp',
       } as typeof Activities.$inferSelect;
 
       addOptimisticActivity(optimisticActivity);

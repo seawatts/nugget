@@ -17,13 +17,14 @@ import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import { ACTIVITY_GOALS } from '../shared/activity-goals-registry';
 import { getActivityTheme } from '../shared/activity-theme-config';
 import {
   BasePredictiveCard,
   PredictiveInfoDrawer,
 } from '../shared/components/predictive-cards';
-import { getVitaminDDailyProgress } from '../shared/daily-progress';
 import { useSevenDayActivities } from '../shared/hooks/use-seven-day-activities';
+import { useWeeklyStats } from '../shared/hooks/use-weekly-stats';
 import { useActivityMutations } from '../use-activity-mutations';
 import { VitaminDStatsDrawer } from './components';
 import { getVitaminDLearningContent } from './learning-content';
@@ -150,23 +151,14 @@ export function PredictiveVitaminDCard({
   // Calculate 7-day tracking data using shared hook
   const vitaminDData = useSevenDayActivities(vitaminDActivities, 'vitamin_d');
 
-  // Calculate daily progress
-  const vitaminDDailyProgress = useMemo(
-    () =>
-      getVitaminDDailyProgress({
-        activities: vitaminDActivities,
-        babyAgeDays,
-      }),
-    [vitaminDActivities, babyAgeDays],
+  // Calculate weekly stats
+  const goalConfig = ACTIVITY_GOALS.vitamin_d;
+  const weeklyStats = useWeeklyStats(
+    vitaminDActivities,
+    'vitamin_d',
+    goalConfig?.getWeeklyGoal ?? (() => 7),
+    babyAgeDays,
   );
-
-  const dailyStats = vitaminDDailyProgress
-    ? {
-        count: vitaminDDailyProgress.currentValue,
-        goal: vitaminDDailyProgress.goalValue ?? 1,
-        percentage: vitaminDDailyProgress.percentage,
-      }
-    : undefined;
 
   const handleDayClick = async (day: (typeof vitaminDData)[0]) => {
     if (day.hasActivity && day.activity) {
@@ -254,7 +246,6 @@ export function PredictiveVitaminDCard({
     <>
       <BasePredictiveCard
         activityType="vitamin_d"
-        dailyStats={dailyStats}
         icon={vitaminDTheme.icon}
         isLogging={isLogging}
         onAddClick={() => {
@@ -272,7 +263,7 @@ export function PredictiveVitaminDCard({
         sevenDayData={vitaminDData}
         theme={vitaminDTheme}
         title="Vitamin D"
-        weeklyStats={undefined}
+        weeklyStats={goalConfig?.showProgressTracker ? weeklyStats : undefined}
       />
 
       {/* Info Drawer */}

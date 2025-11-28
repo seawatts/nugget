@@ -13,7 +13,7 @@ import {
   DrawerTitle,
 } from '@nugget/ui/drawer';
 import { cn } from '@nugget/ui/lib/utils';
-import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
+import { startOfDay, subDays } from 'date-fns';
 import { BarChart3, Droplets, Info, Zap } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -28,6 +28,7 @@ import {
   usePredictiveActions,
 } from '../shared/components/predictive-cards';
 import { QuickLogInfoSection } from '../shared/components/quick-log-info-section';
+import { formatCompactRelativeTime } from '../shared/utils/format-compact-relative-time';
 import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
 import { skipPumpingAction } from './actions';
 import { PumpingStatsDrawer } from './components';
@@ -185,9 +186,9 @@ export function PredictivePumpingCard({
   };
 
   // Format countdown
-  const timeUntil = formatDistanceToNow(displayNextTime, {
+  const timeUntil = formatCompactRelativeTime(displayNextTime, {
     addSuffix: true,
-  }).replace(/^in about /, 'in ');
+  });
   const exactTime = formatTimeWithPreference(displayNextTime, timeFormat);
 
   // Format overdue time
@@ -296,9 +297,9 @@ export function PredictivePumpingCard({
                   {prediction.lastPumpingTime && (
                     <div className="flex items-baseline gap-2">
                       <span className="text-lg font-semibold">
-                        {formatDistanceToNow(prediction.lastPumpingTime, {
+                        {formatCompactRelativeTime(prediction.lastPumpingTime, {
                           addSuffix: true,
-                        }).replace(/^about /, '')}
+                        })}
                       </span>
                       <span className="text-sm opacity-70">
                         {formatTimeWithPreference(
@@ -335,9 +336,9 @@ export function PredictivePumpingCard({
                   {prediction.lastPumpingTime && (
                     <div className="flex items-baseline gap-2">
                       <span className="text-lg font-semibold">
-                        {formatDistanceToNow(prediction.lastPumpingTime, {
+                        {formatCompactRelativeTime(prediction.lastPumpingTime, {
                           addSuffix: true,
-                        }).replace(/^about /, '')}
+                        })}
                       </span>
                       <span className="text-sm opacity-70">
                         {formatTimeWithPreference(

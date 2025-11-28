@@ -4,7 +4,7 @@ import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Card } from '@nugget/ui/card';
 import { cn } from '@nugget/ui/lib/utils';
-import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
+import { startOfDay, subDays } from 'date-fns';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
@@ -21,6 +21,7 @@ import {
   usePredictiveTimer,
   useSkipLogic,
 } from '../shared/components/predictive-cards';
+import { formatCompactRelativeTime } from '../shared/utils/format-compact-relative-time';
 import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
 import { getAssignedMember, suggestFamilyMember } from './assignment';
 import { FeedingStatsDrawer } from './components';
@@ -212,9 +213,9 @@ export function PredictiveFeedingCard({
   );
 
   // Format countdown
-  const timeUntil = formatDistanceToNow(displayNextTime, {
+  const timeUntil = formatCompactRelativeTime(displayNextTime, {
     addSuffix: true,
-  }).replace(/^in about /, 'in ');
+  });
   const exactTime = formatTimeWithPreference(displayNextTime, timeFormat);
 
   // Format amount for display based on user preference

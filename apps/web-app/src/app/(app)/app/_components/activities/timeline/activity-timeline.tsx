@@ -4,13 +4,7 @@ import { api, type TimelineItem } from '@nugget/api/react';
 import type { Activities, Milestones } from '@nugget/db/schema';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Icons } from '@nugget/ui/custom/icons';
-import {
-  differenceInMinutes,
-  format,
-  formatDistanceToNow,
-  isToday,
-  isYesterday,
-} from 'date-fns';
+import { differenceInMinutes, format, isToday, isYesterday } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
@@ -52,6 +46,7 @@ import {
   formatWeightDisplay,
 } from '../shared/measurement-utils';
 import { formatMinutesToHoursMinutes } from '../shared/time-formatting-utils';
+import { formatCompactRelativeTime } from '../shared/utils/format-compact-relative-time';
 import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
 import { TimelineSleepDrawer } from '../sleep/timeline-sleep-drawer';
 import { TimelineVitaminDDrawer } from '../vitamin-d/timeline-vitamin-d-drawer';
@@ -843,7 +838,7 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
                   itemDate,
                   timeFormat,
                 );
-                const relativeTime = formatDistanceToNow(itemDate, {
+                const relativeTime = formatCompactRelativeTime(itemDate, {
                   addSuffix: true,
                 });
                 const isOptimistic =

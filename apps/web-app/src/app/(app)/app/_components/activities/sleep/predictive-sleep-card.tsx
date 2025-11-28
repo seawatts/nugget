@@ -6,7 +6,7 @@ import { Card } from '@nugget/ui/card';
 import { Skeleton } from '@nugget/ui/components/skeleton';
 import { Icons } from '@nugget/ui/custom/icons';
 import { cn } from '@nugget/ui/lib/utils';
-import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
+import { startOfDay, subDays } from 'date-fns';
 import { BarChart3, Info, Moon, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -19,6 +19,7 @@ import {
   PredictiveOverdueActions,
   usePredictiveActions,
 } from '../shared/components/predictive-cards';
+import { formatCompactRelativeTime } from '../shared/utils/format-compact-relative-time';
 import { skipSleepAction } from './actions';
 import { SleepStatsDrawer } from './components';
 import { SleepGoalDisplay } from './components/sleep-goal-display';
@@ -238,9 +239,9 @@ export function PredictiveSleepCard({
   };
 
   // Format countdown
-  const timeUntil = formatDistanceToNow(displayNextTime, {
+  const timeUntil = formatCompactRelativeTime(displayNextTime, {
     addSuffix: true,
-  }).replace(/^in about /, 'in ');
+  });
   const exactTime = formatTimeWithPreference(displayNextTime, timeFormat);
 
   // Format overdue time
@@ -372,9 +373,9 @@ export function PredictiveSleepCard({
                   {prediction.lastSleepTime && (
                     <div className="flex items-baseline gap-2">
                       <span className="text-lg font-semibold">
-                        {formatDistanceToNow(prediction.lastSleepTime, {
+                        {formatCompactRelativeTime(prediction.lastSleepTime, {
                           addSuffix: true,
-                        }).replace(/^about /, '')}
+                        })}
                       </span>
                       <span className="text-sm opacity-70">
                         {formatTimeWithPreference(
@@ -412,9 +413,9 @@ export function PredictiveSleepCard({
                   {prediction.lastSleepTime && (
                     <div className="flex items-baseline gap-2">
                       <span className="text-lg font-semibold">
-                        {formatDistanceToNow(prediction.lastSleepTime, {
+                        {formatCompactRelativeTime(prediction.lastSleepTime, {
                           addSuffix: true,
-                        }).replace(/^about /, '')}
+                        })}
                       </span>
                       <span className="text-sm opacity-70">
                         {formatTimeWithPreference(

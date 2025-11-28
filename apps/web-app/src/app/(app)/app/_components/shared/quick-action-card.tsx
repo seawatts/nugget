@@ -4,10 +4,10 @@ import type { Activities } from '@nugget/db/schema';
 import { Card } from '@nugget/ui/card';
 import { Icons } from '@nugget/ui/custom/icons';
 import { cn } from '@nugget/ui/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
+import { formatCompactRelativeTime } from '../activities/shared/utils/format-compact-relative-time';
 import {
   formatVolumeDisplay,
   getVolumeUnit,
@@ -92,9 +92,9 @@ export function QuickActionCard({
 
   // Format time since last activity
   const timeAgo = stats?.lastActivity
-    ? formatDistanceToNow(new Date(stats.lastActivity.startTime), {
+    ? formatCompactRelativeTime(new Date(stats.lastActivity.startTime), {
         addSuffix: false,
-      }).replace(/^about\s+/, '')
+      })
     : 'No activity';
 
   // Format amount/duration for display

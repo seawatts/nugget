@@ -20,7 +20,10 @@ import {
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import {
+  getUserRelationFromStore,
+  useOptimisticActivitiesStore,
+} from '~/stores/optimistic-activities';
 import { createActivityAction } from './activity-cards.actions';
 import { ActivityDrawer } from './activity-drawer';
 import { PredictiveBathCard } from './bath/predictive-bath-card';
@@ -356,6 +359,7 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
 
     // Create optimistic activity
     const optimisticData = getDefaultActivityData(activityId, birthDate);
+    const userRelation = getUserRelationFromStore();
     const optimisticActivity = {
       ...optimisticData,
       amountMl: null,
@@ -370,7 +374,8 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
       notes: null,
       startTime: new Date(),
       updatedAt: new Date(),
-      userId: user?.id ?? 'temp-user-id',
+      user: userRelation,
+      userId: userRelation?.id || user?.id || 'temp-user-id',
     } as typeof Activities.$inferSelect;
 
     // Add to Zustand optimistic state
@@ -477,7 +482,7 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
   return (
     <>
       {/* All Action Cards Section - Predictive + Quick Actions */}
-      <div className="grid grid-cols-2 gap-3 mb-6 min-w-0">
+      <div className="grid grid-cols-2 gap-3 min-w-0">
         {baby?.showFeedingCard !== false && (
           <>
             <QuickActionFeedingCard

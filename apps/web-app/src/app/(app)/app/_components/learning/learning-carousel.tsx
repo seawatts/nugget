@@ -37,7 +37,7 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
   // Show loading state for both initial loading and pending generation
   if (status === 'loading' || status === 'pending') {
     return (
-      <div className="mb-6">
+      <div>
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="size-5 text-primary" />
           <H2 className="text-xl">Learning</H2>
@@ -53,7 +53,7 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
   // Show message if no tips (don't hide completely)
   if (status === 'empty' || tips.length === 0) {
     return (
-      <div className="mb-6">
+      <div>
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="size-5 text-primary" />
           <H2 className="text-xl">Learning</H2>
@@ -68,7 +68,7 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
   }
 
   return (
-    <div className="mb-6">
+    <div>
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="size-5 text-primary" />
         <H2 className="text-xl">Learning</H2>

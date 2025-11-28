@@ -8,13 +8,16 @@ import { Card } from '@nugget/ui/card';
 import { Icons } from '@nugget/ui/custom/icons';
 import { cn } from '@nugget/ui/lib/utils';
 import { toast } from '@nugget/ui/sonner';
-import { formatDistanceToNow, startOfDay, subDays } from 'date-fns';
+import { startOfDay, subDays } from 'date-fns';
 import { Droplets } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import {
+  getUserRelationFromStore,
+  useOptimisticActivitiesStore,
+} from '~/stores/optimistic-activities';
 import { getActivityTheme } from '../shared/activity-theme-config';
 import {
   PredictiveCardHeader,
@@ -22,6 +25,10 @@ import {
   PredictiveInfoDrawer,
 } from '../shared/components/predictive-cards';
 import { TimelineDrawerWrapper } from '../shared/components/timeline-drawer-wrapper';
+import {
+  formatCompactRelativeTime,
+  formatCompactRelativeTimeWithAgo,
+} from '../shared/utils/format-compact-relative-time';
 import { formatVolumeDisplay, getVolumeUnit } from '../shared/volume-utils';
 import { useActivityMutations } from '../use-activity-mutations';
 import { PumpingStatsDrawer } from './components';
@@ -173,9 +180,12 @@ export function QuickActionPumpingCard({
   };
 
   // Format time displays
-  const nextTimeDistance = formatDistanceToNow(prediction.nextPumpingTime, {
-    addSuffix: false,
-  }).replace(/^about /, '');
+  const nextTimeDistance = formatCompactRelativeTime(
+    prediction.nextPumpingTime,
+    {
+      addSuffix: false,
+    },
+  );
 
   const nextExactTime = formatTimeWithPreference(
     prediction.nextPumpingTime,
@@ -183,9 +193,7 @@ export function QuickActionPumpingCard({
   );
 
   const lastTimeDistance = prediction.lastPumpingTime
-    ? formatDistanceToNow(prediction.lastPumpingTime, {
-        addSuffix: false,
-      }).replace(/^about /, '')
+    ? formatCompactRelativeTimeWithAgo(prediction.lastPumpingTime)
     : null;
   const lastExactTime = prediction.lastPumpingTime
     ? formatTimeWithPreference(prediction.lastPumpingTime, timeFormat)
@@ -211,6 +219,7 @@ export function QuickActionPumpingCard({
       const rightAmountMl = Math.round(totalAmountMl / 2);
 
       // Create optimistic activity for immediate UI feedback
+      const userRelation = getUserRelationFromStore();
       const optimisticActivity = {
         amountMl: totalAmountMl,
         assignedUserId: null,
@@ -233,7 +242,8 @@ export function QuickActionPumpingCard({
         subjectType: 'baby' as const,
         type: 'pumping' as const,
         updatedAt: now,
-        userId: 'temp',
+        user: userRelation,
+        userId: userRelation?.id || 'temp',
       } as typeof Activities.$inferSelect;
 
       // Store the tempId returned by addOptimisticActivity
@@ -337,7 +347,7 @@ export function QuickActionPumpingCard({
                 <div className="flex items-center gap-2">
                   <Droplets className="size-4 shrink-0 opacity-90" />
                   <span className="text-lg font-semibold leading-tight">
-                    {lastTimeDistance} ago
+                    {lastTimeDistance}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 text-sm opacity-70 leading-tight">

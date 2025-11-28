@@ -2,7 +2,10 @@
 
 import type { Activities, ActivityDetails } from '@nugget/db/schema';
 import { useCallback } from 'react';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import {
+  getUserRelationFromStore,
+  useOptimisticActivitiesStore,
+} from '~/stores/optimistic-activities';
 import { useActivityMutations } from '../../use-activity-mutations';
 import type { FeedingFormData } from '../feeding-type-selector';
 
@@ -64,6 +67,7 @@ function buildOptimisticActivity(
     };
   }
 
+  const userRelation = getUserRelationFromStore();
   return {
     amountMl: formData.amountMl ?? null,
     assignedUserId: null,
@@ -82,7 +86,8 @@ function buildOptimisticActivity(
     subjectType: 'baby' as const,
     type: activityType,
     updatedAt: new Date(),
-    userId: 'temp',
+    user: userRelation,
+    userId: userRelation?.id || 'temp',
   } as typeof Activities.$inferSelect;
 }
 

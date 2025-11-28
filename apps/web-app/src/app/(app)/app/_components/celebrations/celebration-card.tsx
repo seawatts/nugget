@@ -7,7 +7,7 @@ import { H2, P, Text } from '@nugget/ui/custom/typography';
 import { Confetti, type ConfettiRef } from '@nugget/ui/magicui/confetti';
 import { Particles } from '@nugget/ui/magicui/particles';
 import { ShineBorder } from '@nugget/ui/magicui/shine-border';
-import { Camera, MessageCircle, Share2, Sparkles } from 'lucide-react';
+import { Camera, MessageCircle, Share2, Sparkles, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { QuickChatDialog } from '../chat/quick-chat-dialog';
 import type { CelebrationCardData } from './celebration-card.actions';
@@ -19,6 +19,7 @@ interface CelebrationCardProps {
   babyId: string;
   babyName: string;
   isLoadingAI?: boolean;
+  onDismiss?: () => void;
 }
 
 export function CelebrationCard({
@@ -26,6 +27,7 @@ export function CelebrationCard({
   babyId,
   babyName,
   isLoadingAI = false,
+  onDismiss,
 }: CelebrationCardProps) {
   const [photoUploadOpen, setPhotoUploadOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -123,6 +125,18 @@ export function CelebrationCard({
       />
 
       <Card className="relative overflow-hidden border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+        {/* Dismiss button */}
+        {onDismiss && (
+          <button
+            aria-label="Dismiss celebration card"
+            className="absolute top-4 right-4 z-30 p-2 rounded-full hover:bg-background/20 transition-colors text-muted-foreground hover:text-foreground"
+            onClick={onDismiss}
+            type="button"
+          >
+            <X className="size-5" />
+          </button>
+        )}
+
         {/* Animated shine border effect */}
         <ShineBorder
           borderWidth={2}

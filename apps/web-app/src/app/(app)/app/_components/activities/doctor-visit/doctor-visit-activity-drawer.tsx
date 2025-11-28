@@ -7,7 +7,10 @@ import { cn } from '@nugget/ui/lib/utils';
 import { startOfDay, subDays } from 'date-fns';
 import { Stethoscope, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
+import {
+  getUserRelationFromStore,
+  useOptimisticActivitiesStore,
+} from '~/stores/optimistic-activities';
 import { TimeInput } from '../shared/components/time-input';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { DoctorVisitFormData } from './doctor-visit-drawer';
@@ -200,6 +203,7 @@ export function DoctorVisitActivityDrawer({
       // Only add optimistic activity for new activities (not updates)
       if (!existingActivity) {
         // Create optimistic activity for immediate UI feedback
+        const userRelation = getUserRelationFromStore();
         const optimisticActivity = {
           amountMl: null,
           assignedUserId: null,
@@ -218,7 +222,8 @@ export function DoctorVisitActivityDrawer({
           subjectType: 'baby' as const,
           type: 'doctor_visit' as const,
           updatedAt: startTime,
-          userId: 'temp',
+          user: userRelation,
+          userId: userRelation?.id || 'temp',
         } as typeof Activities.$inferSelect;
 
         addOptimisticActivity(optimisticActivity);
