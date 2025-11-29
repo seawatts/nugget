@@ -151,26 +151,28 @@ export function NumericStatCard({
           )}
 
           {/* Time Period Dropdown - Only show if enabled */}
-          {showTimePeriodDropdown && onTimePeriodChange && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline">
-                  {selectedTimePeriodOption.label}
-                  <ChevronDown className="ml-1 size-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {timePeriodOptions.map((option) => (
-                  <DropdownMenuItem
-                    key={option.value}
-                    onClick={() => onTimePeriodChange(option.value)}
-                  >
-                    {option.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          {showTimePeriodDropdown &&
+            onTimePeriodChange &&
+            selectedTimePeriodOption && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    {selectedTimePeriodOption.label}
+                    <ChevronDown className="ml-1 size-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {timePeriodOptions.map((option) => (
+                    <DropdownMenuItem
+                      key={option.value}
+                      onClick={() => onTimePeriodChange(option.value)}
+                    >
+                      {option.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
         </div>
       </div>
 

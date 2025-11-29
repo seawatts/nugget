@@ -1,18 +1,14 @@
-import {
-  InstagramLogoIcon,
-  LinkedInLogoIcon,
-  TwitterLogoIcon,
-} from '@radix-ui/react-icons';
+import { LinkedInLogoIcon, TwitterLogoIcon } from '@radix-ui/react-icons';
+import type React from 'react';
 import { siteConfig } from '~/app/(marketing)/_lib/config';
 
 interface Icon {
-  icon: JSX.Element;
+  icon: React.JSX.Element;
   url: string;
 }
 
 const icons: Icon[] = [
   { icon: <LinkedInLogoIcon />, url: siteConfig.links?.discord || '#' },
-  { icon: <InstagramLogoIcon />, url: siteConfig.links?.instagram || '#' },
   { icon: <TwitterLogoIcon />, url: siteConfig.links?.twitter || '#' },
 ];
 
@@ -29,7 +25,7 @@ const links: FooterLink[] = [
   },
 ];
 
-export function Footer() {
+export function FooterSection() {
   return (
     <footer className="flex flex-col gap-y-5 rounded-lg px-7 py-5 md:px-10 container">
       <div className="flex items-center justify-between">
@@ -70,3 +66,5 @@ export function Footer() {
     </footer>
   );
 }
+
+export const Footer = FooterSection;

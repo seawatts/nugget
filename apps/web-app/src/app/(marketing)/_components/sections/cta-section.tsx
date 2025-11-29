@@ -59,7 +59,7 @@ const ReviewCard = ({
   );
 };
 
-export function CTA() {
+export function CTASection() {
   const reviews = getReviews();
   const firstRow = reviews.slice(0, reviews.length / 2);
   const secondRow = reviews.slice(reviews.length / 2);
@@ -148,3 +148,5 @@ export function CTA() {
     </section>
   );
 }
+
+export const CTA = CTASection;

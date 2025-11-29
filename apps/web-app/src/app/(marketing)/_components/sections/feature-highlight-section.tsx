@@ -33,7 +33,7 @@ function Feature({
       opacity: 1,
       transition: {
         duration: 0.5,
-        ease: 'easeOut',
+        ease: easeOutCubic,
         staggerChildren: 0.15,
       },
       x: 0,
