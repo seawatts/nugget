@@ -1303,7 +1303,7 @@ export function TodaySummaryCard({
                   <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
                     <span>{lastBottleTime}</span>
                     {lastBottleUser && (
-                      <Avatar className="size-3 shrink-0">
+                      <Avatar className="size-4 shrink-0">
                         <AvatarImage
                           alt={lastBottleUser.name}
                           src={lastBottleUser.avatar || ''}
@@ -1338,7 +1338,7 @@ export function TodaySummaryCard({
                   <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
                     <span>{lastNursingTime}</span>
                     {lastNursingUser && (
-                      <Avatar className="size-3 shrink-0">
+                      <Avatar className="size-4 shrink-0">
                         <AvatarImage
                           alt={lastNursingUser.name}
                           src={lastNursingUser.avatar || ''}
@@ -1373,7 +1373,7 @@ export function TodaySummaryCard({
                   <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
                     <span>{lastWetDiaperTime}</span>
                     {lastWetDiaperUser && (
-                      <Avatar className="size-3 shrink-0">
+                      <Avatar className="size-4 shrink-0">
                         <AvatarImage
                           alt={lastWetDiaperUser.name}
                           src={lastWetDiaperUser.avatar || ''}
@@ -1408,7 +1408,7 @@ export function TodaySummaryCard({
                   <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
                     <span>{lastDirtyDiaperTime}</span>
                     {lastDirtyDiaperUser && (
-                      <Avatar className="size-3 shrink-0">
+                      <Avatar className="size-4 shrink-0">
                         <AvatarImage
                           alt={lastDirtyDiaperUser.name}
                           src={lastDirtyDiaperUser.avatar || ''}
@@ -1454,7 +1454,7 @@ export function TodaySummaryCard({
                     <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
                       <span>{lastSleepTime}</span>
                       {lastSleepUser && (
-                        <Avatar className="size-3 shrink-0">
+                        <Avatar className="size-4 shrink-0">
                           <AvatarImage
                             alt={lastSleepUser.name}
                             src={lastSleepUser.avatar || ''}
@@ -1479,7 +1479,7 @@ export function TodaySummaryCard({
                 >
                   <SleepIcon className="size-5" />
                   <span className="text-xs font-medium">Log Sleep</span>
-                  <span className="text-[10px] opacity-70 leading-tight">
+                  <span className="text-xs opacity-70 leading-tight">
                     Manual entry
                   </span>
                 </Button>
