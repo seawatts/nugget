@@ -9,7 +9,6 @@ import { Menu, X } from 'lucide-react';
 import { AnimatePresence, motion, useScroll } from 'motion/react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Icons } from '~/app/(marketing)/_components/icons';
 import { type NavItem, NavMenu } from '~/app/(marketing)/_components/nav-menu';
 import { siteConfig } from '~/app/(marketing)/_lib/config';
 
@@ -118,7 +117,7 @@ export function Navbar({ navs }: { navs?: NavItem[] }) {
         >
           <div className="flex h-[56px] items-center justify-between pl-1 md:pl-2 pr-4">
             <Link className="flex items-center gap-1" href="/">
-              <Icons.logo className="size-12" />
+              <span className="text-3xl">🐣</span>
               <p className="text-lg font-semibold text-primary">Nugget</p>
             </Link>
 
@@ -201,7 +200,7 @@ export function Navbar({ navs }: { navs?: NavItem[] }) {
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <Link className="flex items-center gap-3" href="/">
-                    <Icons.logo className="size-7 md:size-10" />
+                    <span className="text-2xl md:text-3xl">🐣</span>
                     <p className="text-lg font-semibold text-primary">Nugget</p>
                   </Link>
                   <button

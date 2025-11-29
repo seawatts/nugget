@@ -153,3 +153,76 @@ export interface FrequencyInsights {
 }
 
 export type FrequencyViewType = 'heatmap' | 'timeblock';
+
+// Stat card types
+export type StatTimePeriod =
+  | 'this_week'
+  | 'last_week'
+  | 'last_2_weeks'
+  | 'last_month'
+  | 'last_3_months'
+  | 'last_6_months';
+
+export type StatMetricType =
+  | 'count'
+  | 'amount'
+  | 'average'
+  | 'total'
+  | 'duration';
+
+export interface StatTimePeriodOption {
+  value: StatTimePeriod;
+  label: string;
+  days: number;
+}
+
+export const STAT_TIME_PERIOD_OPTIONS: StatTimePeriodOption[] = [
+  { days: 7, label: 'This Week', value: 'this_week' },
+  { days: 7, label: 'Last Week', value: 'last_week' },
+  { days: 14, label: 'Last 2 Weeks', value: 'last_2_weeks' },
+  { days: 30, label: 'Last Month', value: 'last_month' },
+  { days: 90, label: 'Last 3 Months', value: 'last_3_months' },
+  { days: 180, label: 'Last 6 Months', value: 'last_6_months' },
+];
+
+// Stat pivot/aggregation types
+export type StatPivotPeriod =
+  | 'total'
+  | 'per_day'
+  | 'per_week'
+  | 'per_month'
+  | 'per_hour';
+
+export interface StatPivotPeriodOption {
+  value: StatPivotPeriod;
+  label: string;
+}
+
+export const STAT_PIVOT_PERIOD_OPTIONS: StatPivotPeriodOption[] = [
+  { label: 'Total', value: 'total' },
+  { label: 'Per Hour', value: 'per_hour' },
+  { label: 'Per Day', value: 'per_day' },
+  { label: 'Per Week', value: 'per_week' },
+  { label: 'Per Month', value: 'per_month' },
+];
+
+/**
+ * Get pivot period options filtered based on the selected time period.
+ * Hides "Per Month" if the time period is less than 1 month.
+ */
+export function getPivotPeriodOptionsForTimePeriod(
+  timePeriod: StatTimePeriod,
+): StatPivotPeriodOption[] {
+  const isLessThanOneMonth =
+    timePeriod === 'this_week' ||
+    timePeriod === 'last_week' ||
+    timePeriod === 'last_2_weeks';
+
+  if (isLessThanOneMonth) {
+    return STAT_PIVOT_PERIOD_OPTIONS.filter(
+      (option) => option.value !== 'per_month',
+    );
+  }
+
+  return STAT_PIVOT_PERIOD_OPTIONS;
+}

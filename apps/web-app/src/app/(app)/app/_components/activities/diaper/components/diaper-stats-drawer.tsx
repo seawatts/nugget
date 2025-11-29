@@ -11,7 +11,7 @@ import {
 } from '@nugget/ui/dropdown-menu';
 import { subDays } from 'date-fns';
 import { ChevronDown } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FrequencyHeatmap,
   FrequencyInsightsComponent,
@@ -22,11 +22,16 @@ import {
 } from '../../shared/components/stats';
 import type {
   HeatmapRangeValue,
+  StatMetricType,
+  StatPivotPeriod,
+  StatTimePeriod,
   TimelineWeekRange,
   TrendTimeRange,
 } from '../../shared/types';
 import {
+  getPivotPeriodOptionsForTimePeriod,
   HEATMAP_RANGE_OPTIONS,
+  STAT_TIME_PERIOD_OPTIONS,
   TIMELINE_WEEK_OPTIONS,
 } from '../../shared/types';
 import {
@@ -43,7 +48,18 @@ import {
   getAgeDaysForDate,
   normalizeGoalContext,
 } from '../../shared/utils/goal-utils';
+import { getDateRangeLabelForPeriod } from '../../shared/utils/stat-calculations';
 import { calculateDiaperTrendData, getDailyDiaperGoal } from '../diaper-goals';
+import {
+  calculateAverageCleanPeriod,
+  calculateAverageDiaperGap,
+  calculateAverageDryPeriod,
+  calculateDiaperStat,
+  calculateLongestCleanPeriod,
+  calculateLongestDiaperGap,
+  calculateLongestDryPeriod,
+  calculateShortestDiaperGap,
+} from '../diaper-stat-calculations';
 import { DiaperTrendChart } from './diaper-trend-chart';
 
 type DiaperMetricType = 'total' | 'wet' | 'dirty' | 'both';
@@ -93,6 +109,22 @@ export function DiaperStatsDrawer({
   const [timelineRange, setTimelineRange] =
     useState<TimelineWeekRange>('this_week');
   const [heatmapRange, setHeatmapRange] = useState<HeatmapRangeValue>('30d');
+  const [statCardsTimePeriod, setStatCardsTimePeriod] =
+    useState<StatTimePeriod>('this_week');
+  const [statCardsPivotPeriod, setStatCardsPivotPeriod] =
+    useState<StatPivotPeriod>('total');
+
+  // Reset pivot period if it's not available for the selected time period
+  useEffect(() => {
+    const availableOptions =
+      getPivotPeriodOptionsForTimePeriod(statCardsTimePeriod);
+    const isCurrentPivotAvailable = availableOptions.some(
+      (opt) => opt.value === statCardsPivotPeriod,
+    );
+    if (!isCurrentPivotAvailable) {
+      setStatCardsPivotPeriod('total');
+    }
+  }, [statCardsTimePeriod, statCardsPivotPeriod]);
 
   const trendContent = getTrendContent('diaper');
   const trendDateRangeLabel = useMemo(
@@ -232,12 +264,212 @@ export function DiaperStatsDrawer({
     [diaperActivities],
   );
 
+  // Create calculate function for NumericStatCard
+  const calculateDiaperStatForCard = useMemo(
+    () => (metric: StatMetricType, timePeriod: StatTimePeriod) =>
+      calculateDiaperStat(activities, metric, timePeriod, statCardsPivotPeriod),
+    [activities, statCardsPivotPeriod],
+  );
+
+  // Calculate additional diaper stats
+  const longestGap = useMemo(
+    () => calculateLongestDiaperGap(activities, statCardsTimePeriod),
+    [activities, statCardsTimePeriod],
+  );
+
+  const shortestGap = useMemo(
+    () => calculateShortestDiaperGap(activities, statCardsTimePeriod),
+    [activities, statCardsTimePeriod],
+  );
+
+  const avgGap = useMemo(
+    () => calculateAverageDiaperGap(activities, statCardsTimePeriod),
+    [activities, statCardsTimePeriod],
+  );
+
+  const longestDry = useMemo(
+    () => calculateLongestDryPeriod(activities, statCardsTimePeriod),
+    [activities, statCardsTimePeriod],
+  );
+
+  const longestClean = useMemo(
+    () => calculateLongestCleanPeriod(activities, statCardsTimePeriod),
+    [activities, statCardsTimePeriod],
+  );
+
+  const avgDry = useMemo(
+    () => calculateAverageDryPeriod(activities, statCardsTimePeriod),
+    [activities, statCardsTimePeriod],
+  );
+
+  const avgClean = useMemo(
+    () => calculateAverageCleanPeriod(activities, statCardsTimePeriod),
+    [activities, statCardsTimePeriod],
+  );
+
   return (
     <StatsDrawerWrapper
       onOpenChange={onOpenChange}
       open={open}
       title="Diaper Statistics"
     >
+      {/* Stat Cards Section with Shared Time Period Control */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-foreground">Quick Stats</h3>
+            <p className="text-xs text-muted-foreground">
+              {getDateRangeLabelForPeriod(statCardsTimePeriod)}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  {STAT_TIME_PERIOD_OPTIONS.find(
+                    (opt) => opt.value === statCardsTimePeriod,
+                  )?.label ?? 'This Week'}
+                  <ChevronDown className="ml-1 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {STAT_TIME_PERIOD_OPTIONS.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => setStatCardsTimePeriod(option.value)}
+                  >
+                    {option.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  {getPivotPeriodOptionsForTimePeriod(statCardsTimePeriod).find(
+                    (opt) => opt.value === statCardsPivotPeriod,
+                  )?.label ?? 'Total'}
+                  <ChevronDown className="ml-1 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {getPivotPeriodOptionsForTimePeriod(statCardsTimePeriod).map(
+                  (option) => (
+                    <DropdownMenuItem
+                      key={option.value}
+                      onClick={() => setStatCardsPivotPeriod(option.value)}
+                    >
+                      {option.label}
+                    </DropdownMenuItem>
+                  ),
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* 2x3 Grid of Stat Cards */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Diapers Card with Wet and Dirty breakdown */}
+          <Card className="p-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-foreground">Diapers</h3>
+            </div>
+            <div className="mt-4 space-y-2">
+              <div>
+                <div className="text-3xl font-bold text-foreground">
+                  {
+                    calculateDiaperStatForCard('count', statCardsTimePeriod)
+                      .formattedValue
+                  }
+                </div>
+                <div className="mt-1 flex gap-4 text-sm text-muted-foreground">
+                  <span>
+                    {
+                      calculateDiaperStatForCard('average', statCardsTimePeriod)
+                        .formattedValue
+                    }{' '}
+                    wet
+                  </span>
+                  <span>
+                    {
+                      calculateDiaperStatForCard(
+                        'duration',
+                        statCardsTimePeriod,
+                      ).formattedValue
+                    }{' '}
+                    dirty
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Longest Gap Card with Avg Gap and Min Gap underneath */}
+          <Card className="p-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-foreground">
+                {longestGap.label}
+              </h3>
+            </div>
+            <div className="mt-4 space-y-2">
+              <div>
+                <div className="text-3xl font-bold text-foreground">
+                  {longestGap.formattedValue}
+                </div>
+                <div className="mt-1 flex flex-col gap-1">
+                  <div className="text-sm text-muted-foreground">
+                    Avg: {avgGap.formattedValue}
+                  </div>
+                  {shortestGap.value !== null && (
+                    <div className="text-sm text-muted-foreground">
+                      Min: {shortestGap.formattedValue}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Longest Dry Period Card with Average Dry underneath */}
+          <Card className="p-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-foreground">
+                {longestDry.label}
+              </h3>
+            </div>
+            <div className="mt-4 space-y-2">
+              <div>
+                <div className="text-3xl font-bold text-foreground">
+                  {longestDry.formattedValue}
+                </div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  Avg: {avgDry.formattedValue}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Longest Clean Period Card with Average Clean underneath */}
+          <Card className="p-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-foreground">
+                {longestClean.label}
+              </h3>
+            </div>
+            <div className="mt-4 space-y-2">
+              <div>
+                <div className="text-3xl font-bold text-foreground">
+                  {longestClean.formattedValue}
+                </div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  Avg: {avgClean.formattedValue}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
       {/* Trend Chart Section */}
       <Card className="p-4">
         <div className="mb-3 flex items-start justify-between gap-2">

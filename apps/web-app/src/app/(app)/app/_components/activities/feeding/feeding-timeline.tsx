@@ -113,7 +113,7 @@ export function FeedingTimeline({
   };
 
   return (
-    <div className="mt-8 space-y-3 -mx-6 px-2">
+    <div className="mt-10 space-y-3 -mx-6 px-2">
       {/* Timeline track */}
       <div className="relative px-6 w-full">
         {/* Timeline with segments between icons using flex */}

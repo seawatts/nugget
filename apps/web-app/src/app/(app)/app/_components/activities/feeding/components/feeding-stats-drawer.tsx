@@ -11,7 +11,7 @@ import {
 } from '@nugget/ui/dropdown-menu';
 import { subDays } from 'date-fns';
 import { ChevronDown } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   FrequencyHeatmap,
   FrequencyInsightsComponent,
@@ -22,10 +22,15 @@ import {
 import type {
   AmountType,
   HeatmapRangeValue,
+  StatMetricType,
+  StatPivotPeriod,
+  StatTimePeriod,
   TimelineWeekRange,
 } from '../../shared/types';
 import {
+  getPivotPeriodOptionsForTimePeriod,
   HEATMAP_RANGE_OPTIONS,
+  STAT_TIME_PERIOD_OPTIONS,
   TIMELINE_WEEK_OPTIONS,
 } from '../../shared/types';
 import {
@@ -41,11 +46,22 @@ import {
   getAgeDaysForDate,
   normalizeGoalContext,
 } from '../../shared/utils/goal-utils';
+import { getDateRangeLabelForPeriod } from '../../shared/utils/stat-calculations';
 import {
   calculateFeedingTrendData,
   getDailyAmountGoal,
   getDailyFeedingGoal,
 } from '../feeding-goals';
+import {
+  calculateAverageClusterFeedingTime,
+  calculateAverageFeedingGap,
+  calculateBottleCount,
+  calculateFeedingStat,
+  calculateLargestFeedingAmount,
+  calculateLongestFeedingGap,
+  calculateNursingCount,
+  calculateShortestFeedingGap,
+} from '../feeding-stat-calculations';
 import { FeedingTrendChart } from './feeding-trend-chart';
 
 interface FeedingGoalContext {
@@ -99,6 +115,22 @@ export function FeedingStatsDrawer({
   const [heatmapRange, setHeatmapRange] = useState<HeatmapRangeValue>('30d');
   const [timelineRange, setTimelineRange] =
     useState<TimelineWeekRange>('this_week');
+  const [statCardsTimePeriod, setStatCardsTimePeriod] =
+    useState<StatTimePeriod>('this_week');
+  const [statCardsPivotPeriod, setStatCardsPivotPeriod] =
+    useState<StatPivotPeriod>('total');
+
+  // Reset pivot period if it's not available for the selected time period
+  useEffect(() => {
+    const availableOptions =
+      getPivotPeriodOptionsForTimePeriod(statCardsTimePeriod);
+    const isCurrentPivotAvailable = availableOptions.some(
+      (opt) => opt.value === statCardsPivotPeriod,
+    );
+    if (!isCurrentPivotAvailable) {
+      setStatCardsPivotPeriod('total');
+    }
+  }, [statCardsTimePeriod, statCardsPivotPeriod]);
 
   const fallbackTimelineOption = TIMELINE_WEEK_OPTIONS[0] ?? {
     label: 'This Week',
@@ -249,12 +281,237 @@ export function FeedingStatsDrawer({
     [timelineOffsetDays],
   );
 
+  // Create calculate function for NumericStatCard
+  const calculateFeedingStatForCard = useMemo(
+    () => (metric: StatMetricType, timePeriod: StatTimePeriod) =>
+      calculateFeedingStat(
+        activities,
+        metric,
+        timePeriod,
+        unit,
+        statCardsPivotPeriod,
+      ),
+    [activities, unit, statCardsPivotPeriod],
+  );
+
+  // Calculate average cluster feeding time
+  const avgClusterTime = useMemo(
+    () =>
+      calculateAverageClusterFeedingTime(
+        activities,
+        statCardsTimePeriod,
+        timeFormat,
+      ),
+    [activities, statCardsTimePeriod, timeFormat],
+  );
+
+  // Calculate largest feeding amount
+  const largestAmount = useMemo(
+    () => calculateLargestFeedingAmount(activities, statCardsTimePeriod, unit),
+    [activities, statCardsTimePeriod, unit],
+  );
+
+  // Calculate longest feeding gap
+  const longestGap = useMemo(
+    () => calculateLongestFeedingGap(activities, statCardsTimePeriod),
+    [activities, statCardsTimePeriod],
+  );
+
+  // Calculate shortest feeding gap
+  const shortestGap = useMemo(
+    () => calculateShortestFeedingGap(activities, statCardsTimePeriod),
+    [activities, statCardsTimePeriod],
+  );
+
+  // Calculate average feeding gap
+  const avgGap = useMemo(
+    () => calculateAverageFeedingGap(activities, statCardsTimePeriod),
+    [activities, statCardsTimePeriod],
+  );
+
   return (
     <StatsDrawerWrapper
       onOpenChange={onOpenChange}
       open={open}
       title="Feeding Statistics"
     >
+      {/* Stat Cards Section with Shared Time Period Control */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-foreground">Quick Stats</h3>
+            <p className="text-xs text-muted-foreground">
+              {getDateRangeLabelForPeriod(statCardsTimePeriod)}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  {STAT_TIME_PERIOD_OPTIONS.find(
+                    (opt) => opt.value === statCardsTimePeriod,
+                  )?.label ?? 'This Week'}
+                  <ChevronDown className="ml-1 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {STAT_TIME_PERIOD_OPTIONS.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => setStatCardsTimePeriod(option.value)}
+                  >
+                    {option.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  {getPivotPeriodOptionsForTimePeriod(statCardsTimePeriod).find(
+                    (opt) => opt.value === statCardsPivotPeriod,
+                  )?.label ?? 'Total'}
+                  <ChevronDown className="ml-1 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {getPivotPeriodOptionsForTimePeriod(statCardsTimePeriod).map(
+                  (option) => (
+                    <DropdownMenuItem
+                      key={option.value}
+                      onClick={() => setStatCardsPivotPeriod(option.value)}
+                    >
+                      {option.label}
+                    </DropdownMenuItem>
+                  ),
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* 2x4 Grid of Stat Cards */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Feedings Count Card with Bottle and Nursing breakdown */}
+          <Card className="p-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-foreground">
+                {
+                  calculateFeedingStatForCard('count', statCardsTimePeriod)
+                    .label
+                }
+              </h3>
+            </div>
+            <div className="mt-4 space-y-2">
+              <div>
+                <div className="text-3xl font-bold text-foreground">
+                  {
+                    calculateFeedingStatForCard('count', statCardsTimePeriod)
+                      .formattedValue
+                  }
+                </div>
+                <div className="mt-1 flex gap-4 text-sm text-muted-foreground">
+                  <span>
+                    {
+                      calculateBottleCount(
+                        activities,
+                        statCardsTimePeriod,
+                        statCardsPivotPeriod,
+                      ).formattedValue
+                    }{' '}
+                    bottle
+                  </span>
+                  <span>
+                    {
+                      calculateNursingCount(
+                        activities,
+                        statCardsTimePeriod,
+                        statCardsPivotPeriod,
+                      ).formattedValue
+                    }{' '}
+                    nursing
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Total Volume Card with Average Amount and Largest Amount underneath */}
+          <Card className="p-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-foreground">
+                {
+                  calculateFeedingStatForCard('total', statCardsTimePeriod)
+                    .label
+                }
+              </h3>
+            </div>
+            <div className="mt-4 space-y-2">
+              <div>
+                <div className="text-3xl font-bold text-foreground">
+                  {
+                    calculateFeedingStatForCard('total', statCardsTimePeriod)
+                      .formattedValue
+                  }
+                </div>
+                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                  <span>
+                    Avg:{' '}
+                    {
+                      calculateFeedingStatForCard(
+                        'average',
+                        statCardsTimePeriod,
+                      ).formattedValue
+                    }
+                  </span>
+                  <span>Max: {largestAmount.formattedValue}</span>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Average Cluster Feeding Time Card */}
+          <Card className="p-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-foreground">
+                {avgClusterTime.label}
+              </h3>
+            </div>
+            <div className="mt-4">
+              <div className="text-3xl font-bold text-foreground">
+                {avgClusterTime.formattedValue}
+              </div>
+            </div>
+          </Card>
+
+          {/* Longest Gap Card with Avg Gap and Min Gap underneath */}
+          <Card className="p-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-foreground">
+                {longestGap.label}
+              </h3>
+            </div>
+            <div className="mt-4 space-y-2">
+              <div>
+                <div className="text-3xl font-bold text-foreground">
+                  {longestGap.formattedValue}
+                </div>
+                <div className="mt-1 flex flex-col gap-1">
+                  <div className="text-sm text-muted-foreground">
+                    Avg: {avgGap.formattedValue}
+                  </div>
+                  {shortestGap.value !== null && (
+                    <div className="text-sm text-muted-foreground">
+                      Min: {shortestGap.formattedValue}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+
       {/* Count Trend Chart */}
       <Card className="p-4">
         <div className="mb-3 space-y-3">

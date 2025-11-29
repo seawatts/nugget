@@ -9,11 +9,11 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
 import '@nugget/ui/globals.css';
 
-import { ClerkProvider } from '@clerk/nextjs';
 import { AnalyticsProviders } from '@nugget/analytics/providers';
 import { TRPCReactProvider } from '@nugget/api/react';
 import { StripeProvider } from '@nugget/stripe/guards/client';
 import { Suspense } from 'react';
+import { ClerkProviderWrapper } from '~/components/clerk-provider-wrapper';
 import { env } from '~/env.server';
 
 export const metadata: Metadata = {
@@ -76,7 +76,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           {isDevelopment && <ReactScan />}
           <NuqsAdapter>
-            <ClerkProvider>
+            <ClerkProviderWrapper>
               <TRPCReactProvider>
                 <Suspense>
                   <AnalyticsProviders identifyUser>
@@ -87,7 +87,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
                   </AnalyticsProviders>
                 </Suspense>
               </TRPCReactProvider>
-            </ClerkProvider>
+            </ClerkProviderWrapper>
           </NuqsAdapter>
         </ThemeProvider>
       </body>

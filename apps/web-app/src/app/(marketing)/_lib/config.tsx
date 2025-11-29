@@ -1,5 +1,5 @@
 import { cn } from '@nugget/ui/lib/utils';
-import { Baby, Heart } from 'lucide-react';
+import { Baby, Bell, Brain, Calendar, Clock, Heart, Users } from 'lucide-react';
 import { FirstBentoAnimation } from '~/app/(marketing)/_components/first-bento-animation';
 import { FourthBentoAnimation } from '~/app/(marketing)/_components/fourth-bento-animation';
 import { SecondBentoAnimation } from '~/app/(marketing)/_components/second-bento-animation';
@@ -62,35 +62,66 @@ export const siteConfig = {
       text: 'Share your journey with partners and family members seamlessly.',
     },
   ],
+  bento: [
+    {
+      content:
+        'Track your cycle and ovulation. Get insights to boost your chances.',
+      fullWidth: true,
+      imageAlt: 'Cycle tracking illustration',
+      imageSrc: '/Device-1.png',
+      title: 'Trying to Conceive',
+    },
+    {
+      content:
+        "Week-by-week updates, size comparisons, and checklists for baby's arrival.",
+      fullWidth: false,
+      imageAlt: 'Pregnancy tracking illustration',
+      imageSrc: '/Device-2.png',
+      title: 'Pregnancy Tracking',
+    },
+    {
+      content:
+        'Log feeding, sleep, and diapers. Spot patterns and share with your doctor.',
+      fullWidth: false,
+      imageAlt: 'Baby care logging illustration',
+      imageSrc: '/Device-3.png',
+      title: 'Baby Care Logging',
+    },
+    {
+      content: 'Capture every milestone from first smile to first steps.',
+      fullWidth: true,
+      imageAlt: 'Milestone tracking illustration',
+      imageSrc: '/Device-4.png',
+      title: 'Milestone Tracking',
+    },
+  ],
   bentoSection: {
-    description:
-      "From trying to conceive to baby's first steps, Nugget supports every moment of your parenting journey.",
+    description: 'Everything you need, from conception to first steps.',
     items: [
       {
         content: <FirstBentoAnimation />,
         description:
-          'Track your menstrual cycle, ovulation windows, and fertility indicators. Get personalized insights to optimize your conception journey.',
+          'Track your cycle and ovulation. Get insights to boost your chances.',
         id: 1,
         title: 'Trying to Conceive',
       },
       {
         content: <SecondBentoAnimation />,
         description:
-          "Week-by-week pregnancy tracking with size comparisons, developmental milestones, and preparation checklists for your baby's arrival.",
+          "Week-by-week updates, size comparisons, and checklists for baby's arrival.",
         id: 2,
         title: 'Pregnancy Tracking',
       },
       {
         content: <ThirdBentoAnimation />,
         description:
-          'Log feeding sessions, sleep patterns, diaper changes, and growth metrics. Identify patterns and share with healthcare providers.',
+          'Log feeding, sleep, and diapers. Spot patterns and share with your doctor.',
         id: 3,
         title: 'Baby Care Logging',
       },
       {
         content: <FourthBentoAnimation once={false} />,
-        description:
-          'Track developmental milestones from first smile to first steps. Celebrate achievements and share precious moments with loved ones.',
+        description: 'Capture every milestone from first smile to first steps.',
         id: 4,
         title: 'Milestone Tracking',
       },
@@ -104,18 +135,16 @@ export const siteConfig = {
   ctaSection: {
     backgroundImage: '/agent-cta-background.png',
     button: {
-      href: '/app/onboarding?utm_source=marketing-site&utm_medium=cta-button',
+      href: '/app?utm_source=marketing-site&utm_medium=cta-button',
       text: 'Start Your Journey',
     },
     id: 'cta',
-    subtext: 'Join thousands of parents tracking their journey',
-    title: 'Ready to Start Your Parenting Journey?',
+    subtext: 'Join thousands of parents',
+    title: 'Start tracking today',
   },
-  description:
-    'Your companion from conception to milestones - track every moment of your parenting journey.',
+  description: 'Your parenting journey, simplified.',
   faqSection: {
-    description:
-      "Answers to common questions about Nugget and its features. If you have any other questions, please don't hesitate to contact us.",
+    description: 'Everything you need to know.',
     faQitems: [
       {
         answer:
@@ -174,6 +203,29 @@ export const siteConfig = {
     ],
     title: 'Frequently Asked Questions',
   },
+  featureHighlight: [
+    {
+      description:
+        'Track your cycle and ovulation. Get insights to boost your chances.',
+      direction: 'rtl' as const,
+      imageSrc: '/Device-2.png',
+      title: 'Trying to Conceive',
+    },
+    {
+      description:
+        "Week-by-week updates, size comparisons, and checklists for baby's arrival.",
+      direction: 'ltr' as const,
+      imageSrc: '/Device-3.png',
+      title: 'Pregnancy Tracking',
+    },
+    {
+      description:
+        'Log feeding, sleep, and diapers. Spot patterns and share with your doctor.',
+      direction: 'rtl' as const,
+      imageSrc: '/Device-4.png',
+      title: 'Baby Care Logging',
+    },
+  ],
   featureSection: {
     description:
       'Discover how Nugget supports every phase of your parenting journey',
@@ -213,6 +265,44 @@ export const siteConfig = {
     ],
     title: 'Every Phase. Every Moment.',
   },
+  features: [
+    {
+      description:
+        'Intelligent cycle tracking that learns your patterns and optimizes your conception journey.',
+      icon: <Calendar className="h-6 w-6" />,
+      name: 'Cycle & Ovulation Tracking',
+    },
+    {
+      description:
+        'Track your pregnancy with size comparisons, developmental milestones, and personalized guidance.',
+      icon: <Baby className="h-6 w-6" />,
+      name: 'Pregnancy Week-by-Week',
+    },
+    {
+      description:
+        'Log feeding, sleep, diapers, and growth. Identify patterns and share with healthcare providers.',
+      icon: <Clock className="h-6 w-6" />,
+      name: 'Baby Care Logging',
+    },
+    {
+      description:
+        'Share your journey with partners and family members seamlessly.',
+      icon: <Users className="h-6 w-6" />,
+      name: 'Partner Sharing',
+    },
+    {
+      description:
+        'Contextual notifications that adapt to your schedule and help you stay on track.',
+      icon: <Bell className="h-6 w-6" />,
+      name: 'Smart Reminders',
+    },
+    {
+      description:
+        'Get personalized insights based on scientific research and your personal data.',
+      icon: <Brain className="h-6 w-6" />,
+      name: 'Science-Backed Insights',
+    },
+  ],
   footerLinks: [
     {
       links: [
@@ -255,13 +345,12 @@ export const siteConfig = {
     },
   ],
   growthSection: {
-    description:
-      "Where privacy meets parenting—designed to protect your family's data while supporting your journey.",
+    description: 'Privacy-first. Built for modern parents.',
     items: [
       {
         content: <SecurityShieldBackground />,
         description:
-          "Track every moment with confidence. Your family's data is encrypted and never shared. You maintain complete control over your information.",
+          "Your data is encrypted and private. You're in complete control.",
         id: 1,
         title: 'Privacy-First Parenting',
       },
@@ -272,7 +361,7 @@ export const siteConfig = {
           </div>
         ),
         description:
-          'Available on iOS, Android, and web. Your data syncs seamlessly across all devices so you can track and access your journey anywhere.',
+          'Works on iOS, Android, and web. Your data syncs everywhere.',
         id: 2,
         title: 'Cross-Platform Sync',
       },
@@ -283,10 +372,10 @@ export const siteConfig = {
     badge: 'Your Parenting Companion',
     badgeIcon: <Heart className="size-4" />,
     badgeUrl:
-      'https://nugget.baby/app/onboarding?utm_source=marketing-site&utm_medium=hero-cta',
+      'https://nugget.baby/app?utm_source=marketing-site&utm_medium=hero-cta',
     cta: {
       primary: {
-        href: '/app/onboarding?utm_source=marketing-site&utm_medium=hero-cta',
+        href: '/app?utm_source=marketing-site&utm_medium=hero-cta',
         text: 'Start Your Journey',
       },
       secondary: {
@@ -295,7 +384,7 @@ export const siteConfig = {
       },
     },
     description:
-      "Track your cycle, follow your pregnancy week by week, and monitor your baby's feeding, sleep, and milestones—all in one beautifully simple app.",
+      "From trying to conceive to baby's first steps—track everything in one simple app.",
     title: 'Your Complete Parenting Journey',
   },
   keywords: [
@@ -332,15 +421,14 @@ export const siteConfig = {
         name: 'Blog',
       },
       {
-        href: '/app/onboarding',
+        href: '/app',
         id: 6,
         name: 'Get Started',
       },
     ],
   },
   pricing: {
-    description:
-      'Start for free and upgrade as your family grows. No credit card required.',
+    description: 'Start free. Upgrade as you grow.',
     pricingItems: [
       {
         buttonColor: 'bg-accent text-primary',
@@ -354,7 +442,7 @@ export const siteConfig = {
           'Mobile app access',
           'Data export',
         ],
-        href: '/app/onboarding?utm_source=marketing-site&utm_medium=pricing-cta-free',
+        href: '/app?utm_source=marketing-site&utm_medium=pricing-cta-free',
         isPopular: false,
         name: 'Free',
         period: 'month',
@@ -377,7 +465,7 @@ export const siteConfig = {
           'Priority support',
           'Ad-free experience',
         ],
-        href: '/app/onboarding?utm_source=marketing-site&utm_medium=pricing-cta-premium',
+        href: '/app?utm_source=marketing-site&utm_medium=pricing-cta-premium',
         isPopular: true,
         name: 'Premium',
         period: 'month',
@@ -421,11 +509,9 @@ export const siteConfig = {
     {
       description: (
         <p>
-          Nugget made our conception journey so much easier to navigate.
-          <Highlight>
-            The cycle tracking helped us conceive within 3 months!
-          </Highlight>{' '}
-          Can\'t recommend it enough.
+          Made our conception journey so much easier.
+          <Highlight>Conceived within 3 months!</Highlight> Can't recommend it
+          enough.
         </p>
       ),
       id: '1',
@@ -436,11 +522,9 @@ export const siteConfig = {
     {
       description: (
         <p>
-          The pregnancy tracker gave me peace of mind every week.
-          <Highlight>
-            Loved the size comparisons and milestone updates!
-          </Highlight>{' '}
-          Made me feel connected to my baby.
+          Peace of mind every week.
+          <Highlight>Love the size comparisons!</Highlight> Made me feel
+          connected to my baby.
         </p>
       ),
       id: '2',
@@ -451,12 +535,8 @@ export const siteConfig = {
     {
       description: (
         <p>
-          As a first-time parent, tracking feedings and sleep patterns was a
-          game-changer.
-          <Highlight>
-            The pattern analysis helped us establish a routine.
-          </Highlight>{' '}
-          Essential for new parents!
+          Game-changer for first-time parents.
+          <Highlight>Helped us establish a routine.</Highlight> Essential!
         </p>
       ),
       id: '3',
@@ -467,11 +547,9 @@ export const siteConfig = {
     {
       description: (
         <p>
-          Sharing the journey with my partner made us feel like a team.
-          <Highlight>
-            We both could log activities and celebrate milestones together.
-          </Highlight>{' '}
-          Beautiful app for modern families.
+          Sharing with my partner made us feel like a team.
+          <Highlight>We log and celebrate together.</Highlight> Perfect for
+          modern families.
         </p>
       ),
       id: '4',
@@ -482,10 +560,9 @@ export const siteConfig = {
     {
       description: (
         <p>
-          The milestone tracking is incredible. We have a complete record of our
-          daughter\'s firsts.
-          <Highlight>The photo memories are priceless.</Highlight> Will use for
-          future children too!
+          Complete record of our daughter's firsts.
+          <Highlight>The photo memories are priceless.</Highlight> Using it for
+          our next baby too!
         </p>
       ),
       id: '5',
@@ -496,8 +573,8 @@ export const siteConfig = {
     {
       description: (
         <p>
-          As a pediatrician, I recommend Nugget to all my patients.
-          <Highlight>The tracking data helps me provide better care.</Highlight>{' '}
+          I recommend Nugget to all my patients.
+          <Highlight>The data helps me provide better care.</Highlight>{' '}
           Well-designed and evidence-based.
         </p>
       ),

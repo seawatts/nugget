@@ -1007,7 +1007,8 @@ export function TodaySummaryCard({
     );
   }, [feedingQueryData?.recentActivities]);
 
-  const lastDiaperActivity = useMemo(() => {
+  // Find last wet diaper activity (includes 'both' type)
+  const lastWetDiaperActivity = useMemo(() => {
     if (!diaperQueryData?.recentActivities) return null;
     return (
       diaperQueryData.recentActivities.find(
@@ -1017,7 +1018,33 @@ export function TodaySummaryCard({
             a.type === 'dirty' ||
             a.type === 'both') &&
           !a.isScheduled &&
-          !(a.details && 'skipped' in a.details && a.details.skipped === true),
+          !(
+            a.details &&
+            'skipped' in a.details &&
+            a.details.skipped === true
+          ) &&
+          (a.details?.type === 'wet' || a.details?.type === 'both'),
+      ) || null
+    );
+  }, [diaperQueryData?.recentActivities]);
+
+  // Find last dirty diaper activity (includes 'both' type)
+  const lastDirtyDiaperActivity = useMemo(() => {
+    if (!diaperQueryData?.recentActivities) return null;
+    return (
+      diaperQueryData.recentActivities.find(
+        (a) =>
+          (a.type === 'diaper' ||
+            a.type === 'wet' ||
+            a.type === 'dirty' ||
+            a.type === 'both') &&
+          !a.isScheduled &&
+          !(
+            a.details &&
+            'skipped' in a.details &&
+            a.details.skipped === true
+          ) &&
+          (a.details?.type === 'dirty' || a.details?.type === 'both'),
       ) || null
     );
   }, [diaperQueryData?.recentActivities]);
@@ -1089,27 +1116,63 @@ export function TodaySummaryCard({
       }
     : null;
 
-  const lastDiaperTime = lastDiaperActivity
-    ? formatCompactRelativeTimeWithAgo(new Date(lastDiaperActivity.startTime))
+  // Format last wet diaper activity times
+  const lastWetDiaperTime = lastWetDiaperActivity
+    ? formatCompactRelativeTimeWithAgo(
+        new Date(lastWetDiaperActivity.startTime),
+      )
     : null;
-  const lastDiaperExactTime = lastDiaperActivity
+  const lastWetDiaperExactTime = lastWetDiaperActivity
     ? formatTimeWithPreference(
-        new Date(lastDiaperActivity.startTime),
+        new Date(lastWetDiaperActivity.startTime),
         timeFormat,
       )
     : null;
-  const lastDiaperUser = lastDiaperActivity?.user
+  const lastWetDiaperUser = lastWetDiaperActivity?.user
     ? {
-        avatar: lastDiaperActivity.user.avatarUrl,
+        avatar: lastWetDiaperActivity.user.avatarUrl,
         initials: (
-          lastDiaperActivity.user.firstName?.[0] ||
-          lastDiaperActivity.user.email[0] ||
+          lastWetDiaperActivity.user.firstName?.[0] ||
+          lastWetDiaperActivity.user.email[0] ||
           '?'
         ).toUpperCase(),
         name:
-          [lastDiaperActivity.user.firstName, lastDiaperActivity.user.lastName]
+          [
+            lastWetDiaperActivity.user.firstName,
+            lastWetDiaperActivity.user.lastName,
+          ]
             .filter(Boolean)
-            .join(' ') || lastDiaperActivity.user.email,
+            .join(' ') || lastWetDiaperActivity.user.email,
+      }
+    : null;
+
+  // Format last dirty diaper activity times
+  const lastDirtyDiaperTime = lastDirtyDiaperActivity
+    ? formatCompactRelativeTimeWithAgo(
+        new Date(lastDirtyDiaperActivity.startTime),
+      )
+    : null;
+  const lastDirtyDiaperExactTime = lastDirtyDiaperActivity
+    ? formatTimeWithPreference(
+        new Date(lastDirtyDiaperActivity.startTime),
+        timeFormat,
+      )
+    : null;
+  const lastDirtyDiaperUser = lastDirtyDiaperActivity?.user
+    ? {
+        avatar: lastDirtyDiaperActivity.user.avatarUrl,
+        initials: (
+          lastDirtyDiaperActivity.user.firstName?.[0] ||
+          lastDirtyDiaperActivity.user.email[0] ||
+          '?'
+        ).toUpperCase(),
+        name:
+          [
+            lastDirtyDiaperActivity.user.firstName,
+            lastDirtyDiaperActivity.user.lastName,
+          ]
+            .filter(Boolean)
+            .join(' ') || lastDirtyDiaperActivity.user.email,
       }
     : null;
 
@@ -1237,7 +1300,7 @@ export function TodaySummaryCard({
                 <Milk className="size-5" />
                 <span className="text-xs font-medium">Bottle</span>
                 {lastBottleTime && lastBottleExactTime && (
-                  <div className="flex items-center gap-1 text-[10px] opacity-70 leading-tight">
+                  <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
                     <span>{lastBottleTime}</span>
                     {lastBottleUser && (
                       <Avatar className="size-3 shrink-0">
@@ -1272,7 +1335,7 @@ export function TodaySummaryCard({
                 )}
                 <span className="text-xs font-medium">Nursing</span>
                 {lastNursingTime && lastNursingExactTime && (
-                  <div className="flex items-center gap-1 text-[10px] opacity-70 leading-tight">
+                  <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
                     <span>{lastNursingTime}</span>
                     {lastNursingUser && (
                       <Avatar className="size-3 shrink-0">
@@ -1306,17 +1369,17 @@ export function TodaySummaryCard({
                   <Droplet className="size-5" />
                 )}
                 <span className="text-xs font-medium">Pee</span>
-                {lastDiaperTime && lastDiaperExactTime && (
-                  <div className="flex items-center gap-1 text-[10px] opacity-70 leading-tight">
-                    <span>{lastDiaperTime}</span>
-                    {lastDiaperUser && (
+                {lastWetDiaperTime && lastWetDiaperExactTime && (
+                  <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
+                    <span>{lastWetDiaperTime}</span>
+                    {lastWetDiaperUser && (
                       <Avatar className="size-3 shrink-0">
                         <AvatarImage
-                          alt={lastDiaperUser.name}
-                          src={lastDiaperUser.avatar || ''}
+                          alt={lastWetDiaperUser.name}
+                          src={lastWetDiaperUser.avatar || ''}
                         />
                         <AvatarFallback className="text-[8px]">
-                          {lastDiaperUser.initials}
+                          {lastWetDiaperUser.initials}
                         </AvatarFallback>
                       </Avatar>
                     )}
@@ -1341,17 +1404,17 @@ export function TodaySummaryCard({
                   <Droplets className="size-5" />
                 )}
                 <span className="text-xs font-medium">Poop</span>
-                {lastDiaperTime && lastDiaperExactTime && (
-                  <div className="flex items-center gap-1 text-[10px] opacity-70 leading-tight">
-                    <span>{lastDiaperTime}</span>
-                    {lastDiaperUser && (
+                {lastDirtyDiaperTime && lastDirtyDiaperExactTime && (
+                  <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
+                    <span>{lastDirtyDiaperTime}</span>
+                    {lastDirtyDiaperUser && (
                       <Avatar className="size-3 shrink-0">
                         <AvatarImage
-                          alt={lastDiaperUser.name}
-                          src={lastDiaperUser.avatar || ''}
+                          alt={lastDirtyDiaperUser.name}
+                          src={lastDirtyDiaperUser.avatar || ''}
                         />
                         <AvatarFallback className="text-[8px]">
-                          {lastDiaperUser.initials}
+                          {lastDirtyDiaperUser.initials}
                         </AvatarFallback>
                       </Avatar>
                     )}
@@ -1388,7 +1451,7 @@ export function TodaySummaryCard({
                       {formatElapsedTime(sleepDurationMinutes)}
                     </span>
                   ) : lastSleepTime && lastSleepExactTime ? (
-                    <div className="flex items-center gap-1 text-[10px] opacity-70 leading-tight">
+                    <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
                       <span>{lastSleepTime}</span>
                       {lastSleepUser && (
                         <Avatar className="size-3 shrink-0">

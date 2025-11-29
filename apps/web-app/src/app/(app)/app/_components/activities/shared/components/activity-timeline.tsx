@@ -281,8 +281,9 @@ export function ActivityTimeline({
     return `${minutes}min`;
   };
 
+  // Normal mode: original layout
   return (
-    <div className={cn('mt-8 space-y-3 -mx-6 px-2', className)}>
+    <div className={cn('mt-10 space-y-3 -mx-6 px-2', className)}>
       {/* Timeline track */}
       <div className="relative px-6 w-full">
         {/* Timeline with segments between icons using flex */}

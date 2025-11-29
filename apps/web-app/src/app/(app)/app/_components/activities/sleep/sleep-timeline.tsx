@@ -1,10 +1,8 @@
 'use client';
 
 import type { ActivityWithUser } from '../shared/components/activity-timeline';
-import {
-  ActivityTimeline,
-  getActivityEndTime,
-} from '../shared/components/activity-timeline';
+import { getActivityEndTime } from '../shared/components/activity-timeline';
+import { ScrollableActivityTimeline } from '../shared/components/scrollable-activity-timeline';
 
 interface SleepTimelineProps {
   startTime: Date;
@@ -62,8 +60,8 @@ export function SleepTimeline({
   };
 
   return (
-    <ActivityTimeline
-      activityCount={3}
+    <ScrollableActivityTimeline
+      activityCount={10}
       babyId={babyId}
       iconColorClass="text-activity-sleep"
       lineColorClass="bg-activity-sleep/30 group-hover:bg-activity-sleep/50"

@@ -5,7 +5,6 @@ import { cn } from '@nugget/ui/lib/utils';
 import { AnimatedBeam } from '@nugget/ui/magicui/animated-beam';
 import type React from 'react';
 import { forwardRef, useRef } from 'react';
-import { Icons as MarketingIcons } from './icons';
 
 const Circle = forwardRef<
   HTMLDivElement,
@@ -64,7 +63,7 @@ export function ThirdBentoAnimation({ className }: { className?: string }) {
         </div>
         <div className="flex flex-col justify-center">
           <Circle className="size-16" ref={div6Ref}>
-            <MarketingIcons.logo className="size-7 md:size-10" />
+            <span className="text-2xl md:text-3xl">🐣</span>
           </Circle>
         </div>
         <div className="flex flex-col justify-center">

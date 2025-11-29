@@ -4,50 +4,33 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@nugget/ui/accordion';
-import { SectionHeader } from '~/app/(marketing)/_components/section-header';
+import { Section } from '~/app/(marketing)/_components/section';
 import { siteConfig } from '~/app/(marketing)/_lib/config';
 
-export function FAQSection() {
-  const { faqSection } = siteConfig;
+export function FAQ() {
+  const faqs = siteConfig.faqSection?.faQitems || [];
 
   return (
-    <section
-      className="flex flex-col items-center justify-center gap-10 pb-10 w-full relative"
+    <Section
+      className="container px-10 mx-auto max-w-[var(--max-container-width)]"
       id="faq"
+      subtitle="Frequently Asked Questions"
+      title="FAQ"
     >
-      <SectionHeader>
-        <h2 className="text-3xl md:text-4xl font-medium tracking-tighter text-center text-balance">
-          {faqSection.title}
-        </h2>
-        <p className="text-muted-foreground text-center text-balance font-medium">
-          {faqSection.description}
-        </p>
-      </SectionHeader>
-
-      <div className="max-w-3xl w-full mx-auto px-10">
-        <Accordion
-          className="w-full border-b-0 grid gap-2"
-          collapsible
-          type="single"
-        >
-          {faqSection.faQitems.map((faq) => (
-            <AccordionItem
-              className="border-0 grid gap-2"
-              key={faq.question}
-              value={faq.question}
-            >
-              <AccordionTrigger className="border bg-accent border-border rounded-lg px-4 py-3.5 cursor-pointer no-underline hover:no-underline data-[state=open]:ring data-[state=open]:ring-primary/20">
-                {faq.question}
-              </AccordionTrigger>
-              <AccordionContent className="p-3 border text-primary rounded-lg bg-accent">
-                <p className="text-primary font-medium leading-relaxed">
-                  {faq.answer}
-                </p>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      </div>
-    </section>
+      <Accordion
+        className="w-full max-w-2xl mx-auto py-10"
+        collapsible
+        type="single"
+      >
+        {faqs.map((faq, index) => (
+          <AccordionItem key={faq.id || index} value={`item-${index}`}>
+            <AccordionTrigger className="text-left hover:no-underline">
+              {faq.question}
+            </AccordionTrigger>
+            <AccordionContent>{faq.answer}</AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </Section>
   );
 }

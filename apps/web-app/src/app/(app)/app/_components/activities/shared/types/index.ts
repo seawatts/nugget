@@ -10,7 +10,12 @@ export type {
   HeatmapRangeValue,
   MetricType,
   SleepStatsComparison,
+  StatMetricType,
+  StatPivotPeriod,
+  StatPivotPeriodOption,
   StatsComparison,
+  StatTimePeriod,
+  StatTimePeriodOption,
   TimeBlockActivity,
   TimeBlockData,
   TimelineWeekRange,
@@ -21,7 +26,10 @@ export type {
 } from './stats';
 
 export {
+  getPivotPeriodOptionsForTimePeriod,
   HEATMAP_RANGE_OPTIONS,
+  STAT_PIVOT_PERIOD_OPTIONS,
+  STAT_TIME_PERIOD_OPTIONS,
   TIME_RANGE_OPTIONS,
   TIMELINE_WEEK_OPTIONS,
 } from './stats';

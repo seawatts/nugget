@@ -16,6 +16,7 @@ import {
   FrequencyHeatmap,
   FrequencyInsightsComponent,
   getTrendContent,
+  NumericStatCard,
   RecentActivitiesList,
   StatsDrawerWrapper,
   TimeBlockChart,
@@ -24,11 +25,16 @@ import type {
   AmountType,
   HeatmapRangeValue,
   MetricType,
+  StatMetricType,
+  StatPivotPeriod,
+  StatTimePeriod,
   TimelineWeekRange,
   TrendTimeRange,
 } from '../../shared/types';
 import {
+  getPivotPeriodOptionsForTimePeriod,
   HEATMAP_RANGE_OPTIONS,
+  STAT_TIME_PERIOD_OPTIONS,
   TIMELINE_WEEK_OPTIONS,
 } from '../../shared/types';
 import {
@@ -40,7 +46,9 @@ import {
   calculateTimeBlockData,
   detectPatterns,
 } from '../../shared/utils/frequency-utils';
+import { getDateRangeLabelForPeriod } from '../../shared/utils/stat-calculations';
 import { calculatePumpingTrendData } from '../pumping-goals';
+import { calculatePumpingStat } from '../pumping-stat-calculations';
 import { PumpingTrendChart } from './pumping-trend-chart';
 
 interface PumpingStatsDrawerProps {
@@ -88,6 +96,10 @@ export function PumpingStatsDrawer({
     'count',
   );
   const [heatmapRange, setHeatmapRange] = useState<HeatmapRangeValue>('30d');
+  const [statCardsTimePeriod, setStatCardsTimePeriod] =
+    useState<StatTimePeriod>('this_week');
+  const [statCardsPivotPeriod, setStatCardsPivotPeriod] =
+    useState<StatPivotPeriod>('total');
   const [timelineRange, setTimelineRange] =
     useState<TimelineWeekRange>('this_week');
   const fallbackTimelineOption = TIMELINE_WEEK_OPTIONS[0] ?? {
@@ -167,12 +179,130 @@ export function PumpingStatsDrawer({
     [timelineOffsetDays],
   );
 
+  // Create calculate function for NumericStatCard
+  const calculatePumpingStatForCard = useMemo(
+    () => (metric: StatMetricType, timePeriod: StatTimePeriod) =>
+      calculatePumpingStat(
+        activities,
+        metric,
+        timePeriod,
+        unit,
+        statCardsPivotPeriod,
+      ),
+    [activities, unit, statCardsPivotPeriod],
+  );
+
   return (
     <StatsDrawerWrapper
       onOpenChange={onOpenChange}
       open={open}
       title="Pumping Statistics"
     >
+      {/* Stat Cards Section with Shared Time Period Control */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-foreground">Quick Stats</h3>
+            <p className="text-xs text-muted-foreground">
+              {getDateRangeLabelForPeriod(statCardsTimePeriod)}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  {STAT_TIME_PERIOD_OPTIONS.find(
+                    (opt) => opt.value === statCardsTimePeriod,
+                  )?.label ?? 'This Week'}
+                  <ChevronDown className="ml-1 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {STAT_TIME_PERIOD_OPTIONS.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => setStatCardsTimePeriod(option.value)}
+                  >
+                    {option.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  {getPivotPeriodOptionsForTimePeriod(statCardsTimePeriod).find(
+                    (opt) => opt.value === statCardsPivotPeriod,
+                  )?.label ?? 'Total'}
+                  <ChevronDown className="ml-1 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {getPivotPeriodOptionsForTimePeriod(statCardsTimePeriod).map(
+                  (option) => (
+                    <DropdownMenuItem
+                      key={option.value}
+                      onClick={() => setStatCardsPivotPeriod(option.value)}
+                    >
+                      {option.label}
+                    </DropdownMenuItem>
+                  ),
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* 2x2 Grid of Stat Cards */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Pumping Sessions Count Card */}
+          <NumericStatCard
+            availableMetrics={['count']}
+            calculateStat={calculatePumpingStatForCard}
+            defaultMetric="count"
+            showDateRange={false}
+            timePeriod={statCardsTimePeriod}
+          />
+
+          {/* Total Amount Card with Average Amount underneath */}
+          <Card className="p-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-foreground">
+                {
+                  calculatePumpingStatForCard('total', statCardsTimePeriod)
+                    .label
+                }
+              </h3>
+            </div>
+            <div className="mt-4 space-y-2">
+              <div>
+                <div className="text-3xl font-bold text-foreground">
+                  {
+                    calculatePumpingStatForCard('total', statCardsTimePeriod)
+                      .formattedValue
+                  }
+                </div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  Avg:{' '}
+                  {
+                    calculatePumpingStatForCard('average', statCardsTimePeriod)
+                      .formattedValue
+                  }
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Average Duration Card */}
+          <NumericStatCard
+            availableMetrics={['duration']}
+            calculateStat={calculatePumpingStatForCard}
+            defaultMetric="duration"
+            showDateRange={false}
+            timePeriod={statCardsTimePeriod}
+          />
+        </div>
+      </div>
       {/* Trend Chart Section */}
       <Card className="p-4">
         <div className="mb-3 flex items-start justify-between gap-2">

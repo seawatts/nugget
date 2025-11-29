@@ -16,6 +16,7 @@ import { cn } from '@nugget/ui/lib/utils';
 import { Baby, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
+import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 import { ClickableTimeDisplay } from '../shared/components/clickable-time-display';
 import { useActivityMutations } from '../use-activity-mutations';
 import type { DiaperFormData } from './diaper-drawer';
@@ -40,6 +41,10 @@ export function TimelineDiaperDrawer({
 }: TimelineDiaperDrawerProps) {
   const { updateActivity, deleteActivity, isUpdating, isDeleting } =
     useActivityMutations();
+  const optimisticUpdateActivity =
+    useOptimisticActivitiesStore.use.updateActivity();
+  const removeOptimisticUpdate =
+    useOptimisticActivitiesStore.use.removeUpdate();
 
   // Get user preferences from dashboard store (already fetched by DashboardContainer)
   const user = useDashboardDataStore.use.user();
@@ -151,16 +156,26 @@ export function TimelineDiaperDrawer({
         type: formData.type,
       };
 
-      // Update existing activity
+      const optimisticActivity = {
+        ...existingActivity,
+        details: diaperDetails,
+        notes: formData.notes || null,
+        startTime,
+        updatedAt: new Date(),
+      } as typeof Activities.$inferSelect;
+
+      optimisticUpdateActivity(existingActivity.id, optimisticActivity);
+
+      onClose();
+
       await updateActivity({
         details: diaperDetails,
         id: existingActivity.id,
         notes: formData.notes || undefined,
         startTime,
       });
-
-      onClose();
     } catch (error) {
+      removeOptimisticUpdate(existingActivity.id);
       console.error('Failed to update diaper:', error);
     }
   };

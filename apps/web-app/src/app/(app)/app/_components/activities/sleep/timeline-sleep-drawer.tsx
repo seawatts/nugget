@@ -217,7 +217,7 @@ export function TimelineSleepDrawer({
       </div>
 
       {/* Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {/* Sleep Timeline */}
         {babyId && (
           <SleepTimeline
