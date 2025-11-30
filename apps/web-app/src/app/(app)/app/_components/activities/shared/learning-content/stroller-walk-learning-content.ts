@@ -4,9 +4,11 @@ interface LearningContent {
 }
 
 /**
- * Get age-appropriate walk learning content
+ * Get age-appropriate stroller walk learning content
  */
-export function getWalkLearningContent(ageDays: number): LearningContent {
+export function getStrollerWalkLearningContent(
+  ageDays: number,
+): LearningContent {
   // 0-30 days (first month)
   if (ageDays <= 30) {
     return {

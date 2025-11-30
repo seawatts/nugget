@@ -36,7 +36,7 @@ export type ActivityType =
   | 'doctor_visit'
   | 'vitamin_d'
   | 'nail_trimming'
-  | 'walk'
+  | 'stroller_walk'
   | 'contrast_time';
 
 // Activity types that support quick logging
@@ -163,6 +163,13 @@ export const ACTIVITY_THEMES: Record<ActivityType, ActivityTheme> = {
     label: 'Solids',
     textColor: 'text-activity-solids-foreground',
   },
+  stroller_walk: {
+    color: 'activity-walk',
+    description: 'Go for a walk in a stroller',
+    icon: Footprints,
+    label: 'Stroller Walk',
+    textColor: 'text-activity-walk-foreground',
+  },
   temperature: {
     color: 'activity-temperature',
     description: 'Temperature check',
@@ -183,13 +190,6 @@ export const ACTIVITY_THEMES: Record<ActivityType, ActivityTheme> = {
     icon: Pill,
     label: 'Vitamin D',
     textColor: 'text-activity-vitamin-d-foreground',
-  },
-  walk: {
-    color: 'activity-walk',
-    description: 'Go for a walk',
-    icon: Footprints,
-    label: 'Walk',
-    textColor: 'text-activity-walk-foreground',
   },
 };
 

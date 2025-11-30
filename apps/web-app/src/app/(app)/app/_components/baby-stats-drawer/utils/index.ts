@@ -1,4 +1,6 @@
 export * from './achievement-calculations';
+export * from './achievement-helpers';
+export * from './achievement-progression';
 export * from './activity-type-distribution';
 export * from './age-formatters';
 export * from './comparison-calculations';

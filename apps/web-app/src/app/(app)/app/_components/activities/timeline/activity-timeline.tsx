@@ -165,8 +165,8 @@ const activities = [
   {
     color: 'bg-activity-walk',
     icon: Footprints,
-    id: 'walk',
-    label: 'Walk',
+    id: 'stroller_walk',
+    label: 'Stroller Walk',
     textColor: 'text-activity-walk-foreground',
   },
   {
@@ -238,10 +238,10 @@ const activityIcons: Record<string, typeof Moon> = {
   pumping: Droplets,
   sleep: Moon,
   solids: UtensilsCrossed,
+  stroller_walk: Footprints,
   temperature: Thermometer,
   'tummy-time': Timer,
   vitamin_d: Pill,
-  walk: Footprints,
 };
 
 const activityColors: Record<string, string> = {
@@ -262,10 +262,10 @@ const activityColors: Record<string, string> = {
   pumping: 'border-l-activity-pumping',
   sleep: 'border-l-activity-sleep',
   solids: 'border-l-activity-solids',
+  stroller_walk: 'border-l-activity-walk',
   temperature: 'border-l-activity-temperature',
   'tummy-time': 'border-l-activity-tummy-time',
   vitamin_d: 'border-l-activity-vitamin-d',
-  walk: 'border-l-activity-walk',
 };
 
 const activityIconColors: Record<string, string> = {
@@ -285,10 +285,10 @@ const activityIconColors: Record<string, string> = {
   pumping: 'text-activity-pumping',
   sleep: 'text-activity-sleep',
   solids: 'text-activity-solids',
+  stroller_walk: 'text-activity-walk',
   temperature: 'text-activity-temperature',
   'tummy-time': 'text-activity-tummy-time',
   vitamin_d: 'text-activity-vitamin-d',
-  walk: 'text-activity-walk',
 };
 
 // Activity type to label mapping for proper display names
@@ -310,11 +310,11 @@ const activityLabels: Record<string, string> = {
   pumping: 'Pumping',
   sleep: 'Sleep',
   solids: 'Solids',
+  stroller_walk: 'Stroller Walk',
   temperature: 'Temperature',
   tummy_time: 'Tummy Time',
   'tummy-time': 'Tummy Time',
   vitamin_d: 'Vitamin D',
-  walk: 'Walk',
 };
 
 function groupTimelineItemsByDay(
@@ -1370,20 +1370,20 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
           );
         })()}
 
-      {/* Walk Drawer */}
+      {/* Stroller Walk Drawer */}
       {editingActivity &&
-        openDrawer === 'walk' &&
+        openDrawer === 'stroller_walk' &&
         (() => {
-          const walkConfig = getSimpleActivityConfig('walk');
-          return walkConfig ? (
+          const strollerWalkConfig = getSimpleActivityConfig('stroller_walk');
+          return strollerWalkConfig ? (
             <TimelineDrawerWrapper
               isOpen={true}
               onClose={handleDrawerClose}
-              title="Edit Walk"
+              title="Edit Stroller Walk"
             >
               <GenericSimpleActivityTimelineDrawer
                 babyId={babyId}
-                config={walkConfig}
+                config={strollerWalkConfig}
                 existingActivity={editingActivity}
                 isOpen={true}
                 onClose={handleDrawerClose}
@@ -1406,6 +1406,28 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
               <GenericSimpleActivityTimelineDrawer
                 babyId={babyId}
                 config={contrastTimeConfig}
+                existingActivity={editingActivity}
+                isOpen={true}
+                onClose={handleDrawerClose}
+              />
+            </TimelineDrawerWrapper>
+          ) : null;
+        })()}
+
+      {/* Tummy Time Drawer */}
+      {editingActivity &&
+        openDrawer === 'tummy_time' &&
+        (() => {
+          const tummyTimeConfig = getSimpleActivityConfig('tummy_time');
+          return tummyTimeConfig ? (
+            <TimelineDrawerWrapper
+              isOpen={true}
+              onClose={handleDrawerClose}
+              title="Edit Tummy Time"
+            >
+              <GenericSimpleActivityTimelineDrawer
+                babyId={babyId}
+                config={tummyTimeConfig}
                 existingActivity={editingActivity}
                 isOpen={true}
                 onClose={handleDrawerClose}

@@ -10,7 +10,8 @@ import { getVitaminDLearningContent } from '../vitamin-d/learning-content';
 import { ACTIVITY_GOALS } from './activity-goals-registry';
 import { ACTIVITY_THEMES, type ActivityType } from './activity-theme-config';
 import { getContrastTimeLearningContent } from './learning-content/contrast-time-learning-content';
-import { getWalkLearningContent } from './learning-content/walk-learning-content';
+import { getStrollerWalkLearningContent } from './learning-content/stroller-walk-learning-content';
+import { getTummyTimeLearningContent } from './learning-content/tummy-time-learning-content';
 
 export interface LearningContent {
   message: string;
@@ -111,6 +112,34 @@ export const SIMPLE_ACTIVITY_CONFIGS: Record<string, SimpleActivityConfig> = {
     title: 'Nail Trimming',
     type: 'nail_trimming',
   },
+  stroller_walk: {
+    getLearningContent: getStrollerWalkLearningContent,
+    goals: ACTIVITY_GOALS.stroller_walk!,
+    quickDurationOptions: [
+      { label: '10 min', seconds: 10 * 60 },
+      { label: '15 min', seconds: 15 * 60 },
+      { label: '30 min', seconds: 30 * 60 },
+      { label: '1 hour', seconds: 60 * 60 },
+    ],
+    theme: ACTIVITY_THEMES.stroller_walk,
+    title: 'Stroller Walk',
+    type: 'stroller_walk',
+    // No optional fields for now, but can be added later (e.g., distance, location)
+  },
+  tummy_time: {
+    getLearningContent: getTummyTimeLearningContent,
+    goals: ACTIVITY_GOALS.tummy_time!,
+    quickDurationOptions: [
+      { label: '1 min', seconds: 1 * 60 },
+      { label: '2 min', seconds: 2 * 60 },
+      { label: '5 min', seconds: 5 * 60 },
+      { label: '10 min', seconds: 10 * 60 },
+    ],
+    theme: ACTIVITY_THEMES.tummy_time,
+    title: 'Tummy Time',
+    type: 'tummy_time',
+    // No optional fields for now
+  },
   vitamin_d: {
     getLearningContent: getVitaminDLearningContent,
     goals: ACTIVITY_GOALS.vitamin_d!,
@@ -127,20 +156,6 @@ export const SIMPLE_ACTIVITY_CONFIGS: Record<string, SimpleActivityConfig> = {
     theme: ACTIVITY_THEMES.vitamin_d,
     title: 'Vitamin D',
     type: 'vitamin_d',
-  },
-  walk: {
-    getLearningContent: getWalkLearningContent,
-    goals: ACTIVITY_GOALS.walk!,
-    quickDurationOptions: [
-      { label: '10 min', seconds: 10 * 60 },
-      { label: '15 min', seconds: 15 * 60 },
-      { label: '30 min', seconds: 30 * 60 },
-      { label: '1 hour', seconds: 60 * 60 },
-    ],
-    theme: ACTIVITY_THEMES.walk,
-    title: 'Walk',
-    type: 'walk',
-    // No optional fields for now, but can be added later (e.g., distance, location)
   },
 };
 

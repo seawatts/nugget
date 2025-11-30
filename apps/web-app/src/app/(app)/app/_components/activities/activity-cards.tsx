@@ -178,6 +178,18 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
     () => allActivitiesData.filter((a) => a.type === 'vitamin_d'),
     [allActivitiesData],
   );
+  const tummyTimeActivities = useMemo(
+    () => allActivitiesData.filter((a) => a.type === 'tummy_time'),
+    [allActivitiesData],
+  );
+  const strollerWalkActivities = useMemo(
+    () => allActivitiesData.filter((a) => a.type === 'stroller_walk'),
+    [allActivitiesData],
+  );
+  const contrastTimeActivities = useMemo(
+    () => allActivitiesData.filter((a) => a.type === 'contrast_time'),
+    [allActivitiesData],
+  );
   const nailTrimmingActivities = useMemo(
     () => allActivitiesData.filter((a) => a.type === 'nail_trimming'),
     [allActivitiesData],
@@ -189,14 +201,9 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
   const otherActivities = useMemo(
     () =>
       allActivitiesData.filter((a) =>
-        [
-          'solids',
-          'medicine',
-          'temperature',
-          'tummy_time',
-          'growth',
-          'potty',
-        ].includes(a.type),
+        ['solids', 'medicine', 'temperature', 'growth', 'potty'].includes(
+          a.type,
+        ),
       ),
     [allActivitiesData],
   );
@@ -223,6 +230,15 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
       .setActivitiesByType('vitamin_d', vitaminDActivities);
     useDashboardDataStore
       .getState()
+      .setActivitiesByType('tummy_time', tummyTimeActivities);
+    useDashboardDataStore
+      .getState()
+      .setActivitiesByType('stroller_walk', strollerWalkActivities);
+    useDashboardDataStore
+      .getState()
+      .setActivitiesByType('contrast_time', contrastTimeActivities);
+    useDashboardDataStore
+      .getState()
       .setActivitiesByType('nail_trimming', nailTrimmingActivities);
     useDashboardDataStore
       .getState()
@@ -237,6 +253,9 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
     sleepActivities,
     diaperActivities,
     vitaminDActivities,
+    tummyTimeActivities,
+    strollerWalkActivities,
+    contrastTimeActivities,
     nailTrimmingActivities,
     doctorVisitActivities,
     otherActivities,
@@ -605,11 +624,11 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
           })()}
         {/* Walk activity */}
         {(() => {
-          const walkConfig = getSimpleActivityConfig('walk');
-          return walkConfig ? (
+          const strollerWalkConfig = getSimpleActivityConfig('stroller_walk');
+          return strollerWalkConfig ? (
             <div className="col-span-2">
               <GenericSimpleActivityCard
-                config={walkConfig}
+                config={strollerWalkConfig}
                 onActivityLogged={handleActivityLogged}
               />
             </div>
@@ -622,6 +641,18 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
             <div className="col-span-2">
               <GenericSimpleActivityCard
                 config={contrastTimeConfig}
+                onActivityLogged={handleActivityLogged}
+              />
+            </div>
+          ) : null;
+        })()}
+        {/* Tummy Time activity */}
+        {(() => {
+          const tummyTimeConfig = getSimpleActivityConfig('tummy_time');
+          return tummyTimeConfig ? (
+            <div className="col-span-2">
+              <GenericSimpleActivityCard
+                config={tummyTimeConfig}
                 onActivityLogged={handleActivityLogged}
               />
             </div>

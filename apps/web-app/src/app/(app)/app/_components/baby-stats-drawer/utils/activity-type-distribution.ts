@@ -30,8 +30,8 @@ export function calculateActivityTypeDistribution(
     pumping: 'Pumping',
     sleep: 'Sleep',
     solids: 'Solids',
+    stroller_walk: 'Stroller Walk',
     'vitamin-d': 'Vitamin D',
-    walk: 'Walk',
     wet: 'Wet',
   };
 

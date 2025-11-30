@@ -99,15 +99,20 @@ const ACTIVITY_COLOR_CLASSES: Partial<
     borderColor: 'border-activity-sleep/20',
     color: 'bg-activity-sleep/10 text-activity-sleep',
   },
+  stroller_walk: {
+    bgColor: 'bg-activity-walk/5',
+    borderColor: 'border-activity-walk/20',
+    color: 'bg-activity-walk/10 text-activity-walk',
+  },
+  tummy_time: {
+    bgColor: 'bg-activity-tummy-time/5',
+    borderColor: 'border-activity-tummy-time/20',
+    color: 'bg-activity-tummy-time/10 text-activity-tummy-time',
+  },
   vitamin_d: {
     bgColor: 'bg-activity-vitamin-d/5',
     borderColor: 'border-activity-vitamin-d/20',
     color: 'bg-activity-vitamin-d/10 text-activity-vitamin-d',
-  },
-  walk: {
-    bgColor: 'bg-activity-walk/5',
-    borderColor: 'border-activity-walk/20',
-    color: 'bg-activity-walk/10 text-activity-walk',
   },
 };
 

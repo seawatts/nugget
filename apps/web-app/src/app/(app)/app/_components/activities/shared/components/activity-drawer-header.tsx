@@ -32,10 +32,10 @@ const ACTIVITY_BG_CLASSES: Record<ActivityType, string> = {
   pumping: 'bg-activity-pumping',
   sleep: 'bg-activity-sleep',
   solids: 'bg-activity-solids',
+  stroller_walk: 'bg-activity-walk',
   temperature: 'bg-activity-temperature',
   tummy_time: 'bg-activity-tummy-time',
   vitamin_d: 'bg-activity-medicine',
-  walk: 'bg-activity-walk',
 };
 
 export function ActivityDrawerHeader({

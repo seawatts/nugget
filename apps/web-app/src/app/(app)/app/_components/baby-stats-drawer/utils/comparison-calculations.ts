@@ -9,7 +9,7 @@ export function calculateRealWorldComparisons(
   totalSleepHours: number,
   totalActivities: number,
   totalVitaminD: number,
-  totalWalks: number,
+  totalStrollerWalks: number,
   totalNailTrimming: number,
   totalContrastTime: number,
 ): RealWorldComparisons {
@@ -125,10 +125,10 @@ export function calculateRealWorldComparisons(
     vitaminDComparison = 'Start tracking vitamin D for healthy bones! 🦴';
   }
 
-  // Walking comparisons
+  // Stroller walking comparisons
   let walksComparison = '';
-  // Assuming average walk is ~0.5 miles
-  const totalMiles = totalWalks * 0.5;
+  // Assuming average stroller walk is ~0.5 miles
+  const totalMiles = totalStrollerWalks * 0.5;
 
   if (totalMiles >= 24901) {
     // Earth's circumference = ~24,901 miles
@@ -140,15 +140,16 @@ export function calculateRealWorldComparisons(
     walksComparison = `Enough to cross the USA ${crossCountry} time${crossCountry !== 1 ? 's' : ''}! 🗺️`;
   } else if (totalMiles >= 1000) {
     walksComparison = `Over 1000 miles of walks - that's incredible! 🚶‍♀️`;
-  } else if (totalWalks >= 365) {
-    walksComparison = `A full year of walks! That's dedication to fresh air! 🌳`;
-  } else if (totalWalks >= 100) {
+  } else if (totalStrollerWalks >= 365) {
+    walksComparison = `A full year of stroller walks! That's dedication to fresh air! 🌳`;
+  } else if (totalStrollerWalks >= 100) {
     const miles = Math.round(totalMiles);
-    walksComparison = `Over 100 walks - that's ${miles} miles of adventures! 🌍`;
-  } else if (totalWalks >= 30) {
-    walksComparison = 'A month of walks! Building those leg muscles! 🦵';
-  } else if (totalWalks > 0) {
-    walksComparison = `${totalWalks} walk${totalWalks !== 1 ? 's' : ''} logged! Every step counts! 👣`;
+    walksComparison = `Over 100 stroller walks - that's ${miles} miles of adventures! 🌍`;
+  } else if (totalStrollerWalks >= 30) {
+    walksComparison =
+      'A month of stroller walks! Building those leg muscles! 🦵';
+  } else if (totalStrollerWalks > 0) {
+    walksComparison = `${totalStrollerWalks} stroller walk${totalStrollerWalks !== 1 ? 's' : ''} logged! Every step counts! 👣`;
   } else {
     walksComparison = 'Time for a walk? Fresh air is great! 🌤️';
   }

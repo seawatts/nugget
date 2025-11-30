@@ -73,7 +73,7 @@ export const activityTypeEnum = pgEnum('activityType', [
   'doctor_visit',
   'vitamin_d',
   'nail_trimming',
-  'walk',
+  'stroller_walk',
   'contrast_time',
 ]);
 export const activitySubjectTypeEnum = pgEnum('activitySubjectType', [
@@ -642,14 +642,19 @@ export const bathDetailsSchema = z.object({
   waterTemp: z.enum(['warm', 'lukewarm', 'cool']).optional(),
 });
 
-// Walk details
-export const walkDetailsSchema = z.object({
+// Stroller walk details
+export const strollerWalkDetailsSchema = z.object({
   // Can add optional fields here in the future (e.g., duration, distance, location)
 });
 
 // Contrast time details
 export const contrastTimeDetailsSchema = z.object({
   // Can add optional fields here in the future (e.g., material type, duration)
+});
+
+// Tummy time details
+export const tummyTimeDetailsSchema = z.object({
+  // Can add optional fields here in the future (e.g., location, surface type)
 });
 
 // Discriminated union for all activity details
@@ -686,12 +691,16 @@ export const activityDetailsSchema = z
       ...bathDetailsSchema.shape,
     }),
     z.object({
-      type: z.literal('walk'),
-      ...walkDetailsSchema.shape,
+      type: z.literal('stroller_walk'),
+      ...strollerWalkDetailsSchema.shape,
     }),
     z.object({
       type: z.literal('contrast_time'),
       ...contrastTimeDetailsSchema.shape,
+    }),
+    z.object({
+      type: z.literal('tummy_time'),
+      ...tummyTimeDetailsSchema.shape,
     }),
   ])
   .nullable();
@@ -711,8 +720,9 @@ export type DoctorVisitDetails = z.infer<typeof doctorVisitDetailsSchema>;
 export type VitaminDDetails = z.infer<typeof vitaminDDetailsSchema>;
 export type NailTrimmingDetails = z.infer<typeof nailTrimmingDetailsSchema>;
 export type BathDetails = z.infer<typeof bathDetailsSchema>;
-export type WalkDetails = z.infer<typeof walkDetailsSchema>;
+export type StrollerWalkDetails = z.infer<typeof strollerWalkDetailsSchema>;
 export type ContrastTimeDetails = z.infer<typeof contrastTimeDetailsSchema>;
+export type TummyTimeDetails = z.infer<typeof tummyTimeDetailsSchema>;
 
 // ============================================================================
 // Tables - Baby Tracking

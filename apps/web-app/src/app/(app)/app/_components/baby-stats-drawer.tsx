@@ -18,7 +18,6 @@ import {
   InsightsPatternsSection,
   MilestonesSection,
   OverviewSection,
-  ProgressAchievementsSection,
   QuickStatsSection,
   TodayActivitySection,
   VisualizationsSection,
@@ -26,7 +25,6 @@ import {
 } from './baby-stats-drawer/sections';
 import type { BabyStatsDrawerProps } from './baby-stats-drawer/types';
 import {
-  calculateAchievements,
   calculateActivityTypeDistribution,
   calculateAllActivitiesTrendData,
   calculateEstimatedWeight,
@@ -197,8 +195,9 @@ export function BabyStatsDrawer({
         .length,
       pumping: periodActivities.filter((a) => a.type === 'pumping').length,
       solids: periodActivities.filter((a) => a.type === 'solids').length,
+      strollerWalk: periodActivities.filter((a) => a.type === 'stroller_walk')
+        .length,
       vitaminD: periodActivities.filter((a) => a.type === 'vitamin_d').length,
-      walk: periodActivities.filter((a) => a.type === 'walk').length,
     };
 
     // Get last activity dates
@@ -219,8 +218,8 @@ export function BabyStatsDrawer({
       lastDoctorVisit: getLastActivity('doctor_visit'),
       lastNailTrimming: getLastActivity('nail_trimming'),
       lastSolids: getLastActivity('solids'),
+      lastStrollerWalk: getLastActivity('stroller_walk'),
       lastVitaminD: getLastActivity('vitamin_d'),
-      lastWalk: getLastActivity('walk'),
       periodDays,
     };
   }, [weekActivities, monthActivities, activityPeriod]);
@@ -283,7 +282,9 @@ export function BabyStatsDrawer({
     const totalVitaminD = activities.filter(
       (a) => a.type === 'vitamin_d',
     ).length;
-    const totalWalks = activities.filter((a) => a.type === 'walk').length;
+    const totalStrollerWalks = activities.filter(
+      (a) => a.type === 'stroller_walk',
+    ).length;
     const totalNailTrimming = activities.filter(
       (a) => a.type === 'nail_trimming',
     ).length;
@@ -296,7 +297,7 @@ export function BabyStatsDrawer({
       totalSleepHours,
       activities.length,
       totalVitaminD,
-      totalWalks,
+      totalStrollerWalks,
       totalNailTrimming,
       totalContrastTime,
     );
@@ -364,43 +365,6 @@ export function BabyStatsDrawer({
     if (total >= 10) return { level: 2, name: 'New Parent' };
     return { level: 1, name: 'Just Beginning' };
   }, [activities.length]);
-
-  // Calculate achievements
-  const achievements = useMemo(() => {
-    const totalDiapers = activities.filter(
-      (a) =>
-        a.type === 'diaper' ||
-        a.type === 'wet' ||
-        a.type === 'dirty' ||
-        a.type === 'both',
-    ).length;
-    const totalVolumeMl = activities
-      .filter(
-        (a) =>
-          (a.type === 'bottle' ||
-            a.type === 'nursing' ||
-            a.type === 'feeding') &&
-          a.amountMl,
-      )
-      .reduce((sum, a) => sum + (a.amountMl || 0), 0);
-    const sortedActivities = [...activities].sort(
-      (a, b) =>
-        new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
-    );
-    const daysTracking = sortedActivities[0]
-      ? Math.floor(
-          (Date.now() - new Date(sortedActivities[0].startTime).getTime()) /
-            (1000 * 60 * 60 * 24),
-        )
-      : 0;
-    return calculateAchievements(
-      activities.length,
-      totalVolumeMl,
-      totalDiapers,
-      daysTracking,
-      streaks,
-    );
-  }, [activities, streaks]);
 
   // Calculate weekly highlights
   const previousWeekStart = useMemo(
@@ -477,8 +441,8 @@ export function BabyStatsDrawer({
       pumping: 'Pumping',
       sleep: 'Sleep',
       solids: 'Solids',
+      stroller_walk: 'Stroller Walk',
       'vitamin-d': 'Vitamin D',
-      walk: 'Walk',
       wet: 'Wet',
     };
     return mostActive
@@ -536,14 +500,6 @@ export function BabyStatsDrawer({
           activityPeriod={activityPeriod}
           activityTypeStats={activityTypeStats}
           onPeriodChange={setActivityPeriod}
-        />
-
-        {/* Progress & Achievements Section */}
-        <ProgressAchievementsSection
-          achievements={achievements}
-          level={level}
-          streaks={streaks}
-          totalActivities={activities.length}
         />
 
         {/* Insights & Patterns Section */}

@@ -70,7 +70,7 @@ export function InsightsPatternsSection({
               </div>
             </Card>
           )}
-          {activities.filter((a) => a.type === 'walk').length > 0 && (
+          {activities.filter((a) => a.type === 'stroller_walk').length > 0 && (
             <Card className="p-4 bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-950 dark:to-teal-900">
               <div className="text-sm font-medium text-foreground mb-1">
                 Walking Adventures

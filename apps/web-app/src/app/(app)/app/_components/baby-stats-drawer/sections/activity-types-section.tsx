@@ -21,13 +21,13 @@ interface ActivityTypesSectionProps {
     lastNailTrimming: Date | null;
     lastSolids: Date | null;
     lastVitaminD: Date | null;
-    lastWalk: Date | null;
+    lastStrollerWalk: Date | null;
     nailTrimming: number;
     periodDays: number;
     pumping: number;
     solids: number;
     vitaminD: number;
-    walk: number;
+    strollerWalk: number;
   };
   onPeriodChange: (period: 'week' | 'month') => void;
 }
@@ -142,15 +142,17 @@ export function ActivityTypesSection({
             )}
           </Card>
         )}
-        {activityTypeStats.walk > 0 && (
+        {activityTypeStats.strollerWalk > 0 && (
           <Card className="p-4">
-            <div className="text-xs text-muted-foreground mb-1">Walk</div>
-            <div className="text-xl font-bold text-foreground">
-              {activityTypeStats.walk}
+            <div className="text-xs text-muted-foreground mb-1">
+              Stroller Walk
             </div>
-            {activityTypeStats.lastWalk && (
+            <div className="text-xl font-bold text-foreground">
+              {activityTypeStats.strollerWalk}
+            </div>
+            {activityTypeStats.lastStrollerWalk && (
               <div className="text-xs text-muted-foreground mt-1">
-                {format(activityTypeStats.lastWalk, 'MMM d')}
+                {format(activityTypeStats.lastStrollerWalk, 'MMM d')}
               </div>
             )}
           </Card>

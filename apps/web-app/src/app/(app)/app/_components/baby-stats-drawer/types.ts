@@ -15,13 +15,31 @@ export interface Streaks {
   perfectDay: { current: number; longest: number };
 }
 
+export type AchievementCategory =
+  | 'foundation'
+  | 'volume'
+  | 'streaks'
+  | 'activity-specific'
+  | 'efficiency'
+  | 'records'
+  | 'time-based'
+  | 'special'
+  | 'personal-milestones'
+  | 'parent-milestones';
+
+export type AchievementRarity = 'common' | 'rare' | 'epic' | 'legendary';
+
 export interface Achievement {
+  category: AchievementCategory;
+  description?: string;
   earned: boolean;
   icon: string;
   id: string;
   name: string;
   progress: number;
+  rarity: AchievementRarity;
   target: number;
+  unlockedAt?: Date | null;
 }
 
 export interface WeeklyHighlights {

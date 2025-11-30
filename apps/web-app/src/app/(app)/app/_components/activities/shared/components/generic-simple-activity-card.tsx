@@ -12,6 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@nugget/ui/alert-dialog';
+import { toast } from '@nugget/ui/sonner';
 import { startOfDay, subDays } from 'date-fns';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -82,6 +83,12 @@ export function GenericSimpleActivityCard({
   const addOptimisticActivity = useOptimisticActivitiesStore(
     (state) => state.addActivity,
   );
+  const removeOptimisticActivity = useOptimisticActivitiesStore(
+    (state) => state.removeActivity,
+  );
+  const removeOptimisticByMatch = useOptimisticActivitiesStore(
+    (state) => state.removeByMatch,
+  );
 
   // Filter activities to only this activity type
   const serverActivities = useMemo(() => {
@@ -123,14 +130,42 @@ export function GenericSimpleActivityCard({
 
   const handleDeleteActivity = async (activityId: string) => {
     const activityToNotify = activityToDelete;
+
+    // Check if this is an optimistic activity (not yet saved to database)
+    // Check by ID pattern, optimistic store, or _optimistic property
+    const isOptimistic =
+      activityId.startsWith('optimistic-') ||
+      activityId.startsWith('temp_') ||
+      optimisticActivities.some((opt) => opt.id === activityId) ||
+      (activityToNotify &&
+        '_optimistic' in activityToNotify &&
+        (activityToNotify as { _optimistic?: boolean })._optimistic === true);
+
     try {
-      await deleteActivityMutation(activityId);
-      if (activityToNotify && onActivityLogged) {
-        onActivityLogged(activityToNotify);
+      if (isOptimistic) {
+        // For optimistic activities, just remove from store without calling API
+        // Find the optimistic activity by ID or match by type and timestamp
+        if (activityToNotify) {
+          removeOptimisticByMatch(
+            activityToNotify.type,
+            new Date(activityToNotify.startTime),
+            1000, // 1 second tolerance
+          );
+        }
+        toast.success(`${config.title} activity cancelled`);
+      } else {
+        // For real activities, call delete API
+        await deleteActivityMutation(activityId);
+        if (activityToNotify && onActivityLogged) {
+          onActivityLogged(activityToNotify);
+        }
       }
       setActivityToDelete(null);
     } catch (error) {
       console.error(`Failed to delete ${config.type} activity:`, error);
+      toast.error(
+        `Failed to delete ${config.title.toLowerCase()} activity. Please try again.`,
+      );
     }
   };
 
@@ -161,6 +196,7 @@ export function GenericSimpleActivityCard({
         now.getMilliseconds(),
       );
 
+      let tempId: string | null = null;
       try {
         setIsLogging(true);
 
@@ -191,7 +227,8 @@ export function GenericSimpleActivityCard({
           userId: 'temp',
         } as typeof Activities.$inferSelect;
 
-        addOptimisticActivity(optimisticActivity);
+        // Store tempId from optimistic activity creation
+        tempId = addOptimisticActivity(optimisticActivity);
 
         // Create actual activity in the background
         await createActivity({
@@ -202,6 +239,19 @@ export function GenericSimpleActivityCard({
         });
       } catch (error) {
         console.error(`[${config.type}] Failed to auto-log:`, error);
+
+        // Remove optimistic activity on error
+        if (tempId) {
+          removeOptimisticActivity(tempId);
+        } else {
+          // Fallback: remove by match if tempId not available
+          removeOptimisticByMatch(config.type, normalizedDate, 1000);
+        }
+
+        // Show error toast to user
+        toast.error(
+          `Failed to create ${config.title.toLowerCase()} activity. Please try again.`,
+        );
       } finally {
         setIsLogging(false);
       }

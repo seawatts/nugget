@@ -17,6 +17,7 @@ import {
   Milk,
   Moon,
   StopCircle,
+  Trophy,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -27,6 +28,7 @@ import {
   getUserRelationFromStore,
   useOptimisticActivitiesStore,
 } from '~/stores/optimistic-activities';
+import { AchievementsDrawer } from './achievements-drawer';
 import { TimelineDiaperDrawer } from './activities/diaper/timeline-diaper-drawer';
 import { FeedingActivityDrawer } from './activities/feeding/feeding-activity-drawer';
 import { calculateNursingVolumes } from './activities/feeding/nursing-volume-calculator';
@@ -219,6 +221,7 @@ export function TodaySummaryCard({
   >(null);
   const [showSleepConfirmation, setShowSleepConfirmation] = useState(false);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
+  const [showAchievementsDrawer, setShowAchievementsDrawer] = useState(false);
   const [pendingActivity, setPendingActivity] = useState<{
     type: 'bottle' | 'nursing' | 'wet' | 'dirty';
     data?: {
@@ -1326,6 +1329,14 @@ export function TodaySummaryCard({
             >
               <BarChart3 className="size-5 opacity-70" />
             </button>
+            <button
+              className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+              onClick={() => setShowAchievementsDrawer(true)}
+              title="View achievements"
+              type="button"
+            >
+              <Trophy className="size-5 opacity-70" />
+            </button>
           </div>
         </div>
         {upcomingCelebration && (
@@ -1698,6 +1709,13 @@ export function TodaySummaryCard({
         measurementUnit={_measurementUnit}
         onOpenChange={setShowStatsDrawer}
         open={showStatsDrawer}
+      />
+
+      {/* Achievements Drawer */}
+      <AchievementsDrawer
+        babyId={babyId}
+        onOpenChange={setShowAchievementsDrawer}
+        open={showAchievementsDrawer}
       />
     </div>
   );

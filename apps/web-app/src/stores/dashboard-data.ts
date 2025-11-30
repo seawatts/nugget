@@ -25,6 +25,9 @@ type ActivityTypeKey =
   | 'sleep'
   | 'diaper' // Includes 'diaper', 'wet', 'dirty', 'both'
   | 'vitamin_d'
+  | 'tummy_time'
+  | 'stroller_walk'
+  | 'contrast_time'
   | 'nail_trimming'
   | 'doctor_visit'
   | 'other'; // All other types
@@ -76,6 +79,7 @@ const useDashboardDataStoreBase = create<DashboardDataState>((set) => ({
   activities: [],
   activitiesByType: {
     bath: [],
+    contrast_time: [],
     diaper: [],
     doctor_visit: [],
     feeding: [],
@@ -83,6 +87,8 @@ const useDashboardDataStoreBase = create<DashboardDataState>((set) => ({
     other: [],
     pumping: [],
     sleep: [],
+    stroller_walk: [],
+    tummy_time: [],
     vitamin_d: [],
   },
   baby: null,
@@ -91,6 +97,7 @@ const useDashboardDataStoreBase = create<DashboardDataState>((set) => ({
       activities: [],
       activitiesByType: {
         bath: [],
+        contrast_time: [],
         diaper: [],
         doctor_visit: [],
         feeding: [],
@@ -98,6 +105,8 @@ const useDashboardDataStoreBase = create<DashboardDataState>((set) => ({
         other: [],
         pumping: [],
         sleep: [],
+        stroller_walk: [],
+        tummy_time: [],
         vitamin_d: [],
       },
       baby: null,
