@@ -93,7 +93,9 @@ export function FeedingTrendChart({
     ? null
     : adjustGoalForRange(dailyGoal ?? null, timeRange);
 
-  const GoalLineDot = (props: DotProps) => {
+  const GoalLineDot = (
+    props: DotProps & { payload?: { goal?: number | null } },
+  ) => {
     const { cx, cy, payload } = props;
 
     // Access goal from payload - Recharts passes the entire data object as payload
@@ -182,7 +184,18 @@ export function FeedingTrendChart({
             <Line
               connectNulls={false}
               dataKey="goal"
-              dot={(props) => <GoalLineDot {...props} />}
+              dot={(props) => {
+                const typedProps = props as DotProps & {
+                  payload?: { goal?: number | null };
+                };
+                return (
+                  <GoalLineDot
+                    cx={typedProps.cx}
+                    cy={typedProps.cy}
+                    payload={typedProps.payload}
+                  />
+                );
+              }}
               isAnimationActive={false}
               stroke="transparent"
               strokeWidth={0}
