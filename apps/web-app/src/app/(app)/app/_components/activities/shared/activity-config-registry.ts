@@ -57,7 +57,7 @@ export interface SimpleActivityConfig {
 export const SIMPLE_ACTIVITY_CONFIGS: Record<string, SimpleActivityConfig> = {
   bath: {
     getLearningContent: getBathLearningContent,
-    goals: ACTIVITY_GOALS.bath,
+    goals: ACTIVITY_GOALS.bath!,
     optionalFields: [
       {
         key: 'waterTemp',
@@ -81,7 +81,7 @@ export const SIMPLE_ACTIVITY_CONFIGS: Record<string, SimpleActivityConfig> = {
   },
   contrast_time: {
     getLearningContent: getContrastTimeLearningContent,
-    goals: ACTIVITY_GOALS.contrast_time,
+    goals: ACTIVITY_GOALS.contrast_time!,
     quickDurationOptions: [
       { label: '5 min', seconds: 5 * 60 },
       { label: '10 min', seconds: 10 * 60 },
@@ -95,7 +95,7 @@ export const SIMPLE_ACTIVITY_CONFIGS: Record<string, SimpleActivityConfig> = {
   },
   nail_trimming: {
     getLearningContent: getNailTrimmingLearningContent,
-    goals: ACTIVITY_GOALS.nail_trimming,
+    goals: ACTIVITY_GOALS.nail_trimming!,
     optionalFields: [
       {
         key: 'location',
@@ -113,7 +113,7 @@ export const SIMPLE_ACTIVITY_CONFIGS: Record<string, SimpleActivityConfig> = {
   },
   vitamin_d: {
     getLearningContent: getVitaminDLearningContent,
-    goals: ACTIVITY_GOALS.vitamin_d,
+    goals: ACTIVITY_GOALS.vitamin_d!,
     optionalFields: [
       {
         key: 'method',
@@ -130,7 +130,7 @@ export const SIMPLE_ACTIVITY_CONFIGS: Record<string, SimpleActivityConfig> = {
   },
   walk: {
     getLearningContent: getWalkLearningContent,
-    goals: ACTIVITY_GOALS.walk,
+    goals: ACTIVITY_GOALS.walk!,
     quickDurationOptions: [
       { label: '10 min', seconds: 10 * 60 },
       { label: '15 min', seconds: 15 * 60 },

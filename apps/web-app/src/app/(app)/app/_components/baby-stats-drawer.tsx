@@ -912,15 +912,15 @@ export function BabyStatsDrawer({
 
     const stats = {
       bath: periodActivities.filter((a) => a.type === 'bath').length,
-      contrastTime: periodActivities.filter((a) => a.type === 'contrast-time')
+      contrastTime: periodActivities.filter((a) => a.type === 'contrast_time')
         .length,
-      doctorVisit: periodActivities.filter((a) => a.type === 'doctor-visit')
+      doctorVisit: periodActivities.filter((a) => a.type === 'doctor_visit')
         .length,
-      nailTrimming: periodActivities.filter((a) => a.type === 'nail-trimming')
+      nailTrimming: periodActivities.filter((a) => a.type === 'nail_trimming')
         .length,
       pumping: periodActivities.filter((a) => a.type === 'pumping').length,
       solids: periodActivities.filter((a) => a.type === 'solids').length,
-      vitaminD: periodActivities.filter((a) => a.type === 'vitamin-d').length,
+      vitaminD: periodActivities.filter((a) => a.type === 'vitamin_d').length,
       walk: periodActivities.filter((a) => a.type === 'walk').length,
     };
 
@@ -938,11 +938,11 @@ export function BabyStatsDrawer({
     return {
       ...stats,
       lastBath: getLastActivity('bath'),
-      lastContrastTime: getLastActivity('contrast-time'),
-      lastDoctorVisit: getLastActivity('doctor-visit'),
-      lastNailTrimming: getLastActivity('nail-trimming'),
+      lastContrastTime: getLastActivity('contrast_time'),
+      lastDoctorVisit: getLastActivity('doctor_visit'),
+      lastNailTrimming: getLastActivity('nail_trimming'),
       lastSolids: getLastActivity('solids'),
-      lastVitaminD: getLastActivity('vitamin-d'),
+      lastVitaminD: getLastActivity('vitamin_d'),
       lastWalk: getLastActivity('walk'),
       periodDays,
     };
@@ -1091,14 +1091,14 @@ export function BabyStatsDrawer({
       .filter((a) => a.type === 'sleep' && a.duration)
       .reduce((sum, a) => sum + (a.duration || 0) / 60, 0);
     const totalVitaminD = activities.filter(
-      (a) => a.type === 'vitamin-d',
+      (a) => a.type === 'vitamin_d',
     ).length;
     const totalWalks = activities.filter((a) => a.type === 'walk').length;
     const totalNailTrimming = activities.filter(
-      (a) => a.type === 'nail-trimming',
+      (a) => a.type === 'nail_trimming',
     ).length;
     const totalContrastTime = activities.filter(
-      (a) => a.type === 'contrast-time',
+      (a) => a.type === 'contrast_time',
     ).length;
     return calculateRealWorldComparisons(
       totalDiapers,
@@ -1677,7 +1677,7 @@ export function BabyStatsDrawer({
                 {comparisons.activities}
               </div>
             </Card>
-            {activities.filter((a) => a.type === 'vitamin-d').length > 0 && (
+            {activities.filter((a) => a.type === 'vitamin_d').length > 0 && (
               <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900">
                 <div className="text-sm font-medium text-foreground mb-1">
                   Vitamin D Sunshine
@@ -1697,7 +1697,7 @@ export function BabyStatsDrawer({
                 </div>
               </Card>
             )}
-            {activities.filter((a) => a.type === 'nail-trimming').length >
+            {activities.filter((a) => a.type === 'nail_trimming').length >
               0 && (
               <Card className="p-4 bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-950 dark:to-pink-900">
                 <div className="text-sm font-medium text-foreground mb-1">
@@ -1708,7 +1708,7 @@ export function BabyStatsDrawer({
                 </div>
               </Card>
             )}
-            {activities.filter((a) => a.type === 'contrast-time').length >
+            {activities.filter((a) => a.type === 'contrast_time').length >
               0 && (
               <Card className="p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950 dark:to-indigo-900">
                 <div className="text-sm font-medium text-foreground mb-1">
