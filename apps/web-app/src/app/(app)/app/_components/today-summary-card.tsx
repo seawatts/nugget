@@ -1739,7 +1739,6 @@ export function TodaySummaryCard({
 
       {/* Baby Stats Drawer */}
       <BabyStatsDrawer
-        activities={allActivities}
         babyId={babyId}
         measurementUnit={_measurementUnit}
         onOpenChange={setShowStatsDrawer}
