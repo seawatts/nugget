@@ -364,7 +364,8 @@ export function calculateWakeWindows(
   lookbackDays = 7,
 ): WakeWindowResult {
   const ageDays = calculateBabyAgeDays(babyBirthDate);
-  const ageBasedInterval = getSleepIntervalByAge(ageDays);
+  const ageBasedInterval =
+    ageDays !== null ? getSleepIntervalByAge(ageDays) : null;
 
   // Age-based wake window in minutes (slightly less than sleep interval)
   const ageBasedMinutes =
