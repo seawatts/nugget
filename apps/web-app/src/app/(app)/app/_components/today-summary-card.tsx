@@ -9,7 +9,6 @@ import { Icons } from '@nugget/ui/custom/icons';
 import { NuggetAvatar } from '@nugget/ui/custom/nugget-avatar';
 import { cn } from '@nugget/ui/lib/utils';
 import { toast } from '@nugget/ui/sonner';
-import { startOfDay } from 'date-fns';
 import {
   Award,
   BarChart3,
@@ -64,7 +63,7 @@ const LiveBabyAge = memo(({ birthDate }: { birthDate: Date }) => {
       const units: AgeUnit[] = ['days', 'weeks', 'months', 'years', 'detailed'];
       const currentIndex = units.indexOf(prev);
       const nextIndex = (currentIndex + 1) % units.length;
-      return units[nextIndex]!;
+      return units[nextIndex] ?? units[0] ?? 'days';
     });
   };
 
@@ -187,7 +186,6 @@ export function TodaySummaryCard({
 
   // Fetch today's activities using optimized query (non-blocking)
   const {
-    data: todayActivitiesData = [],
     isLoading: todaySummaryIsLoading,
     isFetching: todaySummaryIsFetching,
   } = api.activities.getTodaySummary.useQuery(
@@ -200,13 +198,6 @@ export function TodaySummaryCard({
       { babyId: babyId ?? '' },
       { enabled: Boolean(babyId), staleTime: 86400000 },
     );
-
-  // Filter to only today's activities
-  const todayStart = useMemo(() => startOfDay(new Date()), []);
-
-  const todayActivities = useMemo(() => {
-    return todayActivitiesData;
-  }, [todayActivitiesData]);
 
   // Get optimistic activities from Zustand store
   const optimisticActivities = useOptimisticActivitiesStore.use.activities();
@@ -333,38 +324,6 @@ export function TodaySummaryCard({
 
     return sourceCounts.formula >= sourceCounts.pumped ? 'formula' : 'pumped';
   };
-
-  // Merge optimistic activities with loaded activities
-  const allActivities = useMemo(() => {
-    // Filter optimistic activities to only include today's activities
-    const todaysOptimistic = optimisticActivities.filter((activity) => {
-      const activityDate = new Date(activity.startTime);
-      return activityDate >= todayStart;
-    });
-
-    // Deduplicate optimistic activities - remove optimistic items if a matching real activity exists
-    const deduplicatedOptimistic = todaysOptimistic.filter(
-      (optimisticActivity) => {
-        // Check if there's a matching real activity (same type, similar timestamp)
-        const hasMatchingRealActivity = todayActivities.some((realActivity) => {
-          // Match by type and timestamp (within 1 second tolerance)
-          if (realActivity.type !== optimisticActivity.type) return false;
-
-          const timeDiff = Math.abs(
-            new Date(realActivity.startTime).getTime() -
-              new Date(optimisticActivity.startTime).getTime(),
-          );
-
-          return timeDiff <= 1000; // 1 second tolerance
-        });
-
-        // Keep optimistic activity only if no matching real activity exists
-        return !hasMatchingRealActivity;
-      },
-    );
-
-    return [...deduplicatedOptimistic, ...todayActivities];
-  }, [optimisticActivities, todayActivities, todayStart]);
 
   // Helper function for age-based nursing duration fallback
   const getAgeBasedNursingDuration = (ageDays: number | null): number => {
@@ -1353,6 +1312,12 @@ export function TodaySummaryCard({
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {(todaySummaryIsFetching && !todaySummaryIsLoading) ||
+            (feedingIsFetching && !feedingIsLoading) ||
+            (diaperIsFetching && !diaperIsLoading) ||
+            (sleepIsFetching && !sleepIsLoading) ? (
+              <Icons.Spinner className="animate-spin opacity-70" size="xs" />
+            ) : null}
             <button
               className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
               onClick={() => setShowStatsDrawer(true)}
@@ -1361,16 +1326,6 @@ export function TodaySummaryCard({
             >
               <BarChart3 className="size-5 opacity-70" />
             </button>
-            {(todaySummaryIsFetching && !todaySummaryIsLoading) ||
-            (feedingIsFetching && !feedingIsLoading) ||
-            (diaperIsFetching && !diaperIsLoading) ||
-            (sleepIsFetching && !sleepIsLoading) ? (
-              <Icons.Spinner className="animate-spin opacity-70" size="xs" />
-            ) : null}
-            <span className="text-sm text-foreground/80 font-medium">
-              {allActivities.length}{' '}
-              {allActivities.length === 1 ? 'activity' : 'activities'}
-            </span>
           </div>
         </div>
         {upcomingCelebration && (
