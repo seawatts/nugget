@@ -223,6 +223,25 @@ export const wakeReasonEnum = pgEnum('wakeReason', [
 ]);
 export const messageRoleEnum = pgEnum('messageRole', ['user', 'assistant']);
 export const questionAnswerEnum = pgEnum('questionAnswer', ['yes', 'no']);
+export const achievementCategoryEnum = pgEnum('achievementCategory', [
+  'foundation',
+  'volume',
+  'streaks',
+  'activity-specific',
+  'efficiency',
+  'records',
+  'time-based',
+  'special',
+  'personal-milestones',
+  'parent-milestones',
+  'daily-achievements',
+]);
+export const achievementRarityEnum = pgEnum('achievementRarity', [
+  'common',
+  'rare',
+  'epic',
+  'legendary',
+]);
 
 // Zod enum types
 export const UserRoleType = z.enum(userRoleEnum.enumValues).enum;
@@ -251,6 +270,12 @@ export const SleepLocationType = z.enum(sleepLocationEnum.enumValues).enum;
 export const WakeReasonType = z.enum(wakeReasonEnum.enumValues).enum;
 export const MessageRoleType = z.enum(messageRoleEnum.enumValues).enum;
 export const QuestionAnswerType = z.enum(questionAnswerEnum.enumValues).enum;
+export const AchievementCategoryType = z.enum(
+  achievementCategoryEnum.enumValues,
+).enum;
+export const AchievementRarityType = z.enum(
+  achievementRarityEnum.enumValues,
+).enum;
 
 // ============================================================================
 // Tables - Users & Families
@@ -344,6 +369,8 @@ export const Users = pgTable('users', {
     mode: 'date',
     withTimezone: true,
   }).$onUpdateFn(() => new Date()),
+  // Week start day preference: 0 = Sunday, 1 = Monday, null = auto-detect from locale
+  weekStartDay: integer('weekStartDay'),
 });
 
 export const Families = pgTable('families', {
@@ -868,6 +895,77 @@ export const Activities = pgTable(
     index('activities_userId_idx').on(table.userId),
     // Index for family queries
     index('activities_familyId_idx').on(table.familyId),
+  ],
+);
+
+export const Achievements = pgTable(
+  'achievements',
+  {
+    achievementId: varchar('achievementId', { length: 128 }).notNull(), // The achievement identifier (e.g., "first-activity", "10-activities")
+    babyId: varchar('babyId', { length: 128 })
+      .notNull()
+      .references(() => Babies.id, { onDelete: 'cascade' }),
+    category: achievementCategoryEnum('category').notNull(),
+    completedDate: timestamp('completedDate', {
+      mode: 'date',
+      withTimezone: true,
+    }), // Nullable - stores the calendar date this completion is for (start of day). Null for non-daily achievements.
+    createdAt: timestamp('createdAt', {
+      mode: 'date',
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+    description: text('description'), // Nullable description
+    earned: boolean('earned').default(false).notNull(),
+    familyId: varchar('familyId', { length: 128 })
+      .notNull()
+      .references(() => Families.id, { onDelete: 'cascade' })
+      .default(requestingFamilyId()),
+    icon: varchar('icon', { length: 128 }).notNull(), // Emoji or icon identifier
+    id: varchar('id', { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId({ prefix: 'achievement' })),
+    name: varchar('name', { length: 256 }).notNull(),
+    progress: integer('progress').default(0).notNull(), // 0-100
+    rarity: achievementRarityEnum('rarity').notNull(),
+    target: integer('target').notNull(),
+    unlockedAt: timestamp('unlockedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }), // Nullable - when achievement was unlocked
+    updatedAt: timestamp('updatedAt', {
+      mode: 'date',
+      withTimezone: true,
+    }).$onUpdateFn(() => new Date()),
+    userId: varchar('userId', { length: 128 })
+      .notNull()
+      .default(requestingUserId()),
+  },
+  (table) => [
+    // Unique constraint: allows multiple records per achievement for daily achievements (one per day)
+    // Non-daily achievements have completedDate = null, maintaining one record per achievement
+    unique('achievements_babyId_achievementId_completedDate_unique').on(
+      table.babyId,
+      table.achievementId,
+      table.completedDate,
+    ),
+    // Index for efficient baby achievement queries
+    index('achievements_babyId_idx').on(table.babyId),
+    // Index for family queries
+    index('achievements_familyId_idx').on(table.familyId),
+    // Composite index for filtering by baby and earned status
+    index('achievements_babyId_earned_idx').on(table.babyId, table.earned),
+    // Composite index for filtering by baby and category
+    index('achievements_babyId_category_idx').on(table.babyId, table.category),
+    // Composite index for daily achievement streak queries
+    index('achievements_babyId_achievementId_completedDate_idx').on(
+      table.babyId,
+      table.achievementId,
+      table.completedDate,
+    ),
+    // Index for filtering daily completions by date
+    index('achievements_completedDate_idx').on(table.completedDate),
   ],
 );
 
@@ -1456,6 +1554,7 @@ export const InvitationsRelations = relations(Invitations, ({ one }) => ({
 }));
 
 export const BabiesRelations = relations(Babies, ({ one, many }) => ({
+  achievements: many(Achievements),
   activities: many(Activities),
   chats: many(Chats),
   contentCache: many(ContentCache),
@@ -1485,6 +1584,21 @@ export const ActivitiesRelations = relations(Activities, ({ one }) => ({
   }),
   user: one(Users, {
     fields: [Activities.userId],
+    references: [Users.id],
+  }),
+}));
+
+export const AchievementsRelations = relations(Achievements, ({ one }) => ({
+  baby: one(Babies, {
+    fields: [Achievements.babyId],
+    references: [Babies.id],
+  }),
+  family: one(Families, {
+    fields: [Achievements.familyId],
+    references: [Families.id],
+  }),
+  user: one(Users, {
+    fields: [Achievements.userId],
     references: [Users.id],
   }),
 }));
@@ -1675,6 +1789,8 @@ export type Baby = typeof Babies.$inferSelect;
 export type NewBaby = typeof Babies.$inferInsert;
 export type Activity = typeof Activities.$inferSelect;
 export type NewActivity = typeof Activities.$inferInsert;
+export type Achievement = typeof Achievements.$inferSelect;
+export type NewAchievement = typeof Achievements.$inferInsert;
 export type MedicalRecord = typeof MedicalRecords.$inferSelect;
 export type NewMedicalRecord = typeof MedicalRecords.$inferInsert;
 export type Milestone = typeof Milestones.$inferSelect;
@@ -1752,6 +1868,10 @@ export const selectActivitySchema = createSelectSchema(Activities).extend({
   details: activityDetailsSchema,
 });
 export const updateActivitySchema = insertActivitySchema.partial();
+
+export const insertAchievementSchema = createInsertSchema(Achievements);
+export const selectAchievementSchema = createSelectSchema(Achievements);
+export const updateAchievementSchema = insertAchievementSchema.partial();
 
 export const insertMedicalRecordSchema = createInsertSchema(MedicalRecords);
 export const selectMedicalRecordSchema = createSelectSchema(MedicalRecords);

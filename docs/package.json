@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "mint": "4.2.209"
+    "mint": "4.2.218"
   },
   "name": "@nugget/docs",
   "private": true,

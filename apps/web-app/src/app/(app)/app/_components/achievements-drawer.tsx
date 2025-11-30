@@ -15,11 +15,12 @@ import { ShineBorder } from '@nugget/ui/magicui/shine-border';
 import { format, startOfDay, subDays } from 'date-fns';
 import { CheckCircle2, ChevronRight, Sparkles, X } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StatsDrawerWrapper } from './activities/shared/components/stats';
 import type {
   Achievement,
   AchievementCategory,
+  AchievementRarity,
 } from './baby-stats-drawer/types';
 import {
   calculateAchievements,
@@ -38,6 +39,7 @@ interface AchievementsDrawerProps {
 
 const categoryLabels: Record<AchievementCategory, string> = {
   'activity-specific': 'Activity Specific',
+  'daily-achievements': 'Daily Achievements',
   efficiency: 'Efficiency & Quality',
   foundation: 'Foundation',
   'parent-milestones': 'Parent Milestones',
@@ -98,7 +100,19 @@ export function AchievementsDrawer({
     { enabled: Boolean(babyId) && open },
   );
 
-  // Fetch extended activities for achievements (90 days, only when drawer opens)
+  // Fetch achievements from database (primary source)
+  const { data: dbAchievements = [], error: achievementsError } =
+    api.achievements.list.useQuery(
+      {
+        babyId,
+      },
+      {
+        enabled: Boolean(babyId) && open,
+        staleTime: 30000, // 30 seconds - achievements update via workflow
+      },
+    );
+
+  // Fetch extended activities for fallback calculation and streaks (90 days, only when drawer opens)
   const ninetyDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 90)), []);
   const { data: activities = [] } = api.activities.list.useQuery(
     {
@@ -112,7 +126,7 @@ export function AchievementsDrawer({
     },
   );
 
-  // Calculate streaks
+  // Calculate streaks (still needed for level calculation)
   const streaks = useMemo(() => calculateStreaks(activities), [activities]);
 
   // Calculate level based on total activities
@@ -130,8 +144,45 @@ export function AchievementsDrawer({
     return { level: 1, name: 'Just Beginning' };
   }, [activities.length]);
 
-  // Calculate achievements
+  // Convert database achievements to UI format, or calculate as fallback
   const achievements = useMemo(() => {
+    // If we have database achievements, use them
+    if (dbAchievements.length > 0 && !achievementsError) {
+      return dbAchievements.map((dbAchievement) => {
+        // Check if this is a daily achievement with additional fields
+        const dailyAchievement = dbAchievement as typeof dbAchievement & {
+          isDaily?: boolean;
+          dailyStreak?: number;
+          lastCompletedDate?: Date | null;
+          completionsThisWeek?: number;
+        };
+
+        return {
+          category: dbAchievement.category as AchievementCategory,
+          completionsThisWeek: dailyAchievement.completionsThisWeek,
+          dailyStreak: dailyAchievement.dailyStreak,
+          description: dbAchievement.description || undefined,
+          earned: dbAchievement.earned,
+          icon: dbAchievement.icon,
+          id: dbAchievement.achievementId,
+          // Daily achievement fields
+          isDaily: dailyAchievement.isDaily ?? false,
+          lastCompletedDate: dailyAchievement.lastCompletedDate
+            ? new Date(dailyAchievement.lastCompletedDate)
+            : undefined,
+          name: dbAchievement.name,
+          progress: dbAchievement.progress,
+          rarity: dbAchievement.rarity as AchievementRarity,
+          target: dbAchievement.target,
+          unlockedAt: dbAchievement.unlockedAt
+            ? new Date(dbAchievement.unlockedAt)
+            : undefined,
+        };
+      });
+    }
+
+    // Fallback: calculate achievements from activities
+    // This ensures the UI still works if database is empty or there's an error
     const totalDiapers = activities.filter(
       (a) =>
         a.type === 'diaper' ||
@@ -167,7 +218,7 @@ export function AchievementsDrawer({
       activities,
       baby?.birthDate ? new Date(baby.birthDate) : null,
     );
-  }, [activities, streaks, baby?.birthDate]);
+  }, [dbAchievements, achievementsError, activities, streaks, baby?.birthDate]);
 
   // Apply progressive disclosure - only show relevant achievements
   const visibleAchievements = useMemo(() => {
@@ -273,14 +324,14 @@ export function AchievementsDrawer({
   }, [open, mostRecentAchievement]);
 
   // Helper to check if achievement is locked
-  const isAchievementLocked = (achievement: Achievement) => {
+  const isAchievementLocked = useCallback((achievement: Achievement) => {
     return (
       !achievement.earned &&
       achievement.progress === 0 &&
       !achievement.id.includes('first-') &&
       achievement.category !== 'foundation'
     );
-  };
+  }, []);
 
   // Filter achievements by showLocked setting
   const filteredAchievementsByCategory = useMemo(() => {
@@ -969,6 +1020,32 @@ function AchievementCard({
                 Locked
               </Badge>
             )}
+            {achievement.isDaily && achievement.earned && (
+              <Badge
+                className="text-[10px] bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30"
+                variant="outline"
+              >
+                Today
+              </Badge>
+            )}
+            {achievement.isDaily &&
+              achievement.dailyStreak !== undefined &&
+              achievement.dailyStreak > 0 && (
+                <Badge
+                  className="text-[10px] bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/30"
+                  variant="outline"
+                >
+                  🔥 {achievement.dailyStreak} day
+                  {achievement.dailyStreak !== 1 ? 's' : ''}
+                </Badge>
+              )}
+            {achievement.isDaily &&
+              achievement.completionsThisWeek !== undefined &&
+              achievement.completionsThisWeek > 0 && (
+                <span className="text-[10px] text-muted-foreground">
+                  {achievement.completionsThisWeek} this week
+                </span>
+              )}
           </div>
           {achievement.description && (
             <p className="text-xs text-muted-foreground line-clamp-2">

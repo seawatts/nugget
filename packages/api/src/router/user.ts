@@ -141,6 +141,9 @@ export const userRouter = {
         timeFormat: z
           .enum([TimeFormatType['12h'], TimeFormatType['24h']])
           .optional(),
+        weekStartDay: z
+          .union([z.literal(0), z.literal(1), z.null()])
+          .optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

@@ -301,6 +301,20 @@
       "tag": "0044_futuristic_lorna_dane",
       "version": "7",
       "when": 1764490980309
+    },
+    {
+      "breakpoints": true,
+      "idx": 45,
+      "tag": "0045_chief_excalibur",
+      "version": "7",
+      "when": 1764543644649
+    },
+    {
+      "breakpoints": true,
+      "idx": 46,
+      "tag": "0046_flimsy_selene",
+      "version": "7",
+      "when": 1764546628639
     }
   ],
   "version": "7"

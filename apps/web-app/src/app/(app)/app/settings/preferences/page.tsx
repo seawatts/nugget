@@ -371,6 +371,7 @@ export default function PreferencesSettingsPage() {
     showPredictiveTimes: true,
     temperatureUnit: 'fahrenheit' as 'fahrenheit' | 'celsius',
     timeFormat: '12h' as '12h' | '24h',
+    weekStartDay: null as number | null,
   });
 
   const [homeScreenPreference, setHomeScreenPreference] = useState<{
@@ -433,6 +434,7 @@ export default function PreferencesSettingsPage() {
         showPredictiveTimes: user.showPredictiveTimes ?? true,
         temperatureUnit: user.temperatureUnit || 'fahrenheit',
         timeFormat: user.timeFormat || '12h',
+        weekStartDay: user.weekStartDay ?? null,
       });
       // Sync theme from database with next-themes
       if (user.theme && user.theme !== theme) {
@@ -504,6 +506,7 @@ export default function PreferencesSettingsPage() {
           showPredictiveTimes: user.showPredictiveTimes ?? true,
           temperatureUnit: user.temperatureUnit || 'fahrenheit',
           timeFormat: user.timeFormat || '12h',
+          weekStartDay: user.weekStartDay ?? null,
         });
       }
       toast.error('Failed to save preferences');
@@ -834,6 +837,70 @@ export default function PreferencesSettingsPage() {
                 }
               >
                 24-hour
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Week Starts On</Label>
+            <div className="grid grid-cols-1 gap-2">
+              <Button
+                onClick={async () => {
+                  setPreferences((prev) => ({ ...prev, weekStartDay: null }));
+                  try {
+                    await updatePreferences.mutateAsync({ weekStartDay: null });
+                    await utils.user.current.invalidate();
+                  } catch {
+                    setPreferences((prev) => ({
+                      ...prev,
+                      weekStartDay: user?.weekStartDay ?? null,
+                    }));
+                    toast.error('Failed to save preference');
+                  }
+                }}
+                variant={
+                  preferences.weekStartDay === null ? 'default' : 'outline'
+                }
+              >
+                Auto-detect (uses your device&apos;s locale)
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                onClick={async () => {
+                  setPreferences((prev) => ({ ...prev, weekStartDay: 0 }));
+                  try {
+                    await updatePreferences.mutateAsync({ weekStartDay: 0 });
+                    await utils.user.current.invalidate();
+                  } catch {
+                    setPreferences((prev) => ({
+                      ...prev,
+                      weekStartDay: user?.weekStartDay ?? null,
+                    }));
+                    toast.error('Failed to save preference');
+                  }
+                }}
+                variant={preferences.weekStartDay === 0 ? 'default' : 'outline'}
+              >
+                Sunday
+              </Button>
+              <Button
+                onClick={async () => {
+                  setPreferences((prev) => ({ ...prev, weekStartDay: 1 }));
+                  try {
+                    await updatePreferences.mutateAsync({ weekStartDay: 1 });
+                    await utils.user.current.invalidate();
+                  } catch {
+                    setPreferences((prev) => ({
+                      ...prev,
+                      weekStartDay: user?.weekStartDay ?? null,
+                    }));
+                    toast.error('Failed to save preference');
+                  }
+                }}
+                variant={preferences.weekStartDay === 1 ? 'default' : 'outline'}
+              >
+                Monday
               </Button>
             </div>
           </div>

@@ -33,10 +33,7 @@ export const ACTIVITY_GOALS: Record<string, ActivityGoalConfig> = {
     showProgressTracker: true,
   },
   tummy_time: {
-    getWeeklyGoal: (ageDays: number) => {
-      if (ageDays <= 90) return 14; // 2x daily for young babies
-      return 21; // 3x daily for older babies
-    },
+    getWeeklyGoal: () => 7, // 7 per week (daily tummy time)
     showProgressTracker: true,
   },
   vitamin_d: {

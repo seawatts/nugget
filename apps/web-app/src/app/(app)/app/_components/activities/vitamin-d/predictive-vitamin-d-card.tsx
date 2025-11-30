@@ -158,6 +158,7 @@ export function PredictiveVitaminDCard({
     'vitamin_d',
     goalConfig?.getWeeklyGoal ?? (() => 7),
     babyAgeDays,
+    userData?.weekStartDay,
   );
 
   const handleDayClick = async (day: (typeof vitaminDData)[0]) => {

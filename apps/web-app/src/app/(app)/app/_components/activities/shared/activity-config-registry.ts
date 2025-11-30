@@ -5,7 +5,6 @@
  */
 
 import { getBathLearningContent } from '../bath/learning-content';
-import { getNailTrimmingLearningContent } from '../nail-trimming/learning-content';
 import { getVitaminDLearningContent } from '../vitamin-d/learning-content';
 import { ACTIVITY_GOALS } from './activity-goals-registry';
 import { ACTIVITY_THEMES, type ActivityType } from './activity-theme-config';
@@ -58,7 +57,10 @@ export interface SimpleActivityConfig {
 export const SIMPLE_ACTIVITY_CONFIGS: Record<string, SimpleActivityConfig> = {
   bath: {
     getLearningContent: getBathLearningContent,
-    goals: ACTIVITY_GOALS.bath!,
+    goals: ACTIVITY_GOALS.bath ?? {
+      getWeeklyGoal: () => 0,
+      showProgressTracker: false,
+    },
     optionalFields: [
       {
         key: 'waterTemp',
@@ -82,7 +84,10 @@ export const SIMPLE_ACTIVITY_CONFIGS: Record<string, SimpleActivityConfig> = {
   },
   contrast_time: {
     getLearningContent: getContrastTimeLearningContent,
-    goals: ACTIVITY_GOALS.contrast_time!,
+    goals: ACTIVITY_GOALS.contrast_time ?? {
+      getWeeklyGoal: () => 0,
+      showProgressTracker: false,
+    },
     quickDurationOptions: [
       { label: '5 min', seconds: 5 * 60 },
       { label: '10 min', seconds: 10 * 60 },
@@ -94,27 +99,12 @@ export const SIMPLE_ACTIVITY_CONFIGS: Record<string, SimpleActivityConfig> = {
     type: 'contrast_time',
     // No optional fields for now
   },
-  nail_trimming: {
-    getLearningContent: getNailTrimmingLearningContent,
-    goals: ACTIVITY_GOALS.nail_trimming!,
-    optionalFields: [
-      {
-        key: 'location',
-        label: 'Location',
-        options: [
-          { label: 'Hands', value: 'hands' },
-          { label: 'Feet', value: 'feet' },
-          { label: 'Both', value: 'both' },
-        ],
-      },
-    ],
-    theme: ACTIVITY_THEMES.nail_trimming,
-    title: 'Nail Trimming',
-    type: 'nail_trimming',
-  },
   stroller_walk: {
     getLearningContent: getStrollerWalkLearningContent,
-    goals: ACTIVITY_GOALS.stroller_walk!,
+    goals: ACTIVITY_GOALS.stroller_walk ?? {
+      getWeeklyGoal: () => 0,
+      showProgressTracker: false,
+    },
     quickDurationOptions: [
       { label: '10 min', seconds: 10 * 60 },
       { label: '15 min', seconds: 15 * 60 },
@@ -128,7 +118,10 @@ export const SIMPLE_ACTIVITY_CONFIGS: Record<string, SimpleActivityConfig> = {
   },
   tummy_time: {
     getLearningContent: getTummyTimeLearningContent,
-    goals: ACTIVITY_GOALS.tummy_time!,
+    goals: ACTIVITY_GOALS.tummy_time ?? {
+      getWeeklyGoal: () => 0,
+      showProgressTracker: false,
+    },
     quickDurationOptions: [
       { label: '1 min', seconds: 1 * 60 },
       { label: '2 min', seconds: 2 * 60 },
@@ -142,7 +135,10 @@ export const SIMPLE_ACTIVITY_CONFIGS: Record<string, SimpleActivityConfig> = {
   },
   vitamin_d: {
     getLearningContent: getVitaminDLearningContent,
-    goals: ACTIVITY_GOALS.vitamin_d!,
+    goals: ACTIVITY_GOALS.vitamin_d ?? {
+      getWeeklyGoal: () => 0,
+      showProgressTracker: false,
+    },
     optionalFields: [
       {
         key: 'method',

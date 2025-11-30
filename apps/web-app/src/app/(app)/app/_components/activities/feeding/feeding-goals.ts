@@ -1,7 +1,10 @@
 import type { Activities } from '@nugget/db/schema';
 import { startOfDay, startOfHour, startOfWeek } from 'date-fns';
 import { calculateWeightedInterval } from '../shared/adaptive-weighting';
+import { calculateBabyAgeDaysForDate } from '../shared/baby-age-utils';
+import { calculatePredictedIntervalForDate } from '../shared/utils/date-based-prediction';
 import { filterActivitiesByTimePeriod } from '../shared/utils/time-period-utils';
+import { getWeekStartDay } from '../shared/utils/week-start';
 import { getFeedingIntervalByAge } from './feeding-intervals';
 
 const LIQUID_FEEDING_TYPES = new Set(['feeding', 'bottle', 'nursing']);
@@ -19,13 +22,55 @@ export function isLiquidFeedingActivity(
  * @param ageDays - Baby's age in days
  * @param predictedIntervalHours - Optional predicted interval from the prediction algorithm
  * @param dataPointsCount - Optional number of recent activities used in prediction
+ * @param targetDate - Optional target date to calculate goal for (defaults to today)
+ * @param activitiesUpToDate - Optional activities filtered up to target date for prediction
+ * @param babyBirthDate - Optional birth date (required if using targetDate)
  * @returns Estimated number of feedings per day
  */
 export function getDailyFeedingGoal(
   ageDays: number,
   predictedIntervalHours?: number | null,
   dataPointsCount?: number,
+  targetDate?: Date,
+  activitiesUpToDate?: Array<typeof Activities.$inferSelect>,
+  babyBirthDate?: Date | null,
 ): number {
+  // If targetDate is provided, calculate age and prediction for that date
+  if (
+    targetDate &&
+    babyBirthDate !== null &&
+    babyBirthDate !== undefined &&
+    activitiesUpToDate
+  ) {
+    const targetAgeDays = calculateBabyAgeDaysForDate(
+      babyBirthDate,
+      targetDate,
+    );
+    if (targetAgeDays !== null) {
+      const prediction = calculatePredictedIntervalForDate(
+        activitiesUpToDate,
+        targetDate,
+        babyBirthDate,
+        'feeding',
+      );
+      const ageBasedInterval = getFeedingIntervalByAge(targetAgeDays);
+
+      if (
+        prediction.predictedIntervalHours !== null &&
+        prediction.dataPointsCount !== undefined
+      ) {
+        const weightedInterval = calculateWeightedInterval(
+          ageBasedInterval,
+          prediction.predictedIntervalHours,
+          prediction.dataPointsCount,
+        );
+        return Math.round(24 / weightedInterval);
+      }
+      return Math.round(24 / ageBasedInterval);
+    }
+  }
+
+  // Original logic for backward compatibility
   const ageBasedInterval = getFeedingIntervalByAge(ageDays);
 
   // If no prediction data or data points count, use age-based only
@@ -50,6 +95,9 @@ export function getDailyFeedingGoal(
  * @param unit - Unit preference (ML or OZ)
  * @param predictedIntervalHours - Optional predicted interval from the prediction algorithm
  * @param dataPointsCount - Optional number of recent activities used in prediction
+ * @param targetDate - Optional target date to calculate goal for (defaults to today)
+ * @param activitiesUpToDate - Optional activities filtered up to target date for prediction
+ * @param babyBirthDate - Optional birth date (required if using targetDate)
  * @returns Estimated total daily amount in the specified unit
  */
 export function getDailyAmountGoal(
@@ -57,28 +105,46 @@ export function getDailyAmountGoal(
   unit: 'ML' | 'OZ',
   predictedIntervalHours?: number | null,
   dataPointsCount?: number,
+  targetDate?: Date,
+  activitiesUpToDate?: Array<typeof Activities.$inferSelect>,
+  babyBirthDate?: Date | null,
 ): number {
+  // If targetDate is provided, use it for age calculation
+  let effectiveAgeDays = ageDays;
+  if (targetDate && babyBirthDate !== null && babyBirthDate !== undefined) {
+    const targetAgeDays = calculateBabyAgeDaysForDate(
+      babyBirthDate,
+      targetDate,
+    );
+    if (targetAgeDays !== null) {
+      effectiveAgeDays = targetAgeDays;
+    }
+  }
+
   const feedingCount = getDailyFeedingGoal(
     ageDays,
     predictedIntervalHours,
     dataPointsCount,
+    targetDate,
+    activitiesUpToDate,
+    babyBirthDate,
   );
   let amountPerFeeding: number;
 
   // Define typical amounts per feeding by age
-  if (ageDays <= 2) {
+  if (effectiveAgeDays <= 2) {
     // Days 1-2: 1-2 oz per feeding
     amountPerFeeding = unit === 'OZ' ? 1.5 : 45;
-  } else if (ageDays <= 7) {
+  } else if (effectiveAgeDays <= 7) {
     // Days 3-7: 2-3 oz per feeding
     amountPerFeeding = unit === 'OZ' ? 2.5 : 75;
-  } else if (ageDays <= 14) {
+  } else if (effectiveAgeDays <= 14) {
     // Days 8-14: 3 oz per feeding
     amountPerFeeding = unit === 'OZ' ? 3 : 90;
-  } else if (ageDays <= 30) {
+  } else if (effectiveAgeDays <= 30) {
     // Days 15-30: 4 oz per feeding
     amountPerFeeding = unit === 'OZ' ? 4 : 120;
-  } else if (ageDays <= 60) {
+  } else if (effectiveAgeDays <= 60) {
     // Days 31-60: 5 oz per feeding
     amountPerFeeding = unit === 'OZ' ? 5 : 150;
   } else {
@@ -253,6 +319,7 @@ export function calculateFeedingTrendData(
   activities: Array<typeof Activities.$inferSelect>,
   timeRange: '24h' | '7d' | '2w' | '1m' | '3m' | '6m' = '7d',
   timePeriod?: 'all' | 'night' | 'day',
+  weekStartDayPreference?: number | null,
 ): Array<{ date: string; count: number; totalMl: number }> {
   // Guard against undefined activities
   if (!activities || !Array.isArray(activities)) {
@@ -349,10 +416,12 @@ export function calculateFeedingTrendData(
     // Group by week
     const statsByWeek = new Map<string, { count: number; totalMl: number }>();
 
+    const weekStartsOn = getWeekStartDay(weekStartDayPreference);
+
     for (const activity of recentFeedings) {
       const date = new Date(activity.startTime);
-      // Get the Monday of the week for this date in the user's local timezone
-      const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+      // Get the start of the week for this date based on user preference
+      const weekStart = startOfWeek(date, { weekStartsOn });
       weekStart.setHours(0, 0, 0, 0);
       const weekKey = weekStart.toISOString();
 
@@ -375,7 +444,7 @@ export function calculateFeedingTrendData(
     const numWeeks = Math.ceil((days ?? 7) / 7);
     for (let i = numWeeks - 1; i >= 0; i -= 1) {
       const date = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
-      const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+      const weekStart = startOfWeek(date, { weekStartsOn });
       weekStart.setHours(0, 0, 0, 0);
       const weekKey = weekStart.toISOString();
       const stats = statsByWeek.get(weekKey) || { count: 0, totalMl: 0 };

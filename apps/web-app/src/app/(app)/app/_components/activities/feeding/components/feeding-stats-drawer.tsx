@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@nugget/ui/dropdown-menu';
-import { subDays } from 'date-fns';
+import { endOfDay, subDays } from 'date-fns';
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -35,6 +35,7 @@ import {
   STAT_TIME_PERIOD_OPTIONS,
   TIMELINE_WEEK_OPTIONS,
 } from '../../shared/types';
+import { filterActivitiesUpToDate } from '../../shared/utils/date-based-prediction';
 import {
   getCustomDateRangeLabel,
   getDateRangeLabel,
@@ -187,21 +188,38 @@ export function FeedingStatsDrawer({
         return { amount: null, count: null };
       }
 
+      // Use end of day for filtering to include all activities from that day
+      // The targetDate from trend data is the start of the day, so we need end of day
+      // to include all activities that occurred on that date
+      const endOfTargetDate = endOfDay(targetDate);
+
+      // Filter activities up to end of target date for accurate goal calculation
+      const activitiesUpToDate = filterActivitiesUpToDate(
+        activities,
+        endOfTargetDate,
+      );
+
       return {
         amount: getDailyAmountGoal(
           ageDays,
           unit,
-          normalizedGoalContext.predictedIntervalHours ?? undefined,
-          normalizedGoalContext.dataPointsCount,
+          undefined, // Let the function calculate from activities
+          undefined, // Let the function calculate from activities
+          targetDate,
+          activitiesUpToDate,
+          normalizedGoalContext.babyBirthDate ?? null,
         ),
         count: getDailyFeedingGoal(
           ageDays,
-          normalizedGoalContext.predictedIntervalHours ?? undefined,
-          normalizedGoalContext.dataPointsCount,
+          undefined, // Let the function calculate from activities
+          undefined, // Let the function calculate from activities
+          targetDate,
+          activitiesUpToDate,
+          normalizedGoalContext.babyBirthDate ?? null,
         ),
       };
     });
-  }, [dynamicTrendData, normalizedGoalContext, unit]);
+  }, [dynamicTrendData, normalizedGoalContext, unit, activities]);
 
   const countGoalSeries = trendGoalSeries?.map((entry) => entry.count ?? null);
   const amountGoalSeries = trendGoalSeries?.map(

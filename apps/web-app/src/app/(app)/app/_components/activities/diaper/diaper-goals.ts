@@ -1,7 +1,9 @@
 import type { Activities } from '@nugget/db/schema';
 import { differenceInHours, format, startOfDay } from 'date-fns';
 import { calculateWeightedInterval } from '../shared/adaptive-weighting';
+import { calculateBabyAgeDaysForDate } from '../shared/baby-age-utils';
 import type { TrendTimeRange } from '../shared/types';
+import { calculatePredictedIntervalForDate } from '../shared/utils/date-based-prediction';
 import { getDiaperIntervalByAge } from './diaper-intervals';
 
 /**
@@ -10,13 +12,50 @@ import { getDiaperIntervalByAge } from './diaper-intervals';
  * @param ageDays - Baby's age in days
  * @param predictedIntervalHours - Optional predicted interval from the prediction algorithm
  * @param dataPointsCount - Optional number of recent activities used in prediction
+ * @param targetDate - Optional target date to calculate goal for (defaults to today)
+ * @param activitiesUpToDate - Optional activities filtered up to target date for prediction
+ * @param babyBirthDate - Optional birth date (required if using targetDate)
  * @returns Estimated number of diaper changes per day
  */
 export function getDailyDiaperGoal(
   ageDays: number,
   predictedIntervalHours?: number | null,
   dataPointsCount?: number,
+  targetDate?: Date,
+  activitiesUpToDate?: Array<typeof Activities.$inferSelect>,
+  babyBirthDate?: Date | null,
 ): number {
+  // If targetDate is provided, calculate age and prediction for that date
+  if (targetDate && babyBirthDate !== undefined && activitiesUpToDate) {
+    const targetAgeDays = calculateBabyAgeDaysForDate(
+      babyBirthDate,
+      targetDate,
+    );
+    if (targetAgeDays !== null) {
+      const prediction = calculatePredictedIntervalForDate(
+        activitiesUpToDate,
+        targetDate,
+        babyBirthDate,
+        'diaper',
+      );
+      const ageBasedInterval = getDiaperIntervalByAge(targetAgeDays);
+
+      if (
+        prediction.predictedIntervalHours !== null &&
+        prediction.dataPointsCount !== undefined
+      ) {
+        const weightedInterval = calculateWeightedInterval(
+          ageBasedInterval,
+          prediction.predictedIntervalHours,
+          prediction.dataPointsCount,
+        );
+        return Math.round(24 / weightedInterval);
+      }
+      return Math.round(24 / ageBasedInterval);
+    }
+  }
+
+  // Original logic for backward compatibility
   const ageBasedInterval = getDiaperIntervalByAge(ageDays);
 
   // If no prediction data or data points count, use age-based only
@@ -40,35 +79,75 @@ export function getDailyDiaperGoal(
  * @param ageDays - Baby's age in days
  * @param predictedIntervalHours - Optional predicted interval from the prediction algorithm
  * @param dataPointsCount - Optional number of recent activities used in prediction
+ * @param targetDate - Optional target date to calculate goal for (defaults to today)
+ * @param activitiesUpToDate - Optional activities filtered up to target date for prediction
+ * @param babyBirthDate - Optional birth date (required if using targetDate)
  * @returns Estimated number of wet diapers per day
  */
 export function getDailyWetDiaperGoal(
   ageDays: number,
   predictedIntervalHours?: number | null,
   dataPointsCount?: number,
+  targetDate?: Date,
+  activitiesUpToDate?: Array<typeof Activities.$inferSelect>,
+  babyBirthDate?: Date | null,
 ): number {
+  // If targetDate is provided, use it for age calculation
+  let effectiveAgeDays = ageDays;
+  if (targetDate && babyBirthDate !== undefined) {
+    const targetAgeDays = calculateBabyAgeDaysForDate(
+      babyBirthDate,
+      targetDate,
+    );
+    if (targetAgeDays !== null) {
+      effectiveAgeDays = targetAgeDays;
+    }
+  }
+
   const totalGoal = getDailyDiaperGoal(
     ageDays,
     predictedIntervalHours,
     dataPointsCount,
+    targetDate,
+    activitiesUpToDate,
+    babyBirthDate,
   );
   // Newborns have more frequent wet diapers (70%)
   // Older babies have fewer relative wet diapers (60%)
-  const wetPercentage = ageDays <= 30 ? 0.7 : 0.6;
+  const wetPercentage = effectiveAgeDays <= 30 ? 0.7 : 0.6;
   return Math.round(totalGoal * wetPercentage);
 }
 
 /**
  * Calculate recommended daily dirty diaper (poop) count based on baby's age
  * Newborns have more frequent bowel movements that decrease with age
+ * @param ageDays - Baby's age in days
+ * @param targetDate - Optional target date to calculate goal for (defaults to today)
+ * @param babyBirthDate - Optional birth date (required if using targetDate)
  */
-export function getDailyDirtyDiaperGoal(ageDays: number): number {
+export function getDailyDirtyDiaperGoal(
+  ageDays: number,
+  targetDate?: Date,
+  babyBirthDate?: Date | null,
+): number {
+  // If targetDate is provided, use it for age calculation
+  let effectiveAgeDays = ageDays;
+  if (targetDate && babyBirthDate !== undefined) {
+    const targetAgeDays = calculateBabyAgeDaysForDate(
+      babyBirthDate,
+      targetDate,
+    );
+    if (targetAgeDays !== null) {
+      effectiveAgeDays = targetAgeDays;
+    }
+  }
+
   // Days 0-7: 3-4 poops per day
-  if (ageDays <= 7) return 3;
+  if (effectiveAgeDays <= 7) return 3;
   // Days 8-30: 2-3 poops per day
-  if (ageDays <= 30) return 2;
+  if (effectiveAgeDays <= 30) return 2;
   // Days 31-60: 1-2 poops per day
-  if (ageDays <= 60) return 2;
+  if (effectiveAgeDays <= 60) return 2;
   // Days 61+: 1 poop per day (some babies go less frequently)
   return 1;
 }

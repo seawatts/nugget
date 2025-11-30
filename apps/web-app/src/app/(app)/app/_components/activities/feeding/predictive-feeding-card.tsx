@@ -4,7 +4,7 @@ import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Card } from '@nugget/ui/card';
 import { cn } from '@nugget/ui/lib/utils';
-import { startOfDay, subDays } from 'date-fns';
+import { endOfDay, startOfDay, subDays } from 'date-fns';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
@@ -145,6 +145,52 @@ export function PredictiveFeedingCard({
   // Override effectiveIsOverdue based on showPredictiveTimes preference
   const effectiveIsOverdue =
     skipLogicOverdue && (userData?.showPredictiveTimes ?? true);
+
+  // Calculate yesterday's goals for comparison (must be before early returns)
+  const yesterdayDate = useMemo(() => endOfDay(subDays(new Date(), 1)), []);
+  const activitiesUpToYesterday = useMemo(() => {
+    if (!allActivities) return [];
+    return allActivities.filter((activity) => {
+      const activityDate = new Date(activity.startTime);
+      return activityDate <= yesterdayDate;
+    });
+  }, [allActivities, yesterdayDate]);
+
+  const yesterdayFeedingGoal = useMemo(() => {
+    if (!queryData?.babyBirthDate) return null;
+    return getDailyFeedingGoal(
+      data?.babyAgeDays ?? 0,
+      undefined,
+      undefined,
+      yesterdayDate,
+      activitiesUpToYesterday,
+      queryData.babyBirthDate,
+    );
+  }, [
+    data?.babyAgeDays,
+    yesterdayDate,
+    activitiesUpToYesterday,
+    queryData?.babyBirthDate,
+  ]);
+
+  const yesterdayAmountGoal = useMemo(() => {
+    if (!queryData?.babyBirthDate) return null;
+    return getDailyAmountGoal(
+      data?.babyAgeDays ?? 0,
+      userUnitPref,
+      undefined,
+      undefined,
+      yesterdayDate,
+      activitiesUpToYesterday,
+      queryData.babyBirthDate,
+    );
+  }, [
+    data?.babyAgeDays,
+    userUnitPref,
+    yesterdayDate,
+    activitiesUpToYesterday,
+    queryData?.babyBirthDate,
+  ]);
 
   // Use feeding-specific actions hook
   const { handleSkip, handleQuickLog, isSkipping, isCreating } =
@@ -317,6 +363,8 @@ export function PredictiveFeedingCard({
               goalAmount={dailyAmountGoal}
               goalCount={dailyFeedingGoal}
               unit={userUnitPref}
+              yesterdayGoalAmount={yesterdayAmountGoal}
+              yesterdayGoalCount={yesterdayFeedingGoal}
             />
           )}
       </Card>

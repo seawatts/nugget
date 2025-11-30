@@ -1,6 +1,8 @@
 import type { Activities } from '@nugget/db/schema';
 import { differenceInHours, format, startOfDay } from 'date-fns';
 import { calculateWeightedInterval } from '../shared/adaptive-weighting';
+import { calculateBabyAgeDaysForDate } from '../shared/baby-age-utils';
+import { calculatePredictedIntervalForDate } from '../shared/utils/date-based-prediction';
 import { filterActivitiesByTimePeriod } from '../shared/utils/time-period-utils';
 import { getSleepIntervalByAge } from './sleep-intervals';
 
@@ -32,13 +34,67 @@ function getAgeBasedNapCount(ageDays: number): number {
  * @param ageDays - Baby's age in days
  * @param predictedIntervalHours - Optional predicted interval from the prediction algorithm
  * @param dataPointsCount - Optional number of recent activities used in prediction
+ * @param targetDate - Optional target date to calculate goal for (defaults to today)
+ * @param activitiesUpToDate - Optional activities filtered up to target date for prediction
+ * @param babyBirthDate - Optional birth date (required if using targetDate)
  * @returns Estimated number of naps per day
  */
 export function getDailyNapGoal(
   ageDays: number,
   predictedIntervalHours?: number | null,
   dataPointsCount?: number,
+  targetDate?: Date,
+  activitiesUpToDate?: Array<typeof Activities.$inferSelect>,
+  babyBirthDate?: Date | null,
 ): number {
+  // If targetDate is provided, calculate age and prediction for that date
+  if (targetDate && babyBirthDate !== undefined && activitiesUpToDate) {
+    const targetAgeDays = calculateBabyAgeDaysForDate(
+      babyBirthDate,
+      targetDate,
+    );
+    if (targetAgeDays !== null) {
+      const prediction = calculatePredictedIntervalForDate(
+        activitiesUpToDate,
+        targetDate,
+        babyBirthDate,
+        'sleep',
+      );
+      const ageBasedInterval = getSleepIntervalByAge(targetAgeDays);
+
+      if (
+        prediction.predictedIntervalHours !== null &&
+        prediction.dataPointsCount !== undefined
+      ) {
+        const weightedInterval = calculateWeightedInterval(
+          ageBasedInterval,
+          prediction.predictedIntervalHours,
+          prediction.dataPointsCount,
+        );
+
+        // Calculate nap count based on weighted interval
+        const wakefulHours =
+          targetAgeDays <= 90 ? 10 : targetAgeDays <= 180 ? 12 : 14;
+        const napCount = Math.round(wakefulHours / weightedInterval);
+
+        // Ensure reasonable bounds based on age
+        const minNaps = targetAgeDays <= 90 ? 3 : targetAgeDays <= 365 ? 2 : 1;
+        const maxNaps =
+          targetAgeDays <= 28
+            ? 6
+            : targetAgeDays <= 90
+              ? 5
+              : targetAgeDays <= 365
+                ? 4
+                : 3;
+
+        return Math.max(minNaps, Math.min(maxNaps, napCount));
+      }
+      return getAgeBasedNapCount(targetAgeDays);
+    }
+  }
+
+  // Original logic for backward compatibility
   // Get age-based interval for sleep
   const ageBasedInterval = getSleepIntervalByAge(ageDays);
 
@@ -70,24 +126,43 @@ export function getDailyNapGoal(
 /**
  * Calculate recommended total daily sleep hours based on baby's age
  * Returns hours as a number
+ * @param ageDays - Baby's age in days
+ * @param targetDate - Optional target date to calculate goal for (defaults to today)
+ * @param babyBirthDate - Optional birth date (required if using targetDate)
  */
-export function getDailySleepHoursGoal(ageDays: number): number {
+export function getDailySleepHoursGoal(
+  ageDays: number,
+  targetDate?: Date,
+  babyBirthDate?: Date | null,
+): number {
+  // If targetDate is provided, use it for age calculation
+  let effectiveAgeDays = ageDays;
+  if (targetDate && babyBirthDate !== undefined) {
+    const targetAgeDays = calculateBabyAgeDaysForDate(
+      babyBirthDate,
+      targetDate,
+    );
+    if (targetAgeDays !== null) {
+      effectiveAgeDays = targetAgeDays;
+    }
+  }
+
   // Newborn (0-7 days): 14-17 hours
-  if (ageDays <= 7) return 16;
+  if (effectiveAgeDays <= 7) return 16;
   // 1-4 weeks: 14-17 hours
-  if (ageDays <= 28) return 15;
+  if (effectiveAgeDays <= 28) return 15;
   // 1-3 months: 14-17 hours
-  if (ageDays <= 90) return 15;
+  if (effectiveAgeDays <= 90) return 15;
   // 3-6 months: 12-16 hours
-  if (ageDays <= 180) return 14;
+  if (effectiveAgeDays <= 180) return 14;
   // 6-9 months: 12-15 hours
-  if (ageDays <= 270) return 13;
+  if (effectiveAgeDays <= 270) return 13;
   // 9-12 months: 11-14 hours
-  if (ageDays <= 365) return 13;
+  if (effectiveAgeDays <= 365) return 13;
   // 12-18 months: 11-14 hours
-  if (ageDays <= 547) return 12;
+  if (effectiveAgeDays <= 547) return 12;
   // 18-24 months: 11-14 hours
-  if (ageDays <= 730) return 12;
+  if (effectiveAgeDays <= 730) return 12;
   // 24+ months: 10-13 hours
   return 11;
 }

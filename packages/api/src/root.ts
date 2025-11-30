@@ -1,3 +1,4 @@
+import { achievementsRouter } from './router/achievements';
 import { activitiesRouter } from './router/activities';
 import { babiesRouter } from './router/babies';
 import { billingRouter } from './router/billing';
@@ -20,6 +21,7 @@ import { userRouter } from './router/user';
 import { createTRPCRouter } from './trpc';
 
 export const appRouter = createTRPCRouter({
+  achievements: achievementsRouter,
   activities: activitiesRouter,
   babies: babiesRouter,
   billing: billingRouter,

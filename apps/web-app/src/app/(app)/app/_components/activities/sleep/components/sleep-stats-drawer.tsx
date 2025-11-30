@@ -38,6 +38,7 @@ import {
   STAT_TIME_PERIOD_OPTIONS,
   TIMELINE_WEEK_OPTIONS,
 } from '../../shared/types';
+import { filterActivitiesUpToDate } from '../../shared/utils/date-based-prediction';
 import {
   getCustomDateRangeLabel,
   getDateRangeLabel,
@@ -274,16 +275,29 @@ export function SleepStatsDrawer({
         return { hours: null, naps: null };
       }
 
+      // Filter activities up to target date for accurate goal calculation
+      const activitiesUpToDate = filterActivitiesUpToDate(
+        activities,
+        targetDate,
+      );
+
       return {
-        hours: getDailySleepHoursGoal(ageDays),
+        hours: getDailySleepHoursGoal(
+          ageDays,
+          targetDate,
+          normalizedGoalContext.babyBirthDate ?? null,
+        ),
         naps: getDailyNapGoal(
           ageDays,
-          normalizedGoalContext.predictedIntervalHours ?? undefined,
-          normalizedGoalContext.dataPointsCount,
+          undefined, // Let the function calculate from activities
+          undefined, // Let the function calculate from activities
+          targetDate,
+          activitiesUpToDate,
+          normalizedGoalContext.babyBirthDate ?? null,
         ),
       };
     });
-  }, [dynamicTrendData, normalizedGoalContext]);
+  }, [dynamicTrendData, normalizedGoalContext, activities]);
 
   const napGoalSeries = trendGoalSeries?.map((entry) => entry.naps ?? null);
   const sleepHoursGoalSeries = trendGoalSeries?.map(

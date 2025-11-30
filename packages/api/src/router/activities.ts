@@ -66,6 +66,19 @@ export const activitiesRouter = createTRPCRouter({
         },
       });
 
+      // Trigger achievement update workflow (non-blocking)
+      // Import dynamically to avoid build-time dependency
+      const { triggerAchievementUpdate } = await import(
+        '../utils/trigger-achievement-update'
+      ).catch(() => ({
+        triggerAchievementUpdate: async () => {
+          /* no-op */
+        },
+      }));
+      triggerAchievementUpdate(input.babyId).catch((error: unknown) => {
+        console.error('Failed to trigger achievement update:', error);
+      });
+
       return activityWithUser ?? activity;
     }),
 
@@ -154,6 +167,23 @@ export const activitiesRouter = createTRPCRouter({
 
       if (!deletedActivity) {
         throw new Error('Failed to delete activity');
+      }
+
+      // Trigger achievement update workflow (non-blocking)
+      // Import dynamically to avoid build-time dependency
+      const { triggerAchievementUpdate } = await import(
+        '../utils/trigger-achievement-update'
+      ).catch(() => ({
+        triggerAchievementUpdate: async () => {
+          /* no-op */
+        },
+      }));
+      if (deletedActivity.babyId) {
+        triggerAchievementUpdate(deletedActivity.babyId).catch(
+          (error: unknown) => {
+            console.error('Failed to trigger achievement update:', error);
+          },
+        );
       }
 
       return { success: true };
@@ -754,6 +784,23 @@ export const activitiesRouter = createTRPCRouter({
 
       if (!updatedActivity) {
         throw new Error('Failed to update activity');
+      }
+
+      // Trigger achievement update workflow (non-blocking)
+      // Import dynamically to avoid build-time dependency
+      const { triggerAchievementUpdate } = await import(
+        '../utils/trigger-achievement-update'
+      ).catch(() => ({
+        triggerAchievementUpdate: async () => {
+          /* no-op */
+        },
+      }));
+      if (updatedActivity.babyId) {
+        triggerAchievementUpdate(updatedActivity.babyId).catch(
+          (error: unknown) => {
+            console.error('Failed to trigger achievement update:', error);
+          },
+        );
       }
 
       return updatedActivity;

@@ -10,6 +10,7 @@ import {
   Bar,
   CartesianGrid,
   ComposedChart,
+  type DotProps,
   Line,
   ReferenceLine,
   ResponsiveContainer,
@@ -93,6 +94,41 @@ export function SleepTrendChart({
     ? null
     : adjustGoalForRange(dailyGoal ?? null, timeRange);
 
+  // Custom dot that renders as a single dot for each day's goal
+  const GoalLineDot = (props: DotProps) => {
+    const { cx, cy, payload } = props;
+
+    // Access goal from payload - Recharts passes the entire data object as payload
+    const goal =
+      payload && typeof payload === 'object' && 'goal' in payload
+        ? (payload as { goal?: number | null }).goal
+        : null;
+
+    // Only render if we have valid coordinates and a valid goal
+    if (
+      typeof cx !== 'number' ||
+      typeof cy !== 'number' ||
+      !Number.isFinite(cx) ||
+      !Number.isFinite(cy) ||
+      typeof goal !== 'number' ||
+      !Number.isFinite(goal) ||
+      goal <= 0
+    ) {
+      return null;
+    }
+
+    return (
+      <circle
+        cx={cx}
+        cy={cy}
+        fill="var(--muted-foreground)"
+        r={4}
+        stroke="var(--muted-foreground)"
+        strokeWidth={2}
+      />
+    );
+  };
+
   return (
     <ChartContainer
       className="h-[200px] w-full"
@@ -148,12 +184,11 @@ export function SleepTrendChart({
             <Line
               connectNulls={false}
               dataKey="goal"
-              dot={false}
+              dot={(props) => <GoalLineDot {...props} />}
               isAnimationActive={false}
-              stroke="var(--muted-foreground)"
-              strokeDasharray="4 4"
-              strokeWidth={2}
-              type="monotone"
+              stroke="transparent"
+              strokeWidth={0}
+              type="linear"
             />
           )}
           {!hasGoalSeries && fallbackGoal !== null && (

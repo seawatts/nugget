@@ -35,6 +35,7 @@ import {
   STAT_TIME_PERIOD_OPTIONS,
   TIMELINE_WEEK_OPTIONS,
 } from '../../shared/types';
+import { filterActivitiesUpToDate } from '../../shared/utils/date-based-prediction';
 import {
   getCustomDateRangeLabel,
   getDateRangeLabel,
@@ -147,18 +148,28 @@ export function DiaperStatsDrawer({
     if (!normalizedGoalContext) return undefined;
 
     return dynamicTrendData.map(({ date }) => {
-      const ageDays = getAgeDaysForDate(new Date(date), normalizedGoalContext);
+      const targetDate = new Date(date);
+      const ageDays = getAgeDaysForDate(targetDate, normalizedGoalContext);
       if (ageDays === null) {
         return null;
       }
 
+      // Filter activities up to target date for accurate goal calculation
+      const activitiesUpToDate = filterActivitiesUpToDate(
+        activities,
+        targetDate,
+      );
+
       return getDailyDiaperGoal(
         ageDays,
-        normalizedGoalContext.predictedIntervalHours ?? undefined,
-        normalizedGoalContext.dataPointsCount,
+        undefined, // Let the function calculate from activities
+        undefined, // Let the function calculate from activities
+        targetDate,
+        activitiesUpToDate,
+        normalizedGoalContext.babyBirthDate ?? null,
       );
     });
-  }, [dynamicTrendData, normalizedGoalContext]);
+  }, [dynamicTrendData, normalizedGoalContext, activities]);
 
   // Helper functions
   const getMetricLabel = (type: DiaperMetricType) => {

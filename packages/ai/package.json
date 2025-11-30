@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@boundaryml/baml": "0.213.0"
+    "@boundaryml/baml": "0.214.0"
   },
   "devDependencies": {
     "@nugget/tsconfig": "workspace:*",

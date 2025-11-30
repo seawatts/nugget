@@ -179,6 +179,7 @@ export function GenericSimpleActivityCard({
     config.type,
     goalConfig?.getWeeklyGoal ?? (() => 7),
     babyAgeDays,
+    userData?.weekStartDay,
   );
 
   const handleDayClick = async (day: (typeof sevenDayData)[0]) => {

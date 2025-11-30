@@ -4,6 +4,7 @@ import { api } from '@nugget/api/react';
 import { Card } from '@nugget/ui/card';
 import { startOfDay, startOfWeek, subDays, subWeeks } from 'date-fns';
 import { useMemo, useState } from 'react';
+import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { calculateTodaysFeedingStats } from './activities/feeding/feeding-goals';
 import { calculateBabyAgeDays } from './activities/shared/baby-age-utils';
 import { StatsDrawerWrapper } from './activities/shared/components/stats';
@@ -11,6 +12,7 @@ import {
   calculateHourlyFrequency,
   calculateTimeBlockData,
 } from './activities/shared/utils/frequency-utils';
+import { getWeekStartDay } from './activities/shared/utils/week-start';
 import {
   ActivityTypesSection,
   EncouragementMessage,
@@ -95,14 +97,19 @@ export function BabyStatsDrawer({
     });
   }, [activities, todayStart]);
 
+  // Get user data for week start preference
+  const userData = useDashboardDataStore.use.user();
+
   // Filter to this week's activities
-  const weekStart = useMemo(
-    () => startOfWeek(new Date(), { weekStartsOn: 1 }),
-    [],
-  );
+  const weekStart = useMemo(() => {
+    const weekStartsOn = getWeekStartDay(userData?.weekStartDay);
+    const weekStartDate = startOfWeek(new Date(), { weekStartsOn });
+    weekStartDate.setHours(0, 0, 0, 0);
+    return weekStartDate;
+  }, [userData?.weekStartDay]);
   const weekActivities = useMemo(() => {
     return activities.filter((activity) => {
-      const activityDate = new Date(activity.startTime);
+      const activityDate = startOfDay(new Date(activity.startTime));
       return activityDate >= weekStart;
     });
   }, [activities, weekStart]);
@@ -367,17 +374,22 @@ export function BabyStatsDrawer({
   }, [activities.length]);
 
   // Calculate weekly highlights
-  const previousWeekStart = useMemo(
-    () => startOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 }),
-    [],
-  );
-  const previousWeekEnd = useMemo(
-    () => startOfWeek(new Date(), { weekStartsOn: 1 }),
-    [],
-  );
+  const previousWeekStart = useMemo(() => {
+    const weekStartsOn = getWeekStartDay(userData?.weekStartDay);
+    const previousWeekDate = subWeeks(new Date(), 1);
+    const weekStartDate = startOfWeek(previousWeekDate, { weekStartsOn });
+    weekStartDate.setHours(0, 0, 0, 0);
+    return weekStartDate;
+  }, [userData?.weekStartDay]);
+  const previousWeekEnd = useMemo(() => {
+    const weekStartsOn = getWeekStartDay(userData?.weekStartDay);
+    const weekStartDate = startOfWeek(new Date(), { weekStartsOn });
+    weekStartDate.setHours(0, 0, 0, 0);
+    return weekStartDate;
+  }, [userData?.weekStartDay]);
   const previousWeekActivities = useMemo(() => {
     return activities.filter((activity) => {
-      const activityDate = new Date(activity.startTime);
+      const activityDate = startOfDay(new Date(activity.startTime));
       return (
         activityDate >= previousWeekStart && activityDate < previousWeekEnd
       );

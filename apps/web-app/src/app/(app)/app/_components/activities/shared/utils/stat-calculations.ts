@@ -5,6 +5,7 @@
 
 import type { Activities } from '@nugget/db/schema';
 import { format, startOfWeek, subMonths, subWeeks } from 'date-fns';
+import { getWeekStartDay } from './week-start';
 
 /**
  * Filter activities by date range
@@ -32,6 +33,8 @@ function filterActivitiesByType(
 
 /**
  * Calculate date range for a time period
+ * @param period - The time period to calculate
+ * @param weekStartDayPreference - Optional user preference for week start day (0 = Sunday, 1 = Monday, null = auto-detect)
  */
 export function getDateRangeForPeriod(
   period:
@@ -41,25 +44,29 @@ export function getDateRangeForPeriod(
     | 'last_month'
     | 'last_3_months'
     | 'last_6_months',
+  weekStartDayPreference?: number | null,
 ): { startDate: Date; endDate: Date } {
   const endDate = new Date();
   let startDate: Date;
 
+  // Get the effective week start day (0 = Sunday, 1 = Monday)
+  const weekStartsOn = getWeekStartDay(weekStartDayPreference);
+
   switch (period) {
     case 'this_week': {
-      // Start of current week (Monday) to now
-      const weekStart = startOfWeek(endDate, { weekStartsOn: 1 });
+      // Start of current week to now
+      const weekStart = startOfWeek(endDate, { weekStartsOn });
       weekStart.setHours(0, 0, 0, 0);
       startDate = weekStart;
       break;
     }
     case 'last_week': {
-      // Start of last week (Monday) to end of last week (Sunday)
+      // Start of last week to end of last week
       const lastWeekEnd = subWeeks(endDate, 1);
-      const lastWeekStart = startOfWeek(lastWeekEnd, { weekStartsOn: 1 });
+      const lastWeekStart = startOfWeek(lastWeekEnd, { weekStartsOn });
       lastWeekStart.setHours(0, 0, 0, 0);
       startDate = lastWeekStart;
-      // End date should be end of last week (Sunday 23:59:59)
+      // End date should be end of last week (6 days after start, 23:59:59)
       const lastWeekEndDate = new Date(lastWeekStart);
       lastWeekEndDate.setDate(lastWeekStart.getDate() + 6);
       lastWeekEndDate.setHours(23, 59, 59, 999);

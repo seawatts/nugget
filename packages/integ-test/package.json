@@ -9,12 +9,12 @@
     "@faker-js/faker": "10.1.0",
     "@nugget/tsconfig": "workspace:*",
     "@types/node": "24.10.1",
-    "@vitest/coverage-v8": "4.0.13",
-    "@vitest/ui": "4.0.13",
+    "@vitest/coverage-v8": "4.0.14",
+    "@vitest/ui": "4.0.14",
     "dotenv": "17.2.3",
-    "testcontainers": "11.8.1",
+    "testcontainers": "11.9.0",
     "typescript": "catalog:",
-    "vitest": "4.0.13"
+    "vitest": "4.0.14"
   },
   "engines": {
     "node": ">=20.12.0"

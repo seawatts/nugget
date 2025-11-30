@@ -138,6 +138,7 @@ export function PredictiveBathCard({
     'bath',
     goalConfig?.getWeeklyGoal ?? (() => 3),
     babyAgeDays,
+    userData?.weekStartDay,
   );
 
   const handleDayClick = async (day: (typeof bathData)[0]) => {

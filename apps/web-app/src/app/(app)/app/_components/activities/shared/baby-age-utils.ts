@@ -1,3 +1,5 @@
+import { differenceInCalendarDays } from 'date-fns';
+
 /**
  * Baby age calculation utilities
  * Used across multiple activity types for age-appropriate calculations
@@ -17,6 +19,25 @@ export function calculateBabyAgeDays(birthDate: Date | null): number | null {
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
   return diffDays;
+}
+
+/**
+ * Calculate baby's age in days for a specific target date
+ * @param birthDate - Baby's birth date
+ * @param targetDate - The date to calculate age for (defaults to today)
+ * @returns Age in days, or null if birthDate is not provided
+ */
+export function calculateBabyAgeDaysForDate(
+  birthDate: Date | null,
+  targetDate: Date = new Date(),
+): number | null {
+  if (!birthDate) return null;
+
+  const birth = new Date(birthDate);
+  const target = new Date(targetDate);
+  const diffDays = differenceInCalendarDays(target, birth);
+
+  return Math.max(0, diffDays);
 }
 
 /**

@@ -25,7 +25,8 @@ export type AchievementCategory =
   | 'time-based'
   | 'special'
   | 'personal-milestones'
-  | 'parent-milestones';
+  | 'parent-milestones'
+  | 'daily-achievements';
 
 export type AchievementRarity = 'common' | 'rare' | 'epic' | 'legendary';
 
@@ -40,6 +41,11 @@ export interface Achievement {
   rarity: AchievementRarity;
   target: number;
   unlockedAt?: Date | null;
+  // Daily achievement fields (for UI display when aggregating multiple records)
+  isDaily?: boolean;
+  dailyStreak?: number;
+  lastCompletedDate?: Date | null;
+  completionsThisWeek?: number;
 }
 
 export interface WeeklyHighlights {

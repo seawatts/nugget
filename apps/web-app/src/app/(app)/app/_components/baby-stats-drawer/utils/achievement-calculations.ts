@@ -24,6 +24,7 @@ import {
   getWeekendActivityCount,
   hasLoggedActivityType,
 } from './achievement-helpers';
+import { calculateDailyAchievements } from './daily-achievement-calculations';
 
 /**
  * Comprehensive achievement calculation system
@@ -54,6 +55,9 @@ export function calculateAchievements(
     streaks,
   };
 
+  // Calculate daily achievements (only need today's activities)
+  const dailyAchievements = calculateDailyAchievements(activities);
+
   const allAchievements: Array<Achievement> = [
     ...calculateFoundationAchievements(params),
     ...calculateVolumeAchievements(
@@ -69,6 +73,11 @@ export function calculateAchievements(
     ...calculateSpecialAchievements(params),
     ...calculatePersonalMilestoneAchievements(params, daysTracking),
     ...calculateParentMilestoneAchievements(params, daysTracking),
+    // Add daily achievements (without completedDate field for main array)
+    ...dailyAchievements.map((ach) => {
+      const { completedDate: _completedDate, ...rest } = ach;
+      return rest;
+    }),
   ];
 
   return allAchievements;
