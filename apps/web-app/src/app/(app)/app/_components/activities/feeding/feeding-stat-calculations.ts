@@ -735,8 +735,11 @@ export function calculateNightFeedingStat(
     );
     const gaps: number[] = [];
     for (let i = 1; i < sorted.length; i++) {
-      const prevTime = new Date(sorted[i - 1].startTime);
-      const currTime = new Date(sorted[i].startTime);
+      const prev = sorted[i - 1];
+      const curr = sorted[i];
+      if (!prev || !curr) continue;
+      const prevTime = new Date(prev.startTime);
+      const currTime = new Date(curr.startTime);
       const gapMinutes =
         (currTime.getTime() - prevTime.getTime()) / (1000 * 60);
       gaps.push(gapMinutes);
@@ -842,8 +845,11 @@ export function calculateDayFeedingStat(
     );
     const gaps: number[] = [];
     for (let i = 1; i < sorted.length; i++) {
-      const prevTime = new Date(sorted[i - 1].startTime);
-      const currTime = new Date(sorted[i].startTime);
+      const prev = sorted[i - 1];
+      const curr = sorted[i];
+      if (!prev || !curr) continue;
+      const prevTime = new Date(prev.startTime);
+      const currTime = new Date(curr.startTime);
       const gapMinutes =
         (currTime.getTime() - prevTime.getTime()) / (1000 * 60);
       gaps.push(gapMinutes);

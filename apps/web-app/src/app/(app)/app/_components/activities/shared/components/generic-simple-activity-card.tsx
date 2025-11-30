@@ -164,8 +164,10 @@ export function GenericSimpleActivityCard({
       try {
         setIsLogging(true);
 
-        // Create details with just the type
-        const details = { type: config.type };
+        // Create details with just the type - cast to ActivityDetails
+        const details = {
+          type: config.type,
+        } as typeof Activities.$inferSelect.details;
 
         // Create optimistic activity for immediate UI feedback
         const optimisticActivity = {

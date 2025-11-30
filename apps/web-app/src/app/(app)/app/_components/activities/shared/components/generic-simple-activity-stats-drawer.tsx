@@ -345,7 +345,7 @@ export function GenericSimpleActivityStatsDrawer({
       </div>
 
       {/* Frequency Insights */}
-      {frequencyInsights.length > 0 && (
+      {frequencyInsights.peakHours.length > 0 && (
         <FrequencyInsightsComponent
           colorVar={colorVar}
           insights={frequencyInsights}
@@ -382,22 +382,28 @@ export function GenericSimpleActivityStatsDrawer({
         </div>
 
         <TimeBlockChart
-          activityLabel={config.title.toLowerCase()}
           colorVar={colorVar}
           data={timeBlockData}
+          timeFormat={timeFormat}
         />
       </div>
 
       {/* Recent Activities */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-medium text-foreground">Recent Activity</h3>
-        <RecentActivitiesList
-          activities={recentActivities}
-          activityType={config.type}
-          colorVar={colorVar}
-          title={config.title}
-        />
-      </div>
+      {(config.type === 'bath' ||
+        config.type === 'vitamin_d' ||
+        config.type === 'nail_trimming') && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-foreground">
+            Recent Activity
+          </h3>
+          <RecentActivitiesList
+            activities={recentActivities}
+            activityType={config.type}
+            timeFormat={timeFormat}
+            title={config.title}
+          />
+        </div>
+      )}
     </StatsDrawerWrapper>
   );
 }

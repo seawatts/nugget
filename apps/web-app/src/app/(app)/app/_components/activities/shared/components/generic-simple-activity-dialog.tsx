@@ -65,15 +65,16 @@ export function GenericSimpleActivityDialog({
       normalizedDate.setHours(12, 0, 0, 0);
 
       // Build details object with type and any optional fields that have values
-      const details: Record<string, string | null> = { type: config.type };
+      const detailsBase: Record<string, string | null> = { type: config.type };
       if (config.optionalFields) {
         for (const field of config.optionalFields) {
           const value = optionalFields[field.key];
           if (value !== null && value !== undefined) {
-            details[field.key] = value;
+            detailsBase[field.key] = value;
           }
         }
       }
+      const details = detailsBase as typeof Activities.$inferSelect.details;
 
       // Calculate duration in minutes (duration is stored in seconds in state)
       const durationMinutes = duration > 0 ? Math.floor(duration / 60) : null;
@@ -122,8 +123,8 @@ export function GenericSimpleActivityDialog({
         activityType: config.type as typeof Activities.$inferSelect.type,
         babyId,
         details,
-        duration: durationMinutes,
-        endTime: calculatedEndTime,
+        duration: durationMinutes ?? undefined,
+        endTime: calculatedEndTime ?? undefined,
         startTime: normalizedDate,
       });
     } catch (error) {

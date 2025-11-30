@@ -86,15 +86,16 @@ export function GenericSimpleActivityTimelineDrawer({
   const handleSave = async () => {
     try {
       // Build details object with type and any optional fields that have values
-      const details: Record<string, string | null> = { type: config.type };
+      const detailsBase: Record<string, string | null> = { type: config.type };
       if (config.optionalFields) {
         for (const field of config.optionalFields) {
           const value = optionalFields[field.key];
           if (value !== null && value !== undefined) {
-            details[field.key] = value;
+            detailsBase[field.key] = value;
           }
         }
       }
+      const details = detailsBase as typeof Activities.$inferSelect.details;
 
       await updateActivity({
         details,

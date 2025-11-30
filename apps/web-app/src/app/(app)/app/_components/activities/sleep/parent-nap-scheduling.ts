@@ -431,12 +431,16 @@ export function maximizeParentSleep(
   // Find coordinated windows (if multiple parents)
   let coordinatedWindows: CoordinatedNapWindow[] = [];
   if (parentIds.length >= 2) {
-    coordinatedWindows = getCoordinatedNapWindows(
-      babySleepActivities,
-      parentIds[0],
-      parentIds[1] || null,
-      lookbackDays,
-    );
+    const parent1Id = parentIds[0];
+    const parent2Id = parentIds[1];
+    if (parent1Id && parent2Id) {
+      coordinatedWindows = getCoordinatedNapWindows(
+        babySleepActivities,
+        parent1Id,
+        parent2Id,
+        lookbackDays,
+      );
+    }
   }
 
   // Calculate total potential sleep

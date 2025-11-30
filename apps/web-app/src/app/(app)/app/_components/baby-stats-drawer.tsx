@@ -603,7 +603,8 @@ function calculatePatterns(activities: Array<typeof Activities.$inferSelect>): {
   const estimatedDays = Math.min(
     daysWithActivities,
     Math.ceil(
-      (Date.now() - new Date(activities[0]?.startTime).getTime()) /
+      (Date.now() -
+        new Date(activities[0]?.startTime ?? Date.now()).getTime()) /
         (1000 * 60 * 60 * 24),
     ),
   );
@@ -1001,9 +1002,14 @@ export function BabyStatsDrawer({
     const sleepActivities = activities.filter(
       (a) => a.type === 'sleep' && a.duration,
     );
-    const longestSleep = sleepActivities.reduce((max, activity) => {
-      return (activity.duration || 0) > (max.duration || 0) ? activity : max;
-    }, sleepActivities[0] || null);
+    const longestSleep =
+      sleepActivities.length > 0
+        ? sleepActivities.reduce((max, activity) => {
+            return (activity.duration || 0) > (max.duration || 0)
+              ? activity
+              : max;
+          }, sleepActivities[0]!)
+        : null;
 
     // Total volume fed (all time)
     const feedingActivities = activities.filter(

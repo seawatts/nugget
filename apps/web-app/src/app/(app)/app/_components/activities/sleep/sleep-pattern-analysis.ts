@@ -367,7 +367,8 @@ export function calculateWakeWindows(
   const ageBasedInterval = getSleepIntervalByAge(ageDays);
 
   // Age-based wake window in minutes (slightly less than sleep interval)
-  const ageBasedMinutes = Math.round((ageBasedInterval - 0.5) * 60);
+  const ageBasedMinutes =
+    ageBasedInterval !== null ? Math.round((ageBasedInterval - 0.5) * 60) : 90; // Default to 90 minutes if age is unknown
 
   // Filter to completed sleep activities
   const completedSleeps = activities
@@ -398,7 +399,8 @@ export function calculateWakeWindows(
     const prevSleep = completedSleeps[i - 1];
     const currSleep = completedSleeps[i];
 
-    if (!prevSleep.endTime || !currSleep.startTime) continue;
+    if (!prevSleep || !currSleep || !prevSleep.endTime || !currSleep.startTime)
+      continue;
 
     const prevEnd = new Date(prevSleep.endTime);
     const currStart = new Date(currSleep.startTime);
