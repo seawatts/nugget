@@ -185,7 +185,7 @@ export function FeedingTrendChart({
               connectNulls={false}
               dataKey="goal"
               dot={(props) => {
-                const typedProps = props as DotProps & {
+                const typedProps = props as unknown as DotProps & {
                   payload?: { goal?: number | null };
                 };
                 return (
