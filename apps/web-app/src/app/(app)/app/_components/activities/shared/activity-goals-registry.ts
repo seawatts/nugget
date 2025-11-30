@@ -17,6 +17,10 @@ export const ACTIVITY_GOALS: Record<string, ActivityGoalConfig> = {
     },
     showProgressTracker: true,
   },
+  contrast_time: {
+    getWeeklyGoal: () => 7, // Daily contrast time recommended
+    showProgressTracker: true,
+  },
   nail_trimming: {
     getWeeklyGoal: (ageDays: number) => {
       if (ageDays <= 30) return 2; // Newborns: 2x/week
@@ -26,6 +30,10 @@ export const ACTIVITY_GOALS: Record<string, ActivityGoalConfig> = {
   },
   vitamin_d: {
     getWeeklyGoal: () => 7, // 7 per week
+    showProgressTracker: true,
+  },
+  walk: {
+    getWeeklyGoal: () => 7, // 7 per week (daily walks)
     showProgressTracker: true,
   },
 };

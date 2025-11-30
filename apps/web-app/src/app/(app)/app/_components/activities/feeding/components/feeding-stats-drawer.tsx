@@ -15,6 +15,8 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   FrequencyHeatmap,
   FrequencyInsightsComponent,
+  NightDayComparisonCard,
+  NightDayTrendChart,
   RecentActivitiesList,
   StatsDrawerWrapper,
   TimeBlockChart,
@@ -59,6 +61,7 @@ import {
   calculateFeedingStat,
   calculateLargestFeedingAmount,
   calculateLongestFeedingGap,
+  calculateNightVsDayFeedingComparison,
   calculateNursingCount,
   calculateShortestFeedingGap,
 } from '../feeding-stat-calculations';
@@ -119,6 +122,9 @@ export function FeedingStatsDrawer({
     useState<StatTimePeriod>('this_week');
   const [statCardsPivotPeriod, setStatCardsPivotPeriod] =
     useState<StatPivotPeriod>('total');
+  const [trendTimePeriod, setTrendTimePeriod] = useState<
+    'all' | 'night' | 'day'
+  >('all');
 
   // Reset pivot period if it's not available for the selected time period
   useEffect(() => {
@@ -153,10 +159,11 @@ export function FeedingStatsDrawer({
     fallbackHeatmapOption;
   const timelineOffsetDays = selectedTimelineOption.offsetDays;
 
-  // Calculate trend data based on selected time range
+  // Calculate trend data based on selected time range and time period
   const dynamicTrendData = useMemo(
-    () => calculateFeedingTrendData(activities, trendTimeRange),
-    [activities, trendTimeRange],
+    () =>
+      calculateFeedingTrendData(activities, trendTimeRange, trendTimePeriod),
+    [activities, trendTimeRange, trendTimePeriod],
   );
 
   const normalizedGoalContext = useMemo(
@@ -216,8 +223,8 @@ export function FeedingStatsDrawer({
   }, [feedingActivities, selectedHeatmapOption]);
 
   const frequencyHeatmapData = useMemo(
-    () => calculateHourlyFrequency(heatmapFeedingActivities),
-    [heatmapFeedingActivities],
+    () => calculateHourlyFrequency(heatmapFeedingActivities, heatmapMetric),
+    [heatmapFeedingActivities, heatmapMetric],
   );
 
   // Build recent activities with side information from activities array
@@ -328,6 +335,32 @@ export function FeedingStatsDrawer({
     () => calculateAverageFeedingGap(activities, statCardsTimePeriod),
     [activities, statCardsTimePeriod],
   );
+
+  // Calculate night vs day feeding comparison
+  const nightVsDayFeedingComparison = useMemo(
+    () =>
+      calculateNightVsDayFeedingComparison(
+        activities,
+        statCardsTimePeriod,
+        unit,
+      ),
+    [activities, statCardsTimePeriod, unit],
+  );
+
+  // Calculate night vs day trend data for comparison chart
+  const nightVsDayTrendData = useMemo(() => {
+    const nightTrendData = calculateFeedingTrendData(
+      activities,
+      trendTimeRange,
+      'night',
+    );
+    const dayTrendData = calculateFeedingTrendData(
+      activities,
+      trendTimeRange,
+      'day',
+    );
+    return { dayTrendData, nightTrendData };
+  }, [activities, trendTimeRange]);
 
   return (
     <StatsDrawerWrapper
@@ -512,6 +545,113 @@ export function FeedingStatsDrawer({
         </div>
       </div>
 
+      {/* Night vs Day Feeding Section */}
+      <div className="space-y-3">
+        <NightDayComparisonCard
+          dayStats={[
+            {
+              label: 'Count',
+              value: nightVsDayFeedingComparison.day.formatted.count,
+            },
+            {
+              label: 'Total Amount',
+              value: nightVsDayFeedingComparison.day.formatted.total,
+            },
+            {
+              label: 'Avg Amount',
+              value: nightVsDayFeedingComparison.day.formatted.avgAmount,
+            },
+            {
+              label: 'Avg Gap',
+              value: nightVsDayFeedingComparison.day.formatted.avgGap,
+            },
+          ]}
+          insight={
+            nightVsDayFeedingComparison.night.count > 0
+              ? `Average ${(nightVsDayFeedingComparison.night.count / 7).toFixed(1)} night feedings per night`
+              : undefined
+          }
+          nightStats={[
+            {
+              label: 'Count',
+              value: nightVsDayFeedingComparison.night.formatted.count,
+            },
+            {
+              label: 'Total Amount',
+              value: nightVsDayFeedingComparison.night.formatted.total,
+            },
+            {
+              label: 'Avg Amount',
+              value: nightVsDayFeedingComparison.night.formatted.avgAmount,
+            },
+            {
+              label: 'Avg Gap',
+              value: nightVsDayFeedingComparison.night.formatted.avgGap,
+            },
+          ]}
+          timePeriod={statCardsTimePeriod}
+          title="Night vs Day Feeding"
+        />
+
+        {/* Night vs Day Feeding Trend Chart */}
+        <Card className="p-4">
+          <div className="mb-3 space-y-3">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-foreground">
+                  Night vs Day Feeding Trend
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {dateRangeLabel}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                {/* Time Range Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      {trendTimeRange === '24h' && '24 Hours'}
+                      {trendTimeRange === '7d' && '7 Days'}
+                      {trendTimeRange === '2w' && '2 Weeks'}
+                      {trendTimeRange === '1m' && '1 Month'}
+                      {trendTimeRange === '3m' && '3 Months'}
+                      {trendTimeRange === '6m' && '6 Months'}
+                      <ChevronDown className="ml-1 size-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setTrendTimeRange('24h')}>
+                      24 Hours
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTrendTimeRange('7d')}>
+                      7 Days
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTrendTimeRange('2w')}>
+                      2 Weeks
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTrendTimeRange('1m')}>
+                      1 Month
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTrendTimeRange('3m')}>
+                      3 Months
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTrendTimeRange('6m')}>
+                      6 Months
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          </div>
+          <NightDayTrendChart
+            dayData={nightVsDayTrendData.dayTrendData}
+            metricType="count"
+            nightData={nightVsDayTrendData.nightTrendData}
+            timeRange={trendTimeRange}
+          />
+        </Card>
+      </div>
+
       {/* Count Trend Chart */}
       <Card className="p-4">
         <div className="mb-3 space-y-3">
@@ -569,6 +709,31 @@ export function FeedingStatsDrawer({
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => setCountAmountType('total')}>
                     Total
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Night/Day/All Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    {trendTimePeriod === 'all'
+                      ? 'All'
+                      : trendTimePeriod === 'night'
+                        ? 'Night'
+                        : 'Day'}
+                    <ChevronDown className="ml-1 size-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setTrendTimePeriod('all')}>
+                    All
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimePeriod('night')}>
+                    Night
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimePeriod('day')}>
+                    Day
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -650,6 +815,31 @@ export function FeedingStatsDrawer({
                     onClick={() => setAmountAmountType('average')}
                   >
                     Average
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Night/Day/All Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    {trendTimePeriod === 'all'
+                      ? 'All'
+                      : trendTimePeriod === 'night'
+                        ? 'Night'
+                        : 'Day'}
+                    <ChevronDown className="ml-1 size-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setTrendTimePeriod('all')}>
+                    All
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimePeriod('night')}>
+                    Night
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimePeriod('day')}>
+                    Day
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -761,7 +951,9 @@ export function FeedingStatsDrawer({
         <FrequencyHeatmap
           colorVar="var(--activity-feeding)"
           data={frequencyHeatmapData}
+          metric={heatmapMetric}
           timeFormat={timeFormat}
+          unit={heatmapMetric === 'amount' ? unit : undefined}
         />
       </Card>
 

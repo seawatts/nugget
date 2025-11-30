@@ -17,6 +17,7 @@ import {
   getDateRangeForPeriod,
   normalizeValueByPivot,
 } from '../shared/utils/stat-calculations';
+import { filterActivitiesByTimePeriod } from '../shared/utils/time-period-utils';
 import { formatVolumeDisplay } from '../shared/volume-utils';
 import { isLiquidFeedingActivity } from './feeding-goals';
 
@@ -672,5 +673,239 @@ export function calculateShortestFeedingGap(
     formattedValue,
     label: 'Shortest Gap',
     value: shortestGapMinutes,
+  };
+}
+
+/**
+ * Calculate night feeding statistics
+ * Night is defined as 6 PM (18:00) - 6 AM (06:00)
+ */
+export function calculateNightFeedingStat(
+  activities: Array<typeof Activities.$inferSelect>,
+  timePeriod: StatTimePeriod,
+  unit: 'ML' | 'OZ',
+): {
+  count: number;
+  totalMl: number;
+  avgAmount: number | null;
+  avgGap: number | null;
+  formatted: {
+    count: string;
+    total: string;
+    avgAmount: string;
+    avgGap: string;
+  };
+} {
+  const { startDate, endDate } = getDateRangeForPeriod(timePeriod);
+
+  // Filter to feeding activities in the time period
+  const feedingActivities = activities
+    .filter((activity) => isLiquidFeedingActivity(activity.type))
+    .filter((activity) => {
+      const activityDate = new Date(activity.startTime);
+      return activityDate >= startDate && activityDate <= endDate;
+    });
+
+  // Filter to night activities only
+  const nightFeedingActivities = filterActivitiesByTimePeriod(
+    feedingActivities,
+    'night',
+  );
+
+  const count = nightFeedingActivities.length;
+  const totalMl = nightFeedingActivities.reduce(
+    (sum, activity) => sum + (activity.amountMl || 0),
+    0,
+  );
+
+  const activitiesWithAmount = nightFeedingActivities.filter(
+    (activity) => activity.amountMl && activity.amountMl > 0,
+  );
+  const avgAmount =
+    activitiesWithAmount.length > 0
+      ? totalMl / activitiesWithAmount.length
+      : null;
+
+  // Calculate average gap
+  let avgGap: number | null = null;
+  if (nightFeedingActivities.length >= 2) {
+    const sorted = [...nightFeedingActivities].sort(
+      (a, b) =>
+        new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+    );
+    const gaps: number[] = [];
+    for (let i = 1; i < sorted.length; i++) {
+      const prevTime = new Date(sorted[i - 1].startTime);
+      const currTime = new Date(sorted[i].startTime);
+      const gapMinutes =
+        (currTime.getTime() - prevTime.getTime()) / (1000 * 60);
+      gaps.push(gapMinutes);
+    }
+    if (gaps.length > 0) {
+      avgGap = gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length;
+    }
+  }
+
+  // Format average gap
+  let avgGapFormatted = '—';
+  if (avgGap !== null) {
+    const hours = Math.floor(avgGap / 60);
+    const mins = Math.round((avgGap % 60) * 10) / 10;
+    const roundedMins = Math.round(mins * 10) / 10;
+    if (hours > 0 && roundedMins > 0) {
+      const minsStr =
+        roundedMins % 1 === 0
+          ? Math.round(roundedMins).toString()
+          : roundedMins.toFixed(1);
+      avgGapFormatted = `${hours}h ${minsStr}m`;
+    } else if (hours > 0) {
+      avgGapFormatted = `${hours}h`;
+    } else {
+      const minsStr =
+        roundedMins % 1 === 0
+          ? Math.round(roundedMins).toString()
+          : roundedMins.toFixed(1);
+      avgGapFormatted = `${minsStr}m`;
+    }
+  }
+
+  return {
+    avgAmount,
+    avgGap,
+    count,
+    formatted: {
+      avgAmount: avgAmount ? formatVolumeDisplay(avgAmount, unit, true) : '—',
+      avgGap: avgGapFormatted,
+      count: count.toString(),
+      total: formatVolumeDisplay(totalMl, unit, true),
+    },
+    totalMl,
+  };
+}
+
+/**
+ * Calculate day feeding statistics
+ * Day is defined as 6 AM (06:00) - 6 PM (18:00)
+ */
+export function calculateDayFeedingStat(
+  activities: Array<typeof Activities.$inferSelect>,
+  timePeriod: StatTimePeriod,
+  unit: 'ML' | 'OZ',
+): {
+  count: number;
+  totalMl: number;
+  avgAmount: number | null;
+  avgGap: number | null;
+  formatted: {
+    count: string;
+    total: string;
+    avgAmount: string;
+    avgGap: string;
+  };
+} {
+  const { startDate, endDate } = getDateRangeForPeriod(timePeriod);
+
+  // Filter to feeding activities in the time period
+  const feedingActivities = activities
+    .filter((activity) => isLiquidFeedingActivity(activity.type))
+    .filter((activity) => {
+      const activityDate = new Date(activity.startTime);
+      return activityDate >= startDate && activityDate <= endDate;
+    });
+
+  // Filter to day activities only
+  const dayFeedingActivities = filterActivitiesByTimePeriod(
+    feedingActivities,
+    'day',
+  );
+
+  const count = dayFeedingActivities.length;
+  const totalMl = dayFeedingActivities.reduce(
+    (sum, activity) => sum + (activity.amountMl || 0),
+    0,
+  );
+
+  const activitiesWithAmount = dayFeedingActivities.filter(
+    (activity) => activity.amountMl && activity.amountMl > 0,
+  );
+  const avgAmount =
+    activitiesWithAmount.length > 0
+      ? totalMl / activitiesWithAmount.length
+      : null;
+
+  // Calculate average gap
+  let avgGap: number | null = null;
+  if (dayFeedingActivities.length >= 2) {
+    const sorted = [...dayFeedingActivities].sort(
+      (a, b) =>
+        new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+    );
+    const gaps: number[] = [];
+    for (let i = 1; i < sorted.length; i++) {
+      const prevTime = new Date(sorted[i - 1].startTime);
+      const currTime = new Date(sorted[i].startTime);
+      const gapMinutes =
+        (currTime.getTime() - prevTime.getTime()) / (1000 * 60);
+      gaps.push(gapMinutes);
+    }
+    if (gaps.length > 0) {
+      avgGap = gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length;
+    }
+  }
+
+  // Format average gap
+  let avgGapFormatted = '—';
+  if (avgGap !== null) {
+    const hours = Math.floor(avgGap / 60);
+    const mins = Math.round((avgGap % 60) * 10) / 10;
+    const roundedMins = Math.round(mins * 10) / 10;
+    if (hours > 0 && roundedMins > 0) {
+      const minsStr =
+        roundedMins % 1 === 0
+          ? Math.round(roundedMins).toString()
+          : roundedMins.toFixed(1);
+      avgGapFormatted = `${hours}h ${minsStr}m`;
+    } else if (hours > 0) {
+      avgGapFormatted = `${hours}h`;
+    } else {
+      const minsStr =
+        roundedMins % 1 === 0
+          ? Math.round(roundedMins).toString()
+          : roundedMins.toFixed(1);
+      avgGapFormatted = `${minsStr}m`;
+    }
+  }
+
+  return {
+    avgAmount,
+    avgGap,
+    count,
+    formatted: {
+      avgAmount: avgAmount ? formatVolumeDisplay(avgAmount, unit, true) : '—',
+      avgGap: avgGapFormatted,
+      count: count.toString(),
+      total: formatVolumeDisplay(totalMl, unit, true),
+    },
+    totalMl,
+  };
+}
+
+/**
+ * Calculate night vs day feeding comparison
+ */
+export function calculateNightVsDayFeedingComparison(
+  activities: Array<typeof Activities.$inferSelect>,
+  timePeriod: StatTimePeriod,
+  unit: 'ML' | 'OZ',
+): {
+  night: ReturnType<typeof calculateNightFeedingStat>;
+  day: ReturnType<typeof calculateDayFeedingStat>;
+} {
+  const night = calculateNightFeedingStat(activities, timePeriod, unit);
+  const day = calculateDayFeedingStat(activities, timePeriod, unit);
+
+  return {
+    day,
+    night,
   };
 }

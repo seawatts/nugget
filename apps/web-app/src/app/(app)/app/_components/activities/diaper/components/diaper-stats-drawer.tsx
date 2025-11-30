@@ -16,6 +16,7 @@ import {
   FrequencyHeatmap,
   FrequencyInsightsComponent,
   getTrendContent,
+  NightDayComparisonCard,
   RecentActivitiesList,
   StatsDrawerWrapper,
   TimeBlockChart,
@@ -58,6 +59,7 @@ import {
   calculateLongestCleanPeriod,
   calculateLongestDiaperGap,
   calculateLongestDryPeriod,
+  calculateNightVsDayDiaperComparison,
   calculateShortestDiaperGap,
 } from '../diaper-stat-calculations';
 import { DiaperTrendChart } from './diaper-trend-chart';
@@ -307,6 +309,12 @@ export function DiaperStatsDrawer({
     [activities, statCardsTimePeriod],
   );
 
+  // Calculate night vs day diaper comparison
+  const nightVsDayDiaperComparison = useMemo(
+    () => calculateNightVsDayDiaperComparison(activities, statCardsTimePeriod),
+    [activities, statCardsTimePeriod],
+  );
+
   return (
     <StatsDrawerWrapper
       onOpenChange={onOpenChange}
@@ -470,6 +478,48 @@ export function DiaperStatsDrawer({
           </Card>
         </div>
       </div>
+
+      {/* Night vs Day Diaper Changes Section */}
+      <div className="space-y-3">
+        <NightDayComparisonCard
+          dayStats={[
+            {
+              label: 'Count',
+              value: nightVsDayDiaperComparison.day.formatted.count,
+            },
+            {
+              label: 'Wet Count',
+              value: nightVsDayDiaperComparison.day.formatted.wetCount,
+            },
+            {
+              label: 'Dirty Count',
+              value: nightVsDayDiaperComparison.day.formatted.dirtyCount,
+            },
+          ]}
+          insight={
+            nightVsDayDiaperComparison.night.count > 0
+              ? `Average ${(nightVsDayDiaperComparison.night.count / 7).toFixed(1)} diaper changes per night`
+              : undefined
+          }
+          nightStats={[
+            {
+              label: 'Count',
+              value: nightVsDayDiaperComparison.night.formatted.count,
+            },
+            {
+              label: 'Wet Count',
+              value: nightVsDayDiaperComparison.night.formatted.wetCount,
+            },
+            {
+              label: 'Dirty Count',
+              value: nightVsDayDiaperComparison.night.formatted.dirtyCount,
+            },
+          ]}
+          timePeriod={statCardsTimePeriod}
+          title="Night vs Day Diaper Changes"
+        />
+      </div>
+
       {/* Trend Chart Section */}
       <Card className="p-4">
         <div className="mb-3 flex items-start justify-between gap-2">

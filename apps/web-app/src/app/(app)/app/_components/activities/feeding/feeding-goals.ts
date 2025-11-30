@@ -1,6 +1,7 @@
 import type { Activities } from '@nugget/db/schema';
 import { startOfDay, startOfHour, startOfWeek } from 'date-fns';
 import { calculateWeightedInterval } from '../shared/adaptive-weighting';
+import { filterActivitiesByTimePeriod } from '../shared/utils/time-period-utils';
 import { getFeedingIntervalByAge } from './feeding-intervals';
 
 const LIQUID_FEEDING_TYPES = new Set(['feeding', 'bottle', 'nursing']);
@@ -251,6 +252,7 @@ export function calculateFeedingStatsWithComparison(
 export function calculateFeedingTrendData(
   activities: Array<typeof Activities.$inferSelect>,
   timeRange: '24h' | '7d' | '2w' | '1m' | '3m' | '6m' = '7d',
+  timePeriod?: 'all' | 'night' | 'day',
 ): Array<{ date: string; count: number; totalMl: number }> {
   // Guard against undefined activities
   if (!activities || !Array.isArray(activities)) {
@@ -264,11 +266,16 @@ export function calculateFeedingTrendData(
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
     // Filter to feedings from the last 24 hours
-    const recentFeedings = activities.filter((activity) => {
+    let recentFeedings = activities.filter((activity) => {
       const activityDate = new Date(activity.startTime);
       const isRecent = activityDate >= twentyFourHoursAgo;
       return isRecent && isLiquidFeedingActivity(activity.type);
     });
+
+    // Apply time period filter if specified
+    if (timePeriod && timePeriod !== 'all') {
+      recentFeedings = filterActivitiesByTimePeriod(recentFeedings, timePeriod);
+    }
 
     // Group by hour
     const statsByHour = new Map<string, { count: number; totalMl: number }>();
@@ -327,11 +334,16 @@ export function calculateFeedingTrendData(
   const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   // Filter to feedings from the selected time range
-  const recentFeedings = activities.filter((activity) => {
+  let recentFeedings = activities.filter((activity) => {
     const activityDate = new Date(activity.startTime);
     const isRecent = activityDate >= startDate;
     return isRecent && isLiquidFeedingActivity(activity.type);
   });
+
+  // Apply time period filter if specified
+  if (timePeriod && timePeriod !== 'all') {
+    recentFeedings = filterActivitiesByTimePeriod(recentFeedings, timePeriod);
+  }
 
   if (useWeeklyGrouping) {
     // Group by week

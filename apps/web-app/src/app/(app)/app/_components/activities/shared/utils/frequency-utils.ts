@@ -15,10 +15,13 @@ import type {
 
 /**
  * Calculate hourly frequency distribution of activities
- * Returns a heatmap showing activity count by day of week and hour
+ * Returns a heatmap showing activity count or amount by day of week and hour
+ * @param activities - Array of activities to process
+ * @param metric - 'count' to count activities, 'amount' to sum amountMl values
  */
 export function calculateHourlyFrequency(
   activities: Array<typeof Activities.$inferSelect>,
+  metric: 'count' | 'amount' = 'count',
 ): FrequencyHeatmapData[] {
   const frequencyMap = new Map<string, number>();
 
@@ -28,16 +31,23 @@ export function calculateHourlyFrequency(
     const hour = getHours(startTime);
     const key = `${dayOfWeek}-${hour}`;
 
-    frequencyMap.set(key, (frequencyMap.get(key) || 0) + 1);
+    if (metric === 'amount') {
+      // Sum up the amountMl values
+      const amountMl = activity.amountMl ?? 0;
+      frequencyMap.set(key, (frequencyMap.get(key) || 0) + amountMl);
+    } else {
+      // Count the activities
+      frequencyMap.set(key, (frequencyMap.get(key) || 0) + 1);
 
-    // For activities with duration, also count the hours they span
-    if (activity.duration && activity.duration > 60) {
-      const durationHours = Math.floor(activity.duration / 60);
-      for (let i = 1; i <= durationHours; i++) {
-        const nextHour = (hour + i) % 24;
-        const nextDay = hour + i >= 24 ? (dayOfWeek + 1) % 7 : dayOfWeek;
-        const nextKey = `${nextDay}-${nextHour}`;
-        frequencyMap.set(nextKey, (frequencyMap.get(nextKey) || 0) + 1);
+      // For activities with duration, also count the hours they span
+      if (activity.duration && activity.duration > 60) {
+        const durationHours = Math.floor(activity.duration / 60);
+        for (let i = 1; i <= durationHours; i++) {
+          const nextHour = (hour + i) % 24;
+          const nextDay = hour + i >= 24 ? (dayOfWeek + 1) % 7 : dayOfWeek;
+          const nextKey = `${nextDay}-${nextHour}`;
+          frequencyMap.set(nextKey, (frequencyMap.get(nextKey) || 0) + 1);
+        }
       }
     }
   });

@@ -11,12 +11,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@nugget/ui/dropdown-menu';
-import { subDays } from 'date-fns';
+import { startOfDay, subDays } from 'date-fns';
 import { ChevronDown } from 'lucide-react';
+import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import {
   FrequencyHeatmap,
   FrequencyInsightsComponent,
+  NightDayComparisonCard,
+  NightDayTrendChart,
   RecentActivitiesList,
   StatsDrawerWrapper,
   TimeBlockChart,
@@ -60,11 +63,15 @@ import {
   calculateAverageAwake,
   calculateLongestAwake,
   calculateLongestSleep,
+  calculateNightVsDaySleepComparison,
   calculateShortestAwake,
   calculateShortestSleep,
   calculateSleepStat,
 } from '../sleep-stat-calculations';
+import { ActivitySleepInsights } from './activity-sleep-insights';
 import { CoSleeperTrendChart } from './co-sleeper-trend-chart';
+import { ParentNapRecommendations } from './parent-nap-recommendations';
+import { SleepPatternRecommendations } from './sleep-pattern-recommendations';
 import { SleepTrendChart } from './sleep-trend-chart';
 
 interface SleepStatsDrawerProps {
@@ -117,6 +124,9 @@ export function SleepStatsDrawer({
     useState<StatTimePeriod>('this_week');
   const [statCardsPivotPeriod, setStatCardsPivotPeriod] =
     useState<StatPivotPeriod>('total');
+  const [trendTimePeriod, setTrendTimePeriod] = useState<
+    'all' | 'night' | 'day'
+  >('all');
 
   // Reset pivot period if it's not available for the selected time period
   useEffect(() => {
@@ -151,11 +161,89 @@ export function SleepStatsDrawer({
     fallbackHeatmapOption;
   const timelineOffsetDays = selectedTimelineOption.offsetDays;
 
+  // Get babyId from params for additional data fetching
+  const params = useParams<{ babyId?: string }>();
+  const babyId = params?.babyId as string | undefined;
+
+  // Get babyBirthDate from goalContext
+  const babyBirthDate = goalContext?.babyBirthDate
+    ? typeof goalContext.babyBirthDate === 'string'
+      ? new Date(goalContext.babyBirthDate)
+      : goalContext.babyBirthDate
+    : null;
+
   // Fetch family members for co-sleeper charts (only when drawer is open)
   const { data: familyMembersData } = api.familyMembers.all.useQuery(
     undefined,
     { enabled: open },
   );
+
+  // Fetch all activities for correlation analysis (last 14 days)
+  const fourteenDaysAgo = useMemo(
+    () => startOfDay(subDays(new Date(), 14)),
+    [],
+  );
+  const { data: allActivitiesForCorrelation = [] } =
+    api.activities.list.useQuery(
+      {
+        babyId: babyId ?? '',
+        limit: 500,
+        since: fourteenDaysAgo,
+      },
+      {
+        enabled: open && Boolean(babyId),
+        staleTime: 60000,
+      },
+    );
+
+  // Extract parent user IDs from family members
+  const parentIds = useMemo(
+    () => familyMembersData?.map((m) => m.userId).filter(Boolean) ?? [],
+    [familyMembersData],
+  );
+
+  // Fetch parent sleep activities (all sleep activities by family members)
+  // Note: Parent sleep activities are stored with babyId but have userId set to parent
+  const { data: allParentSleepActivitiesRaw = [] } =
+    api.activities.list.useQuery(
+      {
+        babyId: babyId ?? '',
+        limit: 500,
+        since: fourteenDaysAgo,
+        type: 'sleep',
+        userIds: parentIds.length > 0 ? parentIds : undefined,
+      },
+      {
+        enabled: open && Boolean(babyId) && parentIds.length > 0,
+        staleTime: 60000,
+      },
+    );
+
+  // Filter to only parent sleep activities (those with userId in parentIds)
+  const allParentSleepActivities = useMemo(
+    () =>
+      allParentSleepActivitiesRaw.filter((activity) =>
+        activity.userId ? parentIds.includes(activity.userId) : false,
+      ),
+    [allParentSleepActivitiesRaw, parentIds],
+  );
+
+  // Build parent names map
+  const parentNames = useMemo(() => {
+    const names: Record<
+      string,
+      { firstName: string; avatarUrl?: string | null }
+    > = {};
+    familyMembersData?.forEach((member) => {
+      if (member.userId && member.user) {
+        names[member.userId] = {
+          avatarUrl: member.user.avatarUrl,
+          firstName: member.user.firstName || 'Parent',
+        };
+      }
+    });
+    return names;
+  }, [familyMembersData]);
 
   // Transform family members data for chart components
   const transformedFamilyMembers = familyMembersData?.map((member) => ({
@@ -165,10 +253,10 @@ export function SleepStatsDrawer({
     userId: member.userId,
   }));
 
-  // Calculate trend data based on selected time range
+  // Calculate trend data based on selected time range and time period
   const dynamicTrendData = useMemo(
-    () => calculateSleepTrendData(activities, trendTimeRange),
-    [activities, trendTimeRange],
+    () => calculateSleepTrendData(activities, trendTimeRange, trendTimePeriod),
+    [activities, trendTimeRange, trendTimePeriod],
   );
 
   const normalizedGoalContext = useMemo(
@@ -306,6 +394,27 @@ export function SleepStatsDrawer({
     () => calculateAverageAwake(activities, statCardsTimePeriod),
     [activities, statCardsTimePeriod],
   );
+
+  // Calculate night vs day sleep comparison
+  const nightVsDaySleepComparison = useMemo(
+    () => calculateNightVsDaySleepComparison(activities, statCardsTimePeriod),
+    [activities, statCardsTimePeriod],
+  );
+
+  // Calculate night vs day trend data for comparison chart
+  const nightVsDayTrendData = useMemo(() => {
+    const nightTrendData = calculateSleepTrendData(
+      activities,
+      trendTimeRange,
+      'night',
+    );
+    const dayTrendData = calculateSleepTrendData(
+      activities,
+      trendTimeRange,
+      'day',
+    );
+    return { dayTrendData, nightTrendData };
+  }, [activities, trendTimeRange]);
 
   return (
     <StatsDrawerWrapper
@@ -472,6 +581,114 @@ export function SleepStatsDrawer({
           </Card>
         </div>
       </div>
+
+      {/* Night vs Day Sleep Section */}
+      <div className="space-y-3">
+        <NightDayComparisonCard
+          dayStats={[
+            {
+              label: 'Total Sleep',
+              value: nightVsDaySleepComparison.day.formatted.total,
+            },
+            {
+              label: 'Avg Duration',
+              value: nightVsDaySleepComparison.day.formatted.avgDuration,
+            },
+            {
+              label: 'Longest Nap',
+              value: nightVsDaySleepComparison.day.formatted.longestNap,
+            },
+            {
+              label: 'Nap Count',
+              value: nightVsDaySleepComparison.day.formatted.count,
+            },
+          ]}
+          insight={
+            nightVsDaySleepComparison.nightPercentage !== null
+              ? `Night sleep is ${nightVsDaySleepComparison.nightPercentage.toFixed(1)}% of total sleep`
+              : undefined
+          }
+          nightStats={[
+            {
+              label: 'Total Sleep',
+              value: nightVsDaySleepComparison.night.formatted.total,
+            },
+            {
+              label: 'Avg Duration',
+              value: nightVsDaySleepComparison.night.formatted.avgDuration,
+            },
+            {
+              label: 'Longest Sleep',
+              value: nightVsDaySleepComparison.night.formatted.longestSleep,
+            },
+            {
+              label: 'Count',
+              value: nightVsDaySleepComparison.night.formatted.count,
+            },
+          ]}
+          timePeriod={statCardsTimePeriod}
+          title="Night vs Day Sleep"
+        />
+
+        {/* Night vs Day Sleep Trend Chart */}
+        <Card className="p-4">
+          <div className="mb-3 space-y-3">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-foreground">
+                  Night vs Day Sleep Trend
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {trendDateRangeLabel}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                {/* Time Range Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      {trendTimeRange === '24h' && '24 Hours'}
+                      {trendTimeRange === '7d' && '7 Days'}
+                      {trendTimeRange === '2w' && '2 Weeks'}
+                      {trendTimeRange === '1m' && '1 Month'}
+                      {trendTimeRange === '3m' && '3 Months'}
+                      {trendTimeRange === '6m' && '6 Months'}
+                      <ChevronDown className="ml-1 size-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setTrendTimeRange('24h')}>
+                      24 Hours
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTrendTimeRange('7d')}>
+                      7 Days
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTrendTimeRange('2w')}>
+                      2 Weeks
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTrendTimeRange('1m')}>
+                      1 Month
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTrendTimeRange('3m')}>
+                      3 Months
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTrendTimeRange('6m')}>
+                      6 Months
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          </div>
+          <NightDayTrendChart
+            dayData={nightVsDayTrendData.dayTrendData}
+            metricType="hours"
+            nightData={nightVsDayTrendData.nightTrendData}
+            timeRange={trendTimeRange}
+          />
+        </Card>
+      </div>
+
       {/* Sleep Sessions Trend Chart */}
       <Card className="p-4">
         <div className="mb-3 space-y-3">
@@ -533,6 +750,31 @@ export function SleepStatsDrawer({
                     onClick={() => setSessionsAmountType('total')}
                   >
                     Total
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Night/Day/All Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    {trendTimePeriod === 'all'
+                      ? 'All'
+                      : trendTimePeriod === 'night'
+                        ? 'Night'
+                        : 'Day'}
+                    <ChevronDown className="ml-1 size-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setTrendTimePeriod('all')}>
+                    All
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimePeriod('night')}>
+                    Night
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimePeriod('day')}>
+                    Day
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -613,6 +855,31 @@ export function SleepStatsDrawer({
                     onClick={() => setHoursAmountType('average')}
                   >
                     Average
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Night/Day/All Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    {trendTimePeriod === 'all'
+                      ? 'All'
+                      : trendTimePeriod === 'night'
+                        ? 'Night'
+                        : 'Day'}
+                    <ChevronDown className="ml-1 size-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setTrendTimePeriod('all')}>
+                    All
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimePeriod('night')}>
+                    Night
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTrendTimePeriod('day')}>
+                    Day
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -1055,6 +1322,30 @@ export function SleepStatsDrawer({
             title="Sleep"
           />
         </Card>
+      )}
+
+      {/* Sleep Pattern Recommendations */}
+      <SleepPatternRecommendations
+        activities={activities}
+        babyBirthDate={babyBirthDate}
+        timeFormat={timeFormat}
+      />
+
+      {/* Activity-Sleep Correlation Insights */}
+      <ActivitySleepInsights
+        activities={allActivitiesForCorrelation}
+        babyBirthDate={babyBirthDate}
+      />
+
+      {/* Parent Nap Recommendations */}
+      {parentIds.length > 0 && (
+        <ParentNapRecommendations
+          allParentSleepActivities={allParentSleepActivities}
+          babySleepActivities={activities}
+          parentIds={parentIds}
+          parentNames={parentNames}
+          timeFormat={timeFormat}
+        />
       )}
     </StatsDrawerWrapper>
   );

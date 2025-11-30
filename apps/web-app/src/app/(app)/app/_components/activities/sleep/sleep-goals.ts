@@ -1,6 +1,7 @@
 import type { Activities } from '@nugget/db/schema';
 import { differenceInHours, format, startOfDay } from 'date-fns';
 import { calculateWeightedInterval } from '../shared/adaptive-weighting';
+import { filterActivitiesByTimePeriod } from '../shared/utils/time-period-utils';
 import { getSleepIntervalByAge } from './sleep-intervals';
 
 /**
@@ -328,6 +329,7 @@ export function calculateSleepStatsWithComparison(
 export function calculateSleepTrendData(
   activities: Array<typeof Activities.$inferSelect>,
   timeRange: '24h' | '7d' | '2w' | '1m' | '3m' | '6m' = '7d',
+  timePeriod?: 'all' | 'night' | 'day',
 ): Array<{ date: string; count: number; totalMinutes: number }> {
   const now = new Date();
 
@@ -336,12 +338,17 @@ export function calculateSleepTrendData(
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
     // Filter to sleeps from the last 24 hours
-    const recentSleeps = activities.filter((activity) => {
+    let recentSleeps = activities.filter((activity) => {
       const activityDate = new Date(activity.startTime);
       const isRecent = activityDate >= twentyFourHoursAgo;
       const isSleep = activity.type === 'sleep';
       return isRecent && isSleep;
     });
+
+    // Apply time period filter if specified
+    if (timePeriod && timePeriod !== 'all') {
+      recentSleeps = filterActivitiesByTimePeriod(recentSleeps, timePeriod);
+    }
 
     // Group by hour
     const statsByHour = new Map<
@@ -399,12 +406,17 @@ export function calculateSleepTrendData(
   const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   // Filter to sleeps from the selected time range
-  const recentSleeps = activities.filter((activity) => {
+  let recentSleeps = activities.filter((activity) => {
     const activityDate = new Date(activity.startTime);
     const isRecent = activityDate >= startDate;
     const isSleep = activity.type === 'sleep';
     return isRecent && isSleep;
   });
+
+  // Apply time period filter if specified
+  if (timePeriod && timePeriod !== 'all') {
+    recentSleeps = filterActivitiesByTimePeriod(recentSleeps, timePeriod);
+  }
 
   if (useWeeklyGrouping) {
     // Group by week

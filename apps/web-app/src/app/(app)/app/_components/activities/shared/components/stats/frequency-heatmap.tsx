@@ -3,17 +3,22 @@
 import { useMemo } from 'react';
 import type { FrequencyHeatmapData } from '../../types';
 import { formatDayOfWeek, formatHour } from '../../utils/frequency-utils';
+import { formatVolumeDisplay } from '../../volume-utils';
 
 interface FrequencyHeatmapProps {
   data: FrequencyHeatmapData[];
   colorVar: string; // CSS variable name (e.g., 'var(--activity-sleep)')
   timeFormat?: '12h' | '24h';
+  metric?: 'count' | 'amount'; // Whether to display count or amount
+  unit?: 'ML' | 'OZ'; // Unit for amount display (required when metric is 'amount')
 }
 
 export function FrequencyHeatmap({
   data,
   colorVar,
   timeFormat = '12h',
+  metric = 'count',
+  unit,
 }: FrequencyHeatmapProps) {
   const maxCount = useMemo(
     () => Math.max(...data.map((d) => d.count), 1),
@@ -22,6 +27,26 @@ export function FrequencyHeatmap({
 
   // Show only key hours for better readability
   const displayHours = [0, 3, 6, 9, 12, 15, 18, 21];
+
+  // Format value for display based on metric
+  const formatValue = (value: number): string => {
+    if (metric === 'amount' && unit) {
+      return formatVolumeDisplay(value, unit, true);
+    }
+    return String(value);
+  };
+
+  // Format tooltip label based on metric
+  const getTooltipLabel = (
+    dayName: string,
+    hour: string,
+    value: number,
+  ): string => {
+    if (metric === 'amount' && unit) {
+      return `${dayName} ${hour}: ${formatValue(value)}`;
+    }
+    return `${dayName} ${hour}: ${value} ${value === 1 ? 'activity' : 'activities'}`;
+  };
 
   return (
     <div className="w-full space-y-4">
@@ -65,11 +90,15 @@ export function FrequencyHeatmap({
                             count > 0 ? colorVar : 'hsl(var(--muted))',
                           opacity: count > 0 ? opacity : 0.3,
                         }}
-                        title={`${formatDayOfWeek(dayIndex)} ${formatHour(hour, timeFormat)}: ${count} activities`}
+                        title={getTooltipLabel(
+                          formatDayOfWeek(dayIndex),
+                          formatHour(hour, timeFormat),
+                          count,
+                        )}
                       >
                         {count > 0 && (
                           <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100">
-                            {count}
+                            {formatValue(count)}
                           </span>
                         )}
                       </div>
@@ -84,7 +113,7 @@ export function FrequencyHeatmap({
 
       {/* Legend */}
       <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-        <span>Less frequent</span>
+        <span>{metric === 'amount' ? 'Less amount' : 'Less frequent'}</span>
         <div className="flex gap-1">
           {[0.2, 0.4, 0.6, 0.8, 1].map((intensity) => (
             <div
@@ -97,7 +126,7 @@ export function FrequencyHeatmap({
             />
           ))}
         </div>
-        <span>More frequent</span>
+        <span>{metric === 'amount' ? 'More amount' : 'More frequent'}</span>
       </div>
     </div>
   );

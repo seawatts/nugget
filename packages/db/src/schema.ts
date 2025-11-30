@@ -73,6 +73,8 @@ export const activityTypeEnum = pgEnum('activityType', [
   'doctor_visit',
   'vitamin_d',
   'nail_trimming',
+  'walk',
+  'contrast_time',
 ]);
 export const activitySubjectTypeEnum = pgEnum('activitySubjectType', [
   'baby',
@@ -640,6 +642,16 @@ export const bathDetailsSchema = z.object({
   waterTemp: z.enum(['warm', 'lukewarm', 'cool']).optional(),
 });
 
+// Walk details
+export const walkDetailsSchema = z.object({
+  // Can add optional fields here in the future (e.g., duration, distance, location)
+});
+
+// Contrast time details
+export const contrastTimeDetailsSchema = z.object({
+  // Can add optional fields here in the future (e.g., material type, duration)
+});
+
 // Discriminated union for all activity details
 export const activityDetailsSchema = z
   .discriminatedUnion('type', [
@@ -673,6 +685,14 @@ export const activityDetailsSchema = z
       type: z.literal('bath'),
       ...bathDetailsSchema.shape,
     }),
+    z.object({
+      type: z.literal('walk'),
+      ...walkDetailsSchema.shape,
+    }),
+    z.object({
+      type: z.literal('contrast_time'),
+      ...contrastTimeDetailsSchema.shape,
+    }),
   ])
   .nullable();
 
@@ -691,6 +711,8 @@ export type DoctorVisitDetails = z.infer<typeof doctorVisitDetailsSchema>;
 export type VitaminDDetails = z.infer<typeof vitaminDDetailsSchema>;
 export type NailTrimmingDetails = z.infer<typeof nailTrimmingDetailsSchema>;
 export type BathDetails = z.infer<typeof bathDetailsSchema>;
+export type WalkDetails = z.infer<typeof walkDetailsSchema>;
+export type ContrastTimeDetails = z.infer<typeof contrastTimeDetailsSchema>;
 
 // ============================================================================
 // Tables - Baby Tracking

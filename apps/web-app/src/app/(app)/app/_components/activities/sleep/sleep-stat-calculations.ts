@@ -16,6 +16,14 @@ import {
   getDateRangeForPeriod,
   normalizeValueByPivot,
 } from '../shared/utils/stat-calculations';
+import { filterActivitiesByTimePeriod } from '../shared/utils/time-period-utils';
+import {
+  analyzeNightSleepQuality,
+  analyzeOptimalBedtime,
+  analyzeOptimalWakeTime,
+  type ConfidenceLevel,
+  calculateWakeWindows,
+} from './sleep-pattern-analysis';
 
 /**
  * Calculate sleep stat based on metric, time period, and pivot period
@@ -434,5 +442,285 @@ export function calculateShortestAwake(
     formattedValue: formatMinutesToHoursMinutes(shortestAwakeMinutes),
     label: 'Shortest Awake',
     value: shortestAwakeMinutes,
+  };
+}
+
+/**
+ * Calculate night sleep statistics
+ * Night is defined as 6 PM (18:00) - 6 AM (06:00)
+ */
+export function calculateNightSleepStat(
+  activities: Array<typeof Activities.$inferSelect>,
+  timePeriod: StatTimePeriod,
+): {
+  count: number;
+  totalMinutes: number;
+  avgDuration: number | null;
+  longestSleep: number | null;
+  formatted: {
+    count: string;
+    total: string;
+    avgDuration: string;
+    longestSleep: string;
+  };
+} {
+  const { startDate, endDate } = getDateRangeForPeriod(timePeriod);
+
+  // Filter to sleep activities in the time period
+  const sleepActivities = activities
+    .filter((activity) => activity.type === 'sleep')
+    .filter((activity) => {
+      const activityDate = new Date(activity.startTime);
+      return activityDate >= startDate && activityDate <= endDate;
+    });
+
+  // Filter to night activities only
+  const nightSleepActivities = filterActivitiesByTimePeriod(
+    sleepActivities,
+    'night',
+  );
+
+  const count = nightSleepActivities.length;
+  const totalMinutes = nightSleepActivities.reduce(
+    (sum, activity) => sum + (activity.duration || 0),
+    0,
+  );
+
+  const activitiesWithDuration = nightSleepActivities.filter(
+    (activity) => activity.duration && activity.duration > 0,
+  );
+  const avgDuration =
+    activitiesWithDuration.length > 0
+      ? totalMinutes / activitiesWithDuration.length
+      : null;
+
+  let longestSleep: number | null = null;
+  if (activitiesWithDuration.length > 0) {
+    longestSleep = Math.max(
+      ...activitiesWithDuration.map((activity) => activity.duration || 0),
+    );
+  }
+
+  return {
+    avgDuration,
+    count,
+    formatted: {
+      avgDuration: avgDuration ? formatMinutesToHoursMinutes(avgDuration) : '—',
+      count: count.toString(),
+      longestSleep: longestSleep
+        ? formatMinutesToHoursMinutes(longestSleep)
+        : '—',
+      total: formatMinutesToHoursMinutes(totalMinutes),
+    },
+    longestSleep,
+    totalMinutes,
+  };
+}
+
+/**
+ * Calculate day sleep (nap) statistics
+ * Day is defined as 6 AM (06:00) - 6 PM (18:00)
+ */
+export function calculateDaySleepStat(
+  activities: Array<typeof Activities.$inferSelect>,
+  timePeriod: StatTimePeriod,
+): {
+  count: number;
+  totalMinutes: number;
+  avgDuration: number | null;
+  longestNap: number | null;
+  formatted: {
+    count: string;
+    total: string;
+    avgDuration: string;
+    longestNap: string;
+  };
+} {
+  const { startDate, endDate } = getDateRangeForPeriod(timePeriod);
+
+  // Filter to sleep activities in the time period
+  const sleepActivities = activities
+    .filter((activity) => activity.type === 'sleep')
+    .filter((activity) => {
+      const activityDate = new Date(activity.startTime);
+      return activityDate >= startDate && activityDate <= endDate;
+    });
+
+  // Filter to day activities only
+  const daySleepActivities = filterActivitiesByTimePeriod(
+    sleepActivities,
+    'day',
+  );
+
+  const count = daySleepActivities.length;
+  const totalMinutes = daySleepActivities.reduce(
+    (sum, activity) => sum + (activity.duration || 0),
+    0,
+  );
+
+  const activitiesWithDuration = daySleepActivities.filter(
+    (activity) => activity.duration && activity.duration > 0,
+  );
+  const avgDuration =
+    activitiesWithDuration.length > 0
+      ? totalMinutes / activitiesWithDuration.length
+      : null;
+
+  let longestNap: number | null = null;
+  if (activitiesWithDuration.length > 0) {
+    longestNap = Math.max(
+      ...activitiesWithDuration.map((activity) => activity.duration || 0),
+    );
+  }
+
+  return {
+    avgDuration,
+    count,
+    formatted: {
+      avgDuration: avgDuration ? formatMinutesToHoursMinutes(avgDuration) : '—',
+      count: count.toString(),
+      longestNap: longestNap ? formatMinutesToHoursMinutes(longestNap) : '—',
+      total: formatMinutesToHoursMinutes(totalMinutes),
+    },
+    longestNap,
+    totalMinutes,
+  };
+}
+
+/**
+ * Calculate night vs day sleep comparison
+ */
+export function calculateNightVsDaySleepComparison(
+  activities: Array<typeof Activities.$inferSelect>,
+  timePeriod: StatTimePeriod,
+): {
+  night: ReturnType<typeof calculateNightSleepStat>;
+  day: ReturnType<typeof calculateDaySleepStat>;
+  nightPercentage: number | null;
+  dayPercentage: number | null;
+} {
+  const night = calculateNightSleepStat(activities, timePeriod);
+  const day = calculateDaySleepStat(activities, timePeriod);
+
+  const totalSleep = night.totalMinutes + day.totalMinutes;
+  const nightPercentage =
+    totalSleep > 0 ? (night.totalMinutes / totalSleep) * 100 : null;
+  const dayPercentage =
+    totalSleep > 0 ? (day.totalMinutes / totalSleep) * 100 : null;
+
+  return {
+    day,
+    dayPercentage,
+    night,
+    nightPercentage,
+  };
+}
+
+/**
+ * Calculate optimal wake time recommendation
+ */
+export function calculateOptimalWakeTime(
+  activities: Array<typeof Activities.$inferSelect>,
+  babyBirthDate: Date | null,
+): {
+  recommendedTime: Date;
+  confidence: ConfidenceLevel;
+  formattedTime: string;
+  reasoning: string;
+} {
+  const result = analyzeOptimalWakeTime(activities, babyBirthDate);
+
+  const formattedTime = result.recommendedTime.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    hour12: true,
+    minute: '2-digit',
+  });
+
+  return {
+    confidence: result.confidence,
+    formattedTime,
+    reasoning: result.reasoning,
+    recommendedTime: result.recommendedTime,
+  };
+}
+
+/**
+ * Calculate optimal bedtime recommendation
+ */
+export function calculateOptimalBedtime(
+  activities: Array<typeof Activities.$inferSelect>,
+  babyBirthDate: Date | null,
+): {
+  recommendedTime: Date;
+  confidence: ConfidenceLevel;
+  formattedTime: string;
+  reasoning: string;
+} {
+  const result = analyzeOptimalBedtime(activities, babyBirthDate);
+
+  const formattedTime = result.recommendedTime.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    hour12: true,
+    minute: '2-digit',
+  });
+
+  return {
+    confidence: result.confidence,
+    formattedTime,
+    reasoning: result.reasoning,
+    recommendedTime: result.recommendedTime,
+  };
+}
+
+/**
+ * Calculate optimal daytime wake windows
+ */
+export function calculateDaytimeWakeWindows(
+  activities: Array<typeof Activities.$inferSelect>,
+  babyBirthDate: Date | null,
+): {
+  windowMinutes: number;
+  windowHours: number;
+  formattedWindow: string;
+  confidence: ConfidenceLevel;
+  reasoning: string;
+} {
+  const result = calculateWakeWindows(activities, babyBirthDate);
+
+  const windowHours = result.windowMinutes / 60;
+  const formattedWindow = formatMinutesToHoursMinutes(result.windowMinutes);
+
+  return {
+    confidence: result.confidence,
+    formattedWindow,
+    reasoning: result.reasoning,
+    windowHours,
+    windowMinutes: result.windowMinutes,
+  };
+}
+
+/**
+ * Calculate night sleep quality metrics
+ */
+/**
+ * Calculate night sleep quality metrics
+ */
+export function calculateNightSleepMetrics(
+  activities: Array<typeof Activities.$inferSelect>,
+): {
+  averageDurationMinutes: number | null;
+  consistencyScore: number;
+  formattedAverage: string;
+  qualityTrend: 'improving' | 'stable' | 'declining';
+} {
+  const result = analyzeNightSleepQuality(activities);
+
+  return {
+    averageDurationMinutes: result.averageDurationMinutes,
+    consistencyScore: result.consistencyScore,
+    formattedAverage: result.averageDurationMinutes
+      ? formatMinutesToHoursMinutes(result.averageDurationMinutes)
+      : '—',
+    qualityTrend: result.qualityTrend,
   };
 }

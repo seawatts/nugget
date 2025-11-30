@@ -14,6 +14,8 @@ import {
   Bath,
   Droplet,
   Droplets,
+  Eye,
+  Footprints,
   Heart,
   MessageSquare,
   Milk,
@@ -39,7 +41,9 @@ import { TimelineDoctorVisitDrawer } from '../doctor-visit/timeline-doctor-visit
 import { TimelineFeedingDrawer } from '../feeding/timeline-feeding-drawer';
 import { TimelineNailTrimmingDrawer } from '../nail-trimming/timeline-nail-trimming-drawer';
 import { TimelinePumpingDrawer } from '../pumping/timeline-pumping-drawer';
+import { getSimpleActivityConfig } from '../shared/activity-config-registry';
 import { getDisplayNotes } from '../shared/activity-utils';
+import { GenericSimpleActivityTimelineDrawer } from '../shared/components/generic-simple-activity-timeline-drawer';
 import { TimelineDrawerWrapper } from '../shared/components/timeline-drawer-wrapper';
 import {
   formatLengthDisplay,
@@ -159,6 +163,20 @@ const activities = [
     textColor: 'text-activity-bath-foreground',
   },
   {
+    color: 'bg-activity-walk',
+    icon: Footprints,
+    id: 'walk',
+    label: 'Walk',
+    textColor: 'text-activity-walk-foreground',
+  },
+  {
+    color: 'bg-activity-contrast-time',
+    icon: Eye,
+    id: 'contrast_time',
+    label: 'Contrast Time',
+    textColor: 'text-activity-contrast-time-foreground',
+  },
+  {
     color: 'bg-yellow-500',
     icon: Award,
     id: 'milestone',
@@ -207,6 +225,7 @@ const activityIcons: Record<string, typeof Moon> = {
   bath: Bath,
   bottle: Milk,
   chat: MessageSquare,
+  contrast_time: Eye,
   diaper: Baby,
   doctor_visit: Stethoscope,
   growth: Scale,
@@ -222,6 +241,7 @@ const activityIcons: Record<string, typeof Moon> = {
   temperature: Thermometer,
   'tummy-time': Timer,
   vitamin_d: Pill,
+  walk: Footprints,
 };
 
 const activityColors: Record<string, string> = {
@@ -229,6 +249,7 @@ const activityColors: Record<string, string> = {
   bath: 'border-l-activity-bath',
   bottle: 'border-l-activity-feeding',
   chat: 'border-l-activity-chat',
+  contrast_time: 'border-l-activity-contrast-time',
   diaper: 'border-l-activity-diaper',
   doctor_visit: 'border-l-activity-doctor-visit',
   growth: 'border-l-activity-growth',
@@ -244,6 +265,7 @@ const activityColors: Record<string, string> = {
   temperature: 'border-l-activity-temperature',
   'tummy-time': 'border-l-activity-tummy-time',
   vitamin_d: 'border-l-activity-vitamin-d',
+  walk: 'border-l-activity-walk',
 };
 
 const activityIconColors: Record<string, string> = {
@@ -251,6 +273,7 @@ const activityIconColors: Record<string, string> = {
   bath: 'text-activity-bath',
   bottle: 'text-activity-feeding',
   chat: 'text-activity-chat',
+  contrast_time: 'text-activity-contrast-time',
   diaper: 'text-activity-diaper',
   growth: 'text-activity-growth',
   medicine: 'text-activity-medicine',
@@ -265,6 +288,7 @@ const activityIconColors: Record<string, string> = {
   temperature: 'text-activity-temperature',
   'tummy-time': 'text-activity-tummy-time',
   vitamin_d: 'text-activity-vitamin-d',
+  walk: 'text-activity-walk',
 };
 
 // Activity type to label mapping for proper display names
@@ -273,6 +297,7 @@ const activityLabels: Record<string, string> = {
   bath: 'Bath',
   bottle: 'Bottle',
   chat: 'Chat',
+  contrast_time: 'Contrast Time',
   diaper: 'Diaper',
   doctor_visit: 'Doctor Visit',
   growth: 'Growth',
@@ -289,6 +314,7 @@ const activityLabels: Record<string, string> = {
   tummy_time: 'Tummy Time',
   'tummy-time': 'Tummy Time',
   vitamin_d: 'Vitamin D',
+  walk: 'Walk',
 };
 
 function groupTimelineItemsByDay(
@@ -1310,20 +1336,83 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
       )}
 
       {/* Bath Drawer */}
-      {editingActivity && openDrawer === 'bath' && (
-        <TimelineDrawerWrapper
-          isOpen={true}
-          onClose={handleDrawerClose}
-          title="Edit Bath"
-        >
-          <TimelineBathDrawer
-            babyId={babyId}
-            existingActivity={editingActivity}
-            isOpen={true}
-            onClose={handleDrawerClose}
-          />
-        </TimelineDrawerWrapper>
-      )}
+      {editingActivity &&
+        openDrawer === 'bath' &&
+        (() => {
+          const bathConfig = getSimpleActivityConfig('bath');
+          return bathConfig ? (
+            <TimelineDrawerWrapper
+              isOpen={true}
+              onClose={handleDrawerClose}
+              title="Edit Bath"
+            >
+              <GenericSimpleActivityTimelineDrawer
+                babyId={babyId}
+                config={bathConfig}
+                existingActivity={editingActivity}
+                isOpen={true}
+                onClose={handleDrawerClose}
+              />
+            </TimelineDrawerWrapper>
+          ) : (
+            <TimelineDrawerWrapper
+              isOpen={true}
+              onClose={handleDrawerClose}
+              title="Edit Bath"
+            >
+              <TimelineBathDrawer
+                babyId={babyId}
+                existingActivity={editingActivity}
+                isOpen={true}
+                onClose={handleDrawerClose}
+              />
+            </TimelineDrawerWrapper>
+          );
+        })()}
+
+      {/* Walk Drawer */}
+      {editingActivity &&
+        openDrawer === 'walk' &&
+        (() => {
+          const walkConfig = getSimpleActivityConfig('walk');
+          return walkConfig ? (
+            <TimelineDrawerWrapper
+              isOpen={true}
+              onClose={handleDrawerClose}
+              title="Edit Walk"
+            >
+              <GenericSimpleActivityTimelineDrawer
+                babyId={babyId}
+                config={walkConfig}
+                existingActivity={editingActivity}
+                isOpen={true}
+                onClose={handleDrawerClose}
+              />
+            </TimelineDrawerWrapper>
+          ) : null;
+        })()}
+
+      {/* Contrast Time Drawer */}
+      {editingActivity &&
+        openDrawer === 'contrast_time' &&
+        (() => {
+          const contrastTimeConfig = getSimpleActivityConfig('contrast_time');
+          return contrastTimeConfig ? (
+            <TimelineDrawerWrapper
+              isOpen={true}
+              onClose={handleDrawerClose}
+              title="Edit Contrast Time"
+            >
+              <GenericSimpleActivityTimelineDrawer
+                babyId={babyId}
+                config={contrastTimeConfig}
+                existingActivity={editingActivity}
+                isOpen={true}
+                onClose={handleDrawerClose}
+              />
+            </TimelineDrawerWrapper>
+          ) : null;
+        })()}
 
       {/* Chat Dialog */}
       {selectedChatData && (

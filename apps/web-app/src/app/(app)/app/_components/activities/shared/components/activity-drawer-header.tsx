@@ -20,6 +20,7 @@ interface ActivityDrawerHeaderProps {
 const ACTIVITY_BG_CLASSES: Record<ActivityType, string> = {
   bath: 'bg-activity-bath',
   bottle: 'bg-activity-feeding',
+  contrast_time: 'bg-activity-contrast-time',
   diaper: 'bg-activity-diaper',
   doctor_visit: 'bg-activity-doctor-visit',
   feeding: 'bg-activity-feeding',
@@ -34,6 +35,7 @@ const ACTIVITY_BG_CLASSES: Record<ActivityType, string> = {
   temperature: 'bg-activity-temperature',
   tummy_time: 'bg-activity-tummy-time',
   vitamin_d: 'bg-activity-medicine',
+  walk: 'bg-activity-walk',
 };
 
 export function ActivityDrawerHeader({

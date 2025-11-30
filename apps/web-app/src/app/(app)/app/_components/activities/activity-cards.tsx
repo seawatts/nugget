@@ -36,10 +36,12 @@ import { QuickActionFeedingCard } from './feeding/quick-action-feeding-card';
 import { PredictiveNailTrimmingCard } from './nail-trimming/predictive-nail-trimming-card';
 import { PredictivePumpingCard } from './pumping/predictive-pumping-card';
 import { QuickActionPumpingCard } from './pumping/quick-action-pumping-card';
+import { getSimpleActivityConfig } from './shared/activity-config-registry';
 import {
   formatActivityForToast,
   getDefaultActivityData,
 } from './shared/activity-utils';
+import { GenericSimpleActivityCard } from './shared/components/generic-simple-activity-card';
 import { PredictiveSleepCard } from './sleep/predictive-sleep-card';
 import { QuickActionSleepCard } from './sleep/quick-action-sleep-card';
 import { PredictiveVitaminDCard } from './vitamin-d/predictive-vitamin-d-card';
@@ -551,21 +553,80 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
               onCardClick={() => setOpenDrawer('doctor_visit')}
             />
           )}
-        <div className="col-span-2">
-          <PredictiveVitaminDCard onActivityLogged={handleActivityLogged} />
-        </div>
-        {baby?.showNailTrimmingCard !== false && (
-          <div className="col-span-2">
-            <PredictiveNailTrimmingCard
-              onActivityLogged={handleActivityLogged}
-            />
-          </div>
-        )}
-        {baby?.showBathCard !== false && (
-          <div className="col-span-2">
-            <PredictiveBathCard onActivityLogged={handleActivityLogged} />
-          </div>
-        )}
+        {/* Simple activities using generic component */}
+        {(() => {
+          const vitaminDConfig = getSimpleActivityConfig('vitamin_d');
+          return vitaminDConfig ? (
+            <div className="col-span-2">
+              <GenericSimpleActivityCard
+                config={vitaminDConfig}
+                onActivityLogged={handleActivityLogged}
+              />
+            </div>
+          ) : (
+            <div className="col-span-2">
+              <PredictiveVitaminDCard onActivityLogged={handleActivityLogged} />
+            </div>
+          );
+        })()}
+        {baby?.showNailTrimmingCard !== false &&
+          (() => {
+            const nailTrimmingConfig = getSimpleActivityConfig('nail_trimming');
+            return nailTrimmingConfig ? (
+              <div className="col-span-2">
+                <GenericSimpleActivityCard
+                  config={nailTrimmingConfig}
+                  onActivityLogged={handleActivityLogged}
+                />
+              </div>
+            ) : (
+              <div className="col-span-2">
+                <PredictiveNailTrimmingCard
+                  onActivityLogged={handleActivityLogged}
+                />
+              </div>
+            );
+          })()}
+        {baby?.showBathCard !== false &&
+          (() => {
+            const bathConfig = getSimpleActivityConfig('bath');
+            return bathConfig ? (
+              <div className="col-span-2">
+                <GenericSimpleActivityCard
+                  config={bathConfig}
+                  onActivityLogged={handleActivityLogged}
+                />
+              </div>
+            ) : (
+              <div className="col-span-2">
+                <PredictiveBathCard onActivityLogged={handleActivityLogged} />
+              </div>
+            );
+          })()}
+        {/* Walk activity */}
+        {(() => {
+          const walkConfig = getSimpleActivityConfig('walk');
+          return walkConfig ? (
+            <div className="col-span-2">
+              <GenericSimpleActivityCard
+                config={walkConfig}
+                onActivityLogged={handleActivityLogged}
+              />
+            </div>
+          ) : null;
+        })()}
+        {/* Contrast Time activity */}
+        {(() => {
+          const contrastTimeConfig = getSimpleActivityConfig('contrast_time');
+          return contrastTimeConfig ? (
+            <div className="col-span-2">
+              <GenericSimpleActivityCard
+                config={contrastTimeConfig}
+                onActivityLogged={handleActivityLogged}
+              />
+            </div>
+          ) : null;
+        })()}
       </div>
 
       {/* Activity Drawers */}

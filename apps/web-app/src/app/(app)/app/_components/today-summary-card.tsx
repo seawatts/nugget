@@ -2,20 +2,23 @@
 
 import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@nugget/ui/accordion';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
 import { Button } from '@nugget/ui/button';
+import { Skeleton } from '@nugget/ui/components/skeleton';
 import { Icons } from '@nugget/ui/custom/icons';
 import { NuggetAvatar } from '@nugget/ui/custom/nugget-avatar';
 import { cn } from '@nugget/ui/lib/utils';
 import { toast } from '@nugget/ui/sonner';
 import { startOfDay } from 'date-fns';
-import { Award, Droplet, Droplets, Milk, Moon, StopCircle } from 'lucide-react';
+import {
+  Award,
+  BarChart3,
+  Droplet,
+  Droplets,
+  Milk,
+  Moon,
+  StopCircle,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { memo, useEffect, useMemo, useState } from 'react';
@@ -39,6 +42,7 @@ import { formatCompactRelativeTimeWithAgo } from './activities/shared/utils/form
 import { SleepActivityDrawer } from './activities/sleep/sleep-activity-drawer';
 import { TimelineSleepDrawer } from './activities/sleep/timeline-sleep-drawer';
 import { useActivityMutations } from './activities/use-activity-mutations';
+import { BabyStatsDrawer } from './baby-stats-drawer';
 
 interface TodaySummaryCardProps {
   babyBirthDate?: Date | null;
@@ -48,9 +52,21 @@ interface TodaySummaryCardProps {
   measurementUnit?: 'metric' | 'imperial';
 }
 
+type AgeUnit = 'days' | 'weeks' | 'months' | 'years' | 'detailed';
+
 // Memoized component to prevent parent re-renders when age updates
 const LiveBabyAge = memo(({ birthDate }: { birthDate: Date }) => {
   const [age, setAge] = useState('');
+  const [ageUnit, setAgeUnit] = useState<AgeUnit>('days');
+
+  const cycleAgeUnit = () => {
+    setAgeUnit((prev) => {
+      const units: AgeUnit[] = ['days', 'weeks', 'months', 'years', 'detailed'];
+      const currentIndex = units.indexOf(prev);
+      const nextIndex = (currentIndex + 1) % units.length;
+      return units[nextIndex]!;
+    });
+  };
 
   useEffect(() => {
     function updateAge() {
@@ -58,31 +74,102 @@ const LiveBabyAge = memo(({ birthDate }: { birthDate: Date }) => {
       const birth = new Date(birthDate);
       const diffMs = now.getTime() - birth.getTime();
 
-      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-      const hours = Math.floor(
-        (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-      );
-      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+      const totalDays = diffMs / (1000 * 60 * 60 * 24);
 
-      if (days > 0) {
-        setAge(`${days}d ${hours}h ${minutes}m ${seconds}s`);
-      } else if (hours > 0) {
-        setAge(`${hours}h ${minutes}m ${seconds}s`);
-      } else if (minutes > 0) {
-        setAge(`${minutes}m ${seconds}s`);
-      } else {
-        setAge(`${seconds}s`);
+      let formattedAge = '';
+
+      switch (ageUnit) {
+        case 'days': {
+          const days = Math.floor(totalDays);
+          formattedAge = `${days} ${days === 1 ? 'day' : 'days'}`;
+          break;
+        }
+        case 'weeks': {
+          const weeks = Math.floor(totalDays / 7);
+          const remainingDays = Math.floor(totalDays % 7);
+          if (weeks > 0) {
+            formattedAge =
+              remainingDays > 0
+                ? `${weeks}w ${remainingDays}d`
+                : `${weeks} ${weeks === 1 ? 'week' : 'weeks'}`;
+          } else {
+            formattedAge = `${remainingDays} ${remainingDays === 1 ? 'day' : 'days'}`;
+          }
+          break;
+        }
+        case 'months': {
+          // Approximate months as 30.44 days (average days per month)
+          const months = totalDays / 30.44;
+          const wholeMonths = Math.floor(months);
+          const remainingDays = Math.floor(totalDays % 30.44);
+          if (wholeMonths > 0) {
+            formattedAge =
+              remainingDays > 0
+                ? `${wholeMonths}m ${remainingDays}d`
+                : `${wholeMonths} ${wholeMonths === 1 ? 'month' : 'months'}`;
+          } else {
+            formattedAge = `${remainingDays} ${remainingDays === 1 ? 'day' : 'days'}`;
+          }
+          break;
+        }
+        case 'years': {
+          // Approximate years as 365.25 days (accounting for leap years)
+          const years = totalDays / 365.25;
+          const wholeYears = Math.floor(years);
+          const remainingMonths = Math.floor((totalDays % 365.25) / 30.44);
+          if (wholeYears > 0) {
+            formattedAge =
+              remainingMonths > 0
+                ? `${wholeYears}y ${remainingMonths}m`
+                : `${wholeYears} ${wholeYears === 1 ? 'year' : 'years'}`;
+          } else {
+            formattedAge =
+              remainingMonths > 0
+                ? `${remainingMonths} ${remainingMonths === 1 ? 'month' : 'months'}`
+                : `${Math.floor(totalDays)} ${Math.floor(totalDays) === 1 ? 'day' : 'days'}`;
+          }
+          break;
+        }
+        case 'detailed': {
+          const days = Math.floor(totalDays);
+          const hours = Math.floor(
+            (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+          );
+          const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+          if (days > 0) {
+            formattedAge = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+          } else if (hours > 0) {
+            formattedAge = `${hours}h ${minutes}m ${seconds}s`;
+          } else if (minutes > 0) {
+            formattedAge = `${minutes}m ${seconds}s`;
+          } else {
+            formattedAge = `${seconds}s`;
+          }
+          break;
+        }
       }
+
+      setAge(formattedAge);
     }
 
     updateAge();
     const interval = setInterval(updateAge, 1000); // Update every second
 
     return () => clearInterval(interval);
-  }, [birthDate]);
+  }, [birthDate, ageUnit]);
 
-  return <>{age}</>;
+  return (
+    <button
+      className="cursor-pointer hover:opacity-70 transition-opacity bg-transparent border-none p-0 text-inherit"
+      onClick={cycleAgeUnit}
+      title="Click to cycle between days, weeks, months, years, and detailed timestamp"
+      type="button"
+    >
+      {age}
+    </button>
+  );
 });
 
 LiveBabyAge.displayName = 'LiveBabyAge';
@@ -99,11 +186,14 @@ export function TodaySummaryCard({
   const babyId = params.babyId as string;
 
   // Fetch today's activities using optimized query (non-blocking)
-  const { data: todayActivitiesData = [] } =
-    api.activities.getTodaySummary.useQuery(
-      { babyId: babyId ?? '' },
-      { enabled: Boolean(babyId) },
-    );
+  const {
+    data: todayActivitiesData = [],
+    isLoading: todaySummaryIsLoading,
+    isFetching: todaySummaryIsFetching,
+  } = api.activities.getTodaySummary.useQuery(
+    { babyId: babyId ?? '' },
+    { enabled: Boolean(babyId) },
+  );
 
   const { data: celebrationData } =
     api.celebrations.getCarouselContent.useQuery(
@@ -137,6 +227,7 @@ export function TodaySummaryCard({
     'bottle' | 'nursing' | 'wet' | 'dirty' | 'sleep-timer' | null
   >(null);
   const [showSleepConfirmation, setShowSleepConfirmation] = useState(false);
+  const [showStatsDrawer, setShowStatsDrawer] = useState(false);
   const [pendingActivity, setPendingActivity] = useState<{
     type: 'bottle' | 'nursing' | 'wet' | 'dirty';
     data?: {
@@ -178,7 +269,11 @@ export function TodaySummaryCard({
     );
 
   // Fetch feeding prediction data
-  const { data: feedingQueryData } = api.activities.getUpcomingFeeding.useQuery(
+  const {
+    data: feedingQueryData,
+    isLoading: feedingIsLoading,
+    isFetching: feedingIsFetching,
+  } = api.activities.getUpcomingFeeding.useQuery(
     { babyId: babyId ?? '' },
     { enabled: Boolean(babyId) },
   );
@@ -972,12 +1067,20 @@ export function TodaySummaryCard({
   const SleepIcon = sleepTheme.icon;
 
   // Fetch diaper and sleep prediction data for last activities with user info
-  const { data: diaperQueryData } = api.activities.getUpcomingDiaper.useQuery(
+  const {
+    data: diaperQueryData,
+    isLoading: diaperIsLoading,
+    isFetching: diaperIsFetching,
+  } = api.activities.getUpcomingDiaper.useQuery(
     { babyId: babyId ?? '' },
     { enabled: Boolean(babyId) },
   );
 
-  const { data: sleepQueryData } = api.activities.getUpcomingSleep.useQuery(
+  const {
+    data: sleepQueryData,
+    isLoading: sleepIsLoading,
+    isFetching: sleepIsFetching,
+  } = api.activities.getUpcomingSleep.useQuery(
     { babyId: babyId ?? '' },
     { enabled: Boolean(babyId) },
   );
@@ -1218,276 +1321,290 @@ export function TodaySummaryCard({
 
   return (
     <div className="rounded-2xl border border-border/40 bg-linear-to-br from-activity-vitamin-d via-activity-nail-trimming/95 to-activity-feeding backdrop-blur-xl p-6 shadow-xl shadow-activity-nail-trimming/20">
-      <Accordion
-        className="w-full"
-        collapsible
-        defaultValue="activity-cards"
-        type="single"
-      >
-        <AccordionItem className="border-0" value="activity-cards">
-          <AccordionTrigger className="hover:no-underline py-0 mb-0 data-[state=open]:mb-2 cursor-pointer items-center [&>svg]:translate-y-0">
-            <div className="flex items-center justify-between w-full pr-4">
-              <div className="flex items-center gap-2.5">
-                <Link
-                  className="relative flex items-center justify-center size-9 rounded-full bg-linear-to-br from-primary to-primary/80 p-[2px] shadow-md shadow-primary/20 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
-                  href="/app/settings/baby"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                >
-                  <div className="size-full rounded-full bg-card flex items-center justify-center p-0.5">
-                    <NuggetAvatar
-                      backgroundColor={babyAvatarBackgroundColor || undefined}
-                      image={
-                        !babyAvatarBackgroundColor && babyPhotoUrl
-                          ? babyPhotoUrl
-                          : undefined
-                      }
-                      name={babyName}
-                      size="sm"
+      <div className="mb-4">
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-2.5">
+            <Link
+              className="relative flex items-center justify-center size-9 rounded-full bg-linear-to-br from-primary to-primary/80 p-[2px] shadow-md shadow-primary/20 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+              href="/app/settings/baby"
+            >
+              <div className="size-full rounded-full bg-card flex items-center justify-center p-0.5">
+                <NuggetAvatar
+                  backgroundColor={babyAvatarBackgroundColor || undefined}
+                  image={
+                    !babyAvatarBackgroundColor && babyPhotoUrl
+                      ? babyPhotoUrl
+                      : undefined
+                  }
+                  name={babyName}
+                  size="sm"
+                />
+              </div>
+            </Link>
+            <div className="flex flex-col">
+              <h2 className="text-lg font-semibold text-foreground leading-tight">
+                {babyName ? `${babyName}'s Day` : "Today's Summary"}
+              </h2>
+              {babyBirthDate && (
+                <span className="text-xs text-foreground/80 font-mono leading-tight">
+                  <LiveBabyAge birthDate={babyBirthDate} />
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+              onClick={() => setShowStatsDrawer(true)}
+              title="View statistics"
+              type="button"
+            >
+              <BarChart3 className="size-5 opacity-70" />
+            </button>
+            {(todaySummaryIsFetching && !todaySummaryIsLoading) ||
+            (feedingIsFetching && !feedingIsLoading) ||
+            (diaperIsFetching && !diaperIsLoading) ||
+            (sleepIsFetching && !sleepIsLoading) ? (
+              <Icons.Spinner className="animate-spin opacity-70" size="xs" />
+            ) : null}
+            <span className="text-sm text-foreground/80 font-medium">
+              {allActivities.length}{' '}
+              {allActivities.length === 1 ? 'activity' : 'activities'}
+            </span>
+          </div>
+        </div>
+        {upcomingCelebration && (
+          <div className="mt-3 flex items-start gap-3 rounded-xl border border-white/20 bg-white/10 px-5 py-4 text-sm text-foreground/90">
+            <div className="shrink-0 rounded-full bg-white/20 p-2 text-activity-feeding">
+              <Award className="size-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">
+                {upcomingCelebration.daysUntil === 0
+                  ? `Today is ${upcomingCelebration.babyLabel}'s ${upcomingCelebration.title}!`
+                  : upcomingCelebration.daysUntil === 1
+                    ? `1 day to ${upcomingCelebration.babyLabel}'s ${upcomingCelebration.title}!`
+                    : `${upcomingCelebration.daysUntil} days to ${upcomingCelebration.babyLabel}'s ${upcomingCelebration.title}!`}
+              </p>
+              <p className="text-xs text-foreground/80 leading-snug">
+                Come back then to see the celebration.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="pt-0">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+          {/* Bottle Button */}
+          <Button
+            className={cn(
+              'flex flex-col items-center justify-center h-auto py-3 gap-1',
+              'bg-white/20 hover:bg-white/30 active:bg-white/40',
+              feedingTheme.textColor,
+            )}
+            disabled={creatingType !== null}
+            onClick={handleBottleClick}
+            variant="ghost"
+          >
+            <Milk className="size-5" />
+            <span className="text-xs font-medium">Bottle</span>
+            {feedingIsLoading && !lastBottleTime ? (
+              <Skeleton className="h-3 w-16 mx-auto" />
+            ) : lastBottleTime && lastBottleExactTime ? (
+              <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
+                <span>{lastBottleTime}</span>
+                {lastBottleUser && (
+                  <Avatar className="size-4 shrink-0">
+                    <AvatarImage
+                      alt={lastBottleUser.name}
+                      src={lastBottleUser.avatar || ''}
                     />
-                  </div>
-                </Link>
-                <div className="flex flex-col">
-                  <h2 className="text-lg font-semibold text-foreground leading-tight">
-                    {babyName ? `${babyName}'s Day` : "Today's Summary"}
-                  </h2>
-                  {babyBirthDate && (
-                    <span className="text-xs text-foreground/80 font-mono leading-tight">
-                      <LiveBabyAge birthDate={babyBirthDate} />
-                    </span>
+                    <AvatarFallback className="text-[8px]">
+                      {lastBottleUser.initials}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            ) : null}
+          </Button>
+
+          {/* Nursing Button */}
+          <Button
+            className={cn(
+              'flex flex-col items-center justify-center h-auto py-3 gap-1',
+              'bg-white/20 hover:bg-white/30 active:bg-white/40',
+              feedingTheme.textColor,
+            )}
+            disabled={creatingType !== null}
+            onClick={handleQuickNursing}
+            variant="ghost"
+          >
+            {creatingType === 'nursing' ? (
+              <Icons.Spinner className="size-5" />
+            ) : (
+              <Droplet className="size-5" />
+            )}
+            <span className="text-xs font-medium">Nursing</span>
+            {feedingIsLoading && !lastNursingTime ? (
+              <Skeleton className="h-3 w-16 mx-auto" />
+            ) : lastNursingTime && lastNursingExactTime ? (
+              <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
+                <span>{lastNursingTime}</span>
+                {lastNursingUser && (
+                  <Avatar className="size-4 shrink-0">
+                    <AvatarImage
+                      alt={lastNursingUser.name}
+                      src={lastNursingUser.avatar || ''}
+                    />
+                    <AvatarFallback className="text-[8px]">
+                      {lastNursingUser.initials}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            ) : null}
+          </Button>
+
+          {/* Pee Button */}
+          <Button
+            className={cn(
+              'flex flex-col items-center justify-center h-auto py-3 gap-1',
+              'bg-white/20 hover:bg-white/30 active:bg-white/40',
+              diaperTheme.textColor,
+            )}
+            disabled={creatingType !== null}
+            onClick={() => handleDiaperClick('wet')}
+            variant="ghost"
+          >
+            {creatingType === 'wet' ? (
+              <Icons.Spinner className="size-5" />
+            ) : (
+              <Droplet className="size-5" />
+            )}
+            <span className="text-xs font-medium">Pee</span>
+            {diaperIsLoading && !lastWetDiaperTime ? (
+              <Skeleton className="h-3 w-16 mx-auto" />
+            ) : lastWetDiaperTime && lastWetDiaperExactTime ? (
+              <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
+                <span>{lastWetDiaperTime}</span>
+                {lastWetDiaperUser && (
+                  <Avatar className="size-4 shrink-0">
+                    <AvatarImage
+                      alt={lastWetDiaperUser.name}
+                      src={lastWetDiaperUser.avatar || ''}
+                    />
+                    <AvatarFallback className="text-[8px]">
+                      {lastWetDiaperUser.initials}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            ) : null}
+          </Button>
+
+          {/* Poop Button */}
+          <Button
+            className={cn(
+              'flex flex-col items-center justify-center h-auto py-3 gap-1',
+              'bg-white/20 hover:bg-white/30 active:bg-white/40',
+              diaperTheme.textColor,
+            )}
+            disabled={creatingType !== null}
+            onClick={() => handleDiaperClick('dirty')}
+            variant="ghost"
+          >
+            {creatingType === 'dirty' ? (
+              <Icons.Spinner className="size-5" />
+            ) : (
+              <Droplets className="size-5" />
+            )}
+            <span className="text-xs font-medium">Poop</span>
+            {diaperIsLoading && !lastDirtyDiaperTime ? (
+              <Skeleton className="h-3 w-16 mx-auto" />
+            ) : lastDirtyDiaperTime && lastDirtyDiaperExactTime ? (
+              <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
+                <span>{lastDirtyDiaperTime}</span>
+                {lastDirtyDiaperUser && (
+                  <Avatar className="size-4 shrink-0">
+                    <AvatarImage
+                      alt={lastDirtyDiaperUser.name}
+                      src={lastDirtyDiaperUser.avatar || ''}
+                    />
+                    <AvatarFallback className="text-[8px]">
+                      {lastDirtyDiaperUser.initials}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            ) : null}
+          </Button>
+
+          {/* Sleep Actions */}
+          <div className="col-span-2 md:col-span-3 grid grid-cols-2 gap-2">
+            <Button
+              className={cn(
+                'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                inProgressActivity
+                  ? 'bg-destructive/90 hover:bg-destructive active:bg-destructive text-destructive-foreground'
+                  : 'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                inProgressActivity ? '' : sleepTheme.textColor,
+              )}
+              disabled={creatingType !== null}
+              onClick={handleSleepTimerClick}
+              variant="ghost"
+            >
+              {creatingType === 'sleep-timer' ? (
+                <Icons.Spinner className="size-5" />
+              ) : inProgressActivity ? (
+                <StopCircle className="size-5" />
+              ) : (
+                <Moon className="size-5" />
+              )}
+              <span className="text-xs font-medium">
+                {inProgressActivity ? 'Stop Timer' : 'Start Timer'}
+              </span>
+              {inProgressActivity && sleepDurationMinutes > 0 ? (
+                <span className="text-xs opacity-80">
+                  {formatElapsedTime(sleepDurationMinutes)}
+                </span>
+              ) : sleepIsLoading && !lastSleepTime ? (
+                <Skeleton className="h-3 w-16 mx-auto" />
+              ) : lastSleepTime && lastSleepExactTime ? (
+                <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
+                  <span>{lastSleepTime}</span>
+                  {lastSleepUser && (
+                    <Avatar className="size-4 shrink-0">
+                      <AvatarImage
+                        alt={lastSleepUser.name}
+                        src={lastSleepUser.avatar || ''}
+                      />
+                      <AvatarFallback className="text-[8px]">
+                        {lastSleepUser.initials}
+                      </AvatarFallback>
+                    </Avatar>
                   )}
                 </div>
-              </div>
-              <span className="text-sm text-foreground/80 font-medium">
-                {allActivities.length}{' '}
-                {allActivities.length === 1 ? 'activity' : 'activities'}
+              ) : null}
+            </Button>
+            <Button
+              className={cn(
+                'flex flex-col items-center justify-center h-auto py-3 gap-1',
+                'bg-white/20 hover:bg-white/30 active:bg-white/40',
+                sleepTheme.textColor,
+              )}
+              disabled={creatingType !== null}
+              onClick={handleManualSleepClick}
+              variant="ghost"
+            >
+              <SleepIcon className="size-5" />
+              <span className="text-xs font-medium">Log Sleep</span>
+              <span className="text-xs opacity-70 leading-tight">
+                Manual entry
               </span>
-            </div>
-          </AccordionTrigger>
-          {upcomingCelebration && (
-            <div className="mt-2 mb-1.5 data-[state=open]:mt-2 data-[state=open]:mb-1.5 flex items-start gap-3 rounded-xl border border-white/20 bg-white/10 px-5 py-4 text-sm text-foreground/90">
-              <div className="shrink-0 rounded-full bg-white/20 p-2 text-activity-feeding">
-                <Award className="size-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground">
-                  {upcomingCelebration.daysUntil === 0
-                    ? `Today is ${upcomingCelebration.babyLabel}'s ${upcomingCelebration.title}!`
-                    : upcomingCelebration.daysUntil === 1
-                      ? `1 day to ${upcomingCelebration.babyLabel}'s ${upcomingCelebration.title}!`
-                      : `${upcomingCelebration.daysUntil} days to ${upcomingCelebration.babyLabel}'s ${upcomingCelebration.title}!`}
-                </p>
-                <p className="text-xs text-foreground/80 leading-snug">
-                  Come back then to see the celebration.
-                </p>
-              </div>
-            </div>
-          )}
-          <AccordionContent className="pt-0 pb-0">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
-              {/* Bottle Button */}
-              <Button
-                className={cn(
-                  'flex flex-col items-center justify-center h-auto py-3 gap-1',
-                  'bg-white/20 hover:bg-white/30 active:bg-white/40',
-                  feedingTheme.textColor,
-                )}
-                disabled={creatingType !== null}
-                onClick={handleBottleClick}
-                variant="ghost"
-              >
-                <Milk className="size-5" />
-                <span className="text-xs font-medium">Bottle</span>
-                {lastBottleTime && lastBottleExactTime && (
-                  <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
-                    <span>{lastBottleTime}</span>
-                    {lastBottleUser && (
-                      <Avatar className="size-4 shrink-0">
-                        <AvatarImage
-                          alt={lastBottleUser.name}
-                          src={lastBottleUser.avatar || ''}
-                        />
-                        <AvatarFallback className="text-[8px]">
-                          {lastBottleUser.initials}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                  </div>
-                )}
-              </Button>
-
-              {/* Nursing Button */}
-              <Button
-                className={cn(
-                  'flex flex-col items-center justify-center h-auto py-3 gap-1',
-                  'bg-white/20 hover:bg-white/30 active:bg-white/40',
-                  feedingTheme.textColor,
-                )}
-                disabled={creatingType !== null}
-                onClick={handleQuickNursing}
-                variant="ghost"
-              >
-                {creatingType === 'nursing' ? (
-                  <Icons.Spinner className="size-5" />
-                ) : (
-                  <Droplet className="size-5" />
-                )}
-                <span className="text-xs font-medium">Nursing</span>
-                {lastNursingTime && lastNursingExactTime && (
-                  <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
-                    <span>{lastNursingTime}</span>
-                    {lastNursingUser && (
-                      <Avatar className="size-4 shrink-0">
-                        <AvatarImage
-                          alt={lastNursingUser.name}
-                          src={lastNursingUser.avatar || ''}
-                        />
-                        <AvatarFallback className="text-[8px]">
-                          {lastNursingUser.initials}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                  </div>
-                )}
-              </Button>
-
-              {/* Pee Button */}
-              <Button
-                className={cn(
-                  'flex flex-col items-center justify-center h-auto py-3 gap-1',
-                  'bg-white/20 hover:bg-white/30 active:bg-white/40',
-                  diaperTheme.textColor,
-                )}
-                disabled={creatingType !== null}
-                onClick={() => handleDiaperClick('wet')}
-                variant="ghost"
-              >
-                {creatingType === 'wet' ? (
-                  <Icons.Spinner className="size-5" />
-                ) : (
-                  <Droplet className="size-5" />
-                )}
-                <span className="text-xs font-medium">Pee</span>
-                {lastWetDiaperTime && lastWetDiaperExactTime && (
-                  <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
-                    <span>{lastWetDiaperTime}</span>
-                    {lastWetDiaperUser && (
-                      <Avatar className="size-4 shrink-0">
-                        <AvatarImage
-                          alt={lastWetDiaperUser.name}
-                          src={lastWetDiaperUser.avatar || ''}
-                        />
-                        <AvatarFallback className="text-[8px]">
-                          {lastWetDiaperUser.initials}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                  </div>
-                )}
-              </Button>
-
-              {/* Poop Button */}
-              <Button
-                className={cn(
-                  'flex flex-col items-center justify-center h-auto py-3 gap-1',
-                  'bg-white/20 hover:bg-white/30 active:bg-white/40',
-                  diaperTheme.textColor,
-                )}
-                disabled={creatingType !== null}
-                onClick={() => handleDiaperClick('dirty')}
-                variant="ghost"
-              >
-                {creatingType === 'dirty' ? (
-                  <Icons.Spinner className="size-5" />
-                ) : (
-                  <Droplets className="size-5" />
-                )}
-                <span className="text-xs font-medium">Poop</span>
-                {lastDirtyDiaperTime && lastDirtyDiaperExactTime && (
-                  <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
-                    <span>{lastDirtyDiaperTime}</span>
-                    {lastDirtyDiaperUser && (
-                      <Avatar className="size-4 shrink-0">
-                        <AvatarImage
-                          alt={lastDirtyDiaperUser.name}
-                          src={lastDirtyDiaperUser.avatar || ''}
-                        />
-                        <AvatarFallback className="text-[8px]">
-                          {lastDirtyDiaperUser.initials}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                  </div>
-                )}
-              </Button>
-
-              {/* Sleep Actions */}
-              <div className="col-span-2 md:col-span-3 grid grid-cols-2 gap-2">
-                <Button
-                  className={cn(
-                    'flex flex-col items-center justify-center h-auto py-3 gap-1',
-                    inProgressActivity
-                      ? 'bg-destructive/90 hover:bg-destructive active:bg-destructive text-destructive-foreground'
-                      : 'bg-white/20 hover:bg-white/30 active:bg-white/40',
-                    inProgressActivity ? '' : sleepTheme.textColor,
-                  )}
-                  disabled={creatingType !== null}
-                  onClick={handleSleepTimerClick}
-                  variant="ghost"
-                >
-                  {creatingType === 'sleep-timer' ? (
-                    <Icons.Spinner className="size-5" />
-                  ) : inProgressActivity ? (
-                    <StopCircle className="size-5" />
-                  ) : (
-                    <Moon className="size-5" />
-                  )}
-                  <span className="text-xs font-medium">
-                    {inProgressActivity ? 'Stop Timer' : 'Start Timer'}
-                  </span>
-                  {inProgressActivity && sleepDurationMinutes > 0 ? (
-                    <span className="text-xs opacity-80">
-                      {formatElapsedTime(sleepDurationMinutes)}
-                    </span>
-                  ) : lastSleepTime && lastSleepExactTime ? (
-                    <div className="flex items-center gap-1 text-xs opacity-70 leading-tight">
-                      <span>{lastSleepTime}</span>
-                      {lastSleepUser && (
-                        <Avatar className="size-4 shrink-0">
-                          <AvatarImage
-                            alt={lastSleepUser.name}
-                            src={lastSleepUser.avatar || ''}
-                          />
-                          <AvatarFallback className="text-[8px]">
-                            {lastSleepUser.initials}
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                    </div>
-                  ) : null}
-                </Button>
-                <Button
-                  className={cn(
-                    'flex flex-col items-center justify-center h-auto py-3 gap-1',
-                    'bg-white/20 hover:bg-white/30 active:bg-white/40',
-                    sleepTheme.textColor,
-                  )}
-                  disabled={creatingType !== null}
-                  onClick={handleManualSleepClick}
-                  variant="ghost"
-                >
-                  <SleepIcon className="size-5" />
-                  <span className="text-xs font-medium">Log Sleep</span>
-                  <span className="text-xs opacity-70 leading-tight">
-                    Manual entry
-                  </span>
-                </Button>
-              </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+            </Button>
+          </div>
+        </div>
+      </div>
 
       {/* Activity Edit Drawers */}
       {editingActivity &&
@@ -1618,6 +1735,15 @@ export function TodaySummaryCard({
         onStopSleep={handleStopSleepAndCreate}
         open={showSleepConfirmation}
         sleepDuration={sleepDuration}
+      />
+
+      {/* Baby Stats Drawer */}
+      <BabyStatsDrawer
+        activities={allActivities}
+        babyId={babyId}
+        measurementUnit={_measurementUnit}
+        onOpenChange={setShowStatsDrawer}
+        open={showStatsDrawer}
       />
     </div>
   );

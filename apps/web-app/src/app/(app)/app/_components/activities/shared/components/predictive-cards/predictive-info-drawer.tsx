@@ -69,6 +69,11 @@ const ACTIVITY_COLOR_CLASSES: Partial<
     borderColor: 'border-activity-bath/20',
     color: 'bg-activity-bath/10 text-activity-bath',
   },
+  contrast_time: {
+    bgColor: 'bg-activity-contrast-time/5',
+    borderColor: 'border-activity-contrast-time/20',
+    color: 'bg-activity-contrast-time/10 text-activity-contrast-time',
+  },
   diaper: {
     bgColor: 'bg-activity-diaper/5',
     borderColor: 'border-activity-diaper/20',
@@ -98,6 +103,11 @@ const ACTIVITY_COLOR_CLASSES: Partial<
     bgColor: 'bg-activity-vitamin-d/5',
     borderColor: 'border-activity-vitamin-d/20',
     color: 'bg-activity-vitamin-d/10 text-activity-vitamin-d',
+  },
+  walk: {
+    bgColor: 'bg-activity-walk/5',
+    borderColor: 'border-activity-walk/20',
+    color: 'bg-activity-walk/10 text-activity-walk',
   },
 };
 

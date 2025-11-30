@@ -12,6 +12,7 @@ import {
   getDateRangeForPeriod,
   normalizeValueByPivot,
 } from '../shared/utils/stat-calculations';
+import { filterActivitiesByTimePeriod } from '../shared/utils/time-period-utils';
 
 /**
  * Calculate diaper count by type over a time period
@@ -837,5 +838,142 @@ export function calculateMostCommonDiaperType(
     formattedValue: getDiaperTypeLabel(mostCommonType),
     label: 'Most Common',
     value: mostCommonType,
+  };
+}
+
+/**
+ * Calculate night diaper statistics
+ * Night is defined as 6 PM (18:00) - 6 AM (06:00)
+ */
+export function calculateNightDiaperStat(
+  activities: Array<typeof Activities.$inferSelect>,
+  timePeriod: StatTimePeriod,
+): {
+  count: number;
+  wetCount: number;
+  dirtyCount: number;
+  formatted: {
+    count: string;
+    wetCount: string;
+    dirtyCount: string;
+  };
+} {
+  const { startDate, endDate } = getDateRangeForPeriod(timePeriod);
+
+  // Filter to diaper activities in the time period
+  const diaperActivities = activities
+    .filter((activity) => activity.type === 'diaper')
+    .filter((activity) => {
+      const activityDate = new Date(activity.startTime);
+      return activityDate >= startDate && activityDate <= endDate;
+    });
+
+  // Filter to night activities only
+  const nightDiaperActivities = filterActivitiesByTimePeriod(
+    diaperActivities,
+    'night',
+  );
+
+  const count = nightDiaperActivities.length;
+  let wetCount = 0;
+  let dirtyCount = 0;
+
+  for (const diaper of nightDiaperActivities) {
+    const type = getDiaperType(diaper);
+    if (type === 'wet' || type === 'both') {
+      wetCount++;
+    }
+    if (type === 'dirty' || type === 'both') {
+      dirtyCount++;
+    }
+  }
+
+  return {
+    count,
+    dirtyCount,
+    formatted: {
+      count: count.toString(),
+      dirtyCount: dirtyCount.toString(),
+      wetCount: wetCount.toString(),
+    },
+    wetCount,
+  };
+}
+
+/**
+ * Calculate day diaper statistics
+ * Day is defined as 6 AM (06:00) - 6 PM (18:00)
+ */
+export function calculateDayDiaperStat(
+  activities: Array<typeof Activities.$inferSelect>,
+  timePeriod: StatTimePeriod,
+): {
+  count: number;
+  wetCount: number;
+  dirtyCount: number;
+  formatted: {
+    count: string;
+    wetCount: string;
+    dirtyCount: string;
+  };
+} {
+  const { startDate, endDate } = getDateRangeForPeriod(timePeriod);
+
+  // Filter to diaper activities in the time period
+  const diaperActivities = activities
+    .filter((activity) => activity.type === 'diaper')
+    .filter((activity) => {
+      const activityDate = new Date(activity.startTime);
+      return activityDate >= startDate && activityDate <= endDate;
+    });
+
+  // Filter to day activities only
+  const dayDiaperActivities = filterActivitiesByTimePeriod(
+    diaperActivities,
+    'day',
+  );
+
+  const count = dayDiaperActivities.length;
+  let wetCount = 0;
+  let dirtyCount = 0;
+
+  for (const diaper of dayDiaperActivities) {
+    const type = getDiaperType(diaper);
+    if (type === 'wet' || type === 'both') {
+      wetCount++;
+    }
+    if (type === 'dirty' || type === 'both') {
+      dirtyCount++;
+    }
+  }
+
+  return {
+    count,
+    dirtyCount,
+    formatted: {
+      count: count.toString(),
+      dirtyCount: dirtyCount.toString(),
+      wetCount: wetCount.toString(),
+    },
+    wetCount,
+  };
+}
+
+/**
+ * Calculate night vs day diaper comparison
+ */
+export function calculateNightVsDayDiaperComparison(
+  activities: Array<typeof Activities.$inferSelect>,
+  timePeriod: StatTimePeriod,
+): {
+  night: ReturnType<typeof calculateNightDiaperStat>;
+  day: ReturnType<typeof calculateDayDiaperStat>;
+} {
+  const night = calculateNightDiaperStat(activities, timePeriod);
+  const day = calculateDayDiaperStat(activities, timePeriod);
+
+  return {
+    day,
+    night,
   };
 }

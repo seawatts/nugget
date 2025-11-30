@@ -78,6 +78,10 @@
   --activity-doctor-visit-foreground: oklch(0.985 0 0);
   --activity-vitamin-d: oklch(0.87 0.08 20);
   --activity-vitamin-d-foreground: oklch(0.98 0.02 0);
+  --activity-walk: oklch(0.85 0.1 140);
+  --activity-walk-foreground: oklch(0.985 0 0);
+  --activity-contrast-time: oklch(0.85 0.1 280);
+  --activity-contrast-time-foreground: oklch(0.985 0 0);
   --activity-nail-trimming: oklch(0.85 0.08 310);
   --activity-nail-trimming-foreground: oklch(0.985 0 0);
 
@@ -167,6 +171,10 @@
   --activity-doctor-visit-foreground: oklch(0.98 0 0);
   --activity-vitamin-d: oklch(0.6 0.08 20);
   --activity-vitamin-d-foreground: oklch(0.98 0 0);
+  --activity-walk: oklch(0.55 0.1 140);
+  --activity-walk-foreground: oklch(0.98 0 0);
+  --activity-contrast-time: oklch(0.55 0.1 280);
+  --activity-contrast-time-foreground: oklch(0.98 0 0);
   --activity-nail-trimming: oklch(0.48 0.07 310);
   --activity-nail-trimming-foreground: oklch(0.98 0 0);
 
@@ -255,6 +263,12 @@
   );
   --color-activity-vitamin-d: var(--activity-vitamin-d);
   --color-activity-vitamin-d-foreground: var(--activity-vitamin-d-foreground);
+  --color-activity-walk: var(--activity-walk);
+  --color-activity-walk-foreground: var(--activity-walk-foreground);
+  --color-activity-contrast-time: var(--activity-contrast-time);
+  --color-activity-contrast-time-foreground: var(
+    --activity-contrast-time-foreground
+  );
   --color-activity-nail-trimming: var(--activity-nail-trimming);
   --color-activity-nail-trimming-foreground: var(
     --activity-nail-trimming-foreground

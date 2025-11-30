@@ -312,7 +312,7 @@ export function NursingDrawerContent({
         setDuration={handleSetDuration}
         setEndTime={handleSetEndTime}
         setStartTime={handleSetStartTime}
-        showStartTimeOptions={false}
+        showStartTimeOptions={true}
         startTime={startTime}
         timeFormat={user?.timeFormat ?? '12h'}
       />

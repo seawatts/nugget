@@ -287,6 +287,13 @@
       "tag": "0042_right_franklin_storm",
       "version": "7",
       "when": 1764233116583
+    },
+    {
+      "breakpoints": true,
+      "idx": 43,
+      "tag": "0043_flawless_roxanne_simpson",
+      "version": "7",
+      "when": 1764472329490
     }
   ],
   "version": "7"

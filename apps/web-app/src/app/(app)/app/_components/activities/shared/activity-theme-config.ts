@@ -9,6 +9,8 @@ import {
   Bath,
   Droplet,
   Droplets,
+  Eye,
+  Footprints,
   Milk,
   Moon,
   Pill,
@@ -33,7 +35,9 @@ export type ActivityType =
   | 'potty'
   | 'doctor_visit'
   | 'vitamin_d'
-  | 'nail_trimming';
+  | 'nail_trimming'
+  | 'walk'
+  | 'contrast_time';
 
 // Activity types that support quick logging
 export type QuickLogActivityType =
@@ -74,6 +78,13 @@ export const ACTIVITY_THEMES: Record<ActivityType, ActivityTheme> = {
     icon: Milk,
     label: 'Bottle',
     textColor: 'text-activity-feeding-foreground',
+  },
+  contrast_time: {
+    color: 'activity-contrast-time',
+    description: 'Visual stimulation with contrast cards or books',
+    icon: Eye,
+    label: 'Contrast Time',
+    textColor: 'text-activity-contrast-time-foreground',
   },
   diaper: {
     color: 'activity-diaper',
@@ -172,6 +183,13 @@ export const ACTIVITY_THEMES: Record<ActivityType, ActivityTheme> = {
     icon: Pill,
     label: 'Vitamin D',
     textColor: 'text-activity-vitamin-d-foreground',
+  },
+  walk: {
+    color: 'activity-walk',
+    description: 'Go for a walk',
+    icon: Footprints,
+    label: 'Walk',
+    textColor: 'text-activity-walk-foreground',
   },
 };
 
