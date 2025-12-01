@@ -4,6 +4,7 @@ import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
 import { Icons } from '@nugget/ui/custom/icons';
 import { H3, P } from '@nugget/ui/custom/typography';
+import { Label } from '@nugget/ui/label';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
