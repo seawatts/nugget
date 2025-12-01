@@ -144,45 +144,9 @@ export function AchievementsDrawer({
     return { level: 1, name: 'Just Beginning' };
   }, [activities.length]);
 
-  // Convert database achievements to UI format, or calculate as fallback
-  const achievements = useMemo(() => {
-    // If we have database achievements, use them
-    if (dbAchievements.length > 0 && !achievementsError) {
-      return dbAchievements.map((dbAchievement) => {
-        // Check if this is a daily achievement with additional fields
-        const dailyAchievement = dbAchievement as typeof dbAchievement & {
-          isDaily?: boolean;
-          dailyStreak?: number;
-          lastCompletedDate?: Date | null;
-          completionsThisWeek?: number;
-        };
-
-        return {
-          category: dbAchievement.category as AchievementCategory,
-          completionsThisWeek: dailyAchievement.completionsThisWeek,
-          dailyStreak: dailyAchievement.dailyStreak,
-          description: dbAchievement.description || undefined,
-          earned: dbAchievement.earned,
-          icon: dbAchievement.icon,
-          id: dbAchievement.achievementId,
-          // Daily achievement fields
-          isDaily: dailyAchievement.isDaily ?? false,
-          lastCompletedDate: dailyAchievement.lastCompletedDate
-            ? new Date(dailyAchievement.lastCompletedDate)
-            : undefined,
-          name: dbAchievement.name,
-          progress: dbAchievement.progress,
-          rarity: dbAchievement.rarity as AchievementRarity,
-          target: dbAchievement.target,
-          unlockedAt: dbAchievement.unlockedAt
-            ? new Date(dbAchievement.unlockedAt)
-            : undefined,
-        };
-      });
-    }
-
-    // Fallback: calculate achievements from activities
-    // This ensures the UI still works if database is empty or there's an error
+  // Always calculate all achievements from activities for the full list
+  // Then merge with database achievements to get the stored progress/earned status
+  const calculatedAchievements = useMemo(() => {
     const totalDiapers = activities.filter(
       (a) =>
         a.type === 'diaper' ||
@@ -218,13 +182,79 @@ export function AchievementsDrawer({
       activities,
       baby?.birthDate ? new Date(baby.birthDate) : null,
     );
-  }, [dbAchievements, achievementsError, activities, streaks, baby?.birthDate]);
+  }, [activities, streaks, baby?.birthDate]);
 
-  // Apply progressive disclosure - only show relevant achievements
+  // Merge database achievements with calculated achievements
+  // Database achievements take precedence for progress/earned status
+  const achievements = useMemo(() => {
+    // Create a map of database achievements by achievementId
+    const dbAchievementsMap = new Map<
+      string,
+      (typeof dbAchievements)[0] & {
+        isDaily?: boolean;
+        dailyStreak?: number;
+        lastCompletedDate?: Date | null;
+        completionsThisWeek?: number;
+      }
+    >();
+
+    if (dbAchievements.length > 0 && !achievementsError) {
+      dbAchievements.forEach((dbAchievement) => {
+        dbAchievementsMap.set(dbAchievement.achievementId, dbAchievement);
+      });
+    }
+
+    // Start with all calculated achievements, then override with database data if available
+    return calculatedAchievements.map((calculated) => {
+      const dbAchievement = dbAchievementsMap.get(calculated.id);
+
+      if (dbAchievement) {
+        // Use database achievement data (it has the stored progress/earned status)
+        const dailyAchievement = dbAchievement as typeof dbAchievement & {
+          isDaily?: boolean;
+          dailyStreak?: number;
+          lastCompletedDate?: Date | null;
+          completionsThisWeek?: number;
+        };
+
+        return {
+          category: dbAchievement.category as AchievementCategory,
+          completionsThisWeek: dailyAchievement.completionsThisWeek,
+          dailyStreak: dailyAchievement.dailyStreak,
+          description: dbAchievement.description || calculated.description,
+          earned: dbAchievement.earned,
+          icon: dbAchievement.icon,
+          id: dbAchievement.achievementId,
+          isDaily:
+            dailyAchievement.isDaily ??
+            calculated.category === 'daily-achievements',
+          lastCompletedDate: dailyAchievement.lastCompletedDate
+            ? new Date(dailyAchievement.lastCompletedDate)
+            : undefined,
+          name: dbAchievement.name,
+          progress: dbAchievement.progress,
+          rarity: dbAchievement.rarity as AchievementRarity,
+          target: dbAchievement.target,
+          unlockedAt: dbAchievement.unlockedAt
+            ? new Date(dbAchievement.unlockedAt)
+            : calculated.unlockedAt,
+        };
+      }
+
+      // No database record, use calculated achievement
+      return calculated;
+    });
+  }, [calculatedAchievements, dbAchievements, achievementsError]);
+
+  // Apply progressive disclosure - only show relevant achievements (unless showLocked is true)
   const visibleAchievements = useMemo(() => {
+    if (showLocked) {
+      // When showing locked, show ALL achievements without progressive disclosure
+      return sortAchievementsByProgression(achievements);
+    }
     const filtered = filterAchievementsForProgression(achievements);
     return sortAchievementsByProgression(filtered);
-  }, [achievements]);
+  }, [achievements, showLocked]);
 
   // Group achievements by category and sort by progress (closest to completion first, earned at bottom)
   const achievementsByCategory = useMemo(() => {
