@@ -101,7 +101,7 @@ const quickLogDiaperInputSchema = z.object({
 });
 
 /**
- * Quick log a diaper change activity (for when change is overdue)
+ * Quick log a diaper change activity
  */
 export const quickLogDiaperAction = action
   .schema(quickLogDiaperInputSchema)
@@ -128,53 +128,6 @@ export const quickLogDiaperAction = action
         },
         isScheduled: false,
         startTime: parsedInput.time ? new Date(parsedInput.time) : new Date(),
-        type: 'diaper',
-      });
-
-      // Revalidate pages
-      revalidateAppPaths();
-
-      return { activity };
-    },
-  );
-
-const skipDiaperInputSchema = z.object({
-  babyId: z.string(),
-});
-
-/**
- * Skip a diaper change reminder
- * Creates a skip activity to persist the skip state across devices/sessions
- */
-export const skipDiaperAction = action
-  .schema(skipDiaperInputSchema)
-  .action(
-    async ({
-      parsedInput,
-    }): Promise<{ activity: typeof Activities.$inferSelect }> => {
-      const api = await getApi();
-
-      // Verify authentication
-      const authResult = await auth();
-      if (!authResult.userId) {
-        throw new Error('Authentication required');
-      }
-
-      const { babyId } = parsedInput;
-
-      // Create a diaper activity marked as skipped
-      // Set endTime to prevent it from appearing as an in-progress activity
-      const now = new Date();
-      const activity = await api.activities.create({
-        babyId,
-        details: {
-          skipped: true,
-          skipReason: 'user_dismissed',
-          type: 'diaper',
-        },
-        endTime: now,
-        isScheduled: false,
-        startTime: now,
         type: 'diaper',
       });
 

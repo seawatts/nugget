@@ -664,28 +664,28 @@ export default function FeedCalculatorPage() {
       ? formatAmount(currentTarget.minMlPerFeed, state.unitPref)
       : '';
 
-    if (diffMs < 0) {
-      const overdueMins = Math.abs(Math.floor(diffMs / (1000 * 60)));
-      return {
-        absoluteTime: nextFeedTime.toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        amount: targetAmount,
-        relativeTime: `Overdue by ${overdueMins} min`,
-        status: 'overdue',
-      };
-    }
-
     const mins = Math.floor(diffMs / (1000 * 60));
     const hours = Math.floor(mins / 60);
     const remainingMins = mins % 60;
 
     let relativeTime = '';
-    if (hours > 0) {
-      relativeTime = `in ${hours}h ${remainingMins}m`;
+    if (diffMs < 0) {
+      // Past time - show as "X ago"
+      const pastMins = Math.abs(mins);
+      const pastHours = Math.abs(hours);
+      const pastRemainingMins = Math.abs(remainingMins);
+      if (pastHours > 0) {
+        relativeTime = `${pastHours}h ${pastRemainingMins}m ago`;
+      } else {
+        relativeTime = `${pastMins} min ago`;
+      }
     } else {
-      relativeTime = `in ${mins} min`;
+      // Future time - show as "in X"
+      if (hours > 0) {
+        relativeTime = `in ${hours}h ${remainingMins}m`;
+      } else {
+        relativeTime = `in ${mins} min`;
+      }
     }
 
     return {
@@ -695,7 +695,6 @@ export default function FeedCalculatorPage() {
       }),
       amount: targetAmount,
       relativeTime,
-      status: 'upcoming',
     };
   };
 
@@ -2371,33 +2370,15 @@ export default function FeedCalculatorPage() {
                 </Collapsible>
 
                 {nextFeedInfo() && (
-                  <div
-                    className={`p-2.5 rounded-lg mt-2 ${
-                      nextFeedInfo().status === 'overdue'
-                        ? 'bg-destructive/10'
-                        : 'bg-secondary/10'
-                    }`}
-                  >
+                  <div className="p-2.5 rounded-lg mt-2 bg-secondary/10">
                     <div className="flex items-start gap-2">
-                      <Clock
-                        className={`h-4 w-4 mt-0.5 shrink-0 ${
-                          nextFeedInfo().status === 'overdue'
-                            ? 'text-destructive'
-                            : 'text-secondary'
-                        }`}
-                      />
+                      <Clock className="h-4 w-4 mt-0.5 shrink-0 text-secondary" />
                       <div className="flex-1 space-y-0.5 min-w-0">
                         <div className="flex items-baseline gap-2">
                           <span className="text-sm font-semibold">
                             {nextFeedInfo().absoluteTime}
                           </span>
-                          <span
-                            className={`text-xs ${
-                              nextFeedInfo().status === 'overdue'
-                                ? 'text-destructive font-semibold'
-                                : 'text-muted-foreground'
-                            }`}
-                          >
+                          <span className="text-xs text-muted-foreground">
                             {nextFeedInfo().relativeTime}
                           </span>
                         </div>

@@ -92,7 +92,7 @@ const quickLogSleepInputSchema = z.object({
 });
 
 /**
- * Quick log a sleep activity (for when sleep is overdue)
+ * Quick log a sleep activity
  * Creates a completed sleep entry with start and end times
  */
 export const quickLogSleepAction = action
@@ -161,58 +161,6 @@ export const quickLogSleepAction = action
         fullActivity: JSON.stringify(activity, null, 2),
         id: activity.id,
         startTime: activity.startTime,
-      });
-
-      // Revalidate pages
-      revalidateAppPaths();
-
-      return { activity };
-    },
-  );
-
-const skipSleepInputSchema = z.object({
-  babyId: z.string(),
-});
-
-/**
- * Skip a sleep activity (for dismissing overdue reminders)
- */
-export const skipSleepAction = action
-  .schema(skipSleepInputSchema)
-  .action(
-    async ({
-      parsedInput,
-    }): Promise<{ activity: typeof Activities.$inferSelect }> => {
-      const api = await getApi();
-
-      // Verify authentication
-      const authResult = await auth();
-      if (!authResult.userId) {
-        throw new Error('Authentication required');
-      }
-
-      const { babyId } = parsedInput;
-
-      // Determine sleep type based on time of day
-      const now = new Date();
-      const hour = now.getHours();
-      const sleepType = hour >= 6 && hour < 18 ? 'nap' : 'night';
-
-      // Create the skip activity as a completed activity (endTime === startTime, duration = 0)
-      // This prevents it from appearing as an in-progress sleep session
-      const activity = await api.activities.create({
-        babyId,
-        details: {
-          skipped: true,
-          skipReason: 'user_dismissed',
-          sleepType,
-          type: 'sleep',
-        },
-        duration: 0,
-        endTime: now,
-        isScheduled: false,
-        startTime: now,
-        type: 'sleep',
       });
 
       // Revalidate pages

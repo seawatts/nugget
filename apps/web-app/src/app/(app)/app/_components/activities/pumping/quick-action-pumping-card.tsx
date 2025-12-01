@@ -122,10 +122,7 @@ export function QuickActionPumpingCard({
     if (!queryData?.recentActivities) return null;
 
     return queryData.recentActivities.find(
-      (a) =>
-        a.type === 'pumping' &&
-        !a.isScheduled &&
-        !(a.details && 'skipped' in a.details && a.details.skipped === true),
+      (a) => a.type === 'pumping' && !a.isScheduled,
     );
   }, [queryData?.recentActivities]);
 

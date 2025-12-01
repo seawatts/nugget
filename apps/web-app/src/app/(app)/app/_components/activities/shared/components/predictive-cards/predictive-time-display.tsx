@@ -3,17 +3,12 @@
 import type { Activities } from '@nugget/db/schema';
 import { Skeleton } from '@nugget/ui/skeleton';
 import { formatTimeWithPreference } from '~/lib/format-time';
-import {
-  formatElapsedTime,
-  formatOverdueTime,
-} from '../../time-formatting-utils';
+import { formatElapsedTime } from '../../time-formatting-utils';
 import { formatCompactRelativeTime } from '../../utils/format-compact-relative-time';
 
 interface PredictiveTimeDisplayProps {
   isLoading: boolean;
   inProgressActivity?: typeof Activities.$inferSelect | null;
-  effectiveIsOverdue: boolean;
-  overdueMinutes?: number | null;
   timeUntil: string;
   exactTime: string;
   lastActivityTime?: Date | null;
@@ -28,8 +23,6 @@ interface PredictiveTimeDisplayProps {
 export function PredictiveTimeDisplay({
   isLoading,
   inProgressActivity,
-  effectiveIsOverdue,
-  overdueMinutes,
   timeUntil,
   exactTime,
   lastActivityTime,
@@ -72,41 +65,6 @@ export function PredictiveTimeDisplay({
     );
   }
 
-  // Overdue state
-  if (effectiveIsOverdue) {
-    return (
-      <>
-        {/* Top: Last activity (no label) */}
-        {lastActivityTime && (
-          <div className="flex items-baseline gap-2 min-w-0">
-            <span className="text-lg font-semibold shrink-0">
-              {formatCompactRelativeTime(lastActivityTime, {
-                addSuffix: true,
-              })}
-            </span>
-            <span className="text-sm opacity-70 truncate min-w-0">
-              {formatTimeWithPreference(lastActivityTime, timeFormat)}
-              {lastActivityAmount && <span> • {lastActivityAmount}</span>}
-            </span>
-          </div>
-        )}
-        {/* Bottom: Next prediction with overdue indicator */}
-        {showPredictiveTimes && (
-          <div className="text-sm opacity-60 break-words">
-            Next {exactTime}
-            {overdueMinutes && (
-              <span className="text-amber-400 font-medium">
-                {' '}
-                • {formatOverdueTime(overdueMinutes)} overdue
-              </span>
-            )}
-            {predictedAmount && <span> • {predictedAmount}</span>}
-          </div>
-        )}
-      </>
-    );
-  }
-
   // Predicted/normal state
   return (
     <>
@@ -126,7 +84,7 @@ export function PredictiveTimeDisplay({
       )}
       {/* Bottom: Next prediction */}
       {showPredictiveTimes && (
-        <div className="text-sm opacity-60 break-words">
+        <div className="text-sm opacity-60 wrap-break-word">
           Next {timeUntil} • {exactTime}
           {predictedAmount && <span> • {predictedAmount}</span>}
         </div>

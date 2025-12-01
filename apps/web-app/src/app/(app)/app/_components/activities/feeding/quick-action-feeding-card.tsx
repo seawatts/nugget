@@ -300,8 +300,7 @@ export function QuickActionFeedingCard({
     return queryData.recentActivities.find(
       (a) =>
         (a.type === 'bottle' || a.type === 'nursing' || a.type === 'solids') &&
-        !a.isScheduled &&
-        !(a.details && 'skipped' in a.details && a.details.skipped === true),
+        !a.isScheduled,
     );
   }, [queryData?.recentActivities]);
 
@@ -408,11 +407,11 @@ export function QuickActionFeedingCard({
     return formatVolumeDisplay(ml, userUnitPref, true);
   };
 
-  // Format time displays
+  // Format time displays - let formatter add suffix
   const nextTimeDistance = formatCompactRelativeTime(
     prediction.nextFeedingTime,
     {
-      addSuffix: false,
+      addSuffix: true,
     },
   );
   const nextExactTime = formatTimeWithPreference(
@@ -1154,7 +1153,7 @@ export function QuickActionFeedingCard({
               type="button"
             >
               <div className="text-lg font-semibold leading-tight">
-                In {nextTimeDistance}
+                {nextTimeDistance}
               </div>
               <div className="text-sm opacity-70 leading-tight">
                 {nextExactTime}

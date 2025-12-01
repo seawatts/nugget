@@ -8,11 +8,7 @@ import type { Activities } from '@nugget/db/schema';
 import { toast } from '@nugget/ui/sonner';
 import { useState } from 'react';
 import { usePredictiveActions } from '../../shared/components/predictive-cards/hooks/use-predictive-actions';
-import {
-  claimFeedingAction,
-  skipFeedingAction,
-  unclaimFeedingAction,
-} from '../actions';
+import { claimFeedingAction, unclaimFeedingAction } from '../actions';
 
 interface UseFeedingActionsOptions {
   onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
@@ -62,14 +58,12 @@ export function useFeedingActions({
   }
 
   // Use shared actions hook with feeding defaults
-  const { handleQuickLog, handleSkip, isCreating, isSkipping } =
-    usePredictiveActions({
-      activityType: 'feeding',
-      babyId,
-      defaultQuickLogData,
-      onActivityLogged,
-      skipAction: skipFeedingAction,
-    });
+  const { handleQuickLog, isCreating } = usePredictiveActions({
+    activityType: 'feeding',
+    babyId,
+    defaultQuickLogData,
+    onActivityLogged,
+  });
 
   const handleClaim = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -126,9 +120,7 @@ export function useFeedingActions({
     claiming,
     handleClaim,
     handleQuickLog,
-    handleSkip,
     handleUnclaim,
     isCreating,
-    isSkipping,
   };
 }

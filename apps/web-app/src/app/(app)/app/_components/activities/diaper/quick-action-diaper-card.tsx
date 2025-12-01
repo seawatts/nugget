@@ -183,10 +183,7 @@ export function QuickActionDiaperCard({
     if (!queryData?.recentActivities) return null;
 
     return queryData.recentActivities.find(
-      (a) =>
-        a.type === 'diaper' &&
-        !a.isScheduled &&
-        !(a.details && 'skipped' in a.details && a.details.skipped === true),
+      (a) => a.type === 'diaper' && !a.isScheduled,
     );
   }, [queryData?.recentActivities]);
 

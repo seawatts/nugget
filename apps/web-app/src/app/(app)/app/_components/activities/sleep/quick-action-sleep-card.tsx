@@ -199,8 +199,7 @@ export function QuickActionSleepCard({
         !a.isScheduled &&
         a.endTime !== null && // Only show completed activities
         a.duration &&
-        a.duration > 0 && // Must have duration
-        !(a.details && 'skipped' in a.details && a.details.skipped === true),
+        a.duration > 0, // Must have duration
     );
   }, [queryData?.recentActivities]);
 
@@ -302,10 +301,7 @@ export function QuickActionSleepCard({
 
     // Check for conflicts with existing sleep activities
     const sleepActivities = mergedActivities.filter(
-      (a) =>
-        a.type === 'sleep' &&
-        !a.isScheduled &&
-        !(a.details && 'skipped' in a.details && a.details.skipped === true),
+      (a) => a.type === 'sleep' && !a.isScheduled,
     );
 
     // Create a timeline window that includes both startTime and now

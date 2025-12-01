@@ -46,22 +46,6 @@ export function formatDuration(seconds: number): string {
 }
 
 /**
- * Format overdue time in minutes to human-readable format
- * @param minutes - Total minutes overdue
- * @returns Formatted string like "2 hours" or "45 min"
- */
-export function formatOverdueTime(minutes: number): string {
-  if (minutes >= 60) {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return mins > 0
-      ? `${hours}h ${mins}m`
-      : `${hours} hour${hours !== 1 ? 's' : ''}`;
-  }
-  return `${minutes} min`;
-}
-
-/**
  * Format duration in minutes to hours and minutes
  * @param minutes - Total minutes (can be decimal)
  * @returns Formatted string like "2h 30m" or "45m" or "2h"

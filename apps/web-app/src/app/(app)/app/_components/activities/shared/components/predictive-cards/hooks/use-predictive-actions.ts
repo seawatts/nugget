@@ -6,7 +6,6 @@
 import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { toast } from '@nugget/ui/sonner';
-import { useState } from 'react';
 import {
   getUserRelationFromStore,
   type UserRelation,
@@ -16,9 +15,6 @@ import { useActivityMutations } from '../../../../use-activity-mutations';
 
 interface UsePredictiveActionsOptions {
   activityType: 'feeding' | 'diaper' | 'sleep' | 'pumping';
-  skipAction: (input: {
-    babyId: string;
-  }) => Promise<{ data?: unknown; serverError?: string } | undefined>;
   onActivityLogged?: (activity: typeof Activities.$inferSelect) => void;
   defaultQuickLogData?: Record<string, unknown>;
   babyId: string;
@@ -26,13 +22,11 @@ interface UsePredictiveActionsOptions {
 
 export function usePredictiveActions({
   activityType,
-  skipAction,
   onActivityLogged,
   defaultQuickLogData = {},
   babyId,
 }: UsePredictiveActionsOptions) {
   const utils = api.useUtils();
-  const [skipping, setSkipping] = useState(false);
   const { createActivity, isCreating } = useActivityMutations();
   const addOptimisticActivity = useOptimisticActivitiesStore(
     (state) => state.addActivity,
@@ -108,44 +102,8 @@ export function usePredictiveActions({
     }
   };
 
-  const handleSkip = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSkipping(true);
-    try {
-      const result = await skipAction({ babyId });
-      if (result?.serverError) {
-        toast.error(result.serverError);
-      } else {
-        toast.success(
-          `${activityType.charAt(0).toUpperCase() + activityType.slice(1)} reminder skipped`,
-        );
-        // Invalidate activities list to refresh timeline
-        await utils.activities.list.invalidate();
-
-        // Invalidate prediction query
-        const invalidateKey =
-          activityType === 'feeding'
-            ? 'getUpcomingFeeding'
-            : activityType === 'diaper'
-              ? 'getUpcomingDiaper'
-              : activityType === 'sleep'
-                ? 'getUpcomingSleep'
-                : 'getUpcomingPumping';
-
-        await utils.activities[invalidateKey].invalidate();
-      }
-    } catch (error) {
-      console.error(`Failed to skip ${activityType}:`, error);
-      toast.error(`Failed to skip ${activityType}`);
-    } finally {
-      setSkipping(false);
-    }
-  };
-
   return {
     handleQuickLog,
-    handleSkip,
     isCreating,
-    isSkipping: skipping,
   };
 }

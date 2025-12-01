@@ -265,7 +265,7 @@ const quickLogFeedingInputSchema = z.object({
 });
 
 /**
- * Quick log a feeding activity (for when feeding is overdue)
+ * Quick log a feeding activity
  */
 export const quickLogFeedingAction = action
   .schema(quickLogFeedingInputSchema)
@@ -296,55 +296,6 @@ export const quickLogFeedingAction = action
         isScheduled: false,
         startTime: now,
         type: parsedInput.type || 'bottle',
-      });
-
-      // Revalidate pages
-      revalidateAppPaths();
-
-      return { activity };
-    },
-  );
-
-const skipFeedingInputSchema = z.object({
-  babyId: z.string(),
-});
-
-/**
- * Skip a feeding reminder
- * Creates a skip activity to persist the skip state across devices/sessions
- */
-export const skipFeedingAction = action
-  .schema(skipFeedingInputSchema)
-  .action(
-    async ({
-      parsedInput,
-    }): Promise<{ activity: typeof Activities.$inferSelect }> => {
-      const api = await getApi();
-
-      // Verify authentication
-      const authResult = await auth();
-      if (!authResult.userId) {
-        throw new Error('Authentication required');
-      }
-
-      const { babyId } = parsedInput;
-
-      // Create a nursing/feeding activity marked as skipped
-      // Set endTime to prevent it from appearing as an in-progress activity
-      const now = new Date();
-      const activity = await api.activities.create({
-        babyId,
-        details: {
-          side: 'both',
-          skipped: true,
-          skipReason: 'user_dismissed',
-          type: 'nursing',
-        },
-        duration: 0,
-        endTime: now,
-        isScheduled: false,
-        startTime: now,
-        type: 'nursing',
       });
 
       // Revalidate pages

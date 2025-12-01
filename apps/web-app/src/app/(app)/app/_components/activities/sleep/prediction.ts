@@ -1,6 +1,5 @@
 import type { Activities } from '@nugget/db/schema';
 import { differenceInMinutes } from 'date-fns';
-import { getOverdueThreshold } from '../../shared/overdue-thresholds';
 import { calculateBabyAgeDays, getSleepIntervalByAge } from './sleep-intervals';
 
 export interface SleepPrediction {
@@ -16,11 +15,7 @@ export interface SleepPrediction {
     intervalFromPrevious: number | null;
     notes: string | null;
   }>;
-  isOverdue: boolean;
-  overdueMinutes: number | null;
-  suggestedRecoveryTime: Date | null;
   suggestedDuration: number; // in minutes, suggested duration for quick log
-  recentSkipTime: Date | null;
   // Calculation components for displaying how prediction works
   calculationDetails: {
     ageBasedInterval: number; // hours
@@ -135,14 +130,9 @@ export function predictNextSleep(
   babyBirthDate: Date | null,
 ): SleepPrediction {
   // Filter to only relevant sleep activities for display purposes
-  // Exclude scheduled activities and skipped activities (dismissals don't count as real sleep)
+  // Exclude scheduled activities
   const sleepActivities = recentSleeps
-    .filter(
-      (a) =>
-        a.type === 'sleep' &&
-        !a.isScheduled &&
-        !(a.details && 'skipped' in a.details && a.details.skipped === true),
-    )
+    .filter((a) => a.type === 'sleep' && !a.isScheduled)
     .sort(
       (a, b) =>
         new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
@@ -154,23 +144,6 @@ export function predictNextSleep(
   const completedSleepActivities = sleepActivities.filter(
     (activity) => activity.endTime,
   );
-
-  // Find most recent skip activity
-  const skipActivities = recentSleeps
-    .filter(
-      (a) =>
-        a.type === 'sleep' &&
-        a.details &&
-        'skipped' in a.details &&
-        a.details.skipped === true,
-    )
-    .sort(
-      (a, b) =>
-        new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
-    );
-  const recentSkipTime = skipActivities[0]
-    ? new Date(skipActivities[0].startTime)
-    : null;
 
   // Calculate baby's age for age-based interval
   const ageDays = calculateBabyAgeDays(babyBirthDate);
@@ -194,12 +167,9 @@ export function predictNextSleep(
       },
       confidenceLevel: 'low',
       intervalHours: ageBasedInterval,
-      isOverdue: false,
       lastSleepDuration: null,
       lastSleepTime: null,
       nextSleepTime,
-      overdueMinutes: null,
-      recentSkipTime,
       recentSleepPattern: sleepActivities.slice(0, 5).map((sleep) => ({
         duration: sleep.duration || null,
         intervalFromPrevious: null,
@@ -209,7 +179,6 @@ export function predictNextSleep(
           : new Date(sleep.startTime),
       })),
       suggestedDuration,
-      suggestedRecoveryTime: null,
     };
   }
 
@@ -231,15 +200,11 @@ export function predictNextSleep(
       },
       confidenceLevel: 'low',
       intervalHours: ageBasedInterval,
-      isOverdue: false,
       lastSleepDuration: null,
       lastSleepTime: null,
       nextSleepTime,
-      overdueMinutes: null,
-      recentSkipTime,
       recentSleepPattern: [],
       suggestedDuration,
-      suggestedRecoveryTime: null,
     };
   }
 
@@ -311,24 +276,6 @@ export function predictNextSleep(
     time: sleep.endTime ? new Date(sleep.endTime) : new Date(sleep.startTime),
   }));
 
-  // Check if overdue and calculate recovery time (reuse ageDays from earlier)
-  const overdueThreshold = getOverdueThreshold('sleep', ageDays);
-  const now = new Date();
-  const minutesUntil = differenceInMinutes(nextSleepTime, now);
-  const isOverdue = minutesUntil < -overdueThreshold;
-  const overdueMinutes = isOverdue ? Math.abs(minutesUntil) : null;
-
-  // Calculate recovery time if overdue
-  let suggestedRecoveryTime: Date | null = null;
-  if (isOverdue) {
-    suggestedRecoveryTime = new Date();
-    // Suggest next sleep in 0.5 to 0.7 of normal interval
-    const recoveryInterval = predictedInterval * 0.6;
-    suggestedRecoveryTime.setMinutes(
-      suggestedRecoveryTime.getMinutes() + recoveryInterval * 60,
-    );
-  }
-
   // Calculate suggested duration for quick log
   const suggestedDuration = calculateSuggestedDuration(
     ageDays,
@@ -346,51 +293,10 @@ export function predictNextSleep(
     },
     confidenceLevel,
     intervalHours: predictedInterval,
-    isOverdue,
     lastSleepDuration,
     lastSleepTime,
     nextSleepTime,
-    overdueMinutes,
-    recentSkipTime,
     recentSleepPattern: recentPattern,
     suggestedDuration,
-    suggestedRecoveryTime,
   };
-}
-
-/**
- * Check if sleep is overdue using dynamic threshold
- */
-export function isSleepOverdue(
-  nextSleepTime: Date,
-  babyAgeDays: number | null,
-): boolean {
-  const now = new Date();
-  const minutesOverdue = differenceInMinutes(now, nextSleepTime);
-  const threshold = getOverdueThreshold('sleep', babyAgeDays);
-  return minutesOverdue > threshold;
-}
-
-/**
- * Get status of upcoming sleep with dynamic threshold
- */
-export function getSleepStatus(
-  nextSleepTime: Date,
-  babyAgeDays: number | null,
-): 'upcoming' | 'soon' | 'overdue' {
-  const now = new Date();
-  const minutesUntil = differenceInMinutes(nextSleepTime, now);
-  const threshold = getOverdueThreshold('sleep', babyAgeDays);
-
-  if (minutesUntil < -threshold) {
-    return 'overdue';
-  }
-
-  // "Soon" window is half the overdue threshold
-  const soonThreshold = Math.min(30, threshold / 2);
-  if (minutesUntil <= soonThreshold) {
-    return 'soon';
-  }
-
-  return 'upcoming';
 }

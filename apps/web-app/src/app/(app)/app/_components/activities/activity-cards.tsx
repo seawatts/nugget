@@ -28,13 +28,10 @@ import {
 import { createActivityAction } from './activity-cards.actions';
 import { ActivityDrawer } from './activity-drawer';
 import { PredictiveBathCard } from './bath/predictive-bath-card';
-import { PredictiveDiaperCard } from './diaper/predictive-diaper-card';
 import { QuickActionDiaperCard } from './diaper/quick-action-diaper-card';
 import { PredictiveDoctorVisitCard } from './doctor-visit/predictive-doctor-visit-card';
-import { PredictiveFeedingCard } from './feeding/predictive-feeding-card';
 import { QuickActionFeedingCard } from './feeding/quick-action-feeding-card';
 import { PredictiveNailTrimmingCard } from './nail-trimming/predictive-nail-trimming-card';
-import { PredictivePumpingCard } from './pumping/predictive-pumping-card';
 import { QuickActionPumpingCard } from './pumping/quick-action-pumping-card';
 import { getSimpleActivityConfig } from './shared/activity-config-registry';
 import {
@@ -42,7 +39,6 @@ import {
   getDefaultActivityData,
 } from './shared/activity-utils';
 import { GenericSimpleActivityCard } from './shared/components/generic-simple-activity-card';
-import { PredictiveSleepCard } from './sleep/predictive-sleep-card';
 import { QuickActionSleepCard } from './sleep/quick-action-sleep-card';
 import { PredictiveVitaminDCard } from './vitamin-d/predictive-vitamin-d-card';
 
@@ -506,63 +502,28 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
       {/* All Action Cards Section - Predictive + Quick Actions */}
       <div className="grid grid-cols-2 gap-3 min-w-0">
         {baby?.showFeedingCard !== false && (
-          <>
-            <QuickActionFeedingCard
-              onActivityLogged={handleActivityLogged}
-              onOpenDrawer={() => setOpenDrawer('feeding')}
-            />
-            {false && (
-              <PredictiveFeedingCard
-                onActivityLogged={handleActivityLogged}
-                onCardClick={() => {
-                  // Open unified feeding drawer for selection
-                  setOpenDrawer('feeding');
-                }}
-              />
-            )}
-          </>
+          <QuickActionFeedingCard
+            onActivityLogged={handleActivityLogged}
+            onOpenDrawer={() => setOpenDrawer('feeding')}
+          />
         )}
         {baby?.showSleepCard !== false && (
-          <>
-            <QuickActionSleepCard
-              onActivityLogged={handleActivityLogged}
-              onOpenDrawer={() => setOpenDrawer('sleep')}
-            />
-            {false && (
-              <PredictiveSleepCard
-                onActivityLogged={handleActivityLogged}
-                onCardClick={() => setOpenDrawer('sleep')}
-              />
-            )}
-          </>
+          <QuickActionSleepCard
+            onActivityLogged={handleActivityLogged}
+            onOpenDrawer={() => setOpenDrawer('sleep')}
+          />
         )}
         {baby?.showDiaperCard !== false && (
-          <>
-            <QuickActionDiaperCard
-              onActivityLogged={handleActivityLogged}
-              onOpenDrawer={() => setOpenDrawer('diaper')}
-            />
-            {false && (
-              <PredictiveDiaperCard
-                onActivityLogged={handleActivityLogged}
-                onCardClick={() => setOpenDrawer('diaper')}
-              />
-            )}
-          </>
+          <QuickActionDiaperCard
+            onActivityLogged={handleActivityLogged}
+            onOpenDrawer={() => setOpenDrawer('diaper')}
+          />
         )}
         {baby?.showPumpingCard !== false && (
-          <>
-            <QuickActionPumpingCard
-              onActivityLogged={handleActivityLogged}
-              onOpenDrawer={() => setOpenDrawer('pumping')}
-            />
-            {false && (
-              <PredictivePumpingCard
-                onActivityLogged={handleActivityLogged}
-                onCardClick={() => setOpenDrawer('pumping')}
-              />
-            )}
-          </>
+          <QuickActionPumpingCard
+            onActivityLogged={handleActivityLogged}
+            onOpenDrawer={() => setOpenDrawer('pumping')}
+          />
         )}
         {baby?.showDoctorVisitCard !== false &&
           babyAgeDays !== null &&

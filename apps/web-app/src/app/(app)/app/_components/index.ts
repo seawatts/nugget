@@ -13,10 +13,6 @@
 export { ActivityCard } from './activities/activity-card';
 export { ActivityCards } from './activities/activity-cards';
 export { ActivityDrawer } from './activities/activity-drawer';
-export { PredictiveDiaperCard } from './activities/diaper/predictive-diaper-card';
-export { PredictiveFeedingCard } from './activities/feeding/predictive-feeding-card';
-export { PredictivePumpingCard } from './activities/pumping/predictive-pumping-card';
-export { PredictiveSleepCard } from './activities/sleep/predictive-sleep-card';
 export { ActivityTimeline } from './activities/timeline/activity-timeline';
 export { ActivityTimelineFilters } from './activities/timeline/activity-timeline-filters';
 export { useActivityMutations } from './activities/use-activity-mutations';

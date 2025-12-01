@@ -92,7 +92,7 @@ const quickLogPumpingInputSchema = z.object({
 });
 
 /**
- * Quick log a pumping activity (for when pumping is overdue)
+ * Quick log a pumping activity
  */
 export const quickLogPumpingAction = action
   .schema(quickLogPumpingInputSchema)
@@ -117,53 +117,6 @@ export const quickLogPumpingAction = action
         details: null,
         isScheduled: false,
         startTime: parsedInput.time ? new Date(parsedInput.time) : new Date(),
-        type: 'pumping',
-      });
-
-      // Revalidate pages
-      revalidateAppPaths();
-
-      return { activity };
-    },
-  );
-
-const skipPumpingInputSchema = z.object({
-  babyId: z.string(),
-});
-
-/**
- * Skip a pumping activity (for dismissing overdue reminders)
- */
-export const skipPumpingAction = action
-  .schema(skipPumpingInputSchema)
-  .action(
-    async ({
-      parsedInput,
-    }): Promise<{ activity: typeof Activities.$inferSelect }> => {
-      const api = await getApi();
-
-      // Verify authentication
-      const authResult = await auth();
-      if (!authResult.userId) {
-        throw new Error('Authentication required');
-      }
-
-      const { babyId } = parsedInput;
-
-      // Create the skip activity
-      // Set endTime to prevent it from appearing as an in-progress activity
-      const now = new Date();
-      const activity = await api.activities.create({
-        amountMl: null,
-        babyId,
-        details: {
-          skipped: true,
-          skipReason: 'user_dismissed',
-          type: 'pumping',
-        },
-        endTime: now,
-        isScheduled: false,
-        startTime: now,
         type: 'pumping',
       });
 

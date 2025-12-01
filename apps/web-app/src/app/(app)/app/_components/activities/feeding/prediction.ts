@@ -2,7 +2,6 @@ import type { BabyCustomPreferences } from '@nugget/db';
 import { getPreferenceWeight } from '@nugget/db';
 import type { Activities } from '@nugget/db/schema';
 import { differenceInMinutes } from 'date-fns';
-import { getOverdueThreshold } from '../../shared/overdue-thresholds';
 import { calculateBabyAgeDays } from '../shared/baby-age-utils';
 import {
   type BlendResult,
@@ -25,10 +24,6 @@ export interface FeedingPrediction {
     notes: string | null;
     type: string | null;
   }>;
-  isOverdue: boolean;
-  overdueMinutes: number | null;
-  suggestedRecoveryTime: Date | null;
-  recentSkipTime: Date | null;
   // Quick log smart defaults
   suggestedAmount: number | null; // in ml, blended from custom/recent/age
   suggestedDuration: number | null; // in minutes, blended from custom/recent/age
@@ -170,36 +165,18 @@ export function predictNextFeeding(
   customPreferences?: BabyCustomPreferences | null,
 ): FeedingPrediction {
   // Filter to only feeding activities (bottle, nursing, solids)
-  // Exclude scheduled activities and skipped activities (dismissals don't count as real feedings)
+  // Exclude scheduled activities
   const feedingActivities = recentFeedings
     .filter(
       (a) =>
         (a.type === 'bottle' || a.type === 'nursing' || a.type === 'solids') &&
-        !a.isScheduled &&
-        !(a.details && 'skipped' in a.details && a.details.skipped === true),
+        !a.isScheduled,
     )
     .sort(
       (a, b) =>
         new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
     ) // Most recent first
     .slice(0, 10); // Consider last 10 feedings
-
-  // Find most recent skip activity
-  const skipActivities = recentFeedings
-    .filter(
-      (a) =>
-        (a.type === 'bottle' || a.type === 'nursing' || a.type === 'solids') &&
-        a.details &&
-        'skipped' in a.details &&
-        a.details.skipped === true,
-    )
-    .sort(
-      (a, b) =>
-        new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
-    );
-  const recentSkipTime = skipActivities[0]
-    ? new Date(skipActivities[0].startTime)
-    : null;
 
   // Calculate baby's age for age-based interval
   const ageDays = calculateBabyAgeDays(babyBirthDate);
@@ -258,16 +235,12 @@ export function predictNextFeeding(
       confidenceLevel: 'low',
       durationBlendResult: durationBlend,
       intervalHours: ageBasedInterval,
-      isOverdue: false,
       lastFeedingAmount: null,
       lastFeedingTime: null,
       nextFeedingTime,
-      overdueMinutes: null,
       recentFeedingPattern: [],
-      recentSkipTime,
       suggestedAmount: amountBlend.value,
       suggestedDuration: durationBlend.value,
-      suggestedRecoveryTime: null,
       suggestedType: customPreferences?.feeding?.preferredType || 'nursing', // Use custom preference or default
       suggestionSource: `Amount: ${amountBlend.source}, Duration: ${durationBlend.source}`,
     };
@@ -312,16 +285,12 @@ export function predictNextFeeding(
       confidenceLevel: 'low',
       durationBlendResult: durationBlend,
       intervalHours: ageBasedInterval,
-      isOverdue: false,
       lastFeedingAmount: null,
       lastFeedingTime: null,
       nextFeedingTime,
-      overdueMinutes: null,
       recentFeedingPattern: [],
-      recentSkipTime,
       suggestedAmount: amountBlend.value,
       suggestedDuration: durationBlend.value,
-      suggestedRecoveryTime: null,
       suggestedType: customPreferences?.feeding?.preferredType || 'nursing',
       suggestionSource: `Amount: ${amountBlend.source}, Duration: ${durationBlend.source}`,
     };
@@ -393,24 +362,6 @@ export function predictNextFeeding(
     type: feeding.type,
   }));
 
-  // Check if overdue and calculate recovery time
-  const overdueThreshold = getOverdueThreshold('feeding', ageDays);
-  const now = new Date();
-  const minutesUntil = differenceInMinutes(nextFeedingTime, now);
-  const isOverdue = minutesUntil < -overdueThreshold;
-  const overdueMinutes = isOverdue ? Math.abs(minutesUntil) : null;
-
-  // Calculate recovery time if overdue
-  let suggestedRecoveryTime: Date | null = null;
-  if (isOverdue) {
-    suggestedRecoveryTime = new Date();
-    // Suggest next feeding in 0.5 to 0.7 of normal interval
-    const recoveryInterval = predictedInterval * 0.6;
-    suggestedRecoveryTime.setMinutes(
-      suggestedRecoveryTime.getMinutes() + recoveryInterval * 60,
-    );
-  }
-
   // Blend suggested amount with custom preferences
   const ageBasedAmount = getAgeBasedAmount(ageDays);
   const recentAverageAmount = getRecentAverageAmount(feedingActivities);
@@ -447,54 +398,13 @@ export function predictNextFeeding(
     confidenceLevel,
     durationBlendResult: durationBlend,
     intervalHours: predictedInterval,
-    isOverdue,
     lastFeedingAmount,
     lastFeedingTime,
     nextFeedingTime,
-    overdueMinutes,
     recentFeedingPattern: recentPattern,
-    recentSkipTime,
     suggestedAmount: amountBlend.value,
     suggestedDuration: durationBlend.value,
-    suggestedRecoveryTime,
     suggestedType: customPreferences?.feeding?.preferredType || mostCommonType, // Use custom preference if set
     suggestionSource: `Amount: ${amountBlend.source}, Duration: ${durationBlend.source}`,
   };
-}
-
-/**
- * Check if feeding is overdue using dynamic threshold
- */
-export function isFeedingOverdue(
-  nextFeedingTime: Date,
-  babyAgeDays: number | null,
-): boolean {
-  const now = new Date();
-  const minutesOverdue = differenceInMinutes(now, nextFeedingTime);
-  const threshold = getOverdueThreshold('feeding', babyAgeDays);
-  return minutesOverdue > threshold;
-}
-
-/**
- * Get status of upcoming feeding with dynamic threshold
- */
-export function getFeedingStatus(
-  nextFeedingTime: Date,
-  babyAgeDays: number | null,
-): 'upcoming' | 'soon' | 'overdue' {
-  const now = new Date();
-  const minutesUntil = differenceInMinutes(nextFeedingTime, now);
-  const threshold = getOverdueThreshold('feeding', babyAgeDays);
-
-  if (minutesUntil < -threshold) {
-    return 'overdue';
-  }
-
-  // "Soon" window is half the overdue threshold
-  const soonThreshold = Math.min(30, threshold / 2);
-  if (minutesUntil <= soonThreshold) {
-    return 'soon';
-  }
-
-  return 'upcoming';
 }

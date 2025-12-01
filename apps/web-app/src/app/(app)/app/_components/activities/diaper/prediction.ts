@@ -1,6 +1,5 @@
 import type { Activities } from '@nugget/db/schema';
 import { differenceInMinutes } from 'date-fns';
-import { getOverdueThreshold } from '../../shared/overdue-thresholds';
 import {
   calculateBabyAgeDays,
   getDiaperIntervalByAge,
@@ -20,10 +19,6 @@ export interface DiaperPrediction {
     duration: number | null;
     notes: string | null;
   }>;
-  isOverdue: boolean;
-  overdueMinutes: number | null;
-  suggestedRecoveryTime: Date | null;
-  recentSkipTime: Date | null; // Time of most recent skip activity
   // Quick log smart defaults
   suggestedType: 'wet' | 'dirty' | 'both' | null; // predicted type based on recent pattern
   // Calculation components for displaying how prediction works
@@ -246,31 +241,13 @@ export function predictNextDiaper(
   allActivities?: Array<typeof Activities.$inferSelect>,
 ): DiaperPrediction {
   // Filter to only diaper activities
-  // Exclude skipped activities (dismissals don't count as real diaper changes)
   const diaperActivities = recentDiapers
-    .filter(
-      (a) =>
-        a.type === 'diaper' &&
-        !(a.details && 'skipped' in a.details && a.details.skipped === true),
-    )
+    .filter((a) => a.type === 'diaper')
     .sort(
       (a, b) =>
         new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
     ) // Most recent first
     .slice(0, 15); // Consider last 15 diaper changes
-
-  // Check for recent skip activities
-  const skipActivities = diaperActivities.filter(
-    (a) =>
-      a.details &&
-      typeof a.details === 'object' &&
-      'skipped' in a.details &&
-      a.details.skipped === true,
-  );
-  const recentSkipTime =
-    skipActivities.length > 0 && skipActivities[0]
-      ? new Date(skipActivities[0].startTime)
-      : null;
 
   // Calculate baby's age for age-based interval
   const ageDays = calculateBabyAgeDays(babyBirthDate);
@@ -293,14 +270,10 @@ export function predictNextDiaper(
       },
       confidenceLevel: 'low',
       intervalHours: ageBasedInterval,
-      isOverdue: false,
       lastDiaperTime: null,
       lastDiaperType: null,
       nextDiaperTime,
-      overdueMinutes: null,
       recentDiaperPattern: [],
-      recentSkipTime: null,
-      suggestedRecoveryTime: null,
       suggestedType: null,
     };
   }
@@ -321,14 +294,10 @@ export function predictNextDiaper(
       },
       confidenceLevel: 'low',
       intervalHours: ageBasedInterval,
-      isOverdue: false,
       lastDiaperTime: null,
       lastDiaperType: null,
       nextDiaperTime,
-      overdueMinutes: null,
       recentDiaperPattern: [],
-      recentSkipTime: null,
-      suggestedRecoveryTime: null,
       suggestedType: null,
     };
   }
@@ -480,24 +449,6 @@ export function predictNextDiaper(
     type: getDiaperType(diaper.details),
   }));
 
-  // Check if overdue and calculate recovery time
-  const overdueThreshold = getOverdueThreshold('diaper', ageDays);
-  const now = new Date();
-  const minutesUntil = differenceInMinutes(nextDiaperTime, now);
-  const isOverdue = minutesUntil < -overdueThreshold;
-  const overdueMinutes = isOverdue ? Math.abs(minutesUntil) : null;
-
-  // Calculate recovery time if overdue
-  let suggestedRecoveryTime: Date | null = null;
-  if (isOverdue) {
-    suggestedRecoveryTime = new Date();
-    // Suggest next diaper change in 0.5 to 0.7 of normal interval
-    const recoveryInterval = predictedInterval * 0.6;
-    suggestedRecoveryTime.setMinutes(
-      suggestedRecoveryTime.getMinutes() + recoveryInterval * 60,
-    );
-  }
-
   return {
     averageIntervalHours: averageInterval,
     calculationDetails: {
@@ -509,51 +460,10 @@ export function predictNextDiaper(
     },
     confidenceLevel,
     intervalHours: predictedInterval,
-    isOverdue,
     lastDiaperTime,
     lastDiaperType,
     nextDiaperTime,
-    overdueMinutes,
     recentDiaperPattern: recentPattern,
-    recentSkipTime,
-    suggestedRecoveryTime,
     suggestedType: predictDiaperType(diaperActivities),
   };
-}
-
-/**
- * Check if diaper change is overdue using dynamic threshold
- */
-export function isDiaperOverdue(
-  nextDiaperTime: Date,
-  babyAgeDays: number | null,
-): boolean {
-  const now = new Date();
-  const minutesOverdue = differenceInMinutes(now, nextDiaperTime);
-  const threshold = getOverdueThreshold('diaper', babyAgeDays);
-  return minutesOverdue > threshold;
-}
-
-/**
- * Get status of upcoming diaper change with dynamic threshold
- */
-export function getDiaperStatus(
-  nextDiaperTime: Date,
-  babyAgeDays: number | null,
-): 'upcoming' | 'soon' | 'overdue' {
-  const now = new Date();
-  const minutesUntil = differenceInMinutes(nextDiaperTime, now);
-  const threshold = getOverdueThreshold('diaper', babyAgeDays);
-
-  if (minutesUntil < -threshold) {
-    return 'overdue';
-  }
-
-  // "Soon" window is half the overdue threshold
-  const soonThreshold = Math.min(30, threshold / 2);
-  if (minutesUntil <= soonThreshold) {
-    return 'soon';
-  }
-
-  return 'upcoming';
 }

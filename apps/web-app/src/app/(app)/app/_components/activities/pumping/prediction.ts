@@ -2,7 +2,6 @@ import type { BabyCustomPreferences } from '@nugget/db';
 import { getPreferenceWeight } from '@nugget/db';
 import type { Activities } from '@nugget/db/schema';
 import { differenceInMinutes } from 'date-fns';
-import { getOverdueThreshold } from '../../shared/overdue-thresholds';
 import {
   type BlendResult,
   blendPredictionValues,
@@ -27,10 +26,6 @@ export interface PumpingPrediction {
     duration: number | null;
     notes: string | null;
   }>;
-  isOverdue: boolean;
-  overdueMinutes: number | null;
-  suggestedRecoveryTime: Date | null;
-  recentSkipTime: Date | null;
   // Quick log smart defaults
   suggestedVolume: number | null; // in ml, blended from custom/recent/age
   suggestedDuration: number | null; // in minutes, blended from custom/recent/age
@@ -125,36 +120,14 @@ export function predictNextPumping(
   customPreferences?: BabyCustomPreferences | null,
 ): PumpingPrediction {
   // Filter to only pumping activities
-  // Exclude scheduled activities and skipped activities (dismissals don't count as real pumping)
+  // Exclude scheduled activities
   const pumpingActivities = recentPumpings
-    .filter(
-      (a) =>
-        a.type === 'pumping' &&
-        !a.isScheduled &&
-        !(a.details && 'skipped' in a.details && a.details.skipped === true),
-    )
+    .filter((a) => a.type === 'pumping' && !a.isScheduled)
     .sort(
       (a, b) =>
         new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
     ) // Most recent first
     .slice(0, 10); // Consider last 10 pumping sessions
-
-  // Find most recent skip activity
-  const skipActivities = recentPumpings
-    .filter(
-      (a) =>
-        a.type === 'pumping' &&
-        a.details &&
-        'skipped' in a.details &&
-        a.details.skipped === true,
-    )
-    .sort(
-      (a, b) =>
-        new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
-    );
-  const recentSkipTime = skipActivities[0]
-    ? new Date(skipActivities[0].startTime)
-    : null;
 
   // Calculate baby's age for age-based interval
   const ageDays = calculateBabyAgeDays(babyBirthDate);
@@ -210,15 +183,11 @@ export function predictNextPumping(
       confidenceLevel: 'low',
       durationBlendResult: durationBlend,
       intervalHours: ageBasedInterval,
-      isOverdue: false,
       lastPumpingAmount: null,
       lastPumpingTime: null,
       nextPumpingTime,
-      overdueMinutes: null,
       recentPumpingPattern: [],
-      recentSkipTime,
       suggestedDuration: durationBlend.value,
-      suggestedRecoveryTime: null,
       suggestedVolume: volumeBlend.value,
       suggestionSource: `Volume: ${volumeBlend.source}, Duration: ${durationBlend.source}`,
       volumeBlendResult: volumeBlend,
@@ -263,15 +232,11 @@ export function predictNextPumping(
       confidenceLevel: 'low',
       durationBlendResult: durationBlend,
       intervalHours: ageBasedInterval,
-      isOverdue: false,
       lastPumpingAmount: null,
       lastPumpingTime: null,
       nextPumpingTime,
-      overdueMinutes: null,
       recentPumpingPattern: [],
-      recentSkipTime,
       suggestedDuration: durationBlend.value,
-      suggestedRecoveryTime: null,
       suggestedVolume: volumeBlend.value,
       suggestionSource: `Volume: ${volumeBlend.source}, Duration: ${durationBlend.source}`,
       volumeBlendResult: volumeBlend,
@@ -341,24 +306,6 @@ export function predictNextPumping(
     time: new Date(pumping.startTime),
   }));
 
-  // Check if overdue and calculate recovery time
-  const overdueThreshold = getOverdueThreshold('pumping', ageDays);
-  const now = new Date();
-  const minutesUntil = differenceInMinutes(nextPumpingTime, now);
-  const isOverdue = minutesUntil < -overdueThreshold;
-  const overdueMinutes = isOverdue ? Math.abs(minutesUntil) : null;
-
-  // Calculate recovery time if overdue
-  let suggestedRecoveryTime: Date | null = null;
-  if (isOverdue) {
-    suggestedRecoveryTime = new Date();
-    // Suggest next pumping in 0.5 to 0.7 of normal interval
-    const recoveryInterval = predictedInterval * 0.6;
-    suggestedRecoveryTime.setMinutes(
-      suggestedRecoveryTime.getMinutes() + recoveryInterval * 60,
-    );
-  }
-
   // Blend suggested volume with custom preferences
   const ageBasedAmounts = getAgeBasedPumpingAmounts(ageDays);
   const recentAverageVolume = getRecentAverageVolume(pumpingActivities);
@@ -394,54 +341,13 @@ export function predictNextPumping(
     confidenceLevel,
     durationBlendResult: durationBlend,
     intervalHours: predictedInterval,
-    isOverdue,
     lastPumpingAmount,
     lastPumpingTime,
     nextPumpingTime,
-    overdueMinutes,
     recentPumpingPattern: recentPattern,
-    recentSkipTime,
     suggestedDuration: durationBlend.value,
-    suggestedRecoveryTime,
     suggestedVolume: volumeBlend.value,
     suggestionSource: `Volume: ${volumeBlend.source}, Duration: ${durationBlend.source}`,
     volumeBlendResult: volumeBlend,
   };
-}
-
-/**
- * Check if pumping is overdue using dynamic threshold
- */
-export function isPumpingOverdue(
-  nextPumpingTime: Date,
-  babyAgeDays: number | null,
-): boolean {
-  const now = new Date();
-  const minutesOverdue = differenceInMinutes(now, nextPumpingTime);
-  const threshold = getOverdueThreshold('pumping', babyAgeDays);
-  return minutesOverdue > threshold;
-}
-
-/**
- * Get status of upcoming pumping with dynamic threshold
- */
-export function getPumpingStatus(
-  nextPumpingTime: Date,
-  babyAgeDays: number | null,
-): 'upcoming' | 'soon' | 'overdue' {
-  const now = new Date();
-  const minutesUntil = differenceInMinutes(nextPumpingTime, now);
-  const threshold = getOverdueThreshold('pumping', babyAgeDays);
-
-  if (minutesUntil < -threshold) {
-    return 'overdue';
-  }
-
-  // "Soon" window is half the overdue threshold
-  const soonThreshold = Math.min(30, threshold / 2);
-  if (minutesUntil <= soonThreshold) {
-    return 'soon';
-  }
-
-  return 'upcoming';
 }
