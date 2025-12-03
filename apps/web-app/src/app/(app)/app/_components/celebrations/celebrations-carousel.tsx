@@ -8,6 +8,7 @@ import {
 import { api } from '@nugget/api/react';
 import posthog from 'posthog-js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useDashboardLoadTracker } from '~/app/(app)/app/babies/[babyId]/dashboard/_components/dashboard-load-tracker';
 import { CelebrationsSkeleton } from '../skeletons';
 import { CelebrationCard } from './celebration-card';
 
@@ -24,6 +25,7 @@ const getTodayKey = () => {
 
 export function CelebrationsCarousel({ babyId }: CelebrationsCarouselProps) {
   const [dismissedToday, setDismissedToday] = useState(false);
+  const tracker = useDashboardLoadTracker();
 
   // Use tRPC query with prefetched data (from page.tsx)
   const { data, isLoading } = api.celebrations.getCarouselContent.useQuery(
@@ -32,6 +34,14 @@ export function CelebrationsCarousel({ babyId }: CelebrationsCarouselProps) {
       staleTime: 86400000, // 1 day cache
     },
   );
+
+  // Track when component finishes loading (even if it doesn't render anything)
+  useEffect(() => {
+    if (!isLoading && tracker) {
+      // Mark as loaded once query completes, regardless of whether we render
+      tracker.markComponentLoaded('celebrations');
+    }
+  }, [isLoading, tracker]);
 
   const celebration = data?.celebration ?? null;
   const babyName = data?.babyName ?? 'Baby';

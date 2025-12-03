@@ -1,5 +1,10 @@
 'use client';
 
+import {
+  buildDashboardEvent,
+  DASHBOARD_ACTION,
+  DASHBOARD_COMPONENT,
+} from '@nugget/analytics/utils';
 import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
@@ -21,7 +26,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import posthog from 'posthog-js';
 import { memo, useEffect, useMemo, useState } from 'react';
+import { useDashboardLoadTracker } from '~/app/(app)/app/babies/[babyId]/dashboard/_components/dashboard-load-tracker';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import {
@@ -185,6 +192,14 @@ export function TodaySummaryCard({
   // Get babyId from params (TodaySummaryCard is only used on dashboard which has babyId in URL)
   const params = useParams();
   const babyId = params.babyId as string;
+  const tracker = useDashboardLoadTracker();
+
+  // Track when component finishes loading (useSuspenseQuery means it's loaded when rendered)
+  useEffect(() => {
+    if (tracker) {
+      tracker.markComponentLoaded('todaySummary');
+    }
+  }, [tracker]);
 
   // Fetch today's activities using optimized query (non-blocking)
   const {
@@ -340,10 +355,31 @@ export function TodaySummaryCard({
 
   // Button handlers
   const handleBottleClick = () => {
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.TODAY_SUMMARY,
+        DASHBOARD_ACTION.QUICK_ACTION,
+      ),
+      {
+        action_type: 'bottle',
+        baby_id: babyId,
+      },
+    );
     setOpenDrawer('bottle');
   };
 
   const handleQuickNursing = async () => {
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.TODAY_SUMMARY,
+        DASHBOARD_ACTION.QUICK_ACTION,
+      ),
+      {
+        action_type: 'nursing',
+        baby_id: babyId,
+      },
+    );
+
     // Use prediction data which already includes user preferences and weights
     // The suggestedDuration is already blended with:
     // - Custom preferences (customPreferences?.feeding?.nursingDurationMinutes)
@@ -451,6 +487,17 @@ export function TodaySummaryCard({
   };
 
   const handleDiaperClick = async (type: 'wet' | 'dirty') => {
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.TODAY_SUMMARY,
+        DASHBOARD_ACTION.QUICK_ACTION,
+      ),
+      {
+        action_type: type,
+        baby_id: babyId,
+      },
+    );
+
     // Check for in-progress sleep before creating activity
     if (inProgressSleep) {
       setPendingActivity({ type });
@@ -531,6 +578,16 @@ export function TodaySummaryCard({
   const handleSleepTimerClick = async () => {
     // If already tracking, stop the timer
     if (inProgressActivity) {
+      posthog.capture(
+        buildDashboardEvent(
+          DASHBOARD_COMPONENT.TODAY_SUMMARY,
+          DASHBOARD_ACTION.QUICK_ACTION,
+        ),
+        {
+          action_type: 'sleep_timer_stop',
+          baby_id: babyId,
+        },
+      );
       setCreatingType('sleep-timer');
 
       const now = new Date();
@@ -590,6 +647,17 @@ export function TodaySummaryCard({
         toast.error('Failed to stop timer. Please try again.');
       }
     } else {
+      posthog.capture(
+        buildDashboardEvent(
+          DASHBOARD_COMPONENT.TODAY_SUMMARY,
+          DASHBOARD_ACTION.QUICK_ACTION,
+        ),
+        {
+          action_type: 'sleep_timer_start',
+          baby_id: babyId,
+        },
+      );
+
       // Start timer
       setCreatingType('sleep-timer');
 
@@ -670,6 +738,16 @@ export function TodaySummaryCard({
   };
 
   const handleManualSleepClick = () => {
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.TODAY_SUMMARY,
+        DASHBOARD_ACTION.QUICK_ACTION,
+      ),
+      {
+        action_type: 'sleep_manual',
+        baby_id: babyId,
+      },
+    );
     setOpenDrawer('sleep');
   };
 
@@ -1347,7 +1425,19 @@ export function TodaySummaryCard({
             ) : null}
             <button
               className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
-              onClick={() => setShowStatsDrawer(true)}
+              onClick={() => {
+                posthog.capture(
+                  buildDashboardEvent(
+                    DASHBOARD_COMPONENT.TODAY_SUMMARY,
+                    DASHBOARD_ACTION.QUICK_ACTION,
+                  ),
+                  {
+                    action_type: 'stats',
+                    baby_id: babyId,
+                  },
+                );
+                setShowStatsDrawer(true);
+              }}
               title="View statistics"
               type="button"
             >
@@ -1355,7 +1445,19 @@ export function TodaySummaryCard({
             </button>
             <button
               className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
-              onClick={() => setShowAchievementsDrawer(true)}
+              onClick={() => {
+                posthog.capture(
+                  buildDashboardEvent(
+                    DASHBOARD_COMPONENT.TODAY_SUMMARY,
+                    DASHBOARD_ACTION.QUICK_ACTION,
+                  ),
+                  {
+                    action_type: 'achievements',
+                    baby_id: babyId,
+                  },
+                );
+                setShowAchievementsDrawer(true);
+              }}
               title="View achievements"
               type="button"
             >

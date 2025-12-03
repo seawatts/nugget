@@ -25,6 +25,7 @@ import {
 import { useParams } from 'next/navigation';
 import posthog from 'posthog-js';
 import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useDashboardLoadTracker } from '~/app/(app)/app/babies/[babyId]/dashboard/_components/dashboard-load-tracker';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import {
   getUserRelationFromStore,
@@ -140,6 +141,7 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
   const { user } = useUser();
   const params = useParams<{ babyId?: string }>();
   const babyId = params?.babyId;
+  const tracker = useDashboardLoadTracker();
 
   // Fetch activities here (within Suspense boundary for better performance)
   const sevenDaysAgo = useMemo(() => startOfDay(subDays(new Date(), 7)), []);
@@ -148,6 +150,14 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
     limit: 200,
     since: sevenDaysAgo,
   });
+
+  // Track when component finishes loading (useSuspenseQuery means it's loaded when rendered)
+  useEffect(() => {
+    if (tracker && allActivitiesData.length >= 0) {
+      // Even if empty, the query has completed
+      tracker.markComponentLoaded('activityCards');
+    }
+  }, [tracker, allActivitiesData.length]);
 
   // Filter activities by type client-side
   const bathActivities = useMemo(
@@ -549,7 +559,21 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
           babyAgeDays >= 0 && (
             <PredictiveDoctorVisitCard
               onActivityLogged={handleActivityLogged}
-              onCardClick={() => setOpenDrawer('doctor_visit')}
+              onCardClick={() => {
+                // Track card click
+                posthog.capture(
+                  buildDashboardEvent(
+                    DASHBOARD_COMPONENT.ACTIVITY_CARDS,
+                    DASHBOARD_ACTION.DRAWER_OPEN,
+                  ),
+                  {
+                    activity_type: 'doctor_visit',
+                    baby_id: babyId,
+                    source: 'predictive_card',
+                  },
+                );
+                setOpenDrawer('doctor_visit');
+              }}
             />
           )}
         {/* Simple activities using generic component */}

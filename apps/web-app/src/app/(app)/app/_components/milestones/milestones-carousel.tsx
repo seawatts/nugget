@@ -15,6 +15,7 @@ import { useMediaQuery } from '@nugget/ui/hooks/use-media-query';
 import { Award } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useDashboardLoadTracker } from '~/app/(app)/app/babies/[babyId]/dashboard/_components/dashboard-load-tracker';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticMilestonesStore } from '~/stores/optimistic-milestones';
 import { MilestoneCard } from './milestone-card';
@@ -48,6 +49,7 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
   const [isProcessingSwipe, setIsProcessingSwipe] = useState(false);
   const isMobile = useMediaQuery({ query: '(max-width: 768px)' });
   const hasTrackedView = useRef(false);
+  const tracker = useDashboardLoadTracker();
 
   // TEMP: Force mobile mode for testing (uncomment to test on desktop)
   // const isMobile = true;
@@ -108,6 +110,14 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
       }
     }
   }, [milestones, babyId]);
+
+  // Track when component finishes loading (even if it doesn't render anything)
+  useEffect(() => {
+    if (!isLoading && tracker) {
+      // Mark as loaded once query completes, regardless of whether we render
+      tracker.markComponentLoaded('milestones');
+    }
+  }, [isLoading, tracker]);
 
   // Handler to mark milestone as complete
   const handleMarkComplete = useCallback(

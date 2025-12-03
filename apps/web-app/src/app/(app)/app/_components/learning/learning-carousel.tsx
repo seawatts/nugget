@@ -10,6 +10,7 @@ import { H2, P } from '@nugget/ui/custom/typography';
 import { Sparkles } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useEffect, useRef } from 'react';
+import { useDashboardLoadTracker } from '~/app/(app)/app/babies/[babyId]/dashboard/_components/dashboard-load-tracker';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { LearningCardCheckBack } from './learning-card-check-back';
 import { LearningCardInfo } from './learning-card-info';
@@ -23,6 +24,7 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
   // Get baby info from dashboard store (populated by DashboardContainer)
   const baby = useDashboardDataStore.use.baby();
   const hasTrackedView = useRef(false);
+  const tracker = useDashboardLoadTracker();
 
   const babyName = baby?.firstName ?? 'Baby';
   const ageInDays = baby?.birthDate
@@ -58,6 +60,14 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
       hasTrackedView.current = true;
     }
   }, [tips.length, babyId]);
+
+  // Track when component finishes loading (even if it doesn't render anything)
+  useEffect(() => {
+    if (!isLoading && tracker) {
+      // Mark as loaded once query completes, regardless of whether we render
+      tracker.markComponentLoaded('learningCarousel');
+    }
+  }, [isLoading, tracker]);
 
   // Show loading state for both initial loading and pending generation
   if (status === 'loading' || status === 'pending') {

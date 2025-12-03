@@ -158,22 +158,37 @@ async function main() {
     // 7. tRPC Average Duration (queries)
     const queryDurationInsightId = await upsertInsight(
       projectId,
-      createTrendsInsight(
-        'trpc.*.query',
-        'tRPC Query Average Duration',
-        'Average execution time for tRPC queries',
-        'ActionsLineGraph',
-        {
-          properties: [
-            {
-              key: 'duration_ms',
-              operator: 'gt',
-              type: 'event',
-              value: 0,
-            },
-          ],
+      {
+        description: 'Average execution time for tRPC queries',
+        name: 'tRPC Query Average Duration',
+        query: {
+          kind: 'InsightVizNode',
+          source: {
+            dateRange: { date_from: '-30d' },
+            interval: 'day',
+            kind: 'TrendsQuery',
+            properties: [
+              {
+                key: 'duration_ms',
+                operator: 'gt',
+                type: 'event',
+                value: 0,
+              },
+            ],
+            series: [
+              {
+                event: 'trpc.*.query',
+                kind: 'EventsNode',
+                math: 'avg',
+                math_property: 'duration_ms',
+              },
+            ],
+            version: 1,
+          },
+          version: 1,
         },
-      ),
+        visualization: 'ActionsLineGraph',
+      },
       undefined,
       INSIGHT_TAGS,
     );
@@ -181,22 +196,37 @@ async function main() {
     // 8. tRPC Average Duration (mutations)
     const mutationDurationInsightId = await upsertInsight(
       projectId,
-      createTrendsInsight(
-        'trpc.*.mutation',
-        'tRPC Mutation Average Duration',
-        'Average execution time for tRPC mutations',
-        'ActionsLineGraph',
-        {
-          properties: [
-            {
-              key: 'duration_ms',
-              operator: 'gt',
-              type: 'event',
-              value: 0,
-            },
-          ],
+      {
+        description: 'Average execution time for tRPC mutations',
+        name: 'tRPC Mutation Average Duration',
+        query: {
+          kind: 'InsightVizNode',
+          source: {
+            dateRange: { date_from: '-30d' },
+            interval: 'day',
+            kind: 'TrendsQuery',
+            properties: [
+              {
+                key: 'duration_ms',
+                operator: 'gt',
+                type: 'event',
+                value: 0,
+              },
+            ],
+            series: [
+              {
+                event: 'trpc.*.mutation',
+                kind: 'EventsNode',
+                math: 'avg',
+                math_property: 'duration_ms',
+              },
+            ],
+            version: 1,
+          },
+          version: 1,
         },
-      ),
+        visualization: 'ActionsLineGraph',
+      },
       undefined,
       INSIGHT_TAGS,
     );
@@ -214,7 +244,66 @@ async function main() {
       INSIGHT_TAGS,
     );
 
-    // 10. tRPC Total API Calls
+    // 10. tRPC Errors by Procedure
+    const errorsByProcedureInsightId = await upsertInsight(
+      projectId,
+      createTrendsInsight(
+        'trpc.error',
+        'tRPC Errors by Procedure',
+        'Number of errors per tRPC procedure',
+        'ActionsBar',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 11. tRPC Failed Queries/Mutations
+    const failedQueriesInsightId = await upsertInsight(
+      projectId,
+      createTrendsInsight(
+        'trpc.*.query',
+        'tRPC Failed Queries',
+        'Number of failed tRPC queries over time',
+        'ActionsLineGraph',
+        {
+          properties: [
+            {
+              key: 'success',
+              operator: 'exact',
+              type: 'event',
+              value: false,
+            },
+          ],
+        },
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 12. tRPC Failed Mutations
+    const failedMutationsInsightId = await upsertInsight(
+      projectId,
+      createTrendsInsight(
+        'trpc.*.mutation',
+        'tRPC Failed Mutations',
+        'Number of failed tRPC mutations over time',
+        'ActionsLineGraph',
+        {
+          properties: [
+            {
+              key: 'success',
+              operator: 'exact',
+              type: 'event',
+              value: false,
+            },
+          ],
+        },
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 13. tRPC Total API Calls
     const totalCallsInsightId = await upsertInsight(
       projectId,
       {
@@ -242,7 +331,7 @@ async function main() {
 
     console.log('\n📋 Upserting dashboard...\n');
 
-    // Upsert dashboard
+    // Upsert dashboard (text tiles will be added manually in PostHog UI)
     const dashboard = await upsertDashboard(
       projectId,
       {
@@ -256,18 +345,24 @@ async function main() {
 
     console.log('\n🔗 Adding insights to dashboard...\n');
 
-    // Add insights to dashboard
+    // Add insights to dashboard (organized by sections)
     const insights = [
+      // Performance Metrics
+      queryDurationInsightId,
+      mutationDurationInsightId,
+      successRateInsightId,
+      mutationSuccessRateInsightId,
+      // Error Analysis
+      errorRateInsightId,
+      failedQueriesInsightId,
+      failedMutationsInsightId,
+      errorBreakdownInsightId,
+      errorsByProcedureInsightId,
+      // Volume & Usage
       totalCallsInsightId,
       queryVolumeInsightId,
       mutationVolumeInsightId,
       queryVsMutationInsightId,
-      successRateInsightId,
-      mutationSuccessRateInsightId,
-      queryDurationInsightId,
-      mutationDurationInsightId,
-      errorRateInsightId,
-      errorBreakdownInsightId,
     ];
 
     let addedCount = 0;
@@ -305,16 +400,19 @@ async function main() {
     if (insights.length > 0) {
       console.log('📋 Created insights:');
       const insightNames = [
+        'tRPC Query Average Duration',
+        'tRPC Mutation Average Duration',
+        'tRPC Query Success Rate',
+        'tRPC Mutation Success Rate',
+        'tRPC Error Rate',
+        'tRPC Failed Queries',
+        'tRPC Failed Mutations',
+        'tRPC Error Breakdown by Code',
+        'tRPC Errors by Procedure',
         'tRPC Total API Calls',
         'tRPC Query Volume Over Time',
         'tRPC Mutation Volume Over Time',
         'tRPC Query vs Mutation Volume',
-        'tRPC Query Success Rate',
-        'tRPC Mutation Success Rate',
-        'tRPC Query Average Duration',
-        'tRPC Mutation Average Duration',
-        'tRPC Error Rate',
-        'tRPC Error Breakdown by Code',
       ];
 
       insights.forEach((insightId, index) => {

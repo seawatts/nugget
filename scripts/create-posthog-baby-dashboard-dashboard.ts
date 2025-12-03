@@ -49,25 +49,152 @@ async function main() {
 
     console.log('\n📊 Upserting insights...\n');
 
-    // 1. Dashboard Container Load Time
+    // 1. Dashboard Container Initial Load Time (Average)
     const containerLoadInsightId = await upsertInsight(
       projectId,
-      createTrendsInsight(
-        'dashboard.container.load',
-        'Dashboard Container Load Time',
-        'Average time for dashboard container to load',
-        'ActionsLineGraph',
-        {
-          properties: [
-            {
-              key: 'duration_ms',
-              operator: 'gt',
-              type: 'event',
-              value: 0,
-            },
-          ],
+      {
+        description:
+          'Average time for dashboard container initial load (before all components)',
+        name: 'Dashboard Container Initial Load Time',
+        query: {
+          kind: 'InsightVizNode',
+          source: {
+            dateRange: { date_from: '-30d' },
+            interval: 'day',
+            kind: 'TrendsQuery',
+            properties: [
+              {
+                key: 'duration_ms',
+                operator: 'gt',
+                type: 'event',
+                value: 0,
+              },
+              {
+                key: 'full_page_load',
+                operator: 'exact',
+                type: 'event',
+                value: false,
+              },
+            ],
+            series: [
+              {
+                event: 'dashboard.container.load',
+                kind: 'EventsNode',
+                math: 'avg',
+                math_property: 'duration_ms',
+              },
+            ],
+            version: 1,
+          },
+          version: 1,
         },
-      ),
+        visualization: 'ActionsLineGraph',
+      },
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 1b. Full Page Load Time (Average) - When ALL components finish loading
+    const fullPageLoadInsightId = await upsertInsight(
+      projectId,
+      {
+        description:
+          'Average time for entire dashboard to fully load (all components + API calls)',
+        name: 'Full Page Load Time',
+        query: {
+          kind: 'InsightVizNode',
+          source: {
+            dateRange: { date_from: '-30d' },
+            interval: 'day',
+            kind: 'TrendsQuery',
+            properties: [
+              {
+                key: 'full_page_load',
+                operator: 'exact',
+                type: 'event',
+                value: true,
+              },
+            ],
+            series: [
+              {
+                event: 'dashboard.container.load',
+                kind: 'EventsNode',
+                math: 'avg',
+                math_property: 'duration_ms',
+              },
+            ],
+            version: 1,
+          },
+          version: 1,
+        },
+        visualization: 'ActionsLineGraph',
+      },
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 1c. Component Load Times Breakdown
+    const componentLoadTimesInsightId = await upsertInsight(
+      projectId,
+      {
+        description: 'Average load time for each dashboard component',
+        name: 'Component Load Times',
+        query: {
+          kind: 'InsightVizNode',
+          source: {
+            dateRange: { date_from: '-30d' },
+            interval: 'day',
+            kind: 'TrendsQuery',
+            series: [
+              {
+                event: 'dashboard.celebrations_carousel.load',
+                kind: 'EventsNode',
+                math: 'avg',
+                math_property: 'duration_ms',
+              },
+              {
+                event: 'dashboard.today_summary.load',
+                kind: 'EventsNode',
+                math: 'avg',
+                math_property: 'duration_ms',
+              },
+              {
+                event: 'dashboard.activity_cards.load',
+                kind: 'EventsNode',
+                math: 'avg',
+                math_property: 'duration_ms',
+              },
+              {
+                event: 'dashboard.learning_carousel.load',
+                kind: 'EventsNode',
+                math: 'avg',
+                math_property: 'duration_ms',
+              },
+              {
+                event: 'dashboard.developmental_phases_carousel.load',
+                kind: 'EventsNode',
+                math: 'avg',
+                math_property: 'duration_ms',
+              },
+              {
+                event: 'dashboard.milestones_carousel.load',
+                kind: 'EventsNode',
+                math: 'avg',
+                math_property: 'duration_ms',
+              },
+              {
+                event: 'dashboard.activity_timeline.load',
+                kind: 'EventsNode',
+                math: 'avg',
+                math_property: 'duration_ms',
+              },
+            ],
+            version: 1,
+          },
+          version: 1,
+        },
+        visualization: 'ActionsBar',
+      },
       undefined,
       INSIGHT_TAGS,
     );
@@ -163,7 +290,111 @@ async function main() {
       INSIGHT_TAGS,
     );
 
-    // 9. Stats Drawer Opens (all types)
+    // 9. Today Summary Quick Actions
+    const quickActionsInsightId = await upsertInsight(
+      projectId,
+      createTrendsInsight(
+        'dashboard.today_summary.quick_action',
+        'Today Summary Quick Actions',
+        'Number of quick action clicks from today summary card',
+        'ActionsLineGraph',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 10. Today Summary Quick Actions Breakdown by Type
+    const quickActionsBreakdownInsightId = await upsertInsight(
+      projectId,
+      createTrendsInsight(
+        'dashboard.today_summary.quick_action',
+        'Today Summary Quick Actions by Type',
+        'Breakdown of quick action clicks by action type',
+        'ActionsBar',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 11. Activity Cards Quick Actions
+    const activityCardsQuickActionsInsightId = await upsertInsight(
+      projectId,
+      createTrendsInsight(
+        'dashboard.activity_cards.quick_action',
+        'Activity Cards Quick Actions',
+        'Number of quick action clicks from activity cards',
+        'ActionsLineGraph',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 12. Activity Cards Quick Actions Breakdown by Type
+    const activityCardsQuickActionsBreakdownInsightId = await upsertInsight(
+      projectId,
+      createTrendsInsight(
+        'dashboard.activity_cards.quick_action',
+        'Activity Cards Quick Actions by Type',
+        'Breakdown of quick action clicks by activity and action type',
+        'ActionsBar',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 13. Activity Cards Drawer Opens
+    const activityCardsDrawerOpenInsightId = await upsertInsight(
+      projectId,
+      createTrendsInsight(
+        'dashboard.activity_cards.drawer_open',
+        'Activity Cards Drawer Opens',
+        'Number of drawer opens from activity cards',
+        'ActionsLineGraph',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 14. Activity Cards Drawer Opens Breakdown by Activity Type
+    const activityCardsDrawerOpenBreakdownInsightId = await upsertInsight(
+      projectId,
+      createTrendsInsight(
+        'dashboard.activity_cards.drawer_open',
+        'Activity Cards Drawer Opens by Activity Type',
+        'Breakdown of drawer opens by activity type',
+        'ActionsBar',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 15. Activity Timeline Drawer Opens
+    const activityTimelineDrawerOpenInsightId = await upsertInsight(
+      projectId,
+      createTrendsInsight(
+        'dashboard.activity_timeline.drawer_open',
+        'Activity Timeline Drawer Opens',
+        'Number of drawer opens from activity timeline',
+        'ActionsLineGraph',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 16. Activity Timeline Drawer Opens Breakdown by Activity Type
+    const activityTimelineDrawerOpenBreakdownInsightId = await upsertInsight(
+      projectId,
+      createTrendsInsight(
+        'dashboard.activity_timeline.drawer_open',
+        'Activity Timeline Drawer Opens by Activity Type',
+        'Breakdown of timeline drawer opens by activity type',
+        'ActionsBar',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 17. Stats Drawer Opens (all types)
     const drawerOpenInsightId = await upsertInsight(
       projectId,
       createTrendsInsight(
@@ -221,7 +452,7 @@ async function main() {
 
     console.log('\n📋 Upserting dashboard...\n');
 
-    // Upsert dashboard
+    // Upsert dashboard (text tiles will be added manually in PostHog UI)
     const dashboard = await upsertDashboard(
       projectId,
       {
@@ -235,11 +466,23 @@ async function main() {
 
     console.log('\n🔗 Adding insights to dashboard...\n');
 
-    // Add insights to dashboard
+    // Add insights to dashboard (organized by sections)
     const insights = [
-      componentVolumeInsightId,
+      // Performance Metrics
       containerLoadInsightId,
+      fullPageLoadInsightId,
+      componentLoadTimesInsightId,
+      // User Interactions
+      componentVolumeInsightId,
       activityLoggedInsightId,
+      quickActionsInsightId,
+      quickActionsBreakdownInsightId,
+      activityCardsQuickActionsInsightId,
+      activityCardsQuickActionsBreakdownInsightId,
+      activityCardsDrawerOpenInsightId,
+      activityCardsDrawerOpenBreakdownInsightId,
+      activityTimelineDrawerOpenInsightId,
+      activityTimelineDrawerOpenBreakdownInsightId,
       timelineFilterInsightId,
       milestonesViewInsightId,
       celebrationsDismissedInsightId,
@@ -285,9 +528,19 @@ async function main() {
     if (insights.length > 0) {
       console.log('📋 Created insights:');
       const insightNames = [
+        'Dashboard Container Initial Load Time',
+        'Full Page Load Time',
+        'Component Load Times',
         'Dashboard Component Interaction Volume',
-        'Dashboard Container Load Time',
         'Activities Logged from Cards',
+        'Today Summary Quick Actions',
+        'Today Summary Quick Actions by Type',
+        'Activity Cards Quick Actions',
+        'Activity Cards Quick Actions by Type',
+        'Activity Cards Drawer Opens',
+        'Activity Cards Drawer Opens by Activity Type',
+        'Activity Timeline Drawer Opens',
+        'Activity Timeline Drawer Opens by Activity Type',
         'Activity Timeline Filter Changes',
         'Milestones Carousel Views',
         'Celebrations Dismissed',

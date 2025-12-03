@@ -11,6 +11,7 @@ export const EVENT_PREFIX = {
 
 // Dashboard component names
 export const DASHBOARD_COMPONENT = {
+  ACHIEVEMENTS_DRAWER: 'achievements_drawer',
   ACTIVITY_CARD: 'activity_card',
   ACTIVITY_CARDS: 'activity_cards',
   ACTIVITY_TIMELINE: 'activity_timeline',
@@ -44,6 +45,7 @@ export const DASHBOARD_ACTION = {
   FILTER_CHANGE: 'filter_change',
   LOAD: 'load',
   QUESTION_ANSWERED: 'question_answered',
+  QUICK_ACTION: 'quick_action',
   VIEW: 'view',
 } as const;
 

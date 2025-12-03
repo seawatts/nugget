@@ -1,5 +1,10 @@
 'use client';
 
+import {
+  buildDashboardEvent,
+  DASHBOARD_ACTION,
+  DASHBOARD_COMPONENT,
+} from '@nugget/analytics/utils';
 import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import {
@@ -15,6 +20,7 @@ import {
 import { toast } from '@nugget/ui/sonner';
 import { startOfDay, subDays } from 'date-fns';
 import { useParams } from 'next/navigation';
+import posthog from 'posthog-js';
 import { useMemo, useState } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
@@ -183,6 +189,21 @@ export function GenericSimpleActivityCard({
   );
 
   const handleDayClick = async (day: (typeof sevenDayData)[0]) => {
+    // Track quick action click
+    if (!day.hasActivity) {
+      posthog.capture(
+        buildDashboardEvent(
+          DASHBOARD_COMPONENT.ACTIVITY_CARDS,
+          DASHBOARD_ACTION.QUICK_ACTION,
+        ),
+        {
+          action_type: 'day_click',
+          activity_type: config.type,
+          baby_id: babyId,
+        },
+      );
+    }
+
     if (day.hasActivity && day.activity) {
       setActivityToDelete(day.activity);
     } else {
@@ -283,15 +304,61 @@ export function GenericSimpleActivityCard({
         icon={theme.icon}
         isLogging={isLogging}
         onAddClick={() => {
+          // Track drawer open
+          posthog.capture(
+            buildDashboardEvent(
+              DASHBOARD_COMPONENT.ACTIVITY_CARDS,
+              DASHBOARD_ACTION.DRAWER_OPEN,
+            ),
+            {
+              activity_type: config.type,
+              baby_id: babyId,
+              source: 'quick_action_card',
+            },
+          );
           setShowDialog(true);
         }}
         onDayClick={(day) => {
           void handleDayClick(day);
         }}
         onInfoClick={() => {
+          // Track info drawer open
+          posthog.capture(
+            buildDashboardEvent(
+              DASHBOARD_COMPONENT.ACTIVITY_CARDS,
+              DASHBOARD_ACTION.DRAWER_OPEN,
+            ),
+            {
+              activity_type: config.type,
+              baby_id: babyId,
+              drawer_type: 'info',
+              source: 'quick_action_card',
+            },
+          );
           setShowInfoDrawer(true);
         }}
         onStatsClick={() => {
+          // Track stats drawer open - component name depends on activity type
+          const statsComponentName =
+            config.type === 'bath'
+              ? DASHBOARD_COMPONENT.BATH_STATS_DRAWER
+              : config.type === 'vitamin_d'
+                ? DASHBOARD_COMPONENT.VITAMIN_D_STATS_DRAWER
+                : config.type === 'nail_trimming'
+                  ? DASHBOARD_COMPONENT.NAIL_TRIMMING_STATS_DRAWER
+                  : DASHBOARD_COMPONENT.ACTIVITY_CARDS;
+
+          posthog.capture(
+            buildDashboardEvent(
+              statsComponentName,
+              DASHBOARD_ACTION.DRAWER_OPEN,
+            ),
+            {
+              activity_type: config.type,
+              baby_id: babyId,
+              source: 'quick_action_card',
+            },
+          );
           setShowStatsDrawer(true);
         }}
         sevenDayData={sevenDayData}

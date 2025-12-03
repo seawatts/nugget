@@ -1,8 +1,15 @@
 'use client';
 
+import {
+  buildDashboardEvent,
+  DASHBOARD_ACTION,
+  DASHBOARD_COMPONENT,
+} from '@nugget/analytics/utils';
 import { Dialog, DialogContent, DialogTitle } from '@nugget/ui/dialog';
 import { Drawer, DrawerContent, DrawerTitle } from '@nugget/ui/drawer';
 import { useIsDesktop } from '@nugget/ui/hooks/use-media-query';
+import posthog from 'posthog-js';
+import { useEffect, useRef } from 'react';
 
 /**
  * Helper component to wrap timeline drawers with responsive Dialog/Drawer
@@ -20,6 +27,35 @@ export function TimelineDrawerWrapper({
   title: string;
 }) {
   const isDesktop = useIsDesktop();
+  const hasTrackedOpen = useRef(false);
+
+  // Extract activity type from title (e.g., "Edit Feeding" -> "feeding")
+  const activityType = title
+    .toLowerCase()
+    .replace('edit ', '')
+    .replace(/\s+/g, '_');
+
+  // Track drawer open/close events
+  useEffect(() => {
+    if (isOpen && !hasTrackedOpen.current) {
+      // Track timeline drawer open
+      posthog.capture(
+        buildDashboardEvent(
+          DASHBOARD_COMPONENT.ACTIVITY_TIMELINE,
+          DASHBOARD_ACTION.DRAWER_OPEN,
+        ),
+        {
+          activity_type: activityType,
+          drawer_title: title,
+          source: 'timeline',
+        },
+      );
+      hasTrackedOpen.current = true;
+    } else if (!isOpen) {
+      // Reset tracking when drawer closes
+      hasTrackedOpen.current = false;
+    }
+  }, [isOpen, activityType, title]);
 
   if (isDesktop) {
     return (

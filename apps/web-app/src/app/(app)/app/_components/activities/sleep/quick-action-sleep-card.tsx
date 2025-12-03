@@ -1,5 +1,10 @@
 'use client';
 
+import {
+  buildDashboardEvent,
+  DASHBOARD_ACTION,
+  DASHBOARD_COMPONENT,
+} from '@nugget/analytics/utils';
 import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
@@ -11,6 +16,7 @@ import { toast } from '@nugget/ui/sonner';
 import { startOfDay, subDays } from 'date-fns';
 import { Clock, Moon, StopCircle, Timer } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import posthog from 'posthog-js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
@@ -370,6 +376,19 @@ export function QuickActionSleepCard({
       return;
     }
 
+    // Track quick action click
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.ACTIVITY_CARDS,
+        DASHBOARD_ACTION.QUICK_ACTION,
+      ),
+      {
+        action_type: 'last_activity',
+        activity_type: 'sleep',
+        baby_id: babyId,
+      },
+    );
+
     setCreatingType('lastActivity');
 
     let tempId: string | null = null;
@@ -452,6 +471,19 @@ export function QuickActionSleepCard({
       return;
     }
 
+    // Track quick action click
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.ACTIVITY_CARDS,
+        DASHBOARD_ACTION.QUICK_ACTION,
+      ),
+      {
+        action_type: 'timer_start',
+        activity_type: 'sleep',
+        baby_id: babyId,
+      },
+    );
+
     setCreatingType('timer');
 
     let tempId: string | null = null;
@@ -531,6 +563,19 @@ export function QuickActionSleepCard({
 
     if (!inProgressActivity) return;
 
+    // Track quick action click
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.ACTIVITY_CARDS,
+        DASHBOARD_ACTION.QUICK_ACTION,
+      ),
+      {
+        action_type: 'timer_stop',
+        activity_type: 'sleep',
+        baby_id: babyId,
+      },
+    );
+
     setCreatingType('timer');
 
     const now = new Date();
@@ -598,11 +643,34 @@ export function QuickActionSleepCard({
 
   const handleStatsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Track stats drawer open
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.SLEEP_STATS_DRAWER,
+        DASHBOARD_ACTION.DRAWER_OPEN,
+      ),
+      {
+        baby_id: babyId,
+        source: 'quick_action_card',
+      },
+    );
     setShowStatsDrawer(true);
   };
 
   const handleAddClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Track drawer open
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.ACTIVITY_CARDS,
+        DASHBOARD_ACTION.DRAWER_OPEN,
+      ),
+      {
+        activity_type: 'sleep',
+        baby_id: babyId,
+        source: 'quick_action_card',
+      },
+    );
     onOpenDrawer?.();
   };
 

@@ -106,22 +106,37 @@ async function main() {
     // 4. Server Actions Average Duration
     const durationInsightId = await upsertInsight(
       projectId,
-      createTrendsInsight(
-        'server_action.*',
-        'Server Actions Average Duration',
-        'Average execution time for server actions',
-        'ActionsLineGraph',
-        {
-          properties: [
-            {
-              key: 'duration_ms',
-              operator: 'gt',
-              type: 'event',
-              value: 0,
-            },
-          ],
+      {
+        description: 'Average execution time for server actions',
+        name: 'Server Actions Average Duration',
+        query: {
+          kind: 'InsightVizNode',
+          source: {
+            dateRange: { date_from: '-30d' },
+            interval: 'day',
+            kind: 'TrendsQuery',
+            properties: [
+              {
+                key: 'duration_ms',
+                operator: 'gt',
+                type: 'event',
+                value: 0,
+              },
+            ],
+            series: [
+              {
+                event: 'server_action.*',
+                kind: 'EventsNode',
+                math: 'avg',
+                math_property: 'duration_ms',
+              },
+            ],
+            version: 1,
+          },
+          version: 1,
         },
-      ),
+        visualization: 'ActionsLineGraph',
+      },
       undefined,
       INSIGHT_TAGS,
     );
@@ -210,21 +225,85 @@ async function main() {
       INSIGHT_TAGS,
     );
 
-    // 8. Server Actions Duration Distribution
+    // 8. Server Actions Average Duration by Action Name
+    // Note: PostHog API doesn't support breakdowns with math aggregations
+    // Users can manually add breakdown by action_name in PostHog UI if needed
     const durationDistributionInsightId = await upsertInsight(
+      projectId,
+      {
+        description:
+          'Average execution time per server action (can be broken down by action_name in UI)',
+        name: 'Server Actions Average Duration by Action',
+        query: {
+          kind: 'InsightVizNode',
+          source: {
+            dateRange: { date_from: '-30d' },
+            interval: 'day',
+            kind: 'TrendsQuery',
+            properties: [
+              {
+                key: 'duration_ms',
+                operator: 'gt',
+                type: 'event',
+                value: 0,
+              },
+            ],
+            series: [
+              {
+                event: 'server_action.*',
+                kind: 'EventsNode',
+                math: 'avg',
+                math_property: 'duration_ms',
+              },
+            ],
+            version: 1,
+          },
+          version: 1,
+        },
+        visualization: 'ActionsBar',
+      },
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 9. Server Actions Errors by Action Name
+    const errorsByActionInsightId = await upsertInsight(
       projectId,
       createTrendsInsight(
         'server_action.*',
-        'Server Actions Duration Distribution',
-        'Distribution of server action execution times',
+        'Server Actions Errors by Action',
+        'Number of errors per server action',
         'ActionsBar',
         {
           properties: [
             {
-              key: 'duration_ms',
-              operator: 'gt',
+              key: 'success',
+              operator: 'exact',
               type: 'event',
-              value: 0,
+              value: false,
+            },
+          ],
+        },
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 10. Server Actions Error Messages
+    const errorMessagesInsightId = await upsertInsight(
+      projectId,
+      createTrendsInsight(
+        'server_action.*',
+        'Server Actions Error Messages',
+        'Most common error messages from server actions',
+        'ActionsTable',
+        {
+          properties: [
+            {
+              key: 'success',
+              operator: 'exact',
+              type: 'event',
+              value: false,
             },
           ],
         },
@@ -235,7 +314,7 @@ async function main() {
 
     console.log('\n📋 Upserting dashboard...\n');
 
-    // Upsert dashboard
+    // Upsert dashboard (text tiles will be added manually in PostHog UI)
     const dashboard = await upsertDashboard(
       projectId,
       {
@@ -249,16 +328,21 @@ async function main() {
 
     console.log('\n🔗 Adding insights to dashboard...\n');
 
-    // Add insights to dashboard
+    // Add insights to dashboard (organized by sections)
     const insights = [
-      volumeInsightId,
-      successRateInsightId,
-      errorRateInsightId,
-      successVsFailureInsightId,
+      // Performance Metrics
       durationInsightId,
       durationDistributionInsightId,
-      topActionsInsightId,
+      successRateInsightId,
+      successVsFailureInsightId,
+      // Error Analysis
+      errorRateInsightId,
       errorBreakdownInsightId,
+      errorsByActionInsightId,
+      errorMessagesInsightId,
+      // Volume & Usage
+      volumeInsightId,
+      topActionsInsightId,
     ];
 
     let addedCount = 0;
@@ -296,14 +380,16 @@ async function main() {
     if (insights.length > 0) {
       console.log('📋 Created insights:');
       const insightNames = [
-        'Server Actions Volume Over Time',
-        'Server Actions Success Rate',
-        'Server Actions Error Rate',
-        'Server Actions Success vs Failure',
         'Server Actions Average Duration',
-        'Server Actions Duration Distribution',
-        'Top Server Actions by Volume',
+        'Server Actions Average Duration by Action',
+        'Server Actions Success Rate',
+        'Server Actions Success vs Failure',
+        'Server Actions Error Rate',
         'Server Actions Error Breakdown',
+        'Server Actions Errors by Action',
+        'Server Actions Error Messages',
+        'Server Actions Volume Over Time',
+        'Top Server Actions by Volume',
       ];
 
       insights.forEach((insightId, index) => {

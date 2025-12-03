@@ -10,6 +10,7 @@ import { H2, P } from '@nugget/ui/custom/typography';
 import { Sparkles } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useEffect, useMemo, useRef } from 'react';
+import { useDashboardLoadTracker } from '~/app/(app)/app/babies/[babyId]/dashboard/_components/dashboard-load-tracker';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { DevelopmentalPhasesSkeleton } from '../skeletons';
 import type { PhaseCardProps } from './phase-card';
@@ -27,6 +28,7 @@ export function DevelopmentalPhasesCarousel({
 }: DevelopmentalPhasesCarouselProps) {
   const baby = useDashboardDataStore.use.baby();
   const hasTrackedView = useRef(false);
+  const tracker = useDashboardLoadTracker();
   const { data, isLoading } = api.developmentalPhases.getPhasesForBaby.useQuery(
     { babyId },
     {
@@ -71,6 +73,14 @@ export function DevelopmentalPhasesCarousel({
       hasTrackedView.current = true;
     }
   }, [data, isLoading, babyId]);
+
+  // Track when component finishes loading (even if it doesn't render anything)
+  useEffect(() => {
+    if (!isLoading && tracker) {
+      // Mark as loaded once query completes, regardless of whether we render
+      tracker.markComponentLoaded('developmentalPhases');
+    }
+  }, [isLoading, tracker]);
 
   if (isLoading && !data) {
     return <DevelopmentalPhasesSkeleton />;

@@ -1,5 +1,10 @@
 'use client';
 
+import {
+  buildDashboardEvent,
+  DASHBOARD_ACTION,
+  DASHBOARD_COMPONENT,
+} from '@nugget/analytics/utils';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { DateTimeRangePicker } from '@nugget/ui/custom/date-time-range-picker';
@@ -9,7 +14,8 @@ import { useIsDesktop } from '@nugget/ui/hooks/use-media-query';
 import { cn } from '@nugget/ui/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 import { X } from 'lucide-react';
-import { useState } from 'react';
+import posthog from 'posthog-js';
+import { useEffect, useRef, useState } from 'react';
 import { DiaperActivityDrawer } from './diaper/diaper-activity-drawer';
 import { DoctorVisitActivityDrawer } from './doctor-visit/doctor-visit-activity-drawer';
 import { FeedingActivityDrawer } from './feeding/feeding-activity-drawer';
@@ -50,9 +56,34 @@ export function ActivityDrawer({
 }: ActivityDrawerProps) {
   const isDesktop = useIsDesktop();
   const Icon = activity.icon;
+  const hasTrackedOpen = useRef(false);
 
   // State for generic activities time selection
   const [startTime, setStartTime] = useState(new Date());
+
+  // Track drawer open/close events
+  useEffect(() => {
+    if (isOpen && !hasTrackedOpen.current) {
+      // Track drawer open
+      posthog.capture(
+        buildDashboardEvent(
+          DASHBOARD_COMPONENT.ACTIVITY_CARDS,
+          DASHBOARD_ACTION.DRAWER_OPEN,
+        ),
+        {
+          activity_label: activity.label,
+          activity_type: activity.id,
+          baby_id: babyId,
+          is_edit: !!existingActivity,
+          source: 'activity_drawer',
+        },
+      );
+      hasTrackedOpen.current = true;
+    } else if (!isOpen) {
+      // Reset tracking when drawer closes
+      hasTrackedOpen.current = false;
+    }
+  }, [isOpen, activity.id, activity.label, babyId, existingActivity]);
 
   const renderContent = () => {
     switch (activity.id) {

@@ -1,5 +1,6 @@
 'use client';
 
+import { DASHBOARD_COMPONENT } from '@nugget/analytics/utils';
 import { api } from '@nugget/api/react';
 import { Badge } from '@nugget/ui/badge';
 import { Card } from '@nugget/ui/card';
@@ -389,6 +390,8 @@ export function AchievementsDrawer({
 
   return (
     <StatsDrawerWrapper
+      babyId={babyId}
+      componentName={DASHBOARD_COMPONENT.ACHIEVEMENTS_DRAWER}
       onOpenChange={onOpenChange}
       open={open}
       title="Achievements"

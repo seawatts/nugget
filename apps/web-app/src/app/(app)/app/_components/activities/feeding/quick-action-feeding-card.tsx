@@ -1,5 +1,10 @@
 'use client';
 
+import {
+  buildDashboardEvent,
+  DASHBOARD_ACTION,
+  DASHBOARD_COMPONENT,
+} from '@nugget/analytics/utils';
 import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
@@ -9,6 +14,7 @@ import { toast } from '@nugget/ui/sonner';
 import { startOfDay, subDays, subHours } from 'date-fns';
 import { Droplet, Milk } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import posthog from 'posthog-js';
 import { useMemo, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
@@ -429,6 +435,19 @@ export function QuickActionFeedingCard({
   const handleQuickBottle = async (e: React.MouseEvent) => {
     e.stopPropagation();
 
+    // Track quick action click
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.ACTIVITY_CARDS,
+        DASHBOARD_ACTION.QUICK_ACTION,
+      ),
+      {
+        action_type: 'bottle',
+        activity_type: 'feeding',
+        baby_id: babyId,
+      },
+    );
+
     // Use predicted amount if available, otherwise fall back to age-based amount
     const amountMl =
       prediction.suggestedAmount ||
@@ -520,6 +539,19 @@ export function QuickActionFeedingCard({
 
   const handleQuickNursingLeft = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Track quick action click
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.ACTIVITY_CARDS,
+        DASHBOARD_ACTION.QUICK_ACTION,
+      ),
+      {
+        action_type: 'nursing_left',
+        activity_type: 'feeding',
+        baby_id: babyId,
+      },
+    );
 
     // Use predicted duration if available, otherwise use age-based typical duration
     const duration =
@@ -623,6 +655,19 @@ export function QuickActionFeedingCard({
 
   const handleQuickNursingRight = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Track quick action click
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.ACTIVITY_CARDS,
+        DASHBOARD_ACTION.QUICK_ACTION,
+      ),
+      {
+        action_type: 'nursing_right',
+        activity_type: 'feeding',
+        baby_id: babyId,
+      },
+    );
 
     // Use predicted duration if available, otherwise use age-based typical duration
     const duration =
@@ -731,11 +776,34 @@ export function QuickActionFeedingCard({
 
   const handleStatsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Track stats drawer open
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.FEEDING_STATS_DRAWER,
+        DASHBOARD_ACTION.DRAWER_OPEN,
+      ),
+      {
+        baby_id: babyId,
+        source: 'quick_action_card',
+      },
+    );
     setShowStatsDrawer(true);
   };
 
   const handleAddClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Track drawer open
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.ACTIVITY_CARDS,
+        DASHBOARD_ACTION.DRAWER_OPEN,
+      ),
+      {
+        activity_type: 'feeding',
+        baby_id: babyId,
+        source: 'quick_action_card',
+      },
+    );
     onOpenDrawer?.();
   };
 

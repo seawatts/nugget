@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useDashboardLoadTracker } from '~/app/(app)/app/babies/[babyId]/dashboard/_components/dashboard-load-tracker';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
@@ -395,6 +396,7 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
     chatId: string;
     babyId: string;
   } | null>(null);
+  const tracker = useDashboardLoadTracker();
 
   // Get optimistic activities from Zustand store
   const optimisticActivities = useOptimisticActivitiesStore.use.activities();
@@ -484,6 +486,14 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
         staleTime: 10000, // Consider data fresh for 10 seconds
       },
     );
+
+  // Track when component finishes loading (even if it doesn't render anything)
+  useEffect(() => {
+    if (!isLoading && tracker) {
+      // Mark as loaded once query completes, regardless of whether we render
+      tracker.markComponentLoaded('timeline');
+    }
+  }, [isLoading, tracker]);
 
   // Flatten all pages into a single list and deduplicate
   const serverTimelineItems = useMemo(() => {
