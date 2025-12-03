@@ -384,7 +384,7 @@ async function main() {
       visualization: 'ActionsLineGraph',
     });
 
-    // 2. Mutation Completion Time
+    // 2. Mutation Completion Time (Average Duration)
     const completionTimeInsightId = await upsertInsight(projectId, {
       description: 'Average time from mutation start to completion',
       name: 'Mutation Completion Time',
@@ -402,7 +402,14 @@ async function main() {
               value: 0,
             },
           ],
-          series: [{ event: 'mutation_completed', kind: 'EventsNode' }],
+          series: [
+            {
+              event: 'mutation_completed',
+              kind: 'EventsNode',
+              math: 'avg',
+              math_property: 'duration_ms',
+            },
+          ],
           version: 1,
         },
         version: 1,
@@ -488,7 +495,40 @@ async function main() {
       visualization: 'ActionsBar',
     });
 
-    // 7. Mutation Failure Reasons
+    // 7. Mutation Failure Duration (Average)
+    const failureDurationInsightId = await upsertInsight(projectId, {
+      description: 'Average time before mutations fail',
+      name: 'Mutation Failure Duration',
+      query: {
+        kind: 'InsightVizNode',
+        source: {
+          dateRange: { date_from: '-30d' },
+          interval: 'day',
+          kind: 'TrendsQuery',
+          properties: [
+            {
+              key: 'duration_ms',
+              operator: 'gt',
+              type: 'event',
+              value: 0,
+            },
+          ],
+          series: [
+            {
+              event: 'mutation_failed',
+              kind: 'EventsNode',
+              math: 'avg',
+              math_property: 'duration_ms',
+            },
+          ],
+          version: 1,
+        },
+        version: 1,
+      },
+      visualization: 'ActionsLineGraph',
+    });
+
+    // 8. Mutation Failure Reasons
     const failureReasonsInsightId = await upsertInsight(projectId, {
       description: 'Breakdown of why mutations fail',
       name: 'Mutation Failure Reasons',
@@ -506,7 +546,7 @@ async function main() {
       visualization: 'ActionsTable',
     });
 
-    // 8. Mutations by Activity Type
+    // 9. Mutations by Activity Type
     const activityTypeInsightId = await upsertInsight(projectId, {
       description: 'Distribution of mutations across different activity types',
       name: 'Mutations by Activity Type',
@@ -524,7 +564,7 @@ async function main() {
       visualization: 'ActionsPie',
     });
 
-    // 9. Mutations by Platform
+    // 10. Mutations by Platform
     const platformInsightId = await upsertInsight(projectId, {
       description:
         'Distribution of mutations across platforms (iOS PWA, Web, etc.)',
@@ -543,7 +583,7 @@ async function main() {
       visualization: 'ActionsPie',
     });
 
-    // 10. Mutation Volume Over Time
+    // 11. Mutation Volume Over Time
     const volumeInsightId = await upsertInsight(projectId, {
       description: 'Total number of mutations started over time',
       name: 'Mutation Volume Over Time',
@@ -624,7 +664,7 @@ async function main() {
         },
       },
       {
-        insight: unloadRateInsightId,
+        insight: failureDurationInsightId,
         layouts: {
           lg: { h: 4, w: 6, x: 0, y: 8 },
           md: { h: 4, w: 6, x: 0, y: 8 },
@@ -633,7 +673,7 @@ async function main() {
         },
       },
       {
-        insight: syncSuccessInsightId,
+        insight: unloadRateInsightId,
         layouts: {
           lg: { h: 4, w: 6, x: 6, y: 8 },
           md: { h: 4, w: 6, x: 6, y: 8 },
@@ -642,7 +682,7 @@ async function main() {
         },
       },
       {
-        insight: recoverySuccessInsightId,
+        insight: syncSuccessInsightId,
         layouts: {
           lg: { h: 4, w: 6, x: 0, y: 12 },
           md: { h: 4, w: 6, x: 0, y: 12 },
@@ -651,7 +691,7 @@ async function main() {
         },
       },
       {
-        insight: queueSizeInsightId,
+        insight: recoverySuccessInsightId,
         layouts: {
           lg: { h: 4, w: 6, x: 6, y: 12 },
           md: { h: 4, w: 6, x: 6, y: 12 },
@@ -660,7 +700,7 @@ async function main() {
         },
       },
       {
-        insight: failureReasonsInsightId,
+        insight: queueSizeInsightId,
         layouts: {
           lg: { h: 4, w: 6, x: 0, y: 16 },
           md: { h: 4, w: 6, x: 0, y: 16 },
@@ -669,21 +709,30 @@ async function main() {
         },
       },
       {
+        insight: failureReasonsInsightId,
+        layouts: {
+          lg: { h: 4, w: 6, x: 6, y: 16 },
+          md: { h: 4, w: 6, x: 6, y: 16 },
+          sm: { h: 4, w: 12, x: 0, y: 32 },
+          xs: { h: 4, w: 12, x: 0, y: 32 },
+        },
+      },
+      {
         insight: activityTypeInsightId,
         layouts: {
-          lg: { h: 4, w: 3, x: 6, y: 16 },
-          md: { h: 4, w: 3, x: 6, y: 16 },
-          sm: { h: 4, w: 6, x: 0, y: 32 },
-          xs: { h: 4, w: 12, x: 0, y: 32 },
+          lg: { h: 4, w: 3, x: 0, y: 20 },
+          md: { h: 4, w: 3, x: 0, y: 20 },
+          sm: { h: 4, w: 6, x: 0, y: 36 },
+          xs: { h: 4, w: 12, x: 0, y: 36 },
         },
       },
       {
         insight: platformInsightId,
         layouts: {
-          lg: { h: 4, w: 3, x: 9, y: 16 },
-          md: { h: 4, w: 3, x: 9, y: 16 },
-          sm: { h: 4, w: 6, x: 6, y: 32 },
-          xs: { h: 4, w: 12, x: 0, y: 36 },
+          lg: { h: 4, w: 3, x: 3, y: 20 },
+          md: { h: 4, w: 3, x: 3, y: 20 },
+          sm: { h: 4, w: 6, x: 6, y: 36 },
+          xs: { h: 4, w: 12, x: 0, y: 40 },
         },
       },
     ];
@@ -740,6 +789,7 @@ async function main() {
         'Mutation Volume Over Time',
         'Mutation Success Rate',
         'Mutation Completion Time',
+        'Mutation Failure Duration',
         'Page Unload During Mutation',
         'Background Sync Success Rate',
         'Mutation Recovery Success Rate',
