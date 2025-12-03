@@ -117,54 +117,39 @@ self.addEventListener('fetch', (event: FetchEvent) => {
     return;
   }
 
-  // Strategy 1: CacheFirst for baby dashboard routes
-  // Serves cached content instantly, updates in background
-  // This ensures instant loading while keeping content fresh
+  // Strategy 1: NetworkFirst for baby dashboard routes (faster when online)
+  // Try network first, fall back to cache only if offline or network fails
+  // This ensures fast loading when online while still supporting offline
   if (BABY_DASHBOARD_REGEX.test(pathname)) {
     rememberDashboardPath(pathname);
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_NAME);
 
-        // Check cache first (instant serve)
+        // Try network first (faster when online)
+        try {
+          const networkResponse = await fetch(event.request).catch(() => null);
+
+          if (networkResponse?.ok) {
+            // Cache successful network response for offline use
+            void cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          }
+        } catch (_error) {
+          // Network failed, fall through to cache
+        }
+
+        // Network failed or timed out, try cache (offline support)
         const cachedResponse = await cache.match(event.request);
         if (cachedResponse) {
-          // Serve cached response immediately, update in background
-          void (async () => {
-            try {
-              const controller = new AbortController();
-              const timeoutId = setTimeout(() => controller.abort(), 5000);
-              const networkResponse = await fetch(event.request, {
-                signal: controller.signal,
-              }).catch(() => null);
-              clearTimeout(timeoutId);
-
-              if (networkResponse?.ok) {
-                await cache.put(event.request, networkResponse.clone());
-              }
-            } catch (error) {
-              // Ignore background update errors
-              console.warn('[Service Worker] Background update failed', error);
-            }
-          })();
-
-          return cachedResponse;
+          return addCacheHeader(cachedResponse);
         }
 
-        // No cache, fetch from network
-        try {
-          const networkResponse = await fetch(event.request);
-          if (networkResponse?.ok) {
-            await cache.put(event.request, networkResponse.clone());
-          }
-          return networkResponse;
-        } catch (_error) {
-          // Network failed, return error
-          return new Response('Offline', {
-            status: 503,
-            statusText: 'Service Unavailable',
-          });
-        }
+        // No cache either, return error
+        return new Response('Offline', {
+          status: 503,
+          statusText: 'Service Unavailable',
+        });
       })(),
     );
     return;
@@ -268,38 +253,52 @@ function getBabyIdFromCookie(request: Request): string | null {
   }
 }
 
+/**
+ * Add cache header to response to indicate it's from cache
+ * This allows client-side code to optimize behavior
+ */
+function addCacheHeader(response: Response): Response {
+  const headers = new Headers(response.headers);
+  headers.set('X-Served-From-Cache', 'true');
+  return new Response(response.body, {
+    headers,
+    status: response.status,
+    statusText: response.statusText,
+  });
+}
+
 async function handleAppEntry(event: FetchEvent): Promise<Response> {
   const cache = await caches.open(CACHE_NAME);
 
-  // Strategy 1: Check for ANY cached dashboard route FIRST (instant, no async operations)
-  // This is the fastest path - we check cache before any IndexedDB or cookie reads
+  // Strategy 1: Try network first for faster loading when online
+  // Only check cache if network fails (offline support)
+  try {
+    const networkResponse = await fetch(event.request).catch(() => null);
+
+    if (networkResponse?.ok) {
+      // Cache successful network response
+      void cache.put(event.request, networkResponse.clone());
+      if (networkResponse.redirected) {
+        const redirectedPath = extractPathFromUrl(networkResponse.url);
+        if (redirectedPath && isPersistableDashboardPath(redirectedPath)) {
+          void setLastDashboardRoute(redirectedPath);
+        }
+      }
+      return networkResponse;
+    }
+  } catch (_error) {
+    // Network failed, fall through to cache
+  }
+
+  // Network failed, try cache (offline support)
   const cachedRequests = await cache.keys();
   for (const cachedRequest of cachedRequests) {
     const url = new URL(cachedRequest.url);
     if (BABY_DASHBOARD_REGEX.test(url.pathname)) {
-      // Found a cached dashboard route - serve it instantly
+      // Found a cached dashboard route - serve it
       const cachedResponse = await cache.match(cachedRequest);
       if (cachedResponse) {
-        // Serve cached dashboard immediately, update in background
-        void (async () => {
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
-            const networkResponse = await fetch(cachedRequest, {
-              signal: controller.signal,
-            }).catch(() => null);
-            clearTimeout(timeoutId);
-
-            if (networkResponse?.ok) {
-              await cache.put(cachedRequest, networkResponse.clone());
-            }
-          } catch (error) {
-            // Ignore background update errors
-            console.warn('[Service Worker] Background update failed', error);
-          }
-        })();
-
-        return cachedResponse;
+        return addCacheHeader(cachedResponse);
       }
     }
   }
@@ -312,29 +311,22 @@ async function handleAppEntry(event: FetchEvent): Promise<Response> {
       new URL(dashboardUrl, self.location.origin).toString(),
     );
 
-    // Check cache for dashboard route - CacheFirst strategy (instant serve)
+    // Try network first (faster when online)
+    try {
+      const networkResponse = await fetch(dashboardRequest).catch(() => null);
+
+      if (networkResponse?.ok) {
+        void cache.put(dashboardRequest, networkResponse.clone());
+        return networkResponse;
+      }
+    } catch (_error) {
+      // Network failed, try cache
+    }
+
+    // Network failed, try cache
     const cachedDashboardResponse = await cache.match(dashboardRequest);
     if (cachedDashboardResponse) {
-      // Serve cached dashboard immediately, update in background
-      void (async () => {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000);
-          const networkResponse = await fetch(dashboardRequest, {
-            signal: controller.signal,
-          }).catch(() => null);
-          clearTimeout(timeoutId);
-
-          if (networkResponse?.ok) {
-            await cache.put(dashboardRequest, networkResponse.clone());
-          }
-        } catch (error) {
-          // Ignore background update errors
-          console.warn('[Service Worker] Background update failed', error);
-        }
-      })();
-
-      return cachedDashboardResponse;
+      return addCacheHeader(cachedDashboardResponse);
     }
 
     // No cache but we have babyId - redirect directly to dashboard
@@ -352,29 +344,22 @@ async function handleAppEntry(event: FetchEvent): Promise<Response> {
       new URL(dashboardUrl, self.location.origin).toString(),
     );
 
-    // Check cache for dashboard route - CacheFirst strategy (instant serve)
+    // Try network first (faster when online)
+    try {
+      const networkResponse = await fetch(dashboardRequest).catch(() => null);
+
+      if (networkResponse?.ok) {
+        void cache.put(dashboardRequest, networkResponse.clone());
+        return networkResponse;
+      }
+    } catch (_error) {
+      // Network failed, try cache
+    }
+
+    // Network failed, try cache
     const cachedDashboardResponse = await cache.match(dashboardRequest);
     if (cachedDashboardResponse) {
-      // Serve cached dashboard immediately, update in background
-      void (async () => {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000);
-          const networkResponse = await fetch(dashboardRequest, {
-            signal: controller.signal,
-          }).catch(() => null);
-          clearTimeout(timeoutId);
-
-          if (networkResponse?.ok) {
-            await cache.put(dashboardRequest, networkResponse.clone());
-          }
-        } catch (error) {
-          // Ignore background update errors
-          console.warn('[Service Worker] Background update failed', error);
-        }
-      })();
-
-      return cachedDashboardResponse;
+      return addCacheHeader(cachedDashboardResponse);
     }
 
     // No cache but we have babyId - redirect directly to dashboard
@@ -390,28 +375,23 @@ async function handleAppEntry(event: FetchEvent): Promise<Response> {
     const lastRouteRequest = new Request(
       new URL(lastRoute, self.location.origin).toString(),
     );
+
+    // Try network first (faster when online)
+    try {
+      const networkResponse = await fetch(lastRouteRequest).catch(() => null);
+
+      if (networkResponse?.ok) {
+        void cache.put(lastRouteRequest, networkResponse.clone());
+        return networkResponse;
+      }
+    } catch (_error) {
+      // Network failed, try cache
+    }
+
+    // Network failed, try cache
     const cachedRouteResponse = await cache.match(lastRouteRequest);
     if (cachedRouteResponse) {
-      // Serve cached route immediately, update in background
-      void (async () => {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000);
-          const networkResponse = await fetch(lastRouteRequest, {
-            signal: controller.signal,
-          }).catch(() => null);
-          clearTimeout(timeoutId);
-
-          if (networkResponse?.ok) {
-            await cache.put(lastRouteRequest, networkResponse.clone());
-          }
-        } catch (error) {
-          // Ignore background update errors
-          console.warn('[Service Worker] Background update failed', error);
-        }
-      })();
-
-      return cachedRouteResponse;
+      return addCacheHeader(cachedRouteResponse);
     }
 
     // If we have a route but no cache, redirect to it
@@ -422,22 +402,21 @@ async function handleAppEntry(event: FetchEvent): Promise<Response> {
   }
 
   // Strategy 5: No cached route, fetch /app and let it redirect server-side
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000);
-  const networkResponse = await fetch(event.request, {
-    signal: controller.signal,
-  }).catch(() => null);
-  clearTimeout(timeoutId);
+  try {
+    const networkResponse = await fetch(event.request).catch(() => null);
 
-  if (networkResponse?.ok) {
-    await cache.put(event.request, networkResponse.clone());
-    if (networkResponse.redirected) {
-      const redirectedPath = extractPathFromUrl(networkResponse.url);
-      if (redirectedPath && isPersistableDashboardPath(redirectedPath)) {
-        void setLastDashboardRoute(redirectedPath);
+    if (networkResponse?.ok) {
+      void cache.put(event.request, networkResponse.clone());
+      if (networkResponse.redirected) {
+        const redirectedPath = extractPathFromUrl(networkResponse.url);
+        if (redirectedPath && isPersistableDashboardPath(redirectedPath)) {
+          void setLastDashboardRoute(redirectedPath);
+        }
       }
+      return networkResponse;
     }
-    return networkResponse;
+  } catch (_error) {
+    // Network failed, try cache
   }
 
   // Check for any cached /app response as last resort

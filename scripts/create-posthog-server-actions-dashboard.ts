@@ -14,6 +14,10 @@
 
 import {
   addInsightToDashboard,
+  addTextTileToDashboard,
+  createAreaChartInsight,
+  createNumberInsight,
+  createTextTile,
   createTrendsInsight,
   getPostHogHost,
   getProjectId,
@@ -312,6 +316,130 @@ async function main() {
       INSIGHT_TAGS,
     );
 
+    // NEW: Number Metrics
+    // 11. Total Server Actions (with period comparison)
+    const totalServerActionsInsightId = await upsertInsight(
+      projectId,
+      createNumberInsight(
+        'server_action.*',
+        'Total Server Actions',
+        'Total number of server actions executed with period-over-period comparison',
+        'total',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 12. Success Rate % (single number)
+    const successRateNumberInsightId = await upsertInsight(
+      projectId,
+      createNumberInsight(
+        'server_action.*',
+        'Server Actions Success Rate',
+        'Percentage of successful server actions',
+        'total',
+        undefined,
+        {
+          properties: [
+            {
+              key: 'success',
+              operator: 'exact',
+              type: 'event',
+              value: true,
+            },
+          ],
+        },
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 13. Average Duration (single number)
+    const avgDurationNumberInsightId = await upsertInsight(
+      projectId,
+      createNumberInsight(
+        'server_action.*',
+        'Server Actions Average Duration',
+        'Average execution time for server actions',
+        'avg',
+        'duration_ms',
+        {
+          properties: [
+            {
+              key: 'duration_ms',
+              operator: 'gt',
+              type: 'event',
+              value: 0,
+            },
+          ],
+        },
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // NEW: Area Charts
+    // 14. Server Actions Volume Over Time
+    const serverActionsVolumeAreaInsightId = await upsertInsight(
+      projectId,
+      createAreaChartInsight(
+        'server_action.*',
+        'Server Actions Volume Over Time',
+        'Total number of server actions over time with volume emphasis',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 15. Success vs Failure Volume
+    const successVsFailureVolumeAreaInsightId = await upsertInsight(
+      projectId,
+      {
+        description:
+          'Comparison of successful and failed server actions over time with volume emphasis',
+        name: 'Server Actions Success vs Failure Volume',
+        query: {
+          kind: 'InsightVizNode',
+          source: {
+            dateRange: { date_from: '-30d' },
+            interval: 'day',
+            kind: 'TrendsQuery',
+            series: [
+              {
+                event: 'server_action.*',
+                kind: 'EventsNode',
+                properties: [
+                  {
+                    key: 'success',
+                    operator: 'exact',
+                    type: 'event',
+                    value: true,
+                  },
+                ],
+              },
+              {
+                event: 'server_action.*',
+                kind: 'EventsNode',
+                properties: [
+                  {
+                    key: 'success',
+                    operator: 'exact',
+                    type: 'event',
+                    value: false,
+                  },
+                ],
+              },
+            ],
+            version: 1,
+          },
+          version: 1,
+        },
+        visualization: 'ActionsAreaGraph',
+      },
+      undefined,
+      INSIGHT_TAGS,
+    );
+
     console.log('\n📋 Upserting dashboard...\n');
 
     // Upsert dashboard (text tiles will be added manually in PostHog UI)
@@ -326,15 +454,47 @@ async function main() {
       DASHBOARD_TAGS,
     );
 
+    console.log('\n📝 Adding text cards to dashboard...\n');
+
+    // Add text cards to group insights
+    const textTiles = [
+      createTextTile('## Number Metrics', 0, 'green'),
+      createTextTile('## Performance Metrics', 3, 'blue'),
+      createTextTile('## Area Charts', 7, 'purple'),
+      createTextTile('## Error Analysis', 9, 'orange'),
+      createTextTile('## Volume & Usage', 13, 'teal'),
+    ];
+
+    let textTileCount = 0;
+    for (const textTile of textTiles) {
+      try {
+        await addTextTileToDashboard(projectId, dashboard.id, textTile);
+        textTileCount++;
+        console.log(`✅ Added text card: ${textTile.text}`);
+      } catch (error) {
+        console.warn(
+          `⚠️  Could not add text card "${textTile.text}":`,
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    }
+
     console.log('\n🔗 Adding insights to dashboard...\n');
 
     // Add insights to dashboard (organized by sections)
     const insights = [
+      // Number Metrics (NEW)
+      totalServerActionsInsightId,
+      successRateNumberInsightId,
+      avgDurationNumberInsightId,
       // Performance Metrics
       durationInsightId,
       durationDistributionInsightId,
       successRateInsightId,
       successVsFailureInsightId,
+      // Area Charts (NEW)
+      serverActionsVolumeAreaInsightId,
+      successVsFailureVolumeAreaInsightId,
       // Error Analysis
       errorRateInsightId,
       errorBreakdownInsightId,
@@ -370,6 +530,12 @@ async function main() {
       );
     }
 
+    if (textTileCount > 0) {
+      console.log(
+        `\n✅ Successfully added ${textTileCount} text cards to dashboard`,
+      );
+    }
+
     const dashboardId = dashboard.short_id || dashboard.id;
     const dashboardUrl = `${getPostHogHost()}/project/${projectId}/dashboards/${dashboardId}`;
     const baseUrl = getPostHogHost();
@@ -380,10 +546,15 @@ async function main() {
     if (insights.length > 0) {
       console.log('📋 Created insights:');
       const insightNames = [
+        'Total Server Actions',
+        'Server Actions Success Rate',
+        'Server Actions Average Duration',
         'Server Actions Average Duration',
         'Server Actions Average Duration by Action',
         'Server Actions Success Rate',
         'Server Actions Success vs Failure',
+        'Server Actions Volume Over Time',
+        'Server Actions Success vs Failure Volume',
         'Server Actions Error Rate',
         'Server Actions Error Breakdown',
         'Server Actions Errors by Action',

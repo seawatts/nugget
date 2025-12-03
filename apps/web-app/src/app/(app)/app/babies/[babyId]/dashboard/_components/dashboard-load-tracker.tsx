@@ -12,7 +12,14 @@ import {
   DASHBOARD_COMPONENT,
 } from '@nugget/analytics/utils';
 import posthog from 'posthog-js';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 interface ComponentLoadState {
   celebrations: boolean;
@@ -80,37 +87,40 @@ export function DashboardLoadTrackerProvider({
 
       componentLoadTimes.current[component] = loadTime;
 
-      // Track individual component load time
-      const componentEventName = buildDashboardEvent(
-        component === 'todaySummary'
-          ? 'today_summary'
-          : component === 'activityCards'
-            ? 'activity_cards'
-            : component === 'learningCarousel'
-              ? 'learning_carousel'
-              : component === 'developmentalPhases'
-                ? 'developmental_phases_carousel'
-                : component === 'milestones'
-                  ? 'milestones_carousel'
-                  : component === 'celebrations'
-                    ? 'celebrations_carousel'
-                    : 'activity_timeline',
-        DASHBOARD_ACTION.LOAD,
-      );
+      // Track individual component load time asynchronously (non-blocking)
+      // Use setTimeout to defer PostHog capture and avoid blocking render
+      setTimeout(() => {
+        const componentEventName = buildDashboardEvent(
+          component === 'todaySummary'
+            ? 'today_summary'
+            : component === 'activityCards'
+              ? 'activity_cards'
+              : component === 'learningCarousel'
+                ? 'learning_carousel'
+                : component === 'developmentalPhases'
+                  ? 'developmental_phases_carousel'
+                  : component === 'milestones'
+                    ? 'milestones_carousel'
+                    : component === 'celebrations'
+                      ? 'celebrations_carousel'
+                      : 'activity_timeline',
+          DASHBOARD_ACTION.LOAD,
+        );
 
-      posthog.capture(componentEventName, {
-        baby_id: babyId,
-        component_name: component,
-        duration_ms: loadTime,
-      });
+        posthog.capture(componentEventName, {
+          baby_id: babyId,
+          component_name: component,
+          duration_ms: loadTime,
+        });
+      }, 0);
 
       const updated = { ...prev, [component]: true };
       return updated;
     });
   };
 
-  // Check if all required components are loaded
-  const isFullyLoaded = (() => {
+  // Check if all required components are loaded (memoized to avoid recalculation)
+  const isFullyLoaded = useMemo(() => {
     const requiredComponents: (keyof ComponentLoadState)[] = [
       'celebrations',
       'todaySummary',
@@ -128,39 +138,42 @@ export function DashboardLoadTrackerProvider({
     }
 
     return requiredComponents.every((component) => componentStates[component]);
-  })();
+  }, [componentStates, hasActivityCards, hasTimeline]);
 
-  // Track full page load when all components are ready
+  // Track full page load when all components are ready (async, non-blocking)
   useEffect(() => {
     if (isFullyLoaded && !hasTrackedFullLoad.current) {
-      const fullLoadTime = Date.now() - loadStartTime.current;
-      const loadedComponents = Object.entries(componentStates).filter(
-        ([, loaded]) => loaded,
-      );
-
-      posthog.capture(
-        buildDashboardEvent(
-          DASHBOARD_COMPONENT.CONTAINER,
-          DASHBOARD_ACTION.LOAD,
-        ),
-        {
-          baby_id: babyId,
-          component_count: loadedComponents.length,
-          component_load_times: componentLoadTimes.current,
-          duration_ms: fullLoadTime,
-          fastest_component_ms: Math.min(
-            ...Object.values(componentLoadTimes.current).filter((t) => t > 0),
-            Number.POSITIVE_INFINITY,
-          ),
-          full_page_load: true,
-          slowest_component_ms: Math.max(
-            ...Object.values(componentLoadTimes.current).filter((t) => t > 0),
-            0,
-          ),
-        },
-      );
-
       hasTrackedFullLoad.current = true;
+
+      // Defer PostHog capture to avoid blocking render
+      setTimeout(() => {
+        const fullLoadTime = Date.now() - loadStartTime.current;
+        const loadedComponents = Object.entries(componentStates).filter(
+          ([, loaded]) => loaded,
+        );
+
+        posthog.capture(
+          buildDashboardEvent(
+            DASHBOARD_COMPONENT.CONTAINER,
+            DASHBOARD_ACTION.LOAD,
+          ),
+          {
+            baby_id: babyId,
+            component_count: loadedComponents.length,
+            component_load_times: componentLoadTimes.current,
+            duration_ms: fullLoadTime,
+            fastest_component_ms: Math.min(
+              ...Object.values(componentLoadTimes.current).filter((t) => t > 0),
+              Number.POSITIVE_INFINITY,
+            ),
+            full_page_load: true,
+            slowest_component_ms: Math.max(
+              ...Object.values(componentLoadTimes.current).filter((t) => t > 0),
+              0,
+            ),
+          },
+        );
+      }, 0);
     }
   }, [isFullyLoaded, babyId, componentStates]);
 

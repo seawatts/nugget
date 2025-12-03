@@ -14,7 +14,12 @@
 
 import {
   addInsightToDashboard,
+  addTextTileToDashboard,
+  createFunnelInsight,
+  createMultiEventAreaChartInsight,
   createMultiEventTrendsInsight,
+  createNumberInsight,
+  createTextTile,
   createTrendsInsight,
   getPostHogHost,
   getProjectId,
@@ -450,6 +455,130 @@ async function main() {
       INSIGHT_TAGS,
     );
 
+    // NEW: Number Metrics
+    // 12. Total Dashboard Loads (with period comparison)
+    const totalDashboardLoadsInsightId = await upsertInsight(
+      projectId,
+      createNumberInsight(
+        'dashboard.container.load',
+        'Total Dashboard Loads',
+        'Total number of dashboard loads with period-over-period comparison',
+        'total',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 13. Average Full Page Load Time (single number)
+    const avgFullPageLoadTimeInsightId = await upsertInsight(
+      projectId,
+      createNumberInsight(
+        'dashboard.container.load',
+        'Average Full Page Load Time',
+        'Average time for entire dashboard to fully load',
+        'avg',
+        'duration_ms',
+        {
+          properties: [
+            {
+              key: 'full_page_load',
+              operator: 'exact',
+              type: 'event',
+              value: true,
+            },
+          ],
+        },
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 14. Total Component Interactions (with period comparison)
+    const totalComponentInteractionsInsightId = await upsertInsight(
+      projectId,
+      createNumberInsight(
+        'dashboard.*.load',
+        'Total Component Interactions',
+        'Total number of component interactions with period-over-period comparison',
+        'total',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // NEW: Area Charts
+    // 15. Component Load Times (area chart for volume emphasis)
+    const componentLoadTimesAreaInsightId = await upsertInsight(
+      projectId,
+      createMultiEventAreaChartInsight(
+        [
+          'dashboard.celebrations_carousel.load',
+          'dashboard.today_summary.load',
+          'dashboard.activity_cards.load',
+          'dashboard.learning_carousel.load',
+          'dashboard.developmental_phases_carousel.load',
+          'dashboard.milestones_carousel.load',
+          'dashboard.activity_timeline.load',
+        ],
+        'Component Load Times (Area Chart)',
+        'Component load times over time with volume emphasis',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 16. User Interaction Volume Over Time
+    const userInteractionVolumeAreaInsightId = await upsertInsight(
+      projectId,
+      createMultiEventAreaChartInsight(
+        [
+          'dashboard.activity_cards.activity_logged',
+          'dashboard.today_summary.quick_action',
+          'dashboard.activity_cards.quick_action',
+          'dashboard.activity_cards.drawer_open',
+          'dashboard.activity_timeline.drawer_open',
+        ],
+        'User Interaction Volume Over Time',
+        'Total user interactions over time with volume emphasis',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // NEW: Funnel
+    // 17. User Journey: Dashboard Load → Component Interaction → Activity Logged
+    const userJourneyFunnelInsightId = await upsertInsight(
+      projectId,
+      createFunnelInsight(
+        [
+          'dashboard.container.load',
+          'dashboard.activity_cards.load',
+          'dashboard.activity_cards.activity_logged',
+        ],
+        'User Journey: Dashboard → Component → Activity',
+        'Conversion funnel from dashboard load to activity logging',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // NEW: Retention
+    // 18. User Engagement Retention
+    // NOTE: Retention queries require a different API format - skipping for now
+    // const userEngagementRetentionInsightId = await upsertInsight(
+    //   projectId,
+    //   createRetentionInsight(
+    //     'dashboard.container.load',
+    //     'dashboard.container.load',
+    //     'User Engagement Retention',
+    //     'Retention rate of users who return to dashboard',
+    //     'Day',
+    //     11,
+    //   ),
+    //   undefined,
+    //   INSIGHT_TAGS,
+    // );
+
     console.log('\n📋 Upserting dashboard...\n');
 
     // Upsert dashboard (text tiles will be added manually in PostHog UI)
@@ -464,6 +593,31 @@ async function main() {
       DASHBOARD_TAGS,
     );
 
+    console.log('\n📝 Adding text cards to dashboard...\n');
+
+    // Add text cards to group insights
+    const textTiles = [
+      createTextTile('## Performance Metrics', 0, 'blue'),
+      createTextTile('## Number Metrics', 3, 'green'),
+      createTextTile('## Area Charts', 6, 'purple'),
+      createTextTile('## User Interactions', 8, 'orange'),
+      createTextTile('## Funnel Analysis', 20, 'red'),
+    ];
+
+    let textTileCount = 0;
+    for (const textTile of textTiles) {
+      try {
+        await addTextTileToDashboard(projectId, dashboard.id, textTile);
+        textTileCount++;
+        console.log(`✅ Added text card: ${textTile.text}`);
+      } catch (error) {
+        console.warn(
+          `⚠️  Could not add text card "${textTile.text}":`,
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    }
+
     console.log('\n🔗 Adding insights to dashboard...\n');
 
     // Add insights to dashboard (organized by sections)
@@ -472,6 +626,13 @@ async function main() {
       containerLoadInsightId,
       fullPageLoadInsightId,
       componentLoadTimesInsightId,
+      // Number Metrics (NEW)
+      totalDashboardLoadsInsightId,
+      avgFullPageLoadTimeInsightId,
+      totalComponentInteractionsInsightId,
+      // Area Charts (NEW)
+      componentLoadTimesAreaInsightId,
+      userInteractionVolumeAreaInsightId,
       // User Interactions
       componentVolumeInsightId,
       activityLoggedInsightId,
@@ -491,6 +652,9 @@ async function main() {
       parentWellnessInsightId,
       drawerOpenInsightId,
       componentBreakdownInsightId,
+      // Funnel (NEW)
+      userJourneyFunnelInsightId,
+      // userEngagementRetentionInsightId, // Retention queries need different format
     ];
 
     let addedCount = 0;
@@ -518,6 +682,12 @@ async function main() {
       );
     }
 
+    if (textTileCount > 0) {
+      console.log(
+        `\n✅ Successfully added ${textTileCount} text cards to dashboard`,
+      );
+    }
+
     const dashboardId = dashboard.short_id || dashboard.id;
     const dashboardUrl = `${getPostHogHost()}/project/${projectId}/dashboards/${dashboardId}`;
     const baseUrl = getPostHogHost();
@@ -531,6 +701,11 @@ async function main() {
         'Dashboard Container Initial Load Time',
         'Full Page Load Time',
         'Component Load Times',
+        'Total Dashboard Loads',
+        'Average Full Page Load Time',
+        'Total Component Interactions',
+        'Component Load Times (Area Chart)',
+        'User Interaction Volume Over Time',
         'Dashboard Component Interaction Volume',
         'Activities Logged from Cards',
         'Today Summary Quick Actions',
@@ -549,6 +724,7 @@ async function main() {
         'Parent Wellness Questions Answered',
         'Stats Drawer Opens',
         'Dashboard Component Usage Breakdown',
+        'User Journey: Dashboard → Component → Activity',
       ];
 
       insights.forEach((insightId, index) => {

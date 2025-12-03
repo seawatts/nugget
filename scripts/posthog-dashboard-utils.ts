@@ -12,12 +12,27 @@ export interface PostHogInsight {
     kind: 'InsightVizNode';
     source: {
       kind: string;
-      series?: Array<{ kind: string; event?: string; id?: string }>;
+      series?: Array<{
+        kind: string;
+        event?: string;
+        id?: string;
+        math?: string;
+        math_property?: string;
+        properties?: Array<Record<string, unknown>>;
+      }>;
       breakdown?: string | { type: string; property: string };
       dateRange?: { date_from: string; date_to?: string };
       interval?: string;
       properties?: Array<Record<string, unknown>>;
       version?: number;
+      // Funnel-specific fields
+      events?: Array<{ id: string; name: string; type: string; order: number }>;
+      // Retention-specific fields
+      retentionType?: string;
+      totalIntervals?: number;
+      period?: string;
+      returningEntity?: { id: string; name: string; type: string };
+      targetEntity?: { id: string; name: string; type: string };
     };
     version?: number;
   };
@@ -292,6 +307,64 @@ export async function addInsightToDashboard(
 }
 
 /**
+ * Helper to create a text tile for dashboard grouping
+ */
+export interface TextTile {
+  text: string;
+  color?: string;
+  layouts?: {
+    lg?: { x: number; y: number; w: number; h: number };
+    md?: { x: number; y: number; w: number; h: number };
+    sm?: { x: number; y: number; w: number; h: number };
+    xs?: { x: number; y: number; w: number; h: number };
+  };
+}
+
+export function createTextTile(
+  text: string,
+  y: number,
+  color = 'blue',
+  width = 12,
+  height = 1,
+): TextTile {
+  return {
+    color,
+    layouts: {
+      lg: { h: height, w: width, x: 0, y },
+      md: { h: height, w: width, x: 0, y },
+      sm: { h: height, w: 12, x: 0, y },
+      xs: { h: height, w: 12, x: 0, y },
+    },
+    text,
+  };
+}
+
+/**
+ * Add a text tile to a dashboard
+ */
+export async function addTextTileToDashboard(
+  projectId: string,
+  dashboardId: number,
+  textTile: TextTile,
+): Promise<void> {
+  try {
+    await fetchPostHogAPI(
+      `/projects/${projectId}/dashboards/${dashboardId}/tiles/`,
+      {
+        body: JSON.stringify(textTile),
+        method: 'POST',
+      },
+    );
+  } catch (error) {
+    console.warn(
+      '⚠️  Could not add text tile to dashboard:',
+      error instanceof Error ? error.message : String(error),
+    );
+    throw error;
+  }
+}
+
+/**
  * Helper to create a TrendsQuery insight
  */
 export function createTrendsInsight(
@@ -349,6 +422,182 @@ export function createMultiEventTrendsInsight(
       version: 1,
     },
     visualization,
+  };
+}
+
+/**
+ * Helper to create a Number insight (single metric with optional period comparison)
+ */
+export function createNumberInsight(
+  event: string,
+  name: string,
+  description?: string,
+  math: 'total' | 'avg' | 'sum' = 'total',
+  mathProperty?: string,
+  additionalProperties?: Record<string, unknown>,
+): PostHogInsight {
+  const series: Array<{
+    kind: string;
+    event?: string;
+    math?: string;
+    math_property?: string;
+  }> = [
+    {
+      event,
+      kind: 'EventsNode',
+      ...(math !== 'total'
+        ? { math, ...(mathProperty ? { math_property: mathProperty } : {}) }
+        : {}),
+    },
+  ];
+
+  return {
+    description,
+    name,
+    query: {
+      kind: 'InsightVizNode',
+      source: {
+        dateRange: { date_from: '-30d' },
+        interval: 'day',
+        kind: 'TrendsQuery',
+        series,
+        version: 1,
+        ...(additionalProperties || {}),
+      },
+      version: 1,
+    },
+    visualization: 'Number',
+  };
+}
+
+/**
+ * Helper to create an Area Chart insight (emphasizes volume)
+ */
+export function createAreaChartInsight(
+  event: string,
+  name: string,
+  description?: string,
+  additionalProperties?: Record<string, unknown>,
+): PostHogInsight {
+  return {
+    description,
+    name,
+    query: {
+      kind: 'InsightVizNode',
+      source: {
+        dateRange: { date_from: '-30d' },
+        interval: 'day',
+        kind: 'TrendsQuery',
+        series: [{ event, kind: 'EventsNode' }],
+        version: 1,
+        ...(additionalProperties || {}),
+      },
+      version: 1,
+    },
+    visualization: 'ActionsAreaGraph',
+  };
+}
+
+/**
+ * Helper to create a multi-event Area Chart insight
+ */
+export function createMultiEventAreaChartInsight(
+  events: string[],
+  name: string,
+  description?: string,
+  additionalProperties?: Record<string, unknown>,
+): PostHogInsight {
+  return {
+    description,
+    name,
+    query: {
+      kind: 'InsightVizNode',
+      source: {
+        dateRange: { date_from: '-30d' },
+        interval: 'day',
+        kind: 'TrendsQuery',
+        series: events.map((event) => ({
+          event,
+          kind: 'EventsNode',
+        })),
+        version: 1,
+        ...additionalProperties,
+      },
+      version: 1,
+    },
+    visualization: 'ActionsAreaGraph',
+  };
+}
+
+/**
+ * Helper to create a Funnel insight (conversion funnel analysis)
+ */
+export function createFunnelInsight(
+  events: string[],
+  name: string,
+  description?: string,
+  additionalProperties?: Record<string, unknown>,
+): PostHogInsight {
+  return {
+    description,
+    name,
+    query: {
+      kind: 'InsightVizNode',
+      source: {
+        dateRange: { date_from: '-30d' },
+        kind: 'FunnelsQuery',
+        series: events.map((event) => ({
+          event,
+          kind: 'EventsNode',
+        })),
+        version: 1,
+        ...additionalProperties,
+      },
+      version: 1,
+    },
+    visualization: 'FunnelViz',
+  };
+}
+
+/**
+ * Helper to create a Retention insight (cohort retention analysis)
+ */
+export function createRetentionInsight(
+  targetEvent: string,
+  returningEvent: string,
+  name: string,
+  description?: string,
+  period: 'Day' | 'Week' | 'Month' = 'Day',
+  totalIntervals = 11,
+  additionalProperties?: Record<string, unknown>,
+): PostHogInsight {
+  return {
+    description,
+    name,
+    query: {
+      kind: 'InsightVizNode',
+      source: {
+        dateRange: { date_from: '-30d' },
+        kind: 'RetentionQuery',
+        period: period.toLowerCase(),
+        retentionType: 'retention_recurring',
+        returningEntity: {
+          id: returningEvent,
+          name: returningEvent,
+          type: 'events',
+        },
+        targetEntity: {
+          id: targetEvent,
+          name: targetEvent,
+          type: 'events',
+        },
+        totalIntervals,
+        version: 1,
+        ...additionalProperties,
+      },
+      version: 1,
+    },
+    visualization: 'RetentionTable',
   };
 }
 

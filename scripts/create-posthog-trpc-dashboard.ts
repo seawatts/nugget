@@ -14,6 +14,10 @@
 
 import {
   addInsightToDashboard,
+  addTextTileToDashboard,
+  createMultiEventAreaChartInsight,
+  createNumberInsight,
+  createTextTile,
   createTrendsInsight,
   getPostHogHost,
   getProjectId,
@@ -329,6 +333,117 @@ async function main() {
       INSIGHT_TAGS,
     );
 
+    // NEW: Number Metrics
+    // 14. Total tRPC Calls (with period comparison)
+    const totalTrpcCallsNumberInsightId = await upsertInsight(
+      projectId,
+      createNumberInsight(
+        'trpc.*.query',
+        'Total tRPC Calls',
+        'Total number of tRPC API calls with period-over-period comparison',
+        'total',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 15. Query Success Rate % (single number)
+    const querySuccessRateNumberInsightId = await upsertInsight(
+      projectId,
+      createNumberInsight(
+        'trpc.*.query',
+        'tRPC Query Success Rate',
+        'Percentage of successful tRPC queries',
+        'total',
+        undefined,
+        {
+          properties: [
+            {
+              key: 'success',
+              operator: 'exact',
+              type: 'event',
+              value: true,
+            },
+          ],
+        },
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 16. Mutation Success Rate % (single number)
+    const mutationSuccessRateNumberInsightId = await upsertInsight(
+      projectId,
+      createNumberInsight(
+        'trpc.*.mutation',
+        'tRPC Mutation Success Rate',
+        'Percentage of successful tRPC mutations',
+        'total',
+        undefined,
+        {
+          properties: [
+            {
+              key: 'success',
+              operator: 'exact',
+              type: 'event',
+              value: true,
+            },
+          ],
+        },
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 17. Average Query Duration (single number)
+    const avgQueryDurationNumberInsightId = await upsertInsight(
+      projectId,
+      createNumberInsight(
+        'trpc.*.query',
+        'tRPC Average Query Duration',
+        'Average execution time for tRPC queries',
+        'avg',
+        'duration_ms',
+        {
+          properties: [
+            {
+              key: 'duration_ms',
+              operator: 'gt',
+              type: 'event',
+              value: 0,
+            },
+          ],
+        },
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // NEW: Area Charts
+    // 18. tRPC Volume Over Time (queries + mutations)
+    const trpcVolumeAreaInsightId = await upsertInsight(
+      projectId,
+      createMultiEventAreaChartInsight(
+        ['trpc.*.query', 'trpc.*.mutation'],
+        'tRPC Volume Over Time',
+        'Total tRPC API calls over time with volume emphasis',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 19. Query vs Mutation Volume Comparison
+    const queryVsMutationVolumeAreaInsightId = await upsertInsight(
+      projectId,
+      createMultiEventAreaChartInsight(
+        ['trpc.*.query', 'trpc.*.mutation'],
+        'tRPC Query vs Mutation Volume',
+        'Comparison of query and mutation volumes over time',
+      ),
+      undefined,
+      INSIGHT_TAGS,
+    );
+
     console.log('\n📋 Upserting dashboard...\n');
 
     // Upsert dashboard (text tiles will be added manually in PostHog UI)
@@ -343,15 +458,48 @@ async function main() {
       DASHBOARD_TAGS,
     );
 
+    console.log('\n📝 Adding text cards to dashboard...\n');
+
+    // Add text cards to group insights
+    const textTiles = [
+      createTextTile('## Number Metrics', 0, 'green'),
+      createTextTile('## Performance Metrics', 4, 'blue'),
+      createTextTile('## Area Charts', 8, 'purple'),
+      createTextTile('## Error Analysis', 10, 'orange'),
+      createTextTile('## Volume & Usage', 14, 'teal'),
+    ];
+
+    let textTileCount = 0;
+    for (const textTile of textTiles) {
+      try {
+        await addTextTileToDashboard(projectId, dashboard.id, textTile);
+        textTileCount++;
+        console.log(`✅ Added text card: ${textTile.text}`);
+      } catch (error) {
+        console.warn(
+          `⚠️  Could not add text card "${textTile.text}":`,
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    }
+
     console.log('\n🔗 Adding insights to dashboard...\n');
 
     // Add insights to dashboard (organized by sections)
     const insights = [
+      // Number Metrics (NEW)
+      totalTrpcCallsNumberInsightId,
+      querySuccessRateNumberInsightId,
+      mutationSuccessRateNumberInsightId,
+      avgQueryDurationNumberInsightId,
       // Performance Metrics
       queryDurationInsightId,
       mutationDurationInsightId,
       successRateInsightId,
       mutationSuccessRateInsightId,
+      // Area Charts (NEW)
+      trpcVolumeAreaInsightId,
+      queryVsMutationVolumeAreaInsightId,
       // Error Analysis
       errorRateInsightId,
       failedQueriesInsightId,
@@ -390,6 +538,12 @@ async function main() {
       );
     }
 
+    if (textTileCount > 0) {
+      console.log(
+        `\n✅ Successfully added ${textTileCount} text cards to dashboard`,
+      );
+    }
+
     const dashboardId = dashboard.short_id || dashboard.id;
     const dashboardUrl = `${getPostHogHost()}/project/${projectId}/dashboards/${dashboardId}`;
     const baseUrl = getPostHogHost();
@@ -400,10 +554,16 @@ async function main() {
     if (insights.length > 0) {
       console.log('📋 Created insights:');
       const insightNames = [
+        'Total tRPC Calls',
+        'tRPC Query Success Rate',
+        'tRPC Mutation Success Rate',
+        'tRPC Average Query Duration',
         'tRPC Query Average Duration',
         'tRPC Mutation Average Duration',
         'tRPC Query Success Rate',
         'tRPC Mutation Success Rate',
+        'tRPC Volume Over Time',
+        'tRPC Query vs Mutation Volume',
         'tRPC Error Rate',
         'tRPC Failed Queries',
         'tRPC Failed Mutations',

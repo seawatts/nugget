@@ -12,25 +12,15 @@
  *   - POSTHOG_ENV_ID: PostHog project/environment ID (optional, will try to auto-detect if API key has permissions)
  */
 
-interface PostHogInsight {
-  name: string;
-  description?: string;
-  query: {
-    kind: 'InsightVizNode';
-    source: {
-      kind: string;
-      series?: Array<{ kind: string; event?: string; id?: string }>;
-      breakdown?: string | { type: string; property: string };
-      dateRange?: { date_from: string; date_to?: string };
-      interval?: string;
-      properties?: Array<Record<string, unknown>>;
-      version?: number;
-    };
-    version?: number;
-  };
-  visualization?: string;
-  filters?: Record<string, unknown>;
-}
+import {
+  addTextTileToDashboard,
+  createAreaChartInsight,
+  createFunnelInsight,
+  createMultiEventAreaChartInsight,
+  createNumberInsight,
+  createTextTile,
+  type PostHogInsight,
+} from './posthog-dashboard-utils';
 
 interface PostHogDashboard {
   name: string;
@@ -601,6 +591,83 @@ async function main() {
       visualization: 'ActionsLineGraph',
     });
 
+    // NEW: Number Metrics
+    // 12. Total Mutations Started (with period comparison)
+    const totalMutationsInsightId = await upsertInsight(
+      projectId,
+      createNumberInsight(
+        'mutation_started',
+        'Total Mutations Started',
+        'Total number of mutations started with period-over-period comparison',
+        'total',
+      ),
+    );
+
+    // 13. Mutation Success Rate % (single number)
+    const mutationSuccessRateNumberInsightId = await upsertInsight(
+      projectId,
+      createNumberInsight(
+        'mutation_completed',
+        'Mutation Success Rate',
+        'Percentage of mutations that complete successfully',
+        'total',
+      ),
+    );
+
+    // 14. Average Completion Time (single number)
+    const avgCompletionTimeInsightId = await upsertInsight(
+      projectId,
+      createNumberInsight(
+        'mutation_completed',
+        'Average Mutation Completion Time',
+        'Average time from mutation start to completion',
+        'avg',
+        'duration_ms',
+        {
+          properties: [
+            {
+              key: 'duration_ms',
+              operator: 'gt',
+              type: 'event',
+              value: 0,
+            },
+          ],
+        },
+      ),
+    );
+
+    // NEW: Area Charts
+    // 15. Mutation Volume Over Time (area chart)
+    const mutationVolumeAreaInsightId = await upsertInsight(
+      projectId,
+      createAreaChartInsight(
+        'mutation_started',
+        'Mutation Volume Over Time (Area Chart)',
+        'Total number of mutations started over time with volume emphasis',
+      ),
+    );
+
+    // 16. Success vs Failure Volume Comparison
+    const successVsFailureAreaInsightId = await upsertInsight(
+      projectId,
+      createMultiEventAreaChartInsight(
+        ['mutation_completed', 'mutation_failed'],
+        'Success vs Failure Volume Comparison',
+        'Comparison of successful and failed mutations over time',
+      ),
+    );
+
+    // NEW: Funnel
+    // 17. Mutation Flow: Started → Queued → Completed/Failed
+    const mutationFlowFunnelInsightId = await upsertInsight(
+      projectId,
+      createFunnelInsight(
+        ['mutation_started', 'mutation_queued', 'mutation_completed'],
+        'Mutation Flow: Started → Queued → Completed',
+        'Conversion funnel showing mutation flow from start to completion',
+      ),
+    );
+
     // Verify insights were created
     console.log('\n🔍 Verifying created insights...\n');
     const createdInsights = await listInsights(projectId);
@@ -632,6 +699,32 @@ async function main() {
       pinned: true,
     });
 
+    console.log('\n📝 Adding text cards to dashboard...\n');
+
+    // Add text cards to group insights
+    const textTiles = [
+      createTextTile('## Number Metrics', 4, 'green'),
+      createTextTile('## Area Charts', 7, 'purple'),
+      createTextTile('## Funnel Analysis', 11, 'red'),
+      createTextTile('## Performance Metrics', 12, 'blue'),
+      createTextTile('## Error Analysis', 16, 'orange'),
+      createTextTile('## Distribution', 20, 'teal'),
+    ];
+
+    let textTileCount = 0;
+    for (const textTile of textTiles) {
+      try {
+        await addTextTileToDashboard(projectId, dashboard.id, textTile);
+        textTileCount++;
+        console.log(`✅ Added text card: ${textTile.text}`);
+      } catch (error) {
+        console.warn(
+          `⚠️  Could not add text card "${textTile.text}":`,
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    }
+
     console.log('\n🔗 Adding insights to dashboard...\n');
 
     // Prepare tiles with layouts for reference
@@ -643,6 +736,60 @@ async function main() {
           md: { h: 4, w: 12, x: 0, y: 0 },
           sm: { h: 4, w: 12, x: 0, y: 0 },
           xs: { h: 4, w: 12, x: 0, y: 0 },
+        },
+      },
+      {
+        insight: totalMutationsInsightId,
+        layouts: {
+          lg: { h: 3, w: 4, x: 0, y: 4 },
+          md: { h: 3, w: 4, x: 0, y: 4 },
+          sm: { h: 3, w: 12, x: 0, y: 4 },
+          xs: { h: 3, w: 12, x: 0, y: 4 },
+        },
+      },
+      {
+        insight: mutationSuccessRateNumberInsightId,
+        layouts: {
+          lg: { h: 3, w: 4, x: 4, y: 4 },
+          md: { h: 3, w: 4, x: 4, y: 4 },
+          sm: { h: 3, w: 12, x: 0, y: 7 },
+          xs: { h: 3, w: 12, x: 0, y: 7 },
+        },
+      },
+      {
+        insight: avgCompletionTimeInsightId,
+        layouts: {
+          lg: { h: 3, w: 4, x: 8, y: 4 },
+          md: { h: 3, w: 4, x: 8, y: 4 },
+          sm: { h: 3, w: 12, x: 0, y: 10 },
+          xs: { h: 3, w: 12, x: 0, y: 10 },
+        },
+      },
+      {
+        insight: mutationVolumeAreaInsightId,
+        layouts: {
+          lg: { h: 4, w: 6, x: 0, y: 7 },
+          md: { h: 4, w: 6, x: 0, y: 7 },
+          sm: { h: 4, w: 12, x: 0, y: 13 },
+          xs: { h: 4, w: 12, x: 0, y: 13 },
+        },
+      },
+      {
+        insight: successVsFailureAreaInsightId,
+        layouts: {
+          lg: { h: 4, w: 6, x: 6, y: 7 },
+          md: { h: 4, w: 6, x: 6, y: 7 },
+          sm: { h: 4, w: 12, x: 0, y: 17 },
+          xs: { h: 4, w: 12, x: 0, y: 17 },
+        },
+      },
+      {
+        insight: mutationFlowFunnelInsightId,
+        layouts: {
+          lg: { h: 4, w: 12, x: 0, y: 11 },
+          md: { h: 4, w: 12, x: 0, y: 11 },
+          sm: { h: 4, w: 12, x: 0, y: 21 },
+          xs: { h: 4, w: 12, x: 0, y: 21 },
         },
       },
       {
@@ -772,6 +919,12 @@ async function main() {
       );
     }
 
+    if (textTileCount > 0) {
+      console.log(
+        `\n✅ Successfully added ${textTileCount} text cards to dashboard`,
+      );
+    }
+
     const dashboardId = dashboard.short_id || dashboard.id;
     const dashboardUrl = `${POSTHOG_HOST.replace(/\/$/, '')}/project/${projectId}/dashboards/${dashboardId}`;
     const baseUrl = POSTHOG_HOST.replace(/\/$/, '');
@@ -787,6 +940,12 @@ async function main() {
 
       const insightNames = [
         'Mutation Volume Over Time',
+        'Total Mutations Started',
+        'Mutation Success Rate',
+        'Average Mutation Completion Time',
+        'Mutation Volume Over Time (Area Chart)',
+        'Success vs Failure Volume Comparison',
+        'Mutation Flow: Started → Queued → Completed',
         'Mutation Success Rate',
         'Mutation Completion Time',
         'Mutation Failure Duration',

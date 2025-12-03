@@ -14,22 +14,12 @@ interface PageProps {
 export default async function BabyDashboardPage({ params }: PageProps) {
   const { babyId } = await params;
 
-  // Get family ID from auth
-  const { orgId } = await auth();
-
-  // Update last selected baby and family
-  if (orgId) {
-    void updateLastSelectedBabyAction({
-      babyId,
-      familyId: orgId,
-    });
-  }
-
   // Prefetch ONLY critical data needed for initial render (useSuspenseQuery in DashboardContainer)
   // Everything else is wrapped in Suspense and will lazy load client-side for better performance
   const trpc = await api();
 
   // Critical data for DashboardContainer (blocks initial render, but needed)
+  // These are non-blocking (void) so they don't delay cached responses
   void trpc.babies.getByIdLight.prefetch({ id: babyId });
   void trpc.user.current.prefetch();
   void trpc.familyMembers.all.prefetch();
@@ -43,6 +33,25 @@ export default async function BabyDashboardPage({ params }: PageProps) {
     limit: 200,
     since: sevenDaysAgo,
   });
+
+  // Non-blocking: Update last selected baby and family (don't await)
+  // This runs in background and won't delay cached responses
+  void (async () => {
+    try {
+      const { orgId } = await auth();
+      if (orgId) {
+        await updateLastSelectedBabyAction({
+          babyId,
+          familyId: orgId,
+        });
+      }
+    } catch (error) {
+      // Silently fail - this is not critical for page load
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[Dashboard] Failed to update last selected baby', error);
+      }
+    }
+  })();
 
   // NOTE: Carousels (celebrations, learning, milestones) and timeline are wrapped in Suspense
   // They fetch their own data client-side for faster initial page load
