@@ -181,6 +181,15 @@ export class BackgroundSyncManager {
     this.queue = this.queue.filter((req) => req.id !== id);
     this.saveQueue();
   }
+
+  /**
+   * Synchronously add a request to the queue
+   * Safe to call from beforeunload handlers
+   */
+  addToQueueSync(request: QueuedRequest): void {
+    this.queue.push(request);
+    this.saveQueue();
+  }
 }
 
 // Utility function to wrap fetch with background sync support

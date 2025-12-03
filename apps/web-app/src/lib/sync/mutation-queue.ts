@@ -17,6 +17,15 @@ interface QueuedMutation {
   source: string;
 }
 
+interface QueuedRequest {
+  id: string;
+  url: string;
+  method: string;
+  headers: Record<string, string>;
+  body?: string;
+  timestamp: number;
+}
+
 export class MutationQueue {
   private static instance: MutationQueue;
   private tracker = MutationTracker.getInstance();
@@ -98,6 +107,69 @@ export class MutationQueue {
       return true;
     } catch (error) {
       console.error('Failed to queue mutation:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Synchronously queue a mutation during page unload
+   * Uses sendBeacon (synchronous) or localStorage as fallback
+   * This is safe to call from beforeunload handlers
+   */
+  queueMutationSync(
+    mutationId: string,
+    url: string,
+    body: string,
+    activityType: typeof Activities.$inferSelect.type,
+    source: string,
+  ): boolean {
+    // Try sendBeacon first (synchronous, works during page unload)
+    if (navigator.sendBeacon) {
+      try {
+        const blob = new Blob([body], {
+          type: 'application/json',
+        });
+
+        const beaconSent = navigator.sendBeacon(url, blob);
+
+        if (beaconSent) {
+          // Track synchronously using localStorage
+          try {
+            this.tracker.trackMutationQueued(
+              mutationId,
+              activityType,
+              source,
+              this.syncManager.getQueueLength(),
+            );
+          } catch {
+            // Ignore tracking errors during unload
+          }
+          return true;
+        }
+      } catch (error) {
+        console.warn('sendBeacon failed:', error);
+      }
+    }
+
+    // Fallback: Store in BackgroundSyncManager's localStorage queue synchronously
+    // This will be processed on next page load or by service worker
+    try {
+      const request: QueuedRequest = {
+        body,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        id: mutationId,
+        method: 'POST',
+        timestamp: Date.now(),
+        url,
+      };
+
+      // Synchronously add to queue and save to localStorage
+      this.syncManager.addToQueueSync(request);
+      return true;
+    } catch (error) {
+      console.error('Failed to queue mutation synchronously:', error);
       return false;
     }
   }

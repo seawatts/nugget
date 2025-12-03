@@ -263,44 +263,92 @@ export function useActivityMutations() {
     [deleteMutation],
   );
 
-  // Set up page unload handler to queue pending mutations
+  // Set up page unload handlers to queue pending mutations
   useEffect(() => {
+    // Handle page visibility change (when page becomes hidden but not unloading)
+    // This gives us more time for async operations
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'hidden') {
+        const pendingMutations = tracker.getPendingMutations();
+        if (pendingMutations.length > 0) {
+          // Use async queueMutation for visibility change (has more time)
+          for (const mutation of pendingMutations) {
+            try {
+              const baseUrl = window.location.origin;
+              const trpcUrl = `${baseUrl}/api/trpc/activities.create`;
+
+              const body = JSON.stringify({
+                json: {
+                  ...mutation.data,
+                  type: mutation.activityType,
+                },
+              });
+
+              await mutationQueue.queueMutation(
+                mutation.id,
+                trpcUrl,
+                {
+                  body,
+                  credentials: 'include',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  method: 'POST',
+                },
+                mutation.activityType,
+                mutation.source,
+              );
+            } catch (error) {
+              console.error(
+                'Failed to queue mutation on visibility change:',
+                error,
+              );
+            }
+          }
+        }
+      }
+    };
+
+    // Handle beforeunload with synchronous operations only
+    // beforeunload handlers must be synchronous - async operations won't complete
     const handleBeforeUnload = () => {
       const pendingMutations = tracker.getPendingMutations();
       if (pendingMutations.length > 0) {
-        // Try to queue mutations using sendBeacon or Background Sync
-        pendingMutations.forEach(async (mutation) => {
-          try {
-            const baseUrl = window.location.origin;
-            const trpcUrl = `${baseUrl}/api/trpc/activities.create`;
+        const baseUrl = window.location.origin;
+        const trpcUrl = `${baseUrl}/api/trpc/activities.create`;
 
+        // Queue mutations synchronously using sendBeacon or localStorage
+        for (const mutation of pendingMutations) {
+          try {
             const body = JSON.stringify({
-              json: mutation.data,
+              json: {
+                ...mutation.data,
+                type: mutation.activityType,
+              },
             });
 
-            await mutationQueue.queueMutation(
+            // Use synchronous queue method (sendBeacon or localStorage)
+            mutationQueue.queueMutationSync(
               mutation.id,
               trpcUrl,
-              {
-                body,
-                credentials: 'include',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                method: 'POST',
-              },
+              body,
               mutation.activityType,
               mutation.source,
             );
           } catch (error) {
             console.error('Failed to queue mutation on unload:', error);
           }
-        });
+        }
       }
     };
 
+    // Use visibilitychange for async operations (more reliable)
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // Use beforeunload as fallback with synchronous operations only
     window.addEventListener('beforeunload', handleBeforeUnload);
+
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [tracker, mutationQueue]);
