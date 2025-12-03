@@ -1,5 +1,6 @@
 'use client';
 
+import { DASHBOARD_COMPONENT } from '@nugget/analytics/utils';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
@@ -104,6 +105,8 @@ export function DiaperStatsDrawer({
   dailyGoal,
   goalContext,
 }: DiaperStatsDrawerProps) {
+  // Extract babyId from activities for tracking
+  const babyId = activities[0]?.babyId;
   const [trendTimeRange, setTrendTimeRange] = useState<TrendTimeRange>('7d');
   const [timelineFilterType, setTimelineFilterType] =
     useState<DiaperMetricType>('total');
@@ -328,6 +331,8 @@ export function DiaperStatsDrawer({
 
   return (
     <StatsDrawerWrapper
+      babyId={babyId}
+      componentName={DASHBOARD_COMPONENT.DIAPER_STATS_DRAWER}
       onOpenChange={onOpenChange}
       open={open}
       title="Diaper Statistics"

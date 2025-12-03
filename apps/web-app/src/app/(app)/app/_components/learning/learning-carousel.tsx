@@ -1,8 +1,15 @@
 'use client';
 
+import {
+  buildDashboardEvent,
+  DASHBOARD_ACTION,
+  DASHBOARD_COMPONENT,
+} from '@nugget/analytics/utils';
 import { api } from '@nugget/api/react';
 import { H2, P } from '@nugget/ui/custom/typography';
 import { Sparkles } from 'lucide-react';
+import posthog from 'posthog-js';
+import { useEffect, useRef } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { LearningCardCheckBack } from './learning-card-check-back';
 import { LearningCardInfo } from './learning-card-info';
@@ -15,6 +22,7 @@ interface LearningCarouselProps {
 export function LearningCarousel({ babyId }: LearningCarouselProps) {
   // Get baby info from dashboard store (populated by DashboardContainer)
   const baby = useDashboardDataStore.use.baby();
+  const hasTrackedView = useRef(false);
 
   const babyName = baby?.firstName ?? 'Baby';
   const ageInDays = baby?.birthDate
@@ -33,6 +41,23 @@ export function LearningCarousel({ babyId }: LearningCarouselProps) {
 
   const tips = data?.tips ?? [];
   const status = isLoading ? 'loading' : (data?.status ?? 'empty');
+
+  // Track carousel view when tips are loaded
+  useEffect(() => {
+    if (!hasTrackedView.current && tips.length > 0) {
+      posthog.capture(
+        buildDashboardEvent(
+          DASHBOARD_COMPONENT.LEARNING_CAROUSEL,
+          DASHBOARD_ACTION.VIEW,
+        ),
+        {
+          baby_id: babyId,
+          tip_count: tips.length,
+        },
+      );
+      hasTrackedView.current = true;
+    }
+  }, [tips.length, babyId]);
 
   // Show loading state for both initial loading and pending generation
   if (status === 'loading' || status === 'pending') {

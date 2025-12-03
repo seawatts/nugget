@@ -1,5 +1,10 @@
 'use client';
 
+import {
+  buildDashboardEvent,
+  DASHBOARD_ACTION,
+  DASHBOARD_COMPONENT,
+} from '@nugget/analytics/utils';
 import { api, type MilestoneCarouselCardData } from '@nugget/api/react';
 
 // Alias to match existing code's expectation
@@ -8,7 +13,8 @@ type MilestoneCardData = MilestoneCarouselCardData;
 import { H2, P } from '@nugget/ui/custom/typography';
 import { useMediaQuery } from '@nugget/ui/hooks/use-media-query';
 import { Award } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import posthog from 'posthog-js';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { useOptimisticMilestonesStore } from '~/stores/optimistic-milestones';
 import { MilestoneCard } from './milestone-card';
@@ -41,6 +47,7 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
   const [removingCardId, setRemovingCardId] = useState<string | null>(null);
   const [isProcessingSwipe, setIsProcessingSwipe] = useState(false);
   const isMobile = useMediaQuery({ query: '(max-width: 768px)' });
+  const hasTrackedView = useRef(false);
 
   // TEMP: Force mobile mode for testing (uncomment to test on desktop)
   // const isMobile = true;
@@ -84,8 +91,23 @@ export function MilestonesCarousel({ babyId }: MilestonesCarouselProps) {
         milestones.map((m) => ({ ...m, cardType: 'milestone' as const })),
       );
       setCurrentCardIndex(0);
+
+      // Track carousel view
+      if (!hasTrackedView.current) {
+        posthog.capture(
+          buildDashboardEvent(
+            DASHBOARD_COMPONENT.MILESTONES_CAROUSEL,
+            DASHBOARD_ACTION.VIEW,
+          ),
+          {
+            baby_id: babyId,
+            milestone_count: milestones.length,
+          },
+        );
+        hasTrackedView.current = true;
+      }
     }
-  }, [milestones]);
+  }, [milestones, babyId]);
 
   // Handler to mark milestone as complete
   const handleMarkComplete = useCallback(

@@ -1,6 +1,7 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
+import { trackServerAction } from '@nugget/analytics/server-actions';
 import { getApi } from '@nugget/api/server';
 import type { Activities } from '@nugget/db/schema';
 import { createSafeActionClient } from 'next-safe-action';
@@ -55,20 +56,35 @@ export const updateActivityAction = action
         throw new Error('Authentication required');
       }
 
-      // Create tRPC API helper
-      const api = await getApi();
+      return trackServerAction(
+        {
+          actionName: 'updateActivity',
+          properties: {
+            activity_id: parsedInput.id,
+            activity_type: parsedInput.type,
+            has_amount: !!parsedInput.amountMl,
+            has_duration: !!parsedInput.duration,
+            has_end_time: !!parsedInput.endTime,
+          },
+          userId: authResult.userId,
+        },
+        async () => {
+          // Create tRPC API helper
+          const api = await getApi();
 
-      const { id, ...updateData } = parsedInput;
+          const { id, ...updateData } = parsedInput;
 
-      // Update the activity
-      const activity = await api.activities.update({
-        id,
-        ...updateData,
-      });
+          // Update the activity
+          const activity = await api.activities.update({
+            id,
+            ...updateData,
+          });
 
-      // Revalidate any pages that might display activities
-      revalidateAppPaths();
+          // Revalidate any pages that might display activities
+          revalidateAppPaths();
 
-      return { activity };
+          return { activity };
+        },
+      );
     },
   );

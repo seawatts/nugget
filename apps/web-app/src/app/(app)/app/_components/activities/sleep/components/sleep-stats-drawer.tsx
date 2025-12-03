@@ -1,5 +1,6 @@
 'use client';
 
+import { DASHBOARD_COMPONENT } from '@nugget/analytics/utils';
 import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
@@ -100,6 +101,8 @@ export function SleepStatsDrawer({
   dailySleepHoursGoal,
   goalContext,
 }: SleepStatsDrawerProps) {
+  // Extract babyId from activities for tracking
+  const babyId = activities[0]?.babyId;
   const [trendTimeRange, setTrendTimeRange] = useState<
     '24h' | '7d' | '2w' | '1m' | '3m' | '6m'
   >('7d');
@@ -162,9 +165,9 @@ export function SleepStatsDrawer({
     fallbackHeatmapOption;
   const timelineOffsetDays = selectedTimelineOption.offsetDays;
 
-  // Get babyId from params for additional data fetching
+  // Get babyId from params for additional data fetching (use activities babyId if available, otherwise params)
   const params = useParams<{ babyId?: string }>();
-  const babyId = params?.babyId as string | undefined;
+  const babyIdForTracking = babyId || (params?.babyId as string | undefined);
 
   // Get babyBirthDate from goalContext
   const babyBirthDate = goalContext?.babyBirthDate
@@ -432,6 +435,8 @@ export function SleepStatsDrawer({
 
   return (
     <StatsDrawerWrapper
+      babyId={babyIdForTracking}
+      componentName={DASHBOARD_COMPONENT.SLEEP_STATS_DRAWER}
       onOpenChange={onOpenChange}
       open={open}
       title="Sleep Statistics"

@@ -1,9 +1,15 @@
 'use client';
 
+import {
+  buildDashboardEvent,
+  DASHBOARD_ACTION,
+  DASHBOARD_COMPONENT,
+} from '@nugget/analytics/utils';
 import { api } from '@nugget/api/react';
 import { H2, P } from '@nugget/ui/custom/typography';
 import { Sparkles } from 'lucide-react';
-import { useMemo } from 'react';
+import posthog from 'posthog-js';
+import { useEffect, useMemo, useRef } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { DevelopmentalPhasesSkeleton } from '../skeletons';
 import type { PhaseCardProps } from './phase-card';
@@ -20,6 +26,7 @@ export function DevelopmentalPhasesCarousel({
   babyId,
 }: DevelopmentalPhasesCarouselProps) {
   const baby = useDashboardDataStore.use.baby();
+  const hasTrackedView = useRef(false);
   const { data, isLoading } = api.developmentalPhases.getPhasesForBaby.useQuery(
     { babyId },
     {
@@ -47,6 +54,23 @@ export function DevelopmentalPhasesCarousel({
       const diff = Date.now() - new Date(baby.birthDate).getTime();
       return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
     })();
+
+  // Track carousel view
+  useEffect(() => {
+    if (!hasTrackedView.current && data && !isLoading) {
+      posthog.capture(
+        buildDashboardEvent(
+          DASHBOARD_COMPONENT.DEVELOPMENTAL_PHASES_CAROUSEL,
+          DASHBOARD_ACTION.VIEW,
+        ),
+        {
+          baby_id: babyId,
+          phase_count: DEVELOPMENTAL_PHASES.length,
+        },
+      );
+      hasTrackedView.current = true;
+    }
+  }, [data, isLoading, babyId]);
 
   if (isLoading && !data) {
     return <DevelopmentalPhasesSkeleton />;

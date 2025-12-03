@@ -1,6 +1,7 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
+import { trackServerAction } from '@nugget/analytics/server-actions';
 import { getApi } from '@nugget/api/server';
 import type { Activities } from '@nugget/db/schema';
 import { createSafeActionClient } from 'next-safe-action';
@@ -48,35 +49,47 @@ export const createActivityAction = action
         throw new Error('Authentication required');
       }
 
-      // Create tRPC API helper
-      const api = await getApi();
+      return trackServerAction(
+        {
+          actionName: 'createActivity',
+          properties: {
+            activity_type: parsedInput.activityType,
+            baby_id: parsedInput.babyId,
+          },
+          userId: authResult.userId,
+        },
+        async () => {
+          // Create tRPC API helper
+          const api = await getApi();
 
-      const { babyId } = parsedInput;
+          const { babyId } = parsedInput;
 
-      // Get the baby to check birth date
-      const baby = await api.babies.getByIdLight({ id: babyId });
+          // Get the baby to check birth date
+          const baby = await api.babies.getByIdLight({ id: babyId });
 
-      if (!baby) {
-        throw new Error('Baby not found.');
-      }
+          if (!baby) {
+            throw new Error('Baby not found.');
+          }
 
-      // Get default activity data based on type and baby's birth date
-      const defaultData = getDefaultActivityData(
-        parsedInput.activityType,
-        baby.birthDate,
+          // Get default activity data based on type and baby's birth date
+          const defaultData = getDefaultActivityData(
+            parsedInput.activityType,
+            baby.birthDate,
+          );
+
+          // Create the activity
+          const activity = await api.activities.create({
+            babyId,
+            details: null,
+            ...defaultData,
+          });
+
+          // Revalidate any pages that might display activities
+          revalidateAppPaths();
+
+          return { activity };
+        },
       );
-
-      // Create the activity
-      const activity = await api.activities.create({
-        babyId,
-        details: null,
-        ...defaultData,
-      });
-
-      // Revalidate any pages that might display activities
-      revalidateAppPaths();
-
-      return { activity };
     },
   );
 
@@ -149,26 +162,41 @@ export const createActivityWithDetailsAction = action
         throw new Error('Authentication required');
       }
 
-      // Create tRPC API helper
-      const api = await getApi();
+      return trackServerAction(
+        {
+          actionName: 'createActivityWithDetails',
+          properties: {
+            activity_type: parsedInput.activityType,
+            baby_id: parsedInput.babyId,
+            has_amount: !!parsedInput.amountMl,
+            has_duration: !!parsedInput.duration,
+            has_feeding_source: !!parsedInput.feedingSource,
+          },
+          userId: authResult.userId,
+        },
+        async () => {
+          // Create tRPC API helper
+          const api = await getApi();
 
-      const { babyId } = parsedInput;
+          const { babyId } = parsedInput;
 
-      // Create the activity with provided details
-      const activity = await api.activities.create({
-        amountMl: parsedInput.amountMl,
-        babyId,
-        details: parsedInput.details || null,
-        duration: parsedInput.duration,
-        feedingSource: parsedInput.feedingSource,
-        notes: parsedInput.notes,
-        startTime: parsedInput.startTime || new Date(),
-        type: parsedInput.activityType as typeof Activities.$inferSelect.type,
-      });
+          // Create the activity with provided details
+          const activity = await api.activities.create({
+            amountMl: parsedInput.amountMl,
+            babyId,
+            details: parsedInput.details || null,
+            duration: parsedInput.duration,
+            feedingSource: parsedInput.feedingSource,
+            notes: parsedInput.notes,
+            startTime: parsedInput.startTime || new Date(),
+            type: parsedInput.activityType as typeof Activities.$inferSelect.type,
+          });
 
-      // Revalidate any pages that might display activities
-      revalidateAppPaths();
+          // Revalidate any pages that might display activities
+          revalidateAppPaths();
 
-      return { activity };
+          return { activity };
+        },
+      );
     },
   );

@@ -2,6 +2,7 @@
 
 import { Button } from '@nugget/ui/button';
 import { H2, P } from '@nugget/ui/custom/typography';
+import posthog from 'posthog-js';
 import { useEffect } from 'react';
 
 export default function ErrorPage({
@@ -12,7 +13,11 @@ export default function ErrorPage({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
+    // Log the error to PostHog for tracking
+    posthog.captureException(error, {
+      digest: error.digest,
+      source: 'error_page',
+    });
     console.error(error);
   }, [error]);
 

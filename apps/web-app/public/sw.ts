@@ -20,7 +20,30 @@ self.addEventListener('install', (event: ExtendableEvent) => {
     (async () => {
       try {
         const cache = await caches.open(CACHE_NAME);
-        await cache.addAll(['/app', '/offline']);
+        // Cache essential shell assets
+        await cache.addAll(['/app', '/offline']).catch((error) => {
+          console.warn(
+            '[Service Worker] Failed to precache some shell assets',
+            error,
+          );
+        });
+
+        // Try to cache dashboard route if we have babyId in IndexedDB
+        // This is best-effort and won't block install if it fails
+        try {
+          const babyId = await getLastBabyId();
+          if (babyId) {
+            const dashboardUrl = `/app/babies/${babyId}/dashboard`;
+            // Don't await - let it cache in background
+            void cache
+              .add(new URL(dashboardUrl, self.location.origin).toString())
+              .catch(() => {
+                // Silently fail - dashboard will be cached on first visit
+              });
+          }
+        } catch {
+          // Ignore - dashboard will be cached on first visit
+        }
       } catch (error) {
         console.warn('[Service Worker] Failed to precache shell', error);
       }
@@ -30,6 +53,7 @@ self.addEventListener('install', (event: ExtendableEvent) => {
 });
 
 // Activate event - clean up old caches and clear HTML cache on update
+// BUT preserve dashboard routes for instant loading
 self.addEventListener('activate', (event: ExtendableEvent) => {
   console.log('[Service Worker] Activate');
   event.waitUntil(
@@ -44,19 +68,22 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
       );
 
       // Clear HTML pages from current cache to ensure fresh content after update
-      // This ensures users see updated HTML after service worker updates
+      // BUT preserve dashboard routes for instant PWA loading
       const cache = await caches.open(CACHE_NAME);
       const cachedRequests = await cache.keys();
       const htmlRequests = cachedRequests.filter((request) => {
         const url = new URL(request.url);
+        // Keep dashboard routes cached for instant loading
+        const isDashboardRoute = BABY_DASHBOARD_REGEX.test(url.pathname);
         return (
+          !isDashboardRoute &&
           url.pathname.startsWith('/app') &&
           !url.pathname.startsWith('/api') &&
           !url.pathname.startsWith('/trpc')
         );
       });
 
-      // Delete HTML pages so they're fetched fresh
+      // Delete non-dashboard HTML pages so they're fetched fresh
       await Promise.all(htmlRequests.map((request) => cache.delete(request)));
 
       await self.clients.claim();
@@ -215,10 +242,99 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   );
 });
 
+/**
+ * Extract babyId from cookie header (faster than IndexedDB)
+ */
+function getBabyIdFromCookie(request: Request): string | null {
+  try {
+    const cookieHeader = request.headers.get('Cookie');
+    if (!cookieHeader) return null;
+
+    // Look for nugget:last-baby-id cookie
+    const match = cookieHeader.match(/nugget:last-baby-id=([^;]+)/);
+    return match?.[1] ? decodeURIComponent(match[1]) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function handleAppEntry(event: FetchEvent): Promise<Response> {
   const cache = await caches.open(CACHE_NAME);
 
-  // First, try to get babyId from IndexedDB to construct dashboard URL
+  // Strategy 1: Check for ANY cached dashboard route FIRST (instant, no async operations)
+  // This is the fastest path - we check cache before any IndexedDB or cookie reads
+  const cachedRequests = await cache.keys();
+  for (const cachedRequest of cachedRequests) {
+    const url = new URL(cachedRequest.url);
+    if (BABY_DASHBOARD_REGEX.test(url.pathname)) {
+      // Found a cached dashboard route - serve it instantly
+      const cachedResponse = await cache.match(cachedRequest);
+      if (cachedResponse) {
+        // Serve cached dashboard immediately, update in background
+        void (async () => {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            const networkResponse = await fetch(cachedRequest, {
+              signal: controller.signal,
+            }).catch(() => null);
+            clearTimeout(timeoutId);
+
+            if (networkResponse?.ok) {
+              await cache.put(cachedRequest, networkResponse.clone());
+            }
+          } catch (error) {
+            // Ignore background update errors
+            console.warn('[Service Worker] Background update failed', error);
+          }
+        })();
+
+        return cachedResponse;
+      }
+    }
+  }
+
+  // Strategy 2: Try to get babyId from cookie (faster than IndexedDB)
+  const babyIdFromCookie = getBabyIdFromCookie(event.request);
+  if (babyIdFromCookie) {
+    const dashboardUrl = `/app/babies/${babyIdFromCookie}/dashboard`;
+    const dashboardRequest = new Request(
+      new URL(dashboardUrl, self.location.origin).toString(),
+    );
+
+    // Check cache for dashboard route - CacheFirst strategy (instant serve)
+    const cachedDashboardResponse = await cache.match(dashboardRequest);
+    if (cachedDashboardResponse) {
+      // Serve cached dashboard immediately, update in background
+      void (async () => {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          const networkResponse = await fetch(dashboardRequest, {
+            signal: controller.signal,
+          }).catch(() => null);
+          clearTimeout(timeoutId);
+
+          if (networkResponse?.ok) {
+            await cache.put(dashboardRequest, networkResponse.clone());
+          }
+        } catch (error) {
+          // Ignore background update errors
+          console.warn('[Service Worker] Background update failed', error);
+        }
+      })();
+
+      return cachedDashboardResponse;
+    }
+
+    // No cache but we have babyId - redirect directly to dashboard
+    return Response.redirect(
+      new URL(dashboardUrl, self.location.origin).toString(),
+      302,
+    );
+  }
+
+  // Strategy 3: Fallback to IndexedDB (slower, but still faster than network)
   const babyId = await getLastBabyId();
   if (babyId) {
     const dashboardUrl = `/app/babies/${babyId}/dashboard`;
@@ -250,9 +366,15 @@ async function handleAppEntry(event: FetchEvent): Promise<Response> {
 
       return cachedDashboardResponse;
     }
+
+    // No cache but we have babyId - redirect directly to dashboard
+    return Response.redirect(
+      new URL(dashboardUrl, self.location.origin).toString(),
+      302,
+    );
   }
 
-  // Fallback: try last dashboard route from IndexedDB
+  // Strategy 4: Try last dashboard route from IndexedDB
   const lastRoute = await getLastDashboardRoute();
   if (lastRoute) {
     const lastRouteRequest = new Request(
@@ -289,7 +411,7 @@ async function handleAppEntry(event: FetchEvent): Promise<Response> {
     );
   }
 
-  // No cached route, fetch /app and let it redirect server-side
+  // Strategy 5: No cached route, fetch /app and let it redirect server-side
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
   const networkResponse = await fetch(event.request, {

@@ -1,6 +1,12 @@
 'use client';
 
+import {
+  buildDashboardEvent,
+  DASHBOARD_ACTION,
+  DASHBOARD_COMPONENT,
+} from '@nugget/analytics/utils';
 import { api } from '@nugget/api/react';
+import posthog from 'posthog-js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CelebrationsSkeleton } from '../skeletons';
 import { CelebrationCard } from './celebration-card';
@@ -43,13 +49,25 @@ export function CelebrationsCarousel({ babyId }: CelebrationsCarouselProps) {
   }, [babyId, todayKey]);
 
   const handleDismiss = useCallback(() => {
+    // Track celebration dismissal
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.CELEBRATIONS_CAROUSEL,
+        DASHBOARD_ACTION.DISMISSED,
+      ),
+      {
+        baby_id: babyId,
+        celebration_type: celebration?.type,
+      },
+    );
+
     setDismissedToday(true);
     if (typeof window === 'undefined') {
       return;
     }
     const dismissKey = `celebrationDismissedDate_${babyId}`;
     window.localStorage.setItem(dismissKey, todayKey);
-  }, [babyId, todayKey]);
+  }, [babyId, todayKey, celebration?.type]);
 
   // Don't render anything while loading or if no data yet
   if (isLoading || !data) {

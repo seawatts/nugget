@@ -1,5 +1,6 @@
 'use client';
 
+import { DASHBOARD_COMPONENT } from '@nugget/analytics/utils';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
@@ -86,6 +87,8 @@ export function PumpingStatsDrawer({
   recentActivities,
   timeFormat,
 }: PumpingStatsDrawerProps) {
+  // Extract babyId from activities for tracking
+  const babyId = activities[0]?.babyId;
   const [trendTimeRange, setTrendTimeRange] = useState<TrendTimeRange>('7d');
   const [metricType, setMetricType] = useState<MetricType>('count');
   const [amountType, setAmountType] = useState<AmountType>('total');
@@ -194,6 +197,8 @@ export function PumpingStatsDrawer({
 
   return (
     <StatsDrawerWrapper
+      babyId={babyId}
+      componentName={DASHBOARD_COMPONENT.PUMPING_STATS_DRAWER}
       onOpenChange={onOpenChange}
       open={open}
       title="Pumping Statistics"

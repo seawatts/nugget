@@ -1,8 +1,14 @@
 'use client';
 
+import {
+  buildDashboardEvent,
+  DASHBOARD_ACTION,
+  DASHBOARD_COMPONENT,
+} from '@nugget/analytics/utils';
 import { api } from '@nugget/api/react';
 import { useParams } from 'next/navigation';
-import { Suspense, useEffect, useMemo } from 'react';
+import posthog from 'posthog-js';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { ActivityCards } from '~/app/(app)/app/_components/activities/activity-cards';
 import { ActivityTimeline } from '~/app/(app)/app/_components/activities/timeline/activity-timeline';
 import { CelebrationsCarousel } from '~/app/(app)/app/_components/celebrations/celebrations-carousel';
@@ -25,6 +31,8 @@ import { useDashboardDataStore } from '~/stores/dashboard-data';
 export function DashboardContainer() {
   const params = useParams();
   const babyId = params.babyId as string;
+  const loadStartTime = useRef(Date.now());
+  const hasTrackedLoad = useRef(false);
 
   // Only fetch critical data needed for layout (baby, user, familyMembers)
   // Activities are fetched inside ActivityCards Suspense boundary for better perceived performance
@@ -44,6 +52,32 @@ export function DashboardContainer() {
       userId: member.userId,
     }));
   }, [familyMembersData, user?.id]);
+
+  // Track dashboard load event
+  useEffect(() => {
+    if (!hasTrackedLoad.current && baby && user) {
+      const loadDuration = Date.now() - loadStartTime.current;
+      posthog.capture(
+        buildDashboardEvent(
+          DASHBOARD_COMPONENT.CONTAINER,
+          DASHBOARD_ACTION.LOAD,
+        ),
+        {
+          baby_id: babyId,
+          duration_ms: loadDuration,
+          family_id: baby.familyId,
+          has_activity_cards:
+            baby.showFeedingCard ||
+            baby.showSleepCard ||
+            baby.showDiaperCard ||
+            baby.showPumpingCard,
+          has_timeline: baby.showActivityTimeline,
+          user_id: user.id,
+        },
+      );
+      hasTrackedLoad.current = true;
+    }
+  }, [baby, user, babyId]);
 
   // Populate Zustand store with critical shared data (activities populated by ActivityCards)
   useEffect(() => {

@@ -28,7 +28,9 @@
     "./posthog/chrome-extension": "./src/posthog/chrome-extension.tsx",
     "./posthog/client": "./src/posthog/client.tsx",
     "./posthog/server": "./src/posthog/server.ts",
-    "./posthog/vscode": "./src/posthog/vscode.ts"
+    "./posthog/vscode": "./src/posthog/vscode.ts",
+    "./server-actions": "./src/server-actions.ts",
+    "./utils": "./src/utils.ts"
   },
   "license": "MIT",
   "name": "@nugget/analytics",

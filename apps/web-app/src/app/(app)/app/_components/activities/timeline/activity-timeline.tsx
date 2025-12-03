@@ -1,5 +1,10 @@
 'use client';
 
+import {
+  buildDashboardEvent,
+  DASHBOARD_ACTION,
+  DASHBOARD_COMPONENT,
+} from '@nugget/analytics/utils';
 import { api, type TimelineItem } from '@nugget/api/react';
 import type { Activities, Milestones } from '@nugget/db/schema';
 import { Avatar, AvatarFallback, AvatarImage } from '@nugget/ui/avatar';
@@ -29,6 +34,7 @@ import {
   Tablet as Toilet,
   UtensilsCrossed,
 } from 'lucide-react';
+import posthog from 'posthog-js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatTimeWithPreference } from '~/lib/format-time';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
@@ -691,6 +697,19 @@ export function ActivityTimeline({ babyId }: ActivityTimelineProps) {
   };
 
   const handleFilterChange = (userIds: string[], activityTypes: string[]) => {
+    // Track filter change event
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.ACTIVITY_TIMELINE,
+        DASHBOARD_ACTION.FILTER_CHANGE,
+      ),
+      {
+        activity_types: activityTypes,
+        baby_id: babyId,
+        user_ids: userIds,
+      },
+    );
+
     setSelectedUserIds(userIds);
     setSelectedActivityTypes(activityTypes);
     // React Query will automatically refetch with new filters

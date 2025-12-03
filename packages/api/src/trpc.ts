@@ -7,6 +7,13 @@
  * The pieces you will need to use are documented accordingly near the end
  */
 
+import { posthog } from '@nugget/analytics/posthog/server';
+import {
+  buildTrpcEvent,
+  sanitizeInput,
+  TRPC_TYPE,
+  truncateStack,
+} from '@nugget/analytics/utils';
 import { debug } from '@nugget/logger';
 import { initTRPC, TRPCError } from '@trpc/server';
 import superjson from 'superjson';
@@ -22,13 +29,33 @@ const log = debug('nugget:trpc');
  * transformer
  */
 const t = initTRPC.context<Context>().create({
-  errorFormatter: ({ shape, error }) => ({
-    ...shape,
-    data: {
-      ...shape.data,
-      zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
-    },
-  }),
+  errorFormatter: ({ shape, error, path, type }) => {
+    // Capture error to PostHog
+    const errorMessage = error.message || 'Unknown error';
+    posthog.capture({
+      distinctId: 'system',
+      event: 'trpc.error',
+      properties: {
+        error_code: error.code,
+        error_message: errorMessage,
+        error_stack: truncateStack(error.stack),
+        input: sanitizeInput(shape.data),
+        procedure: path,
+        type,
+        zod_error:
+          error.cause instanceof ZodError ? error.cause.flatten() : null,
+      },
+    });
+
+    return {
+      ...shape,
+      data: {
+        ...shape.data,
+        zodError:
+          error.cause instanceof ZodError ? error.cause.flatten() : null,
+      },
+    };
+  },
   transformer: superjson,
 });
 
@@ -67,14 +94,65 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
   return result;
 });
 
-const analyticsMiddleware = t.middleware(async ({ next, path }) => {
+/**
+ * Analytics middleware that tracks tRPC procedure calls to PostHog
+ * Captures procedure name, duration, success/failure, and user context
+ */
+const analyticsMiddleware = t.middleware(async ({ next, path, type, ctx }) => {
   const start = Date.now();
-  const result = await next();
+  let success = true;
+  let errorMessage: string | undefined;
+  let errorCode: string | undefined;
 
-  const end = Date.now();
-  log(`[TRPC] ${path} took ${end - start}ms to execute`);
+  try {
+    const result = await next();
 
-  return result;
+    // Check if the result indicates an error
+    if (!result.ok) {
+      success = false;
+      if (result.error) {
+        errorMessage = result.error.message;
+        errorCode = result.error.code;
+      }
+    }
+
+    return result;
+  } catch (error) {
+    success = false;
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    if (error instanceof TRPCError) {
+      errorCode = error.code;
+    }
+    throw error;
+  } finally {
+    const duration = Date.now() - start;
+    const userId = ctx.auth?.userId;
+    const orgId = ctx.auth?.orgId;
+
+    // Determine procedure type for event naming
+    const procedureType =
+      type === 'mutation' ? TRPC_TYPE.MUTATION : TRPC_TYPE.QUERY;
+
+    // Track to PostHog
+    posthog.capture({
+      distinctId: userId || 'anonymous',
+      event: buildTrpcEvent(path, procedureType),
+      properties: {
+        duration_ms: duration,
+        error_code: errorCode,
+        error_message: errorMessage,
+        org_id: orgId,
+        procedure: path,
+        success,
+        type: procedureType,
+        user_id: userId,
+      },
+    });
+
+    log(`[TRPC] ${path} took ${duration}ms to execute`);
+  }
 });
 /**
  * Public (unauthed) procedure

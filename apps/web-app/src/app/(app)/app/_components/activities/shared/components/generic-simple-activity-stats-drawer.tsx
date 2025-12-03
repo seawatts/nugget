@@ -1,5 +1,6 @@
 'use client';
 
+import { DASHBOARD_COMPONENT } from '@nugget/analytics/utils';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
@@ -63,6 +64,22 @@ export function GenericSimpleActivityStatsDrawer({
   config,
   timeFormat,
 }: GenericSimpleActivityStatsDrawerProps) {
+  // Extract babyId from activities for tracking
+  const babyId = activities[0]?.babyId;
+
+  // Map activity type to component name for tracking
+  const componentNameMap: Record<
+    string,
+    (typeof DASHBOARD_COMPONENT)[keyof typeof DASHBOARD_COMPONENT]
+  > = {
+    bath: DASHBOARD_COMPONENT.BATH_STATS_DRAWER,
+    nail_trimming: DASHBOARD_COMPONENT.NAIL_TRIMMING_STATS_DRAWER,
+    vitamin_d: DASHBOARD_COMPONENT.VITAMIN_D_STATS_DRAWER,
+  };
+  const componentName:
+    | (typeof DASHBOARD_COMPONENT)[keyof typeof DASHBOARD_COMPONENT]
+    | string =
+    componentNameMap[config.type] || `generic_${config.type}_stats_drawer`;
   const [trendTimeRange, setTrendTimeRange] = useState<
     '24h' | '7d' | '2w' | '1m' | '3m' | '6m'
   >('7d');
@@ -182,6 +199,8 @@ export function GenericSimpleActivityStatsDrawer({
 
   return (
     <StatsDrawerWrapper
+      babyId={babyId}
+      componentName={componentName}
       onOpenChange={onOpenChange}
       open={open}
       title={`${config.title} Statistics`}

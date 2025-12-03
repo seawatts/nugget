@@ -1,5 +1,6 @@
 'use client';
 
+import { DASHBOARD_COMPONENT } from '@nugget/analytics/utils';
 import { api } from '@nugget/api/react';
 import { Card } from '@nugget/ui/card';
 import { startOfDay, startOfWeek, subDays, subWeeks } from 'date-fns';
@@ -468,6 +469,8 @@ export function BabyStatsDrawer({
 
   return (
     <StatsDrawerWrapper
+      babyId={babyId}
+      componentName={DASHBOARD_COMPONENT.BABY_STATS_DRAWER}
       onOpenChange={onOpenChange}
       open={open}
       title="Baby Stats"

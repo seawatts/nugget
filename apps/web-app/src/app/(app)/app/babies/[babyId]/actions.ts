@@ -1,6 +1,7 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
+import { trackServerAction } from '@nugget/analytics/server-actions';
 import { db } from '@nugget/db/client';
 import { Users } from '@nugget/db/schema';
 import { eq } from 'drizzle-orm';
@@ -23,17 +24,29 @@ export const updateLastSelectedBabyAction = action
       throw new Error('Unauthorized');
     }
 
-    // Update user's last selected baby and family
-    await db
-      .update(Users)
-      .set({
-        lastSelectedBabyId: parsedInput.babyId,
-        lastSelectedFamilyId: parsedInput.familyId,
-        updatedAt: new Date(),
-      })
-      .where(eq(Users.id, userId));
+    return trackServerAction(
+      {
+        actionName: 'updateLastSelectedBaby',
+        properties: {
+          baby_id: parsedInput.babyId,
+          family_id: parsedInput.familyId,
+        },
+        userId,
+      },
+      async () => {
+        // Update user's last selected baby and family
+        await db
+          .update(Users)
+          .set({
+            lastSelectedBabyId: parsedInput.babyId,
+            lastSelectedFamilyId: parsedInput.familyId,
+            updatedAt: new Date(),
+          })
+          .where(eq(Users.id, userId));
 
-    return {
-      success: true,
-    };
+        return {
+          success: true,
+        };
+      },
+    );
   });

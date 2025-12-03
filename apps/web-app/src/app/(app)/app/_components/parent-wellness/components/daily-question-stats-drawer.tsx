@@ -1,5 +1,6 @@
 'use client';
 
+import { DASHBOARD_COMPONENT } from '@nugget/analytics/utils';
 import { api } from '@nugget/api/react';
 import { Card } from '@nugget/ui/card';
 import { format } from 'date-fns';
@@ -40,6 +41,8 @@ export function DailyQuestionStatsDrawer({
 
   return (
     <StatsDrawerWrapper
+      babyId={babyId}
+      componentName={DASHBOARD_COMPONENT.PARENT_WELLNESS_STATS_DRAWER}
       onOpenChange={onOpenChange}
       open={open}
       title="Check-In Insights"

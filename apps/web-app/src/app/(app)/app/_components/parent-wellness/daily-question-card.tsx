@@ -1,5 +1,10 @@
 'use client';
 
+import {
+  buildDashboardEvent,
+  DASHBOARD_ACTION,
+  DASHBOARD_COMPONENT,
+} from '@nugget/analytics/utils';
 import { api } from '@nugget/api/react';
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
@@ -7,6 +12,7 @@ import { toast } from '@nugget/ui/sonner';
 import { format, startOfDay, subDays } from 'date-fns';
 import { Check, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import posthog from 'posthog-js';
 import { useEffect, useMemo, useState } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import { PredictiveInfoDrawer } from '../activities/shared/components/predictive-cards';
@@ -236,6 +242,19 @@ export function ParentDailyQuestionCard() {
         responseId: questionData.id,
         selectedAnswer: answer,
       });
+
+      // Track question answered event
+      posthog.capture(
+        buildDashboardEvent(
+          DASHBOARD_COMPONENT.PARENT_WELLNESS,
+          DASHBOARD_ACTION.QUESTION_ANSWERED,
+        ),
+        {
+          baby_id: babyId,
+          is_editing: isEditing,
+          user_id: userData?.id,
+        },
+      );
     } finally {
       setIsSubmitting(false);
     }

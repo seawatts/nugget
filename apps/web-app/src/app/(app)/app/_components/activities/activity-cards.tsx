@@ -1,6 +1,11 @@
 'use client';
 
 import { useUser } from '@clerk/nextjs';
+import {
+  buildDashboardEvent,
+  DASHBOARD_ACTION,
+  DASHBOARD_COMPONENT,
+} from '@nugget/analytics/utils';
 import { api } from '@nugget/api/react';
 import type { Activities } from '@nugget/db/schema';
 import { toast } from '@nugget/ui/sonner';
@@ -18,6 +23,7 @@ import {
   Tablet as Toilet,
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import posthog from 'posthog-js';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useDashboardDataStore } from '~/stores/dashboard-data';
 import {
@@ -447,6 +453,19 @@ export function ActivityCards({ compact = false }: ActivityCardsProps = {}) {
   };
 
   const handleActivityLogged = (activity: typeof Activities.$inferSelect) => {
+    // Track activity logged event
+    posthog.capture(
+      buildDashboardEvent(
+        DASHBOARD_COMPONENT.ACTIVITY_CARDS,
+        DASHBOARD_ACTION.ACTIVITY_LOGGED,
+      ),
+      {
+        activity_type: activity.type,
+        baby_id: babyId,
+        user_id: user?.id,
+      },
+    );
+
     // When a quick log button is pressed on a predictive card:
     // Add optimistic activity to Zustand store for immediate feedback
     // tRPC will handle cache invalidation and clearing optimistic state after mutation completes

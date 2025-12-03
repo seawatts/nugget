@@ -1,5 +1,6 @@
 'use client';
 
+import { DASHBOARD_COMPONENT } from '@nugget/analytics/utils';
 import type { Activities } from '@nugget/db/schema';
 import { Button } from '@nugget/ui/button';
 import { Card } from '@nugget/ui/card';
@@ -108,6 +109,8 @@ export function FeedingStatsDrawer({
   dailyAmountGoal,
   goalContext,
 }: FeedingStatsDrawerProps) {
+  // Extract babyId from activities for tracking
+  const babyId = activities[0]?.babyId;
   const [trendTimeRange, setTrendTimeRange] = useState<
     '24h' | '7d' | '2w' | '1m' | '3m' | '6m'
   >('7d');
@@ -382,6 +385,8 @@ export function FeedingStatsDrawer({
 
   return (
     <StatsDrawerWrapper
+      babyId={babyId}
+      componentName={DASHBOARD_COMPONENT.FEEDING_STATS_DRAWER}
       onOpenChange={onOpenChange}
       open={open}
       title="Feeding Statistics"
