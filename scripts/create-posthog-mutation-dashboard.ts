@@ -116,7 +116,10 @@ async function getProjectId(): Promise<string> {
     });
 
     // Use first project by default
-    const selected = projects[0]!;
+    const selected = projects[0];
+    if (!selected) {
+      throw new Error('No projects found');
+    }
     console.log(`✅ Using first project: ${selected.name} (${selected.id})`);
     return selected.id;
   } catch (error) {
@@ -289,56 +292,57 @@ async function upsertDashboard(
   return response;
 }
 
-async function getDashboard(
-  projectId: string,
-  dashboardId: number,
-): Promise<
-  PostHogDashboard & { id: number; short_id?: string; tiles?: unknown[] }
-> {
-  const dashboard = await fetchPostHogAPI<
-    PostHogDashboard & { id: number; short_id?: string; tiles?: unknown[] }
-  >(`/projects/${projectId}/dashboards/${dashboardId}/`);
-  console.log(
-    '🔍 Dashboard structure:',
-    JSON.stringify(dashboard, null, 2).slice(0, 500),
-  );
-  return dashboard;
-}
+// Unused helper functions - kept for potential future use
+// async function getDashboard(
+//   projectId: string,
+//   dashboardId: number,
+// ): Promise<
+//   PostHogDashboard & { id: number; short_id?: string; tiles?: unknown[] }
+// > {
+//   const dashboard = await fetchPostHogAPI<
+//     PostHogDashboard & { id: number; short_id?: string; tiles?: unknown[] }
+//   >(`/projects/${projectId}/dashboards/${dashboardId}/`);
+//   console.log(
+//     '🔍 Dashboard structure:',
+//     JSON.stringify(dashboard, null, 2).slice(0, 500),
+//   );
+//   return dashboard;
+// }
 
-async function updateDashboard(
-  projectId: string,
-  dashboardId: number,
-  dashboard: Partial<PostHogDashboard>,
-): Promise<void> {
-  await fetchPostHogAPI(`/projects/${projectId}/dashboards/${dashboardId}/`, {
-    body: JSON.stringify(dashboard),
-    method: 'PATCH',
-  });
-}
+// async function updateDashboard(
+//   projectId: string,
+//   dashboardId: number,
+//   dashboard: Partial<PostHogDashboard>,
+// ): Promise<void> {
+//   await fetchPostHogAPI(`/projects/${projectId}/dashboards/${dashboardId}/`, {
+//     body: JSON.stringify(dashboard),
+//     method: 'PATCH',
+//   });
+// }
 
-async function addTileToDashboard(
-  projectId: string,
-  dashboardId: number,
-  insightId: number,
-  layouts: {
-    lg: { x: number; y: number; w: number; h: number };
-    md: { x: number; y: number; w: number; h: number };
-    sm: { x: number; y: number; w: number; h: number };
-    xs: { x: number; y: number; w: number; h: number };
-  },
-): Promise<void> {
-  // Use the tiles endpoint
-  await fetchPostHogAPI(
-    `/projects/${projectId}/dashboards/${dashboardId}/tiles/`,
-    {
-      body: JSON.stringify({
-        insight: insightId,
-        layouts,
-      }),
-      method: 'POST',
-    },
-  );
-}
+// async function addTileToDashboard(
+//   projectId: string,
+//   dashboardId: number,
+//   insightId: number,
+//   layouts: {
+//     lg: { x: number; y: number; w: number; h: number };
+//     md: { x: number; y: number; w: number; h: number };
+//     sm: { x: number; y: number; w: number; h: number };
+//     xs: { x: number; y: number; w: number; h: number };
+//   },
+// ): Promise<void> {
+//   // Use the tiles endpoint
+//   await fetchPostHogAPI(
+//     `/projects/${projectId}/dashboards/${dashboardId}/tiles/`,
+//     {
+//       body: JSON.stringify({
+//         insight: insightId,
+//         layouts,
+//       }),
+//       method: 'POST',
+//     },
+//   );
+// }
 
 async function main() {
   console.log('🚀 Creating PostHog Mutation Tracking Dashboard\n');
