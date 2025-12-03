@@ -93,8 +93,18 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
 
 // Fetch event - optimized caching strategies for PWA performance
 self.addEventListener('fetch', (event: FetchEvent) => {
-  // Only handle GET requests
+  // Handle POST/PUT/DELETE requests for mutations (let them through to network)
   if (event.request.method !== 'GET') {
+    // For mutations, always try network first
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        // If network fails, return error - mutations shouldn't be cached
+        return new Response('Network error', {
+          status: 503,
+          statusText: 'Service Unavailable',
+        });
+      }),
+    );
     return;
   }
 
@@ -487,8 +497,103 @@ if ('periodicSync' in self.registration) {
 self.addEventListener('sync', ((event: ExtendableEvent & { tag: string }) => {
   if (event.tag === 'check-overdue-activities-sync') {
     event.waitUntil(checkOverdueActivities());
+  } else if (event.tag === 'nugget-background-sync') {
+    // Process queued mutations by requesting queue from clients
+    event.waitUntil(processMutationQueue());
   }
 }) as EventListener);
+
+/**
+ * Process queued mutations from BackgroundSyncManager
+ * Requests queue from clients via message passing since service worker can't access localStorage
+ */
+async function processMutationQueue(): Promise<void> {
+  try {
+    // Get all clients and request mutation queue from them
+    const clients = await self.clients.matchAll({ includeUncontrolled: true });
+
+    if (clients.length === 0) {
+      console.log('[Service Worker] No clients available to process mutations');
+      return;
+    }
+
+    // Use MessageChannel for reliable two-way communication
+    const messageChannel = new MessageChannel();
+    interface QueuedRequest {
+      id: string;
+      url: string;
+      method: string;
+      headers: Record<string, string>;
+      body?: string;
+      timestamp: number;
+    }
+    const queuePromise = new Promise<QueuedRequest[]>((resolve) => {
+      messageChannel.port1.onmessage = (event) => {
+        if (event.data?.type === 'MUTATION_QUEUE_RESPONSE') {
+          resolve((event.data.queue as QueuedRequest[]) || []);
+        } else {
+          resolve([]);
+        }
+      };
+
+      // Timeout after 2 seconds
+      setTimeout(() => resolve([]), 2000);
+    });
+
+    // Request queue from first client
+    const client = clients[0];
+    if (!client) {
+      console.log('[Service Worker] No client available to send message');
+      return;
+    }
+    client.postMessage({ type: 'GET_MUTATION_QUEUE' }, [messageChannel.port2]);
+
+    const queueData = await queuePromise;
+
+    if (queueData.length === 0) {
+      return;
+    }
+
+    let processedCount = 0;
+    let failedCount = 0;
+
+    for (const queuedRequest of queueData) {
+      try {
+        const response = await fetch(queuedRequest.url, {
+          body: queuedRequest.body,
+          credentials: 'include',
+          headers: queuedRequest.headers,
+          method: queuedRequest.method,
+        });
+
+        if (response.ok) {
+          processedCount++;
+          // Notify client to remove from queue
+          if (client) {
+            client.postMessage({
+              mutationId: queuedRequest.id,
+              type: 'REMOVE_MUTATION_FROM_QUEUE',
+            });
+          }
+        } else {
+          failedCount++;
+        }
+      } catch (error) {
+        console.error(
+          '[Service Worker] Failed to process queued mutation:',
+          error,
+        );
+        failedCount++;
+      }
+    }
+
+    console.log(
+      `[Service Worker] Processed ${processedCount} mutations, ${failedCount} failed`,
+    );
+  } catch (error) {
+    console.error('[Service Worker] Error processing mutation queue:', error);
+  }
+}
 
 // Push notification event
 self.addEventListener('push', (event: PushEvent) => {
@@ -596,6 +701,12 @@ self.addEventListener('message', (event: ExtendableMessageEvent) => {
 
   if (event.data && event.data.type === 'CHECK_OVERDUE_NOW') {
     event.waitUntil(checkOverdueActivities());
+  }
+
+  // Handle mutation queue requests from service worker sync event
+  if (event.data && event.data.type === 'GET_MUTATION_QUEUE') {
+    // This will be handled by the client-side code that listens for this message
+    // The client will respond with MUTATION_QUEUE_RESPONSE
   }
 
   // Handle direct test notification requests (for iOS fallback)

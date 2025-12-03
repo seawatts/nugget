@@ -61,6 +61,19 @@ export class BackgroundSyncManager {
     this.queue.push(request);
     this.saveQueue();
 
+    // Track background sync registration
+    if (typeof window !== 'undefined') {
+      try {
+        const posthog = await import('posthog-js');
+        posthog.default.capture('background_sync_registered', {
+          method: request.method,
+          queue_length: this.queue.length,
+        });
+      } catch {
+        // PostHog not available, ignore
+      }
+    }
+
     // Try to register for background sync
     if (
       'serviceWorker' in navigator &&
@@ -102,28 +115,50 @@ export class BackgroundSyncManager {
     if (this.queue.length === 0) return;
 
     const failedRequests: QueuedRequest[] = [];
+    let processedCount = 0;
+    let failedCount = 0;
 
     for (const request of this.queue) {
       try {
         const response = await fetch(request.url, {
           body: request.body,
+          credentials: 'include', // Include cookies for authentication
           headers: request.headers,
           method: request.method,
         });
 
-        if (!response.ok) {
-          // Keep failed requests in queue
+        if (response.ok) {
+          processedCount++;
+        } else {
+          // Keep failed requests in queue for retry
           failedRequests.push(request);
+          failedCount++;
         }
       } catch (error) {
         console.error('Failed to process queued request:', error);
+        // Keep failed requests in queue for retry
         failedRequests.push(request);
+        failedCount++;
       }
     }
 
     // Update queue with only failed requests
     this.queue = failedRequests;
     this.saveQueue();
+
+    // Track background sync completion
+    if (typeof window !== 'undefined') {
+      try {
+        const posthog = await import('posthog-js');
+        posthog.default.capture('background_sync_completed', {
+          failed_count: failedCount,
+          processed_count: processedCount,
+          queue_length: this.queue.length,
+        });
+      } catch {
+        // PostHog not available, ignore
+      }
+    }
   }
 
   getQueueLength(): number {
@@ -137,6 +172,14 @@ export class BackgroundSyncManager {
 
   getQueue(): QueuedRequest[] {
     return [...this.queue];
+  }
+
+  /**
+   * Remove a specific request from the queue
+   */
+  removeRequest(id: string): void {
+    this.queue = this.queue.filter((req) => req.id !== id);
+    this.saveQueue();
   }
 }
 
@@ -179,5 +222,30 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('online', () => {
     const syncManager = BackgroundSyncManager.getInstance();
     syncManager.processQueue();
+  });
+
+  // Listen for service worker messages requesting mutation queue
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'GET_MUTATION_QUEUE') {
+      const syncManager = BackgroundSyncManager.getInstance();
+      const queue = syncManager.getQueue();
+
+      // Send queue back to service worker via MessageChannel port
+      if (event.ports && event.ports.length > 0 && event.ports[0]) {
+        event.ports[0].postMessage({
+          queue,
+          type: 'MUTATION_QUEUE_RESPONSE',
+        });
+      } else {
+        // Fallback: use postMessage if MessageChannel ports not available
+        navigator.serviceWorker.controller?.postMessage({
+          queue,
+          type: 'MUTATION_QUEUE_RESPONSE',
+        });
+      }
+    } else if (event.data?.type === 'REMOVE_MUTATION_FROM_QUEUE') {
+      const syncManager = BackgroundSyncManager.getInstance();
+      syncManager.removeRequest(event.data.mutationId);
+    }
   });
 }

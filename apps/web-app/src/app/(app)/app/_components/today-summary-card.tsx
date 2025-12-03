@@ -413,19 +413,22 @@ export function TodaySummaryCard({
       tempId = addOptimisticActivity(optimisticActivity);
 
       // Create the actual activity
-      await createActivity({
-        activityType: 'nursing',
-        amountMl: nursingData.amountMl ?? undefined,
-        babyId,
-        details: {
-          side: 'both',
-          type: 'nursing',
+      await createActivity(
+        {
+          activityType: 'nursing',
+          amountMl: nursingData.amountMl ?? undefined,
+          babyId,
+          details: {
+            side: 'both',
+            type: 'nursing',
+          },
+          duration,
+          endTime: now,
+          feedingSource: 'direct',
+          startTime: now,
         },
-        duration,
-        endTime: now,
-        feedingSource: 'direct',
-        startTime: now,
-      });
+        'today_summary',
+      );
 
       // Remove optimistic activity after real one is created
       if (tempId) {
@@ -494,13 +497,16 @@ export function TodaySummaryCard({
       tempId = addOptimisticActivity(optimisticActivity);
 
       // Create the actual activity
-      await createActivity({
-        activityType: 'diaper',
-        babyId,
-        details: { type },
-        endTime: now,
-        startTime: now,
-      });
+      await createActivity(
+        {
+          activityType: 'diaper',
+          babyId,
+          details: { type },
+          endTime: now,
+          startTime: now,
+        },
+        'today_summary',
+      );
 
       // Remove optimistic activity after real one is created
       if (tempId) {
@@ -626,16 +632,19 @@ export function TodaySummaryCard({
         tempId = addOptimisticActivity(optimisticActivity);
 
         // Create the actual in-progress activity (no endTime)
-        await createActivity({
-          activityType: 'sleep',
-          babyId,
-          details: {
-            sleepType,
-            type: 'sleep',
+        await createActivity(
+          {
+            activityType: 'sleep',
+            babyId,
+            details: {
+              sleepType,
+              type: 'sleep',
+            },
+            startTime: now,
+            // No duration or endTime - this marks it as in-progress
           },
-          startTime: now,
-          // No duration or endTime - this marks it as in-progress
-        });
+          'today_summary',
+        );
 
         // Remove optimistic activity after real one is created
         if (tempId) {
@@ -720,15 +729,18 @@ export function TodaySummaryCard({
 
         tempId = addOptimisticActivity(optimisticActivity);
 
-        await createActivity({
-          activityType: 'bottle',
-          amountMl: data.amountMl,
-          babyId,
-          duration: 0,
-          endTime: now,
-          feedingSource: mostCommonBottleSource,
-          startTime: now,
-        });
+        await createActivity(
+          {
+            activityType: 'bottle',
+            amountMl: data.amountMl,
+            babyId,
+            duration: 0,
+            endTime: now,
+            feedingSource: mostCommonBottleSource,
+            startTime: now,
+          },
+          'today_summary',
+        );
 
         if (tempId) {
           removeOptimisticActivity(tempId);
@@ -818,13 +830,16 @@ export function TodaySummaryCard({
 
         tempId = addOptimisticActivity(optimisticActivity);
 
-        await createActivity({
-          activityType: 'diaper',
-          babyId,
-          details: { type },
-          endTime: now,
-          startTime: now,
-        });
+        await createActivity(
+          {
+            activityType: 'diaper',
+            babyId,
+            details: { type },
+            endTime: now,
+            startTime: now,
+          },
+          'today_summary',
+        );
 
         if (tempId) {
           removeOptimisticActivity(tempId);
@@ -885,15 +900,18 @@ export function TodaySummaryCard({
 
         tempId = addOptimisticActivity(optimisticActivity);
 
-        await createActivity({
-          activityType: 'bottle',
-          amountMl: data.amountMl,
-          babyId,
-          duration: 0,
-          endTime: now,
-          feedingSource: mostCommonBottleSource,
-          startTime: now,
-        });
+        await createActivity(
+          {
+            activityType: 'bottle',
+            amountMl: data.amountMl,
+            babyId,
+            duration: 0,
+            endTime: now,
+            feedingSource: mostCommonBottleSource,
+            startTime: now,
+          },
+          'today_summary',
+        );
 
         if (tempId) {
           removeOptimisticActivity(tempId);
@@ -931,19 +949,22 @@ export function TodaySummaryCard({
 
         tempId = addOptimisticActivity(optimisticActivity);
 
-        await createActivity({
-          activityType: 'nursing',
-          amountMl: computedAmountMl ?? undefined,
-          babyId,
-          details: {
-            side: (data.side || 'both') as 'left' | 'right' | 'both',
-            type: 'nursing',
+        await createActivity(
+          {
+            activityType: 'nursing',
+            amountMl: computedAmountMl ?? undefined,
+            babyId,
+            details: {
+              side: (data.side || 'both') as 'left' | 'right' | 'both',
+              type: 'nursing',
+            },
+            duration: data.duration,
+            endTime: now,
+            feedingSource: 'direct',
+            startTime: now,
           },
-          duration: data.duration,
-          endTime: now,
-          feedingSource: 'direct',
-          startTime: now,
-        });
+          'today_summary',
+        );
 
         if (tempId) {
           removeOptimisticActivity(tempId);
@@ -976,13 +997,16 @@ export function TodaySummaryCard({
 
         tempId = addOptimisticActivity(optimisticActivity);
 
-        await createActivity({
-          activityType: 'diaper',
-          babyId,
-          details: { type },
-          endTime: now,
-          startTime: now,
-        });
+        await createActivity(
+          {
+            activityType: 'diaper',
+            babyId,
+            details: { type },
+            endTime: now,
+            startTime: now,
+          },
+          'today_summary',
+        );
 
         if (tempId) {
           removeOptimisticActivity(tempId);

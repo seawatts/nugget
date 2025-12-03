@@ -105,6 +105,100 @@ This document outlines all the PostHog analytics events being tracked in the Nug
     - `payload_size`: The size of the JSON payload in characters
   - Location: Webhook playground send button
 
+## Mutation Tracking (iOS PWA)
+
+### Mutation Lifecycle Events
+- **`mutation_started`** - When an activity mutation begins
+  - Properties:
+    - `activity_type`: Type of activity (nursing, diaper, sleep, etc.)
+    - `source`: Where mutation originated (today_summary, activity_cards, etc.)
+    - `platform`: Platform identifier (ios_pwa, ios_safari, android_pwa, web, etc.)
+    - `is_optimistic`: Whether optimistic update was used
+    - `mutation_id`: Unique identifier for the mutation
+  - Location: Activity mutation hooks
+
+- **`mutation_completed`** - When a mutation succeeds
+  - Properties:
+    - `activity_type`: Type of activity
+    - `source`: Where mutation originated
+    - `platform`: Platform identifier
+    - `duration_ms`: Time taken for mutation to complete
+    - `mutation_id`: Unique identifier for the mutation
+  - Location: Activity mutation hooks
+
+- **`mutation_failed`** - When a mutation fails
+  - Properties:
+    - `activity_type`: Type of activity
+    - `source`: Where mutation originated
+    - `platform`: Platform identifier
+    - `error_message`: Error message
+    - `duration_ms`: Time taken before failure
+    - `retry_count`: Number of retry attempts
+    - `mutation_id`: Unique identifier for the mutation
+  - Location: Activity mutation hooks
+
+- **`mutation_queued`** - When a mutation is queued for background sync
+  - Properties:
+    - `activity_type`: Type of activity
+    - `source`: Where mutation originated
+    - `platform`: Platform identifier
+    - `queue_length`: Number of items in queue
+    - `mutation_id`: Unique identifier for the mutation
+  - Location: Background sync manager
+
+### Page Visibility Events
+- **`page_visibility_change`** - When app backgrounds/foregrounds
+  - Properties:
+    - `hidden`: Whether page is now hidden
+    - `pending_mutations_count`: Number of pending mutations
+    - `activity_types`: Array of activity types in pending mutations
+    - `platform`: Platform identifier
+  - Location: Mutation tracker
+
+- **`page_unload_during_mutation`** - When app closes during active mutation
+  - Properties:
+    - `pending_mutations_count`: Number of pending mutations
+    - `activity_types`: Array of activity types in pending mutations
+    - `platform`: Platform identifier
+  - Location: Mutation tracker
+
+### Background Sync Events
+- **`background_sync_registered`** - When background sync is registered
+  - Properties:
+    - `queue_length`: Number of items in queue
+    - `method`: HTTP method of queued request
+  - Location: Background sync manager
+
+- **`background_sync_completed`** - When background sync processes queue
+  - Properties:
+    - `processed_count`: Number of successfully processed mutations
+    - `failed_count`: Number of failed mutations
+    - `queue_length`: Remaining items in queue
+  - Location: Background sync manager
+
+### Recovery Events
+- **`mutation_recovery_started`** - When recovery process begins on app startup
+  - Properties:
+    - `pending_count`: Number of pending mutations
+    - `queued_count`: Number of queued mutations
+  - Location: Mutation recovery handler
+
+- **`mutation_recovery_completed`** - When recovery finishes
+  - Properties:
+    - `recovered_count`: Number of successfully recovered mutations
+    - `failed_count`: Number of failed recoveries
+    - `pending_count`: Original number of pending mutations
+    - `queued_count`: Original number of queued mutations
+  - Location: Mutation recovery handler
+
+- **`mutation_recovery_failed`** - When recovery fails for specific mutation
+  - Properties:
+    - `mutation_id`: Unique identifier for the mutation
+    - `activity_type`: Type of activity
+    - `error_message`: Error message
+    - `retry_count`: Number of retry attempts
+  - Location: Mutation recovery handler
+
 ## Event Properties Guidelines
 
 ### Common Properties

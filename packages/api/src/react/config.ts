@@ -34,9 +34,16 @@ export const createDefaultLinks = ({
      * This is critical for Clerk authentication to work with tRPC
      */
     fetch(url, options) {
+      // Add keepalive flag for mutations to ensure they complete even if page unloads
+      const isMutation =
+        options?.method === 'POST' ||
+        options?.method === 'PUT' ||
+        options?.method === 'DELETE';
       return fetch(url, {
         ...options,
         credentials: 'include',
+        // Keepalive allows request to continue after page unload (browser support dependent)
+        keepalive: isMutation,
       });
     },
     headers() {

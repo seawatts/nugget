@@ -2,13 +2,16 @@
  * Custom hook for activity mutations with automatic tRPC cache invalidation
  * This replaces the manual refresh trigger pattern with proper cache management
  * Integrates with Zustand store for optimistic updates
+ * Includes mutation tracking and persistence for iOS PWA
  */
 'use client';
 
 import { api } from '@nugget/api/react';
 import type { Activities, ActivityDetails } from '@nugget/db/schema';
 import { toast } from '@nugget/ui/sonner';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { MutationQueue } from '~/lib/sync/mutation-queue';
+import { MutationTracker } from '~/lib/sync/mutation-tracker';
 import { useOptimisticActivitiesStore } from '~/stores/optimistic-activities';
 
 interface CreateActivityInput {
@@ -35,19 +38,78 @@ interface UpdateActivityInput {
   details?: ActivityDetails;
 }
 
+interface MutationVariables {
+  __mutationId?: string;
+  __source?: string;
+  type: typeof Activities.$inferSelect.type;
+  babyId: string;
+  amountMl?: number | null;
+  duration?: number | null;
+  feedingSource?: typeof Activities.$inferSelect.feedingSource | null;
+  notes?: string | null;
+  startTime?: Date;
+  endTime?: Date | null;
+  details?: ActivityDetails | null;
+  subjectType?: typeof Activities.$inferSelect.subjectType;
+}
+
 /**
  * Hook that provides activity mutation functions with automatic cache invalidation
  * Clears Zustand optimistic state and invalidates activity queries on success
+ * Tracks mutations for iOS PWA persistence
  */
 export function useActivityMutations() {
   const utils = api.useUtils();
+  const tracker = MutationTracker.getInstance();
+  const mutationQueue = MutationQueue.getInstance();
+  const mutationSourceRef = useRef<string>('unknown');
 
   // Create activity mutation
   const createMutation = api.activities.create.useMutation({
-    onError: (error) => {
+    onError: (error, variables) => {
+      const mutationVars = variables as MutationVariables;
+      const mutationId = mutationVars.__mutationId;
+      const activityType = variables.type;
+      const source = mutationVars.__source || 'unknown';
+
+      if (mutationId) {
+        tracker.trackMutationFailed(
+          mutationId,
+          activityType,
+          source,
+          error.message || 'Unknown error',
+        );
+      }
+
       toast.error(error.message || 'Failed to create activity');
     },
-    onSuccess: (_activity) => {
+    onMutate: async (variables) => {
+      // Track mutation start
+      const mutationId = `mutation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const activityType = variables.type;
+      const source = mutationSourceRef.current || 'unknown';
+
+      tracker.trackMutationStart(mutationId, activityType, source, {
+        amountMl: variables.amountMl,
+        babyId: variables.babyId,
+        duration: variables.duration,
+      });
+
+      // Store mutation ID for tracking
+      const mutationVars = variables as MutationVariables;
+      mutationVars.__mutationId = mutationId;
+      mutationVars.__source = source;
+    },
+    onSuccess: (_activity, variables) => {
+      const mutationVars = variables as MutationVariables;
+      const mutationId = mutationVars.__mutationId;
+      const activityType = variables.type;
+      const source = mutationVars.__source || 'unknown';
+
+      if (mutationId) {
+        tracker.trackMutationComplete(mutationId, activityType, source);
+      }
+
       toast.success('Activity created successfully');
       // Invalidate queries in background - don't await to avoid blocking mutateAsync
       utils.activities.invalidate(undefined, { type: 'all' });
@@ -93,7 +155,11 @@ export function useActivityMutations() {
   const createActivity = useCallback(
     async (
       input: CreateActivityInput,
+      source = 'unknown',
     ): Promise<typeof Activities.$inferSelect> => {
+      // Set source for tracking
+      mutationSourceRef.current = source;
+
       // Use provided babyId or get the most recent baby
       let babyId = input.babyId;
 
@@ -105,22 +171,73 @@ export function useActivityMutations() {
         babyId = baby.id;
       }
 
-      // Create the activity
-      const activity = await createMutation.mutateAsync({
-        amountMl: input.amountMl,
-        babyId,
-        details: input.details || null,
-        duration: input.duration,
-        endTime: input.endTime,
-        feedingSource: input.feedingSource,
-        notes: input.notes,
-        startTime: input.startTime || new Date(),
-        type: input.activityType as typeof Activities.$inferSelect.type,
-      });
+      // Check if page is unloading and queue mutation if needed
+      const isPageUnloading = document.visibilityState === 'hidden';
+      const mutationId = `mutation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-      return activity;
+      try {
+        // Create the activity
+        const mutationInput = {
+          amountMl: input.amountMl,
+          babyId,
+          details: input.details || null,
+          duration: input.duration,
+          endTime: input.endTime,
+          feedingSource: input.feedingSource,
+          notes: input.notes,
+          startTime: input.startTime || new Date(),
+          type: input.activityType as typeof Activities.$inferSelect.type,
+        };
+        // Store mutation ID and source for tracking (used in onMutate, onSuccess, onError)
+        (mutationInput as MutationVariables).__mutationId = mutationId;
+        (mutationInput as MutationVariables).__source = source;
+        const activity = await createMutation.mutateAsync(mutationInput);
+
+        return activity;
+      } catch (error) {
+        // If mutation fails and page is unloading, try to queue it
+        if (isPageUnloading || document.visibilityState === 'hidden') {
+          try {
+            // Get the tRPC URL for this mutation
+            const baseUrl = window.location.origin;
+            const trpcUrl = `${baseUrl}/api/trpc/activities.create`;
+
+            const body = JSON.stringify({
+              json: {
+                amountMl: input.amountMl,
+                babyId,
+                details: input.details || null,
+                duration: input.duration,
+                endTime: input.endTime,
+                feedingSource: input.feedingSource,
+                notes: input.notes,
+                startTime: input.startTime || new Date(),
+                type: input.activityType,
+              },
+            });
+
+            await mutationQueue.queueMutation(
+              mutationId,
+              trpcUrl,
+              {
+                body,
+                credentials: 'include',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                method: 'POST',
+              },
+              input.activityType,
+              source,
+            );
+          } catch (queueError) {
+            console.error('Failed to queue mutation:', queueError);
+          }
+        }
+        throw error;
+      }
     },
-    [createMutation, utils.babies.getMostRecent],
+    [createMutation, utils.babies.getMostRecent, mutationQueue],
   );
 
   /**
@@ -145,6 +262,48 @@ export function useActivityMutations() {
     },
     [deleteMutation],
   );
+
+  // Set up page unload handler to queue pending mutations
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const pendingMutations = tracker.getPendingMutations();
+      if (pendingMutations.length > 0) {
+        // Try to queue mutations using sendBeacon or Background Sync
+        pendingMutations.forEach(async (mutation) => {
+          try {
+            const baseUrl = window.location.origin;
+            const trpcUrl = `${baseUrl}/api/trpc/activities.create`;
+
+            const body = JSON.stringify({
+              json: mutation.data,
+            });
+
+            await mutationQueue.queueMutation(
+              mutation.id,
+              trpcUrl,
+              {
+                body,
+                credentials: 'include',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                method: 'POST',
+              },
+              mutation.activityType,
+              mutation.source,
+            );
+          } catch (error) {
+            console.error('Failed to queue mutation on unload:', error);
+          }
+        });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [tracker, mutationQueue]);
 
   return {
     createActivity,
