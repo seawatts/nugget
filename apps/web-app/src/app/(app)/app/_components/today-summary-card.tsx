@@ -255,6 +255,9 @@ export function TodaySummaryCard({
   const removeOptimisticActivity = useOptimisticActivitiesStore(
     (state) => state.removeActivity,
   );
+  const removeByMatch = useOptimisticActivitiesStore(
+    (state) => state.removeByMatch,
+  );
   const utils = api.useUtils();
 
   // Check for in-progress sleep
@@ -408,11 +411,9 @@ export function TodaySummaryCard({
 
     setCreatingType('nursing');
 
-    let tempId: string | null = null;
+    const now = new Date();
 
     try {
-      const now = new Date();
-
       // Build nursing activity data
       const nursingData = {
         amountMl: amountMl ?? null,
@@ -445,8 +446,8 @@ export function TodaySummaryCard({
         userId: getUserRelationFromStore()?.id || 'temp',
       } as typeof Activities.$inferSelect;
 
-      // Store the tempId returned by addOptimisticActivity
-      tempId = addOptimisticActivity(optimisticActivity);
+      // Add optimistic activity to store
+      addOptimisticActivity(optimisticActivity);
 
       // Create the actual activity
       await createActivity(
@@ -467,9 +468,7 @@ export function TodaySummaryCard({
       );
 
       // Remove optimistic activity after real one is created
-      if (tempId) {
-        removeOptimisticActivity(tempId);
-      }
+      removeByMatch('nursing', now, 2000);
 
       // Don't await - let it invalidate in background
       utils.activities.getUpcomingFeeding.invalidate();
@@ -477,9 +476,7 @@ export function TodaySummaryCard({
     } catch (err) {
       console.error('Failed to log nursing:', err);
       // Remove optimistic activity on error to avoid stuck state
-      if (tempId) {
-        removeOptimisticActivity(tempId);
-      }
+      removeByMatch('nursing', now, 2000);
       toast.error('Failed to log nursing. Please try again.');
     } finally {
       setCreatingType(null);
@@ -507,11 +504,9 @@ export function TodaySummaryCard({
 
     setCreatingType(type);
 
-    let tempId: string | null = null;
+    const now = new Date();
 
     try {
-      const now = new Date();
-
       // Build diaper activity data
       const diaperData = {
         details: { type },
@@ -540,8 +535,8 @@ export function TodaySummaryCard({
         userId: getUserRelationFromStore()?.id || 'temp',
       } as typeof Activities.$inferSelect;
 
-      // Store the tempId returned by addOptimisticActivity
-      tempId = addOptimisticActivity(optimisticActivity);
+      // Add optimistic activity to store
+      addOptimisticActivity(optimisticActivity);
 
       // Create the actual activity
       await createActivity(
@@ -556,9 +551,7 @@ export function TodaySummaryCard({
       );
 
       // Remove optimistic activity after real one is created
-      if (tempId) {
-        removeOptimisticActivity(tempId);
-      }
+      removeByMatch('diaper', now, 2000);
 
       // Don't await - let it invalidate in background
       utils.activities.getUpcomingDiaper.invalidate();
@@ -566,9 +559,7 @@ export function TodaySummaryCard({
     } catch (err) {
       console.error('Failed to log diaper change:', err);
       // Remove optimistic activity on error to avoid stuck state
-      if (tempId) {
-        removeOptimisticActivity(tempId);
-      }
+      removeByMatch('diaper', now, 2000);
       toast.error('Failed to log diaper change. Please try again.');
     } finally {
       setCreatingType(null);
@@ -606,7 +597,7 @@ export function TodaySummaryCard({
 
       // Update optimistic store immediately
       removeOptimisticActivity(inProgressActivity.id);
-      const tempId = addOptimisticActivity(completedActivity);
+      addOptimisticActivity(completedActivity);
 
       // Clear loading state immediately for better UX
       setCreatingType(null);
@@ -620,9 +611,7 @@ export function TodaySummaryCard({
         })
           .then((_activity) => {
             // Remove optimistic activity after real one is saved
-            if (tempId) {
-              removeOptimisticActivity(tempId);
-            }
+            removeByMatch('sleep', now, 2000);
             // Invalidate queries in background
             utils.activities.getUpcomingSleep.invalidate();
             utils.activities.getInProgressActivity.invalidate();
@@ -631,9 +620,7 @@ export function TodaySummaryCard({
           .catch((err) => {
             console.error('Failed to stop sleep timer:', err);
             // Remove optimistic activity on error
-            if (tempId) {
-              removeOptimisticActivity(tempId);
-            }
+            removeByMatch('sleep', now, 2000);
             toast.error('Failed to stop timer. Please try again.');
           });
 
@@ -641,9 +628,7 @@ export function TodaySummaryCard({
         toast.success('Sleep tracking stopped');
       } catch (err) {
         console.error('Failed to stop sleep timer:', err);
-        if (tempId) {
-          removeOptimisticActivity(tempId);
-        }
+        removeByMatch('sleep', now, 2000);
         toast.error('Failed to stop timer. Please try again.');
       }
     } else {
@@ -661,11 +646,9 @@ export function TodaySummaryCard({
       // Start timer
       setCreatingType('sleep-timer');
 
-      let tempId: string | null = null;
+      const now = new Date();
 
       try {
-        const now = new Date();
-
         // Determine sleep type based on time of day
         const hour = now.getHours();
         const sleepType = hour >= 6 && hour < 18 ? 'nap' : 'night';
@@ -696,8 +679,8 @@ export function TodaySummaryCard({
           userId: getUserRelationFromStore()?.id || 'temp',
         } as typeof Activities.$inferSelect;
 
-        // Store the tempId returned by addOptimisticActivity
-        tempId = addOptimisticActivity(optimisticActivity);
+        // Add optimistic activity to store
+        addOptimisticActivity(optimisticActivity);
 
         // Create the actual in-progress activity (no endTime)
         await createActivity(
@@ -715,9 +698,7 @@ export function TodaySummaryCard({
         );
 
         // Remove optimistic activity after real one is created
-        if (tempId) {
-          removeOptimisticActivity(tempId);
-        }
+        removeByMatch('sleep', now, 2000);
 
         toast.success('Sleep timer started');
         // Don't await - let it invalidate in background
@@ -727,9 +708,7 @@ export function TodaySummaryCard({
       } catch (err) {
         console.error('Failed to start sleep timer:', err);
         // Remove optimistic activity on error to avoid stuck state
-        if (tempId) {
-          removeOptimisticActivity(tempId);
-        }
+        removeByMatch('sleep', now, 2000);
         toast.error('Failed to start timer. Please try again.');
       } finally {
         setCreatingType(null);
@@ -756,8 +735,6 @@ export function TodaySummaryCard({
 
     setShowSleepConfirmation(false);
     setCreatingType(pendingActivity.type === 'nursing' ? 'nursing' : 'bottle');
-
-    let tempId: string | null = null;
 
     try {
       // Stop the in-progress sleep (non-blocking)
@@ -805,7 +782,7 @@ export function TodaySummaryCard({
           userId: getUserRelationFromStore()?.id || 'temp',
         } as typeof Activities.$inferSelect;
 
-        tempId = addOptimisticActivity(optimisticActivity);
+        addOptimisticActivity(optimisticActivity);
 
         await createActivity(
           {
@@ -820,9 +797,7 @@ export function TodaySummaryCard({
           'today_summary',
         );
 
-        if (tempId) {
-          removeOptimisticActivity(tempId);
-        }
+        removeByMatch('bottle', now, 2000);
 
         utils.activities.getUpcomingFeeding.invalidate();
         utils.activities.getTodaySummary.invalidate();
@@ -861,7 +836,7 @@ export function TodaySummaryCard({
           userId: getUserRelationFromStore()?.id || 'temp',
         } as typeof Activities.$inferSelect;
 
-        tempId = addOptimisticActivity(optimisticActivity);
+        addOptimisticActivity(optimisticActivity);
 
         await createActivity({
           activityType: 'nursing',
@@ -877,9 +852,7 @@ export function TodaySummaryCard({
           startTime: now,
         });
 
-        if (tempId) {
-          removeOptimisticActivity(tempId);
-        }
+        removeByMatch('nursing', now, 2000);
 
         utils.activities.getUpcomingFeeding.invalidate();
         utils.activities.getTodaySummary.invalidate();
@@ -906,7 +879,7 @@ export function TodaySummaryCard({
           userId: getUserRelationFromStore()?.id || 'temp',
         } as typeof Activities.$inferSelect;
 
-        tempId = addOptimisticActivity(optimisticActivity);
+        addOptimisticActivity(optimisticActivity);
 
         await createActivity(
           {
@@ -919,17 +892,23 @@ export function TodaySummaryCard({
           'today_summary',
         );
 
-        if (tempId) {
-          removeOptimisticActivity(tempId);
-        }
+        removeByMatch('diaper', now, 2000);
 
         utils.activities.getUpcomingDiaper.invalidate();
         utils.activities.getTodaySummary.invalidate();
       }
     } catch (err) {
       console.error(`Failed to log ${pendingActivity.type}:`, err);
-      if (tempId) {
-        removeOptimisticActivity(tempId);
+      const now = new Date();
+      if (pendingActivity.type === 'bottle') {
+        removeByMatch('bottle', now, 2000);
+      } else if (pendingActivity.type === 'nursing') {
+        removeByMatch('nursing', now, 2000);
+      } else if (
+        pendingActivity.type === 'wet' ||
+        pendingActivity.type === 'dirty'
+      ) {
+        removeByMatch('diaper', now, 2000);
       }
       toast.error(
         `Failed to log ${pendingActivity.type === 'bottle' ? 'bottle feeding' : pendingActivity.type === 'nursing' ? 'nursing' : 'diaper change'}. Please try again.`,
@@ -945,8 +924,6 @@ export function TodaySummaryCard({
 
     setShowSleepConfirmation(false);
     setCreatingType(pendingActivity.type === 'nursing' ? 'nursing' : 'bottle');
-
-    let tempId: string | null = null;
 
     try {
       const now = new Date();
@@ -976,7 +953,7 @@ export function TodaySummaryCard({
           userId: getUserRelationFromStore()?.id || 'temp',
         } as typeof Activities.$inferSelect;
 
-        tempId = addOptimisticActivity(optimisticActivity);
+        addOptimisticActivity(optimisticActivity);
 
         await createActivity(
           {
@@ -991,9 +968,7 @@ export function TodaySummaryCard({
           'today_summary',
         );
 
-        if (tempId) {
-          removeOptimisticActivity(tempId);
-        }
+        removeByMatch('bottle', now, 2000);
 
         utils.activities.getUpcomingFeeding.invalidate();
         utils.activities.getTodaySummary.invalidate();
@@ -1025,7 +1000,7 @@ export function TodaySummaryCard({
           userId: getUserRelationFromStore()?.id || 'temp',
         } as typeof Activities.$inferSelect;
 
-        tempId = addOptimisticActivity(optimisticActivity);
+        addOptimisticActivity(optimisticActivity);
 
         await createActivity(
           {
@@ -1044,9 +1019,7 @@ export function TodaySummaryCard({
           'today_summary',
         );
 
-        if (tempId) {
-          removeOptimisticActivity(tempId);
-        }
+        removeByMatch('nursing', now, 2000);
 
         utils.activities.getUpcomingFeeding.invalidate();
         utils.activities.getTodaySummary.invalidate();
@@ -1073,7 +1046,7 @@ export function TodaySummaryCard({
           userId: getUserRelationFromStore()?.id || 'temp',
         } as typeof Activities.$inferSelect;
 
-        tempId = addOptimisticActivity(optimisticActivity);
+        addOptimisticActivity(optimisticActivity);
 
         await createActivity(
           {
@@ -1086,17 +1059,23 @@ export function TodaySummaryCard({
           'today_summary',
         );
 
-        if (tempId) {
-          removeOptimisticActivity(tempId);
-        }
+        removeByMatch('diaper', now, 2000);
 
         utils.activities.getUpcomingDiaper.invalidate();
         utils.activities.getTodaySummary.invalidate();
       }
     } catch (err) {
       console.error(`Failed to log ${pendingActivity.type}:`, err);
-      if (tempId) {
-        removeOptimisticActivity(tempId);
+      const now = new Date();
+      if (pendingActivity.type === 'bottle') {
+        removeByMatch('bottle', now, 2000);
+      } else if (pendingActivity.type === 'nursing') {
+        removeByMatch('nursing', now, 2000);
+      } else if (
+        pendingActivity.type === 'wet' ||
+        pendingActivity.type === 'dirty'
+      ) {
+        removeByMatch('diaper', now, 2000);
       }
       toast.error(
         `Failed to log ${pendingActivity.type === 'bottle' ? 'bottle feeding' : pendingActivity.type === 'nursing' ? 'nursing' : 'diaper change'}. Please try again.`,

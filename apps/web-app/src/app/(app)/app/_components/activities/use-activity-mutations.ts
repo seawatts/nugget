@@ -113,6 +113,7 @@ export function useActivityMutations() {
       toast.success('Activity created successfully');
       // Invalidate queries in background - don't await to avoid blocking mutateAsync
       utils.activities.invalidate(undefined, { type: 'all' });
+      utils.timeline.getItems.invalidate();
     },
   });
 
@@ -128,6 +129,7 @@ export function useActivityMutations() {
 
       // Invalidate with type: 'all' to force immediate refetch, bypassing staleTime
       await utils.activities.invalidate(undefined, { type: 'all' });
+      await utils.timeline.getItems.invalidate();
     },
   });
 
@@ -145,6 +147,7 @@ export function useActivityMutations() {
       await Promise.all([
         utils.activities.invalidate(undefined, { type: 'all' }),
         utils.babies.invalidate(undefined, { type: 'all' }),
+        utils.timeline.getItems.invalidate(),
       ]);
     },
   });

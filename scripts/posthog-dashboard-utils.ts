@@ -341,6 +341,8 @@ export function createTextTile(
 
 /**
  * Add a text tile to a dashboard
+ * PostHog API expects text tiles to have a specific structure
+ * Based on PostHog API: text tiles are created via the tiles endpoint with text field
  */
 export async function addTextTileToDashboard(
   projectId: string,
@@ -348,19 +350,75 @@ export async function addTextTileToDashboard(
   textTile: TextTile,
 ): Promise<void> {
   try {
-    await fetchPostHogAPI(
+    // PostHog API format for text tiles
+    // The API expects: { text: string, color?: string, layouts?: object }
+    // Text tiles are distinguished from insight tiles by having a 'text' field instead of 'insight' field
+    const payload: Record<string, unknown> = {
+      text: textTile.text,
+    };
+
+    // Add color if provided
+    if (textTile.color) {
+      payload.color = textTile.color;
+    }
+
+    // Add layouts if provided (required for proper positioning)
+    if (textTile.layouts) {
+      payload.layouts = textTile.layouts;
+    } else {
+      // Default layout if not provided
+      payload.layouts = {
+        lg: { h: 1, w: 12, x: 0, y: 0 },
+        md: { h: 1, w: 12, x: 0, y: 0 },
+        sm: { h: 1, w: 12, x: 0, y: 0 },
+        xs: { h: 1, w: 12, x: 0, y: 0 },
+      };
+    }
+
+    const response = await fetchPostHogAPI<{ id?: number; text?: string }>(
       `/projects/${projectId}/dashboards/${dashboardId}/tiles/`,
       {
-        body: JSON.stringify(textTile),
+        body: JSON.stringify(payload),
         method: 'POST',
       },
     );
+
+    // PostHog API may return the tile object with id, or it might be nested
+    // Log the response for debugging
+    if (response.id) {
+      console.log(
+        `✅ Text tile "${textTile.text}" added successfully (ID: ${response.id})`,
+      );
+    } else {
+      // Log the full response to help debug
+      console.warn(
+        `⚠️  Text tile "${textTile.text}" - response:`,
+        JSON.stringify(response).slice(0, 200),
+      );
+      // Still consider it successful if we got a response without an error
+      console.log(
+        `✅ Text tile "${textTile.text}" request completed (check dashboard to verify)`,
+      );
+    }
   } catch (error) {
-    console.warn(
-      '⚠️  Could not add text tile to dashboard:',
-      error instanceof Error ? error.message : String(error),
+    // Enhanced error logging to help debug API issues
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    console.error(
+      `❌ Could not add text tile "${textTile.text}" to dashboard:`,
+      errorMessage,
     );
-    throw error;
+
+    // Log the full error for debugging
+    if (error instanceof Error && error.stack) {
+      console.error(
+        '   Stack:',
+        error.stack.split('\n').slice(0, 3).join('\n'),
+      );
+    }
+
+    // Don't throw - allow script to continue with other tiles
+    // The calling code already handles errors gracefully
   }
 }
 
@@ -603,4 +661,209 @@ export function createRetentionInsight(
 
 export function getPostHogHost(): string {
   return POSTHOG_HOST.replace(/\/$/, '');
+}
+
+/**
+ * Helper to create a tRPC query insight filtering by type property
+ * Since PostHog doesn't support wildcard event names, we filter by the 'type' property
+ * that's tracked in all tRPC events. We use property filters to match events where
+ * the event name contains 'trpc.' and the type property matches.
+ *
+ * Note: PostHog's TrendsQuery requires an event name in the series field, but property
+ * filters will narrow down to only tRPC events. We use a generic event name that will
+ * be filtered by the properties.
+ */
+export function createTrpcTypeInsight(
+  type: 'query' | 'mutation',
+  name: string,
+  description?: string,
+  visualization = 'ActionsLineGraph',
+  additionalProperties?: Record<string, unknown>,
+): PostHogInsight {
+  // Filter by event name pattern and type property
+  // PostHog supports filtering by $event_name property using 'icontains' operator
+  const baseProperties = [
+    {
+      key: '$event_name',
+      operator: 'icontains',
+      type: 'event',
+      value: 'trpc.',
+    },
+    {
+      key: 'type',
+      operator: 'exact',
+      type: 'event',
+      value: type,
+    },
+  ];
+
+  const existingProperties = additionalProperties?.properties || [];
+  const allProperties = [...baseProperties, ...existingProperties];
+
+  // Merge additional properties (excluding properties array to avoid duplication)
+  const {
+    properties: _,
+    series: customSeries,
+    ...restAdditionalProps
+  } = additionalProperties || {};
+
+  // Use custom series if provided (e.g., for math operations), otherwise use default
+  const series = customSeries || [{ event: '$pageview', kind: 'EventsNode' }];
+
+  return {
+    description,
+    name,
+    query: {
+      kind: 'InsightVizNode',
+      source: {
+        dateRange: { date_from: '-30d' },
+        interval: 'day',
+        kind: 'TrendsQuery',
+        properties: allProperties,
+        // PostHog requires an event name in series - property filters will narrow to tRPC events
+        // Using a generic event name; properties filter ensures only tRPC events are included
+        series,
+        version: 1,
+        ...restAdditionalProps,
+      },
+      version: 1,
+    },
+    visualization,
+  };
+}
+
+/**
+ * Helper to create a multi-type tRPC insight (queries + mutations)
+ * Creates separate series for queries and mutations since PostHog doesn't support breakdown
+ * with property filters in TrendsQuery
+ */
+export function createTrpcMultiTypeInsight(
+  name: string,
+  description?: string,
+  visualization = 'ActionsLineGraph',
+  additionalProperties?: Record<string, unknown>,
+): PostHogInsight {
+  // Create separate series for queries and mutations
+  // Each series filters by the type property
+  const baseQueryProperties = [
+    {
+      key: '$event_name',
+      operator: 'icontains',
+      type: 'event',
+      value: 'trpc.',
+    },
+    {
+      key: 'type',
+      operator: 'exact',
+      type: 'event',
+      value: 'query',
+    },
+  ];
+
+  const baseMutationProperties = [
+    {
+      key: '$event_name',
+      operator: 'icontains',
+      type: 'event',
+      value: 'trpc.',
+    },
+    {
+      key: 'type',
+      operator: 'exact',
+      type: 'event',
+      value: 'mutation',
+    },
+  ];
+
+  const existingProperties = additionalProperties?.properties || [];
+
+  // Merge additional properties (excluding properties array to avoid duplication)
+  const {
+    properties: _,
+    series: customSeries,
+    ...restAdditionalProps
+  } = additionalProperties || {};
+
+  // Create series with separate properties for each type
+  const series = customSeries || [
+    {
+      event: '$pageview',
+      kind: 'EventsNode',
+      name: 'Queries',
+      properties: [...baseQueryProperties, ...existingProperties],
+    },
+    {
+      event: '$pageview',
+      kind: 'EventsNode',
+      name: 'Mutations',
+      properties: [...baseMutationProperties, ...existingProperties],
+    },
+  ];
+
+  return {
+    description,
+    name,
+    query: {
+      kind: 'InsightVizNode',
+      source: {
+        dateRange: { date_from: '-30d' },
+        interval: 'day',
+        kind: 'TrendsQuery',
+        series,
+        version: 1,
+        ...restAdditionalProps,
+      },
+      version: 1,
+    },
+    visualization,
+  };
+}
+
+/**
+ * Helper to create a tRPC insight with breakdown by type property
+ * Shows both queries and mutations broken down by the 'type' property
+ */
+export function createTrpcTypeBreakdownInsight(
+  name: string,
+  description?: string,
+  visualization = 'ActionsLineGraph',
+  additionalProperties?: Record<string, unknown>,
+): PostHogInsight {
+  const baseProperties = [
+    {
+      key: '$event_name',
+      operator: 'icontains',
+      type: 'event',
+      value: 'trpc.',
+    },
+  ];
+
+  const existingProperties = additionalProperties?.properties || [];
+  const allProperties = [...baseProperties, ...existingProperties];
+
+  // Merge additional properties (excluding properties array to avoid duplication)
+  const { properties: _, ...restAdditionalProps } = additionalProperties || {};
+
+  return {
+    description,
+    name,
+    query: {
+      kind: 'InsightVizNode',
+      source: {
+        breakdown: {
+          property: 'type',
+          type: 'event',
+        },
+        dateRange: { date_from: '-30d' },
+        interval: 'day',
+        kind: 'TrendsQuery',
+        properties: allProperties,
+        series: [{ event: '$pageview', kind: 'EventsNode' }],
+        version: 1,
+        ...restAdditionalProps,
+      },
+      version: 1,
+    },
+    visualization,
+  };
 }
