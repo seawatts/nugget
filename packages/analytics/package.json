@@ -1,15 +1,15 @@
 {
   "dependencies": {
-    "@clerk/chrome-extension": "2.8.6",
+    "@clerk/chrome-extension": "2.8.9",
     "@clerk/nextjs": "catalog:",
     "@nugget/logger": "workspace:*",
     "@nugget/ui": "workspace:*",
     "@t3-oss/env-nextjs": "catalog:",
-    "@vercel/analytics": "1.5.0",
-    "@vercel/speed-insights": "1.2.0",
+    "@vercel/analytics": "1.6.1",
+    "@vercel/speed-insights": "1.3.1",
     "class-variance-authority": "0.7.1",
-    "posthog-js": "1.298.1",
-    "posthog-node": "5.14.1",
+    "posthog-js": "1.302.2",
+    "posthog-node": "5.17.2",
     "react": "catalog:",
     "react-dom": "catalog:",
     "zod": "catalog:"
