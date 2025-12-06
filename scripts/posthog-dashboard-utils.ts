@@ -16,6 +16,7 @@ export interface PostHogInsight {
         kind: string;
         event?: string;
         id?: string;
+        name?: string;
         math?: string;
         math_property?: string;
         properties?: Array<Record<string, unknown>>;
@@ -697,7 +698,9 @@ export function createTrpcTypeInsight(
     },
   ];
 
-  const existingProperties = additionalProperties?.properties || [];
+  const existingProperties = Array.isArray(additionalProperties?.properties)
+    ? (additionalProperties.properties as Array<Record<string, unknown>>)
+    : [];
   const allProperties = [...baseProperties, ...existingProperties];
 
   // Merge additional properties (excluding properties array to avoid duplication)
@@ -708,7 +711,28 @@ export function createTrpcTypeInsight(
   } = additionalProperties || {};
 
   // Use custom series if provided (e.g., for math operations), otherwise use default
-  const series = customSeries || [{ event: '$pageview', kind: 'EventsNode' }];
+  // IMPORTANT: PostHog requires an event name, but we filter by $event_name property
+  // We use a generic event and rely on property filters to match tRPC events
+  // Note: Properties on series items filter the events, not the event name itself
+  const series: Array<{
+    kind: string;
+    event?: string;
+    properties?: Array<Record<string, unknown>>;
+    math?: string;
+    math_property?: string;
+  }> = (customSeries as Array<{
+    kind: string;
+    event?: string;
+    properties?: Array<Record<string, unknown>>;
+    math?: string;
+    math_property?: string;
+  }>) || [
+    {
+      event: '$pageview', // Required by PostHog, but properties filter will match tRPC events
+      kind: 'EventsNode',
+      properties: allProperties,
+    },
+  ];
 
   return {
     description,
@@ -719,9 +743,8 @@ export function createTrpcTypeInsight(
         dateRange: { date_from: '-30d' },
         interval: 'day',
         kind: 'TrendsQuery',
-        properties: allProperties,
-        // PostHog requires an event name in series - property filters will narrow to tRPC events
-        // Using a generic event name; properties filter ensures only tRPC events are included
+        // Don't put properties at source level when filtering by event name
+        // Properties should be on series items instead
         series,
         version: 1,
         ...restAdditionalProps,
@@ -775,7 +798,8 @@ export function createTrpcMultiTypeInsight(
     },
   ];
 
-  const existingProperties = additionalProperties?.properties || [];
+  const existingProperties =
+    (additionalProperties?.properties as Array<Record<string, unknown>>) || [];
 
   // Merge additional properties (excluding properties array to avoid duplication)
   const {
@@ -785,15 +809,20 @@ export function createTrpcMultiTypeInsight(
   } = additionalProperties || {};
 
   // Create series with separate properties for each type
-  const series = customSeries || [
+  const series = (customSeries as Array<{
+    kind: string;
+    event?: string;
+    name?: string;
+    properties?: Array<Record<string, unknown>>;
+  }>) || [
     {
-      event: '$pageview',
+      event: '$autocapture',
       kind: 'EventsNode',
       name: 'Queries',
       properties: [...baseQueryProperties, ...existingProperties],
     },
     {
-      event: '$pageview',
+      event: '$autocapture',
       kind: 'EventsNode',
       name: 'Mutations',
       properties: [...baseMutationProperties, ...existingProperties],
@@ -838,11 +867,34 @@ export function createTrpcTypeBreakdownInsight(
     },
   ];
 
-  const existingProperties = additionalProperties?.properties || [];
+  const existingProperties = Array.isArray(additionalProperties?.properties)
+    ? (additionalProperties.properties as Array<Record<string, unknown>>)
+    : [];
   const allProperties = [...baseProperties, ...existingProperties];
 
   // Merge additional properties (excluding properties array to avoid duplication)
-  const { properties: _, ...restAdditionalProps } = additionalProperties || {};
+  const {
+    properties: _,
+    series: customSeries,
+    ...restAdditionalProps
+  } = additionalProperties || {};
+
+  // Properties should be on the series item for event name filtering
+  // Don't specify event name - let PostHog match all events filtered by properties
+  const series: Array<{
+    kind: string;
+    event?: string;
+    properties?: Array<Record<string, unknown>>;
+  }> = (customSeries as Array<{
+    kind: string;
+    event?: string;
+    properties?: Array<Record<string, unknown>>;
+  }>) || [
+    {
+      kind: 'EventsNode',
+      properties: allProperties,
+    },
+  ];
 
   return {
     description,
@@ -857,8 +909,7 @@ export function createTrpcTypeBreakdownInsight(
         dateRange: { date_from: '-30d' },
         interval: 'day',
         kind: 'TrendsQuery',
-        properties: allProperties,
-        series: [{ event: '$pageview', kind: 'EventsNode' }],
+        series,
         version: 1,
         ...restAdditionalProps,
       },

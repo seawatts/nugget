@@ -309,14 +309,131 @@ async function main() {
     );
 
     // 10. Today Summary Quick Actions Breakdown by Type
+    // Create separate series for each action type since PostHog doesn't support breakdown in TrendsQuery
     const quickActionsBreakdownInsightId = await upsertInsight(
       projectId,
-      createTrendsInsight(
-        'dashboard.today_summary.quick_action',
-        'Today Summary Quick Actions by Type',
-        'Breakdown of quick action clicks by action type',
-        'ActionsBar',
-      ),
+      {
+        description:
+          'Breakdown of quick action clicks by specific button/action type',
+        name: 'Today Summary Quick Actions by Button',
+        query: {
+          kind: 'InsightVizNode',
+          source: {
+            dateRange: { date_from: '-30d' },
+            interval: 'day',
+            kind: 'TrendsQuery',
+            series: [
+              {
+                event: 'dashboard.today_summary.quick_action',
+                kind: 'EventsNode',
+                name: 'Bottle',
+                properties: [
+                  {
+                    key: 'action_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'bottle',
+                  },
+                ],
+              },
+              {
+                event: 'dashboard.today_summary.quick_action',
+                kind: 'EventsNode',
+                name: 'Nursing',
+                properties: [
+                  {
+                    key: 'action_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'nursing',
+                  },
+                ],
+              },
+              {
+                event: 'dashboard.today_summary.quick_action',
+                kind: 'EventsNode',
+                name: 'Diaper',
+                properties: [
+                  {
+                    key: 'action_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'diaper',
+                  },
+                ],
+              },
+              {
+                event: 'dashboard.today_summary.quick_action',
+                kind: 'EventsNode',
+                name: 'Sleep Timer Start',
+                properties: [
+                  {
+                    key: 'action_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'sleep_timer_start',
+                  },
+                ],
+              },
+              {
+                event: 'dashboard.today_summary.quick_action',
+                kind: 'EventsNode',
+                name: 'Sleep Timer Stop',
+                properties: [
+                  {
+                    key: 'action_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'sleep_timer_stop',
+                  },
+                ],
+              },
+              {
+                event: 'dashboard.today_summary.quick_action',
+                kind: 'EventsNode',
+                name: 'Sleep Manual',
+                properties: [
+                  {
+                    key: 'action_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'sleep_manual',
+                  },
+                ],
+              },
+              {
+                event: 'dashboard.today_summary.quick_action',
+                kind: 'EventsNode',
+                name: 'Stats',
+                properties: [
+                  {
+                    key: 'action_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'stats',
+                  },
+                ],
+              },
+              {
+                event: 'dashboard.today_summary.quick_action',
+                kind: 'EventsNode',
+                name: 'Achievements',
+                properties: [
+                  {
+                    key: 'action_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'achievements',
+                  },
+                ],
+              },
+            ],
+            version: 1,
+          },
+          version: 1,
+        },
+        visualization: 'ActionsBar',
+      },
       undefined,
       INSIGHT_TAGS,
     );
@@ -335,14 +452,183 @@ async function main() {
     );
 
     // 12. Activity Cards Quick Actions Breakdown by Type
+    // Create separate series for each action type since PostHog doesn't support breakdown in TrendsQuery
     const activityCardsQuickActionsBreakdownInsightId = await upsertInsight(
       projectId,
-      createTrendsInsight(
-        'dashboard.activity_cards.quick_action',
-        'Activity Cards Quick Actions by Type',
-        'Breakdown of quick action clicks by activity and action type',
-        'ActionsBar',
-      ),
+      {
+        description:
+          'Breakdown of quick action clicks by specific button/action type on activity cards',
+        name: 'Activity Cards Quick Actions by Button',
+        query: {
+          kind: 'InsightVizNode',
+          source: {
+            dateRange: { date_from: '-30d' },
+            interval: 'day',
+            kind: 'TrendsQuery',
+            series: [
+              {
+                event: 'dashboard.activity_cards.quick_action',
+                kind: 'EventsNode',
+                name: 'Wet',
+                properties: [
+                  {
+                    key: 'action_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'wet',
+                  },
+                ],
+              },
+              {
+                event: 'dashboard.activity_cards.quick_action',
+                kind: 'EventsNode',
+                name: 'Dirty',
+                properties: [
+                  {
+                    key: 'action_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'dirty',
+                  },
+                ],
+              },
+              {
+                event: 'dashboard.activity_cards.quick_action',
+                kind: 'EventsNode',
+                name: 'Both',
+                properties: [
+                  {
+                    key: 'action_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'both',
+                  },
+                ],
+              },
+              {
+                event: 'dashboard.activity_cards.quick_action',
+                kind: 'EventsNode',
+                name: 'Day Click',
+                properties: [
+                  {
+                    key: 'action_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'day_click',
+                  },
+                ],
+              },
+            ],
+            version: 1,
+          },
+          version: 1,
+        },
+        visualization: 'ActionsBar',
+      },
+      undefined,
+      INSIGHT_TAGS,
+    );
+
+    // 12b. Activity Cards Quick Actions Breakdown by Activity Type
+    // Create separate series for each activity type since PostHog doesn't support breakdown in TrendsQuery
+    const activityCardsQuickActionsByActivityInsightId = await upsertInsight(
+      projectId,
+      {
+        description:
+          'Breakdown of quick action clicks by activity type on activity cards',
+        name: 'Activity Cards Quick Actions by Activity Type',
+        query: {
+          kind: 'InsightVizNode',
+          source: {
+            dateRange: { date_from: '-30d' },
+            interval: 'day',
+            kind: 'TrendsQuery',
+            series: [
+              {
+                event: 'dashboard.activity_cards.quick_action',
+                kind: 'EventsNode',
+                name: 'Diaper',
+                properties: [
+                  {
+                    key: 'activity_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'diaper',
+                  },
+                ],
+              },
+              {
+                event: 'dashboard.activity_cards.quick_action',
+                kind: 'EventsNode',
+                name: 'Feeding',
+                properties: [
+                  {
+                    key: 'activity_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'feeding',
+                  },
+                ],
+              },
+              {
+                event: 'dashboard.activity_cards.quick_action',
+                kind: 'EventsNode',
+                name: 'Sleep',
+                properties: [
+                  {
+                    key: 'activity_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'sleep',
+                  },
+                ],
+              },
+              {
+                event: 'dashboard.activity_cards.quick_action',
+                kind: 'EventsNode',
+                name: 'Pumping',
+                properties: [
+                  {
+                    key: 'activity_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'pumping',
+                  },
+                ],
+              },
+              {
+                event: 'dashboard.activity_cards.quick_action',
+                kind: 'EventsNode',
+                name: 'Tummy Time',
+                properties: [
+                  {
+                    key: 'activity_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'tummy_time',
+                  },
+                ],
+              },
+              {
+                event: 'dashboard.activity_cards.quick_action',
+                kind: 'EventsNode',
+                name: 'Bath',
+                properties: [
+                  {
+                    key: 'activity_type',
+                    operator: 'exact',
+                    type: 'event',
+                    value: 'bath',
+                  },
+                ],
+              },
+            ],
+            version: 1,
+          },
+          version: 1,
+        },
+        visualization: 'ActionsBar',
+      },
       undefined,
       INSIGHT_TAGS,
     );
@@ -640,6 +926,7 @@ async function main() {
       quickActionsBreakdownInsightId,
       activityCardsQuickActionsInsightId,
       activityCardsQuickActionsBreakdownInsightId,
+      activityCardsQuickActionsByActivityInsightId,
       activityCardsDrawerOpenInsightId,
       activityCardsDrawerOpenBreakdownInsightId,
       activityTimelineDrawerOpenInsightId,
@@ -709,9 +996,10 @@ async function main() {
         'Dashboard Component Interaction Volume',
         'Activities Logged from Cards',
         'Today Summary Quick Actions',
-        'Today Summary Quick Actions by Type',
+        'Today Summary Quick Actions by Button',
         'Activity Cards Quick Actions',
-        'Activity Cards Quick Actions by Type',
+        'Activity Cards Quick Actions by Button',
+        'Activity Cards Quick Actions by Activity Type',
         'Activity Cards Drawer Opens',
         'Activity Cards Drawer Opens by Activity Type',
         'Activity Timeline Drawer Opens',

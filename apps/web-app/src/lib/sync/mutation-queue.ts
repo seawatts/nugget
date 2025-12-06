@@ -1,6 +1,7 @@
 /**
  * Mutation queue utility for queuing mutations when app is closing
- * Uses sendBeacon as primary method, falls back to Background Sync
+ * Uses fetch with keepalive as primary method (supports credentials),
+ * falls back to Background Sync for recovery on next page load
  */
 
 import type { Activities } from '@nugget/db/schema';
@@ -41,7 +42,8 @@ export class MutationQueue {
   }
 
   /**
-   * Queue a mutation using sendBeacon if available, otherwise use Background Sync
+   * Queue a mutation using fetch with keepalive (supports credentials),
+   * falls back to Background Sync if fetch fails
    */
   async queueMutation(
     mutationId: string,
@@ -66,36 +68,42 @@ export class MutationQueue {
       }
     }
 
-    // Try sendBeacon first (works even after page unload)
-    if (navigator.sendBeacon && options.method === 'POST') {
-      try {
-        const blob = new Blob([body], {
-          type: headers['Content-Type'] || 'application/json',
-        });
+    // Try fetch with keepalive first - this works even during page unload
+    // and properly sends credentials (unlike sendBeacon)
+    try {
+      const response = await fetch(url, {
+        body,
+        credentials: 'include', // Include cookies for authentication
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers,
+        },
+        keepalive: true, // Allows request to complete even if page unloads
+        method: options.method || 'POST',
+      });
 
-        // sendBeacon doesn't support custom headers well, but we can try
-        // For tRPC, we'll need to include auth in the URL or use Background Sync
-        const beaconSent = navigator.sendBeacon(url, blob);
-
-        if (beaconSent) {
-          // Track that we used sendBeacon
-          this.tracker.trackMutationQueued(
-            mutationId,
-            activityType,
-            source,
-            this.syncManager.getQueueLength(),
-          );
-          return true;
-        }
-      } catch (error) {
-        console.warn(
-          'sendBeacon failed, falling back to Background Sync:',
-          error,
+      if (response.ok) {
+        this.tracker.trackMutationQueued(
+          mutationId,
+          activityType,
+          source,
+          this.syncManager.getQueueLength(),
         );
+        return true;
       }
+
+      // If response is not ok, log the error and fall through to Background Sync
+      console.warn(
+        `Fetch with keepalive failed with status ${response.status}, falling back to Background Sync`,
+      );
+    } catch (error) {
+      console.warn(
+        'Fetch with keepalive failed, falling back to Background Sync:',
+        error,
+      );
     }
 
-    // Fallback to Background Sync
+    // Fallback to Background Sync - will be processed on next page load
     try {
       await this.syncManager.queueRequest(url, options);
       this.tracker.trackMutationQueued(
@@ -113,8 +121,9 @@ export class MutationQueue {
 
   /**
    * Synchronously queue a mutation during page unload
-   * Uses sendBeacon (synchronous) or localStorage as fallback
-   * This is safe to call from beforeunload handlers
+   * Uses fetch with keepalive (non-blocking, supports credentials) as primary method,
+   * with localStorage as fallback for recovery on next page load.
+   * This is safe to call from beforeunload handlers.
    */
   queueMutationSync(
     mutationId: string,
@@ -123,32 +132,36 @@ export class MutationQueue {
     activityType: typeof Activities.$inferSelect.type,
     source: string,
   ): boolean {
-    // Try sendBeacon first (synchronous, works during page unload)
-    if (navigator.sendBeacon) {
+    // Try fetch with keepalive - this is non-blocking and supports credentials
+    // Unlike sendBeacon, fetch with keepalive properly sends cookies
+    try {
+      // Fire and forget - we don't await since this is in beforeunload
+      fetch(url, {
+        body,
+        credentials: 'include', // Include cookies for authentication
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        keepalive: true, // Allows request to complete even if page unloads
+        method: 'POST',
+      }).catch(() => {
+        // Silently fail - we have the localStorage fallback
+      });
+
+      // Track synchronously using localStorage
       try {
-        const blob = new Blob([body], {
-          type: 'application/json',
-        });
-
-        const beaconSent = navigator.sendBeacon(url, blob);
-
-        if (beaconSent) {
-          // Track synchronously using localStorage
-          try {
-            this.tracker.trackMutationQueued(
-              mutationId,
-              activityType,
-              source,
-              this.syncManager.getQueueLength(),
-            );
-          } catch {
-            // Ignore tracking errors during unload
-          }
-          return true;
-        }
-      } catch (error) {
-        console.warn('sendBeacon failed:', error);
+        this.tracker.trackMutationQueued(
+          mutationId,
+          activityType,
+          source,
+          this.syncManager.getQueueLength(),
+        );
+      } catch {
+        // Ignore tracking errors during unload
       }
+      return true;
+    } catch (error) {
+      console.warn('Fetch with keepalive failed:', error);
     }
 
     // Fallback: Store in BackgroundSyncManager's localStorage queue synchronously

@@ -196,6 +196,12 @@ export function useActivityMutations() {
         (mutationInput as MutationVariables).__source = source;
         const activity = await createMutation.mutateAsync(mutationInput);
 
+        // Verify activity was created successfully
+        // This ensures we don't silently lose data if the mutation returns invalid response
+        if (!activity || !activity.id) {
+          throw new Error('Activity creation returned invalid response');
+        }
+
         return activity;
       } catch (error) {
         // If mutation fails and page is unloading, try to queue it
@@ -251,6 +257,12 @@ export function useActivityMutations() {
       input: UpdateActivityInput,
     ): Promise<typeof Activities.$inferSelect> => {
       const activity = await updateMutation.mutateAsync(input);
+
+      // Verify activity was updated successfully
+      if (!activity || !activity.id) {
+        throw new Error('Activity update returned invalid response');
+      }
+
       return activity;
     },
     [updateMutation],
@@ -358,11 +370,19 @@ export function useActivityMutations() {
 
   return {
     createActivity,
+    // Expose retry state for UI indicators
+    createFailureCount: createMutation.failureCount,
     deleteActivity,
+    deleteFailureCount: deleteMutation.failureCount,
     // Expose loading states
     isCreating: createMutation.isPending,
     isDeleting: deleteMutation.isPending,
+    isRetrying:
+      createMutation.failureCount > 0 ||
+      updateMutation.failureCount > 0 ||
+      deleteMutation.failureCount > 0,
     isUpdating: updateMutation.isPending,
     updateActivity,
+    updateFailureCount: updateMutation.failureCount,
   };
 }

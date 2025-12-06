@@ -33,12 +33,11 @@ export default async function Home() {
     if (babies && babies.length > 0 && babies[0]) {
       const firstBabyId = babies[0].id;
 
-      // Set cookie for next time (service worker can read this)
+      // Set cookie for next time (enables instant redirect on future visits)
       cookieStore.set(LAST_BABY_ID_KEY, firstBabyId, {
         maxAge: 60 * 60 * 24 * 365, // 1 year
         path: '/',
         sameSite: 'lax',
-        // Not httpOnly so service worker can read it
       });
 
       // Instant server-side redirect to dashboard
