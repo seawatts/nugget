@@ -46,6 +46,8 @@
     "svix": "1.81.0",
     "unified": "11.0.5",
     "web-push": "3.6.7",
+    "workbox-core": "^7.4.0",
+    "workbox-precaching": "^7.4.0",
     "workflow": "latest",
     "zod": "catalog:"
   },

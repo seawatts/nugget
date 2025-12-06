@@ -74,8 +74,8 @@ const withPlugins = [
   withBaml(),
   withPWA({
     buildExcludes: [/chunks\/.*\.js$/],
-    // Use custom service worker instead of workbox
     cacheOnNavigation: true,
+    customWorkerSrc: 'worker',
     dest: 'public',
     disable: process.env.NODE_ENV === 'development',
     fallbacks: {
@@ -83,7 +83,6 @@ const withPlugins = [
     },
     register: true,
     skipWaiting: true,
-    sw: 'sw.js',
     workboxOptions: {
       runtimeCaching: [
         {
