@@ -393,8 +393,8 @@ async function sendOverdueNotification(activity: {
     sleep: '😴',
   };
 
-  const name = names[activity.activityType];
-  const emoji = emojis[activity.activityType];
+  const name = names[activity.activityType] ?? 'Activity';
+  const emoji = emojis[activity.activityType] ?? '📋';
 
   try {
     await self.registration.showNotification(`${emoji} ${name} Overdue`, {
